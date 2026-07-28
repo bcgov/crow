@@ -1,0 +1,7 @@
+# Ignore files managed by VS Code
+config.json
+session-store.*
+vscode.session.*
+ide/
+logs/
+session-state/
