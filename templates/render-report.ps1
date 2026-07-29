@@ -89,7 +89,7 @@ $depsHealthyPct     = if ($totalDeps -gt 0) { Get-Pct ($totalDeps - $data.outdat
 $depsOutdatedPct    = Get-Pct $data.outdated_deps $totalDeps
 $depsVulnerablePct  = Get-Pct $data.vulnerable_deps $totalDeps
 
-$totalEntryPoints = if ($data.coverage_gaps -ne $null -and $data.coverage_pct -ne $null) {
+$totalEntryPoints = if ($null -ne $data.coverage_gaps -and $null -ne $data.coverage_pct) {
     if ($data.coverage_pct -gt 0 -and $data.coverage_pct -lt 100) {
         [math]::Round($data.coverage_gaps / (1 - ($data.coverage_pct / 100)), 0)
     } else { $data.coverage_gaps }
