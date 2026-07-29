@@ -38,20 +38,28 @@ You are an Executive Technology Advisor and Technical Communication Agent. Your 
 
 ### Step 2: Locate Executive Report Templates
 
-Locate the global executive report templates:
-- **Windows**: `%USERPROFILE%\.copilot\templates\executive-report.md` and `%USERPROFILE%\.copilot\templates\executive-report.html`
-- **macOS / Linux**: `~/.copilot/templates/executive-report.md` and `~/.copilot/templates/executive-report.html`
+Locate the global executive report templates and tools:
+- **Windows**: `%USERPROFILE%\.copilot\templates\`
+- **macOS / Linux**: `~/.copilot/templates/`
 
-Read both template files. The Markdown template defines the content structure. The HTML template provides the visual dashboard layout with charts, gauges, and heatmaps.
+Required files:
+- `executive-report.md` — Markdown content template
+- `executive-report.html` — HTML dashboard template (with `{{PLACEHOLDER}}` tokens)
+- `executive-report.min.css` — Pre-minified CSS (injected by render script)
+- `render-report.ps1` — Deterministic renderer script
+- `report-data.schema.json` — JSON schema with example values
+
+Read the Markdown template and the JSON schema file. Do NOT read the HTML template or CSS file — the render script handles those.
 
 ### Step 3: Information Extraction & Plain-Language Synthesis
 
 Extract and synthesize data from both source documents into plain language:
 
-#### 0. YAML Frontmatter (from `security-review.md`)
-- Read the YAML frontmatter block at the top of the security review document first.
-- Extract: `overall_risk`, `total_findings`, `critical_count`, `high_count`, `confirmed_count`, `probable_count`, `owasp_categories`, `sonarqube_quality_gate`, `coverage_baseline_gaps`, `tech_stack`.
-- Use these values to populate the Key Metrics Dashboard without needing to parse the full document body.
+#### 0. YAML Frontmatter (from `security-review.md`) — Primary Data Source
+- Read ONLY the YAML frontmatter block at the top of the security review document.
+- Extract: `overall_risk`, `total_findings`, `critical_count`, `high_count`, `medium_count`, `low_count`, `informational_count`, `confirmed_count`, `probable_count`, `owasp_categories`, `sonarqube_quality_gate`, `coverage_baseline_gaps`, `tech_stack`.
+- These values directly populate most KPI fields in `report-data.json` — do NOT re-read the full document body to derive counts.
+- Read at most the Executive Brief / action items sections of the body for narrative content. Do NOT re-ingest the full 400+ line document to fill KPI cards.
 
 #### 1. Security Risks (from `security-review.md`)
 - Identify all `CRITICAL` and `HIGH` severity vulnerabilities, security hotspots, and SAST issues.
@@ -76,41 +84,56 @@ Interpolate the synthesized data into the executive template format:
 - Write the populated report to `/docs/executive-report.md` (or `/docs/<service-name>/executive-report.md` in monorepos).
 - Ensure all sections (Executive Brief, Metrics Dashboard, Plain-Language Critical Risks, Technical Debt Assessment, Architecture Summary, Strategic Action Plan) are fully completed.
 
-### Step 5: Generate HTML Dashboard Report (`/docs/executive-report.html`)
+### Step 5: Write `report-data.json` (Data Only — No HTML)
 
-Generate the visual HTML dashboard report using the HTML template:
+Write a `report-data.json` file alongside the Markdown report (e.g., `/docs/report-data.json` or `/docs/<service-name>/report-data.json`).
 
-1. **Read the HTML template** from the global templates location.
-2. **Calculate chart values** from the extracted metrics:
-   - **Donut chart arcs:** For each severity, calculate `arc = (count / total_findings) * 251.2` (circumference of SVG circle with r=40). Calculate cumulative offsets for stacking.
-   - **OWASP bar widths:** For each category, calculate `width% = (category_count / max_category_count) * 100`.
-   - **Classification bar widths:** `width% = (count / total_findings) * 100`.
-   - **Dependency gauges:** Calculate percentages from dependency counts.
-   - **Coverage gauge:** `coverage_pct = ((total_entry_points - coverage_gaps) / total_entry_points) * 100`.
-3. **Populate STRIDE heatmap** from the security review STRIDE section:
-   - Map risk levels to CSS classes: High → `cell-high`, Medium → `cell-medium`, Low → `cell-low`.
-4. **Interpolate all `{{PLACEHOLDER}}` values** in the HTML template with actual data.
-5. **Set CSS class for overall risk badge:** Map risk level to class name (`critical`, `high`, `moderate`, `low`, `secure`).
-6. **Write the populated HTML** to `/docs/executive-report.html`.
+**CRITICAL: Do NOT read or hand-write the HTML template.** The render script handles all HTML generation, CSS injection, chart math (arc lengths, percentages, bar widths), and placeholder substitution. The model's only job is to produce the JSON data.
 
-The HTML report is self-contained (no external dependencies) and renders correctly when:
-- Opened directly in a browser
-- Printed to PDF via browser print dialog (File → Print → Save as PDF)
-- Converted via `weasyprint /docs/executive-report.html /docs/executive-report.pdf`
+Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 
-### Step 6: Render PDF Output (`/docs/executive-report.pdf`)
+**Scalar metrics** (from YAML frontmatter — copy directly):
+- `critical_count`, `high_count`, `medium_count`, `low_count`, `informational_count`
+- `confirmed_count`, `probable_count`, `coverage_gaps`, `coverage_pct`
+- `overall_risk`, `quality_gate_status`
 
-Generate a PDF from the HTML dashboard report (preferred) or Markdown fallback:
+**OWASP counts** (count findings per category from frontmatter `owasp_categories`):
+- `owasp`: `{ "A01": N, "A02": N, ... "A10": N }`
 
-1. **Preferred: HTML → PDF conversion:**
-   - `weasyprint /docs/executive-report.html /docs/executive-report.pdf`
-   - `npx -y puppeteer-html-to-pdf /docs/executive-report.html /docs/executive-report.pdf`
-   - `chrome --headless --print-to-pdf=/docs/executive-report.pdf /docs/executive-report.html`
-2. **Fallback: Markdown → PDF:**
-   - `npx -y md-to-pdf /docs/executive-report.md`
-   - `pandoc /docs/executive-report.md -o /docs/executive-report.pdf`
-3. **Final Fallback:**
-   - If no PDF tool is available, inform the user that `/docs/executive-report.html` can be opened in a browser and printed to PDF (Ctrl+P → Save as PDF). The `@page` CSS rules ensure correct letter-size formatting.
+**Narrative fields** (synthesized by the model):
+- `executive_brief` — 2-3 paragraph plain-language summary
+- `p1_actions`, `p2_actions`, `p3_actions` — prioritized action items
+
+**Array fields** (model extracts and translates):
+- `findings[]` — Critical/High issues with `title`, `severity`, `classification`, `business_risk`, `action`
+- `tech_debt[]` — EOL/outdated components with `component`, `category`, `risk`, `impact`, `action`
+- `stride[]` — Per-component STRIDE ratings with `component`, `S`, `T`, `R`, `I`, `D`, `E` (values: "High"/"Medium"/"Low")
+
+### Step 6: Render HTML Dashboard & PDF
+
+Run the deterministic render script to produce the HTML dashboard:
+
+**Windows:**
+```powershell
+& "$env:USERPROFILE\.copilot\templates\render-report.ps1" -DataFile docs/report-data.json
+```
+
+**macOS / Linux:**
+```bash
+pwsh ~/.copilot/templates/render-report.ps1 -DataFile docs/report-data.json
+```
+
+The script:
+1. Reads the HTML template and injects minified CSS from `executive-report.min.css`
+2. Computes all chart values (SVG arc lengths, percentages, bar widths)
+3. Expands repeating sections (findings rows, tech debt rows, STRIDE heatmap rows, OWASP bars)
+4. Substitutes all scalar placeholders
+5. Writes the self-contained HTML to `/docs/executive-report.html`
+
+**Then generate PDF** (if tools available):
+1. `weasyprint docs/executive-report.html docs/executive-report.pdf`
+2. Or: open the HTML in a browser and print to PDF (Ctrl+P → Save as PDF)
+3. The `@page` CSS rules ensure correct letter-size formatting
 
 ---
 

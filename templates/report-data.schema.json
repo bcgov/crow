@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Schema for report-data.json consumed by render-report.ps1. The LLM emits ONLY this file; all chart math and HTML rendering is handled by the script.",
+
+  "example": {
+    "application_name": "Example App",
+    "application_acronym": "EXA",
+    "report_date": "2026-07-28",
+    "overall_risk": "HIGH",
+    "quality_gate_status": "FAILED",
+
+    "critical_count": 2,
+    "high_count": 5,
+    "medium_count": 8,
+    "low_count": 4,
+    "informational_count": 3,
+    "confirmed_count": 7,
+    "probable_count": 12,
+    "coverage_gaps": 2,
+    "coverage_pct": 92,
+
+    "total_deps": 48,
+    "outdated_deps": 6,
+    "vulnerable_deps": 3,
+    "abandoned_deps": 1,
+
+    "executive_brief": "The application has 2 critical SQL injection vulnerabilities in the authentication module that could allow complete database compromise. Framework currency is poor — the .NET 6 runtime reached end-of-life 6 months ago.",
+
+    "tech_stack_summary": ".NET 8, PostgreSQL 16, React 18, Redis",
+    "arch_pattern": "Monolith (MVC)",
+    "deployment_model": "Kubernetes on OpenShift",
+    "resilience_summary": "Single-region, no DR failover configured",
+
+    "security_doc_path": "docs/security-review.md",
+    "architecture_doc_path": "docs/architecture.md",
+
+    "owasp": {
+      "A01": 3, "A02": 1, "A03": 2, "A04": 1,
+      "A05": 4, "A06": 0, "A07": 2, "A08": 1,
+      "A09": 1, "A10": 0
+    },
+
+    "findings": [
+      {
+        "title": "SQL Injection in Login Controller",
+        "severity": "CRITICAL",
+        "classification": "Confirmed",
+        "business_risk": "Attacker could bypass authentication and access all user records",
+        "action": "Use parameterized queries in AuthController.cs:45"
+      },
+      {
+        "title": "Missing Authorization on Admin API",
+        "severity": "HIGH",
+        "classification": "Confirmed",
+        "business_risk": "Any authenticated user can access admin operations",
+        "action": "Add [Authorize(Roles=\"Admin\")] to AdminController"
+      }
+    ],
+
+    "tech_debt": [
+      {
+        "component": ".NET Runtime",
+        "category": "EOL Runtime",
+        "risk": "HIGH",
+        "impact": "No security patches since Nov 2024",
+        "action": "Upgrade to .NET 8 LTS"
+      }
+    ],
+
+    "stride": [
+      {
+        "component": "Auth API",
+        "S": "High", "T": "High", "R": "Medium",
+        "I": "High", "D": "Low", "E": "High"
+      },
+      {
+        "component": "User API",
+        "S": "Low", "T": "Medium", "R": "Low",
+        "I": "Medium", "D": "Low", "E": "Medium"
+      }
+    ],
+
+    "p1_actions": "Fix SQL injection in auth module; add authorization to admin endpoints",
+    "p2_actions": "Upgrade .NET 6 to .NET 8; update 3 vulnerable dependencies",
+    "p3_actions": "Implement rate limiting on auth endpoints; add CSP headers"
+  }
+}
