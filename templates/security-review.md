@@ -1,3 +1,26 @@
+---
+document_type: security-review
+assessment_date: YYYY-MM-DD
+application: "{{APPLICATION_NAME}}"
+application_acronym: "{{APPLICATION_ACRONYM}}"
+overall_risk: CRITICAL | HIGH | MODERATE | LOW | SECURE
+total_findings: 0
+critical_count: 0
+high_count: 0
+medium_count: 0
+low_count: 0
+informational_count: 0
+confirmed_count: 0
+probable_count: 0
+owasp_categories: []
+cwe_ids: []
+asvs_requirements: []
+mitre_techniques: []
+sonarqube_quality_gate: NOT_RUN
+coverage_baseline_gaps: 0
+tech_stack: []
+---
+
 # Application Security & Dependency Review: {{APPLICATION_ACRONYM}} - {{APPLICATION_NAME}}
 
 This document provides a detailed security posture, framework version audit, dependency vulnerability review, and static analysis scan summary for **{{APPLICATION_NAME}} ({{APPLICATION_ACRONYM}})**.
@@ -44,11 +67,11 @@ This section captures third-party library dependencies parsed from lock files, i
 
 ## 3. Known CVE & Vulnerability Assessment
 
-This section lists known vulnerabilities (CVEs) identified across direct and transitive dependencies or container base images.
+This section lists known vulnerabilities (CVEs) identified across direct and transitive dependencies or container base images. Each CVE MUST be tagged with its provenance source.
 
-| CVE ID | Affected Component | Vulnerable Version | Severity | Fixed Version | Remediation Status |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | `CRITICAL / HIGH / MEDIUM / LOW` | | `Open / Patched / Mitigated / Ignored` |
+| CVE ID | Affected Component | Vulnerable Version | Severity | Fixed Version | Provenance | Remediation Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | `CRITICAL / HIGH / MEDIUM / LOW` | | `[SonarQube] / [NVD-verified] / [AI-estimated]` | `Open / Patched / Mitigated / Ignored` |
 
 ---
 
@@ -341,10 +364,12 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 
 ### [SEVERITY] Finding Title
 - **Finding ID:** `SEC-NNN`
+- **Classification:** `Confirmed / Probable / Informational`
 - **Location:** `path/to/file.ext:line_number`
 - **OWASP Category:** `AXX:2025 — Category Name`
 - **CWE:** `CWE-XXX`
 - **CVSS Score:** `X.X`
+- **CVE (if applicable):** `CVE-YYYY-NNNNN` `[SonarQube / NVD-verified / AI-estimated]`
 
 #### Description
 *Clear description of the vulnerability.*

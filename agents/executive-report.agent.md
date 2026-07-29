@@ -36,21 +36,28 @@ You are an Executive Technology Advisor and Technical Communication Agent. Your 
      - Flag to the user: `Warning: /docs/security-review.md is missing or older than 1 month. Recommendation: Rerun the Security & Dependency Review Agent first to ensure accurate security scan & dependency data.`
    - If either file is missing, halt execution and prompt the user to run the required agent(s), OR proceed with partial data if explicitly instructed by the user.
 
-### Step 2: Locate Executive Report Template
+### Step 2: Locate Executive Report Templates
 
-Locate the global executive report template:
-- **Windows**: `%USERPROFILE%\.copilot\templates\executive-report.md`
-- **macOS / Linux**: `~/.copilot/templates/executive-report.md`
+Locate the global executive report templates:
+- **Windows**: `%USERPROFILE%\.copilot\templates\executive-report.md` and `%USERPROFILE%\.copilot\templates\executive-report.html`
+- **macOS / Linux**: `~/.copilot/templates/executive-report.md` and `~/.copilot/templates/executive-report.html`
 
-Read the template file to understand the required structure.
+Read both template files. The Markdown template defines the content structure. The HTML template provides the visual dashboard layout with charts, gauges, and heatmaps.
 
 ### Step 3: Information Extraction & Plain-Language Synthesis
 
 Extract and synthesize data from both source documents into plain language:
 
+#### 0. YAML Frontmatter (from `security-review.md`)
+- Read the YAML frontmatter block at the top of the security review document first.
+- Extract: `overall_risk`, `total_findings`, `critical_count`, `high_count`, `confirmed_count`, `probable_count`, `owasp_categories`, `sonarqube_quality_gate`, `coverage_baseline_gaps`, `tech_stack`.
+- Use these values to populate the Key Metrics Dashboard without needing to parse the full document body.
+
 #### 1. Security Risks (from `security-review.md`)
 - Identify all `CRITICAL` and `HIGH` severity vulnerabilities, security hotspots, and SAST issues.
+- Prioritize **Confirmed** findings over **Probable** findings in the executive summary.
 - Translate technical terms (e.g. "Unsanitized user input in raw SQL query causing CWE-89") into plain business language (e.g. "Attacker could bypass authentication or access confidential database records").
+- Note CVE provenance: clearly distinguish between scanner-confirmed vulnerabilities (`[SonarQube]`, `[NVD-verified]`) and estimated risks (`[AI-estimated]`).
 
 #### 2. Technical Debt & Platform Currency (from `architecture.md` & `security-review.md`)
 - Identify End-of-Life (EOL) runtimes, frameworks, or base images.
@@ -69,18 +76,41 @@ Interpolate the synthesized data into the executive template format:
 - Write the populated report to `/docs/executive-report.md` (or `/docs/<service-name>/executive-report.md` in monorepos).
 - Ensure all sections (Executive Brief, Metrics Dashboard, Plain-Language Critical Risks, Technical Debt Assessment, Architecture Summary, Strategic Action Plan) are fully completed.
 
-### Step 5: Render PDF Output (`/docs/executive-report.pdf`)
+### Step 5: Generate HTML Dashboard Report (`/docs/executive-report.html`)
 
-Generate a clean, styled PDF document from the generated Markdown report using available environment CLI tools:
+Generate the visual HTML dashboard report using the HTML template:
 
-1. **Detect Available PDF Converters in Terminal:**
-   - `pandoc` / `weasyprint` / `typst`
-   - `npx md-to-pdf` or `npx marp`
-   - Python `markdown` + `pdfkit` / `weasyprint`
-2. **Execute PDF Generation:**
-   - Execute the best available tool via terminal command (e.g., `npx -y md-to-pdf /docs/executive-report.md` or `pandoc /docs/executive-report.md -o /docs/executive-report.pdf`).
-3. **Fallback Handling:**
-   - If no PDF CLI tool is installed or executable, inform the user that `/docs/executive-report.md` was created successfully and provide instructions on how to export it to PDF (e.g. via VS Code Markdown PDF extension or installing `pandoc` / `md-to-pdf`).
+1. **Read the HTML template** from the global templates location.
+2. **Calculate chart values** from the extracted metrics:
+   - **Donut chart arcs:** For each severity, calculate `arc = (count / total_findings) * 251.2` (circumference of SVG circle with r=40). Calculate cumulative offsets for stacking.
+   - **OWASP bar widths:** For each category, calculate `width% = (category_count / max_category_count) * 100`.
+   - **Classification bar widths:** `width% = (count / total_findings) * 100`.
+   - **Dependency gauges:** Calculate percentages from dependency counts.
+   - **Coverage gauge:** `coverage_pct = ((total_entry_points - coverage_gaps) / total_entry_points) * 100`.
+3. **Populate STRIDE heatmap** from the security review STRIDE section:
+   - Map risk levels to CSS classes: High → `cell-high`, Medium → `cell-medium`, Low → `cell-low`.
+4. **Interpolate all `{{PLACEHOLDER}}` values** in the HTML template with actual data.
+5. **Set CSS class for overall risk badge:** Map risk level to class name (`critical`, `high`, `moderate`, `low`, `secure`).
+6. **Write the populated HTML** to `/docs/executive-report.html`.
+
+The HTML report is self-contained (no external dependencies) and renders correctly when:
+- Opened directly in a browser
+- Printed to PDF via browser print dialog (File → Print → Save as PDF)
+- Converted via `weasyprint /docs/executive-report.html /docs/executive-report.pdf`
+
+### Step 6: Render PDF Output (`/docs/executive-report.pdf`)
+
+Generate a PDF from the HTML dashboard report (preferred) or Markdown fallback:
+
+1. **Preferred: HTML → PDF conversion:**
+   - `weasyprint /docs/executive-report.html /docs/executive-report.pdf`
+   - `npx -y puppeteer-html-to-pdf /docs/executive-report.html /docs/executive-report.pdf`
+   - `chrome --headless --print-to-pdf=/docs/executive-report.pdf /docs/executive-report.html`
+2. **Fallback: Markdown → PDF:**
+   - `npx -y md-to-pdf /docs/executive-report.md`
+   - `pandoc /docs/executive-report.md -o /docs/executive-report.pdf`
+3. **Final Fallback:**
+   - If no PDF tool is available, inform the user that `/docs/executive-report.html` can be opened in a browser and printed to PDF (Ctrl+P → Save as PDF). The `@page` CSS rules ensure correct letter-size formatting.
 
 ---
 
@@ -90,4 +120,5 @@ Present a concise summary to the user:
 - Source document freshness status (dates of `architecture.md` and `security-review.md`).
 - Key plain-language findings summary (Critical security issues count & top technical debt items).
 - Location of generated Markdown report (`/docs/executive-report.md`).
+- Location of generated HTML dashboard (`/docs/executive-report.html`).
 - Location/status of generated PDF report (`/docs/executive-report.pdf`).

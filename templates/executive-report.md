@@ -11,6 +11,8 @@
 **Source Documents:** 
 - Architecture Document: `{{ARCHITECTURE_DOC_PATH}}` (Last Updated: {{ARCHITECTURE_DATE}})
 - Security Review Document: `{{SECURITY_DOC_PATH}}` (Last Updated: {{SECURITY_DATE}})
+**Overall Security Risk:** {{OVERALL_RISK}}  
+**Quality Gate:** {{QUALITY_GATE_STATUS}}
 
 ---
 
@@ -28,18 +30,21 @@
 | **Quality Gate Status** | `[PASSED / FAILED / NOT RUN]` | |
 | **Runtime & Framework Currency** | `[Up to Date / EOL Risk / Outdated]` | |
 | **Third-Party Dependency Health** | `[Healthy / Vulnerabilities Found]` | |
-| **Critical Findings Count** | `[Count]` | |
-| **High Findings Count** | `[Count]` | |
+| **Confirmed Findings** | `[Count]` | Fully verified with code evidence |
+| **Probable Findings** | `[Count]` | Likely vulnerabilities pending full verification |
+| **Critical Findings** | `[Count]` | |
+| **High Findings** | `[Count]` | |
+| **Coverage Baseline Gaps** | `[Count]` | Entry points not fully assessed |
 
 ---
 
 ## 3. High-Risk Security Issues (Plain Language)
 
-*Translate critical and high-severity security findings into plain business language explaining the risk, potential business impact, and required remediation.*
+*Translate critical and high-severity security findings into plain business language explaining the risk, potential business impact, and required remediation. Prioritize Confirmed findings over Probable findings.*
 
-| Issue / Finding | Severity | Business Risk & Impact (Plain Language) | Recommended Action |
-| :--- | :--- | :--- | :--- |
-| | `CRITICAL / HIGH` | | |
+| Issue / Finding | Severity | Classification | Business Risk & Impact (Plain Language) | Recommended Action |
+| :--- | :--- | :--- | :--- | :--- |
+| | `CRITICAL / HIGH` | `Confirmed / Probable` | | |
 
 ---
 

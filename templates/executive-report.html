@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executive Security Report — {{APPLICATION_ACRONYM}}</title>
+<style>
+/* ===== Print / PDF targeting ===== */
+@page {
+  size: letter;
+  margin: 0.6in 0.5in;
+}
+@media print {
+  body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page-break { page-break-before: always; }
+  .no-print { display: none; }
+}
+
+/* ===== Base ===== */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --critical: #b91c1c; --critical-bg: #fef2f2;
+  --high: #c2410c; --high-bg: #fff7ed;
+  --medium: #a16207; --medium-bg: #fefce8;
+  --low: #15803d; --low-bg: #f0fdf4;
+  --info: #1d4ed8; --info-bg: #eff6ff;
+  --secure: #047857; --secure-bg: #ecfdf5;
+  --border: #e5e7eb; --text: #1f2937; --muted: #6b7280;
+  --card-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 11pt; line-height: 1.5; color: var(--text);
+  max-width: 7.5in; margin: 0 auto; padding: 0.25in 0;
+}
+h1 { font-size: 1.4em; margin-bottom: 0.2em; }
+h2 { font-size: 1.15em; margin: 1.2em 0 0.5em; border-bottom: 2px solid var(--border); padding-bottom: 0.2em; }
+h3 { font-size: 1em; margin: 0.8em 0 0.3em; }
+p, li { margin-bottom: 0.4em; }
+
+/* ===== Header ===== */
+.report-header { text-align: center; margin-bottom: 1em; padding-bottom: 0.8em; border-bottom: 3px solid var(--text); }
+.report-header h1 { font-size: 1.6em; }
+.report-header .subtitle { color: var(--muted); font-size: 0.95em; }
+.report-meta { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.3em; font-size: 0.85em; color: var(--muted); margin-top: 0.5em; }
+
+/* ===== KPI Cards ===== */
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5em; margin: 0.8em 0;
+}
+.kpi-card {
+  border: 1px solid var(--border); border-radius: 6px; padding: 0.5em 0.6em;
+  text-align: center; box-shadow: var(--card-shadow);
+}
+.kpi-card .kpi-value { font-size: 1.8em; font-weight: 700; line-height: 1.2; }
+.kpi-card .kpi-label { font-size: 0.75em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.kpi-card.critical { border-left: 4px solid var(--critical); }
+.kpi-card.critical .kpi-value { color: var(--critical); }
+.kpi-card.high { border-left: 4px solid var(--high); }
+.kpi-card.high .kpi-value { color: var(--high); }
+.kpi-card.medium { border-left: 4px solid var(--medium); }
+.kpi-card.medium .kpi-value { color: var(--medium); }
+.kpi-card.secure { border-left: 4px solid var(--secure); }
+.kpi-card.secure .kpi-value { color: var(--secure); }
+
+/* ===== Risk Badge ===== */
+.risk-badge {
+  display: inline-block; padding: 0.2em 0.7em; border-radius: 4px;
+  font-weight: 600; font-size: 0.85em; text-transform: uppercase;
+}
+.risk-badge.critical { background: var(--critical-bg); color: var(--critical); border: 1px solid var(--critical); }
+.risk-badge.high { background: var(--high-bg); color: var(--high); border: 1px solid var(--high); }
+.risk-badge.moderate { background: var(--medium-bg); color: var(--medium); border: 1px solid var(--medium); }
+.risk-badge.low { background: var(--low-bg); color: var(--low); border: 1px solid var(--low); }
+.risk-badge.secure { background: var(--secure-bg); color: var(--secure); border: 1px solid var(--secure); }
+
+/* ===== Donut Chart (SVG) ===== */
+.chart-container { display: flex; align-items: center; gap: 1.2em; margin: 0.8em 0; }
+.donut-chart { width: 140px; height: 140px; flex-shrink: 0; }
+.chart-legend { font-size: 0.85em; }
+.chart-legend li { list-style: none; display: flex; align-items: center; gap: 0.4em; margin-bottom: 0.3em; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* ===== Horizontal Bar Chart ===== */
+.bar-chart { margin: 0.6em 0; }
+.bar-row { display: flex; align-items: center; margin-bottom: 0.4em; }
+.bar-label { width: 5.5em; font-size: 0.8em; text-align: right; padding-right: 0.5em; flex-shrink: 0; }
+.bar-track { flex: 1; height: 18px; background: #f3f4f6; border-radius: 3px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.bar-value { position: absolute; right: 4px; top: 1px; font-size: 0.7em; font-weight: 600; color: var(--text); }
+
+/* ===== STRIDE Heatmap ===== */
+.heatmap { border-collapse: collapse; width: 100%; font-size: 0.8em; margin: 0.6em 0; }
+.heatmap th, .heatmap td { border: 1px solid var(--border); padding: 0.3em 0.5em; text-align: center; }
+.heatmap th { background: #f9fafb; font-weight: 600; }
+.heatmap .cell-high { background: #fecaca; color: var(--critical); font-weight: 600; }
+.heatmap .cell-medium { background: #fef08a; color: var(--medium); font-weight: 600; }
+.heatmap .cell-low { background: #bbf7d0; color: var(--secure); font-weight: 600; }
+
+/* ===== Tables ===== */
+table.data-table { border-collapse: collapse; width: 100%; font-size: 0.82em; margin: 0.5em 0; }
+table.data-table th, table.data-table td { border: 1px solid var(--border); padding: 0.35em 0.5em; text-align: left; }
+table.data-table th { background: #f9fafb; font-weight: 600; white-space: nowrap; }
+table.data-table tr:nth-child(even) { background: #fafafa; }
+
+/* ===== Timeline / Roadmap ===== */
+.roadmap { margin: 0.8em 0; }
+.roadmap-phase { display: flex; align-items: flex-start; gap: 0.6em; margin-bottom: 0.6em; }
+.phase-marker { width: 2.2em; height: 2.2em; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85em; color: #fff; flex-shrink: 0; }
+.phase-marker.p1 { background: var(--critical); }
+.phase-marker.p2 { background: var(--high); }
+.phase-marker.p3 { background: var(--medium); }
+.phase-content { flex: 1; }
+.phase-content .phase-title { font-weight: 600; font-size: 0.9em; }
+.phase-content .phase-detail { font-size: 0.82em; color: var(--muted); }
+
+/* ===== Coverage Gauge ===== */
+.gauge-container { display: flex; align-items: center; gap: 0.8em; margin: 0.5em 0; }
+.gauge-bar { flex: 1; height: 12px; background: #f3f4f6; border-radius: 6px; overflow: hidden; }
+.gauge-fill { height: 100%; border-radius: 6px; }
+.gauge-label { font-size: 0.85em; font-weight: 600; min-width: 3em; }
+
+/* ===== Utility ===== */
+.flex-row { display: flex; gap: 1em; flex-wrap: wrap; }
+.flex-col-half { flex: 1; min-width: 3in; }
+.section-note { font-size: 0.8em; color: var(--muted); font-style: italic; margin-bottom: 0.5em; }
+</style>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="report-header">
+  <h1>Executive Security Report</h1>
+  <div class="subtitle">{{APPLICATION_NAME}} ({{APPLICATION_ACRONYM}})</div>
+  <div class="report-meta">
+    <span>Report Date: {{REPORT_DATE}}</span>
+    <span>Overall Risk: <span class="risk-badge {{OVERALL_RISK_CLASS}}">{{OVERALL_RISK}}</span></span>
+    <span>Quality Gate: <strong>{{QUALITY_GATE_STATUS}}</strong></span>
+  </div>
+</div>
+
+<!-- ===== KPI CARDS ===== -->
+<h2>Key Metrics</h2>
+<div class="kpi-grid">
+  <div class="kpi-card critical">
+    <div class="kpi-value">{{CRITICAL_COUNT}}</div>
+    <div class="kpi-label">Critical</div>
+  </div>
+  <div class="kpi-card high">
+    <div class="kpi-value">{{HIGH_COUNT}}</div>
+    <div class="kpi-label">High</div>
+  </div>
+  <div class="kpi-card medium">
+    <div class="kpi-value">{{MEDIUM_COUNT}}</div>
+    <div class="kpi-label">Medium</div>
+  </div>
+  <div class="kpi-card secure">
+    <div class="kpi-value">{{LOW_COUNT}}</div>
+    <div class="kpi-label">Low</div>
+  </div>
+</div>
+<div class="kpi-grid">
+  <div class="kpi-card">
+    <div class="kpi-value">{{CONFIRMED_COUNT}}</div>
+    <div class="kpi-label">Confirmed</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">{{PROBABLE_COUNT}}</div>
+    <div class="kpi-label">Probable</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">{{TOTAL_FINDINGS}}</div>
+    <div class="kpi-label">Total Findings</div>
+  </div>
+  <div class="kpi-card">
+    <div class="kpi-value">{{COVERAGE_GAPS}}</div>
+    <div class="kpi-label">Coverage Gaps</div>
+  </div>
+</div>
+
+<!-- ===== SEVERITY BREAKDOWN ===== -->
+<h2>Findings by Severity</h2>
+<div class="flex-row">
+  <div class="flex-col-half">
+    <!-- Donut Chart: replace stroke-dasharray values with calculated segments -->
+    <!-- Formula: segment = (count / total) * 251.2 (circumference for r=40) -->
+    <svg class="donut-chart" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#f3f4f6" stroke-width="14"/>
+      <!-- Critical segment -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#b91c1c" stroke-width="14"
+        stroke-dasharray="{{CRITICAL_ARC}} 251.2" stroke-dashoffset="0" transform="rotate(-90 50 50)"/>
+      <!-- High segment -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#c2410c" stroke-width="14"
+        stroke-dasharray="{{HIGH_ARC}} 251.2" stroke-dashoffset="-{{CRITICAL_ARC}}" transform="rotate(-90 50 50)"/>
+      <!-- Medium segment -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#a16207" stroke-width="14"
+        stroke-dasharray="{{MEDIUM_ARC}} 251.2" stroke-dashoffset="-{{CRIT_HIGH_ARC}}" transform="rotate(-90 50 50)"/>
+      <!-- Low segment -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#15803d" stroke-width="14"
+        stroke-dasharray="{{LOW_ARC}} 251.2" stroke-dashoffset="-{{CRIT_HIGH_MED_ARC}}" transform="rotate(-90 50 50)"/>
+      <!-- Center label -->
+      <text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2937">{{TOTAL_FINDINGS}}</text>
+      <text x="50" y="60" text-anchor="middle" font-size="6" fill="#6b7280">findings</text>
+    </svg>
+  </div>
+  <div class="flex-col-half">
+    <ul class="chart-legend">
+      <li><span class="legend-dot" style="background:#b91c1c"></span> Critical — {{CRITICAL_COUNT}}</li>
+      <li><span class="legend-dot" style="background:#c2410c"></span> High — {{HIGH_COUNT}}</li>
+      <li><span class="legend-dot" style="background:#a16207"></span> Medium — {{MEDIUM_COUNT}}</li>
+      <li><span class="legend-dot" style="background:#15803d"></span> Low — {{LOW_COUNT}}</li>
+      <li><span class="legend-dot" style="background:#1d4ed8"></span> Informational — {{INFO_COUNT}}</li>
+    </ul>
+    <h3 style="margin-top:0.8em;">Classification</h3>
+    <div class="bar-chart">
+      <div class="bar-row">
+        <span class="bar-label">Confirmed</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{CONFIRMED_PCT}}%; background:var(--critical);"></div>
+          <span class="bar-value">{{CONFIRMED_COUNT}}</span>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Probable</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{PROBABLE_PCT}}%; background:var(--medium);"></div>
+          <span class="bar-value">{{PROBABLE_COUNT}}</span>
+        </div>
+      </div>
+      <div class="bar-row">
+        <span class="bar-label">Info</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{INFO_PCT}}%; background:var(--info);"></div>
+          <span class="bar-value">{{INFO_COUNT}}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== OWASP CATEGORY BAR CHART ===== -->
+<h2>Findings by OWASP Category</h2>
+<div class="bar-chart">
+  <!-- Repeat for each OWASP category with findings. Width% = (category_count / max_category_count) * 100 -->
+  <div class="bar-row">
+    <span class="bar-label">A01</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A01_PCT}}%; background:var(--critical);"></div>
+      <span class="bar-value">{{A01_COUNT}} — Broken Access Control</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A02</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A02_PCT}}%; background:var(--high);"></div>
+      <span class="bar-value">{{A02_COUNT}} — Security Misconfiguration</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A03</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A03_PCT}}%; background:var(--high);"></div>
+      <span class="bar-value">{{A03_COUNT}} — Supply Chain Failures</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A04</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A04_PCT}}%; background:var(--medium);"></div>
+      <span class="bar-value">{{A04_COUNT}} — Cryptographic Failures</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A05</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A05_PCT}}%; background:var(--critical);"></div>
+      <span class="bar-value">{{A05_COUNT}} — Injection</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A06</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A06_PCT}}%; background:var(--medium);"></div>
+      <span class="bar-value">{{A06_COUNT}} — Insecure Design</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A07</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A07_PCT}}%; background:var(--high);"></div>
+      <span class="bar-value">{{A07_COUNT}} — Authentication Failures</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A08</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A08_PCT}}%; background:var(--medium);"></div>
+      <span class="bar-value">{{A08_COUNT}} — Integrity Failures</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A09</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A09_PCT}}%; background:var(--medium);"></div>
+      <span class="bar-value">{{A09_COUNT}} — Logging Failures</span>
+    </div>
+  </div>
+  <div class="bar-row">
+    <span class="bar-label">A10</span>
+    <div class="bar-track">
+      <div class="bar-fill" style="width:{{A10_PCT}}%; background:var(--medium);"></div>
+      <span class="bar-value">{{A10_COUNT}} — Exception Handling</span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PAGE BREAK FOR PDF ===== -->
+<div class="page-break"></div>
+
+<!-- ===== EXECUTIVE BRIEF ===== -->
+<h2>Executive Brief</h2>
+<p>{{EXECUTIVE_BRIEF}}</p>
+
+<!-- ===== HIGH-RISK ISSUES TABLE ===== -->
+<h2>High-Risk Security Issues</h2>
+<p class="section-note">Critical and high-severity findings requiring immediate attention. Confirmed findings have full code evidence; Probable findings await complete verification.</p>
+<table class="data-table">
+  <thead>
+    <tr><th>Finding</th><th>Severity</th><th>Class.</th><th>Business Risk</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <!-- Repeat row per finding -->
+    <tr>
+      <td>{{FINDING_TITLE}}</td>
+      <td><span class="risk-badge {{FINDING_SEV_CLASS}}">{{FINDING_SEVERITY}}</span></td>
+      <td>{{FINDING_CLASSIFICATION}}</td>
+      <td>{{FINDING_BUSINESS_RISK}}</td>
+      <td>{{FINDING_ACTION}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===== TECH DEBT & PLATFORM CURRENCY ===== -->
+<h2>Technical Debt & Platform Currency</h2>
+<table class="data-table">
+  <thead>
+    <tr><th>Component</th><th>Category</th><th>Risk</th><th>Impact</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>{{TECH_DEBT_COMPONENT}}</td>
+      <td>{{TECH_DEBT_CATEGORY}}</td>
+      <td><span class="risk-badge {{TECH_DEBT_RISK_CLASS}}">{{TECH_DEBT_RISK}}</span></td>
+      <td>{{TECH_DEBT_IMPACT}}</td>
+      <td>{{TECH_DEBT_ACTION}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===== DEPENDENCY HEALTH ===== -->
+<h2>Dependency Health</h2>
+<div class="flex-row">
+  <div class="flex-col-half">
+    <div class="gauge-container">
+      <span class="gauge-label">{{DEPS_HEALTHY_PCT}}%</span>
+      <div class="gauge-bar">
+        <div class="gauge-fill" style="width:{{DEPS_HEALTHY_PCT}}%; background: linear-gradient(90deg, var(--secure), #34d399);"></div>
+      </div>
+      <span style="font-size:0.8em;">healthy</span>
+    </div>
+    <div class="gauge-container">
+      <span class="gauge-label">{{DEPS_OUTDATED_PCT}}%</span>
+      <div class="gauge-bar">
+        <div class="gauge-fill" style="width:{{DEPS_OUTDATED_PCT}}%; background: linear-gradient(90deg, var(--medium), #fbbf24);"></div>
+      </div>
+      <span style="font-size:0.8em;">outdated</span>
+    </div>
+    <div class="gauge-container">
+      <span class="gauge-label">{{DEPS_VULNERABLE_PCT}}%</span>
+      <div class="gauge-bar">
+        <div class="gauge-fill" style="width:{{DEPS_VULNERABLE_PCT}}%; background: linear-gradient(90deg, var(--critical), #f87171);"></div>
+      </div>
+      <span style="font-size:0.8em;">vulnerable</span>
+    </div>
+  </div>
+  <div class="flex-col-half">
+    <p style="font-size:0.85em;"><strong>Total Dependencies:</strong> {{TOTAL_DEPS}}<br>
+    <strong>Outdated:</strong> {{OUTDATED_DEPS}}<br>
+    <strong>Known Vulnerable:</strong> {{VULNERABLE_DEPS}}<br>
+    <strong>Abandoned:</strong> {{ABANDONED_DEPS}}</p>
+  </div>
+</div>
+
+<!-- ===== STRIDE HEATMAP ===== -->
+<h2>STRIDE Threat Model</h2>
+<table class="heatmap">
+  <thead>
+    <tr><th>Component</th><th>Spoofing</th><th>Tampering</th><th>Repudiation</th><th>Info Disclosure</th><th>DoS</th><th>Elevation</th></tr>
+  </thead>
+  <tbody>
+    <!-- Repeat per component. Cell class: cell-high | cell-medium | cell-low -->
+    <tr>
+      <td>{{COMPONENT_NAME}}</td>
+      <td class="{{STRIDE_S_CLASS}}">{{STRIDE_S}}</td>
+      <td class="{{STRIDE_T_CLASS}}">{{STRIDE_T}}</td>
+      <td class="{{STRIDE_R_CLASS}}">{{STRIDE_R}}</td>
+      <td class="{{STRIDE_I_CLASS}}">{{STRIDE_I}}</td>
+      <td class="{{STRIDE_D_CLASS}}">{{STRIDE_D}}</td>
+      <td class="{{STRIDE_E_CLASS}}">{{STRIDE_E}}</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ===== PAGE BREAK FOR PDF ===== -->
+<div class="page-break"></div>
+
+<!-- ===== ARCHITECTURE OVERVIEW ===== -->
+<h2>Architecture Overview</h2>
+<div class="flex-row">
+  <div class="flex-col-half">
+    <p><strong>Tech Stack:</strong> {{TECH_STACK_SUMMARY}}</p>
+    <p><strong>Architecture:</strong> {{ARCH_PATTERN}}</p>
+    <p><strong>Deployment:</strong> {{DEPLOYMENT_MODEL}}</p>
+    <p><strong>Resilience:</strong> {{RESILIENCE_SUMMARY}}</p>
+  </div>
+  <div class="flex-col-half">
+    <!-- Coverage baseline gauge -->
+    <h3>Assessment Coverage</h3>
+    <div class="gauge-container">
+      <span class="gauge-label">{{COVERAGE_PCT}}%</span>
+      <div class="gauge-bar">
+        <div class="gauge-fill" style="width:{{COVERAGE_PCT}}%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
+      </div>
+      <span style="font-size:0.8em;">entry points assessed</span>
+    </div>
+    <p style="font-size:0.8em; color:var(--muted);">{{COVERAGE_GAPS}} entry point(s) not fully assessed</p>
+  </div>
+</div>
+
+<!-- ===== STRATEGIC ROADMAP ===== -->
+<h2>Strategic Remediation Roadmap</h2>
+<div class="roadmap">
+  <div class="roadmap-phase">
+    <div class="phase-marker p1">P1</div>
+    <div class="phase-content">
+      <div class="phase-title">Immediate — Current Sprint</div>
+      <div class="phase-detail">{{P1_ACTIONS}}</div>
+    </div>
+  </div>
+  <div class="roadmap-phase">
+    <div class="phase-marker p2">P2</div>
+    <div class="phase-content">
+      <div class="phase-title">Short Term — 1-2 Sprints</div>
+      <div class="phase-detail">{{P2_ACTIONS}}</div>
+    </div>
+  </div>
+  <div class="roadmap-phase">
+    <div class="phase-marker p3">P3</div>
+    <div class="phase-content">
+      <div class="phase-title">Strategic — Next Quarter</div>
+      <div class="phase-detail">{{P3_ACTIONS}}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== FOOTER ===== -->
+<hr style="margin-top:1.5em; border:none; border-top:1px solid var(--border);">
+<p style="font-size:0.75em; color:var(--muted); text-align:center; margin-top:0.5em;">
+  Generated by CROW Security & Dependency Review Agent • {{REPORT_DATE}} •
+  Source: <code>{{SECURITY_DOC_PATH}}</code>, <code>{{ARCHITECTURE_DOC_PATH}}</code>
+</p>
+
+</body>
+</html>
