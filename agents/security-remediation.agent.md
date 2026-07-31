@@ -172,7 +172,7 @@ Before remediating code findings:
 
 ### Step 11: Re-Run Security Review Agent & Update Documentation
 
-1. Invoke the **Security & Dependency Review Agent** (or re-execute its workflow passes / SonarQube scans) to re-audit the codebase.
+1. Invoke the **Security & Dependency Review Agent** (or re-execute its workflow passes / SonarQube scans adhering to the `sonar-scan` skill) to re-audit the codebase.
    - *Note on SonarQube Scanner Tool:* If `sonar_run_scan` is unavailable, handle the missing scanner gracefully as specified in the review agent guidelines, updating SAST metrics to `Not Run — Scanner Tool Unavailable` while updating all manual findings and frontmatter counts.
 2. Confirm that:
    - Previously flagged `CRITICAL`, `HIGH`, and `MEDIUM` issues within the target scope are resolved.
