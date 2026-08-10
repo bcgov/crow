@@ -19,6 +19,8 @@ If `sonar.config` is present, read it and extract the following parameters:
 - **Version** (`Version` or `version`)
 - **Exclusions** (`Exclusions` or `exclusions`)
 
+Always read the repository root `.gitignore` as well. Resolve each non-comment `.gitignore` entry against the target repository and add it to the SonarQube exclusion configuration (`sonar.exclusions`) only when the entry matches at least one file or folder that actually exists in that repository. Do not add unmatched patterns from generic or default `.gitignore` files. Preserve any exclusions from `sonar.config` and merge both sets; translate `.gitignore` patterns to equivalent SonarQube glob patterns where their syntax differs.
+
 ### 2. Version Resolution Fallback Chain
 If no version is specified in the `sonar.config` file, or if the `sonar.config` file is absent, determine the version using the following hierarchical fallback chain:
 
