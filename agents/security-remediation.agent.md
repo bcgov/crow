@@ -79,6 +79,7 @@ If available:
    - Use `search_graph` to rapidly locate vulnerable function definitions, auth handlers, and endpoint controllers without sweeping file reads.
    - Use `trace_path` to verify `Probable` findings before making code edits (tracing untrusted input to sinks).
    - Use `detect_changes` after edits to map git diffs against affected symbols and callers.
+4. If codebase-memory tools are not available, issue this visible warning before continuing: **Warning: codebase-memory-mcp is not detected. Proceeding without knowledge-graph-assisted tracing and impact analysis; remediation verification coverage may be reduced.**
 
 ---
 
@@ -192,4 +193,3 @@ Present a comprehensive summary to the user:
 - **Test Coverage Metrics:** Starting coverage % vs. final coverage % (verified >= 40%).
 - **Build & Test Verification:** Test pass count and status.
 - **Re-Run Status:** Confirmation that `/docs/security-review.md` frontmatter and body were refreshed and verified.
-

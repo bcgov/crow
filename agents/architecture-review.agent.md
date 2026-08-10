@@ -62,7 +62,7 @@ If available:
    - Use `trace_path` to trace call chains, data flow, and cross-service HTTP/async communication.
    - Use `query_graph` for custom Cypher query exploration.
 
-If codebase-memory tools are not available, proceed using standard file reading, grep, and search tools.
+If codebase-memory tools are not available, issue this visible warning before continuing: **Warning: codebase-memory-mcp is not detected. Proceeding with standard file reading, grep, and search tools; architecture discovery and verification coverage may be reduced.**
 
 ### Step 4: Repository Inspection (Per-Service Scope)
 

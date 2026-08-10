@@ -153,7 +153,7 @@ If available:
    - Use `search_code` and `query_graph` to run targeted security queries across the graph.
 7. **Post-analysis coverage verification:** After completing Steps 4–7, verify each entry point from the coverage baseline was assessed. Report any gaps in the final document.
 
-If codebase-memory tools are not available, proceed using standard file reading, grep, and search tools. Document that coverage baseline was established via manual file enumeration.
+If codebase-memory tools are not available, issue this visible warning before continuing: **Warning: codebase-memory-mcp is not detected. Proceeding with manual file enumeration; attack-surface and data-flow coverage may be reduced.** Document that the coverage baseline was established manually.
 
 ### Step 4: Framework & Runtime Version Audit
 
