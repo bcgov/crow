@@ -118,19 +118,23 @@ During Step 7 (Security Scope Analysis), read the relevant module files for the 
    - **Windows**: `%USERPROFILE%\.copilot\templates\security-review.md`
    - **macOS / Linux**: `~/.copilot/templates/security-review.md`
 3. Read the template file contents thoroughly.
-4. Check if `/docs/security-review.md` (or per-service docs) already exists in the target repository.
-   - If it exists, read it and switch to **Update Mode** (Step 8).
-   - If not, proceed with full generation (Steps 2–7).
+4. Do not inspect or write any security-review output until Step 2 has classified the repository as a single application or monorepo.
 
 ### Step 2: Monorepo Detection & Scope Resolution
 
-Determine whether the repository is a monorepo by inspecting workspace boundaries (`package.json`, `.csproj`, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`, etc.).
+Determine whether the repository is a monorepo by inspecting workspace boundaries (`package.json`, `.csproj`, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`, etc.), workspace files, solution files, container/orchestration manifests, and independently deployable entry points.
 
 **If monorepo is detected:**
-- Identify each service subtree.
-- Run Steps 3–7 per service to generate `docs/<service-name>/security-review.md`.
+- Build and retain a complete service inventory before continuing. For every independently deployable service, record a stable service name, repository-relative source subtree, manifest/build file, deployment entry point, and output path `docs/<service-name>/security-review.md`.
+- **Blocking monorepo output rule:** Generate exactly one security review document per service at `docs/<service-name>/security-review.md`. A monorepo MUST NOT have a combined `docs/security-review.md`; do not create, update, or use that root-level file as a substitute.
+- Generate or update `docs/security-index.md` at the repository root. The index MUST link every inventoried service document and MUST NOT contain findings that replace a service report.
+- Run Steps 3–7 independently for each inventoried service, scoped to that service's subtree and dependencies. Do not merge findings, metrics, frontmatter, or coverage counts across services.
+- **Hard failure gate (before analysis and before any write):** stop with a visible error if service discovery is incomplete or ambiguous, if any service lacks a unique output path, if a root `docs/security-review.md` exists at all, or if the expected service inventory cannot be reconciled with the generated/indexed documents. A root file is invalid regardless of its contents; do not proceed by falling back to a combined report.
+- **Mechanical pre-write check:** run a filesystem check (for example, `Test-Path docs/security-review.md` on Windows or `test -e docs/security-review.md` on Unix) and verify it is false; verify that the number of service output paths equals the number of inventoried services and that every path is under `docs/<service-name>/`. If any check fails, do not write a final report.
 
 **If single-app repo:** Proceed normally with one `docs/security-review.md`.
+
+**Repository classification is authoritative for all later steps.** Never use the single-app output path after a repository has been classified as a monorepo.
 
 ### Step 3: Codebase Knowledge Graph — Index & Coverage Baseline
 
@@ -296,15 +300,16 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - **STRIDE Threat Model:** Produce a STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) assessment for key components.
 
 #### Interpolate & Write
-- Ensure directory `/docs` exists.
-- Emit a **YAML frontmatter block** at the very start of `/docs/security-review.md` (see Output Format section below).
-- Interpolate all findings into the document (or per-service path).
+- Ensure directory `/docs` exists. In a monorepo, also ensure one `docs/<service-name>/` directory exists for every inventoried service.
+- Emit a **YAML frontmatter block** at the very start of each service document (see Output Format section below). Include the service name and repository-relative service path so scope is mechanically identifiable.
+- Interpolate only that service's findings into its document. Never write a combined monorepo finding table or aggregate frontmatter.
 - For each finding, record: Finding ID (`SEC-NNN`), classification (`Confirmed` / `Probable` / `Informational`), location, OWASP category, CWE, CVSS score, description, affected code, exploit scenario (for Critical/High), remediation, and fixed code example.
 - Apply Evidence Standards: remove any finding that lacks file path, line numbers, or code evidence.
 - Apply False Positive Prevention Rules: remove any finding that violates a prevention rule.
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
 - Verify outdated scans: confirm CLI outdated scan commands were executed in Step 5 before writing the dependency inventory table.
 - Verify coverage baseline: confirm all entry points from Step 3 were assessed; document any gaps.
+- **Monorepo finalization gate:** Before writing or updating any report, re-run the service inventory/output-path checks from Step 2. After writing, verify that every inventoried service has exactly one `docs/<service-name>/security-review.md`, every service document contains only its service-scoped findings and frontmatter, `docs/security-index.md` links all service documents, and no root `docs/security-review.md` exists. If any assertion fails, treat the review as failed and do not present it as complete.
 - Set Revision History date to today's date and version to `1.0`.
 
 ---
@@ -319,6 +324,9 @@ document_type: security-review
 assessment_date: YYYY-MM-DD
 application: "{{APPLICATION_NAME}}"
 application_acronym: "{{APPLICATION_ACRONYM}}"
+report_scope: service
+service_name: "{{SERVICE_NAME}}"
+service_path: "{{REPOSITORY_RELATIVE_SERVICE_PATH}}"
 overall_risk: CRITICAL | HIGH | MODERATE | LOW | SECURE
 total_findings: <integer>
 critical_count: <integer>
@@ -355,8 +363,10 @@ Use the following severity classification for all findings:
 ### Step 8: Update Mode (Existing Document Detected)
 
 When an existing `security-review.md` is found:
-1. Read the existing document.
-2. Perform Steps 3–7 to gather updated framework versions, dependency diffs, latest Sonar scan metrics, and refreshed OWASP / scope analysis.
-3. Preserve manually entered remediation notes, owner assignments, and action items in Section 13.
-4. Update changed metrics, version numbers, Quality Gate status, new CVEs, and OWASP check statuses.
-5. Add a revision history entry and bump the version number.
+1. First apply the repository classification and monorepo hard-failure gates from Steps 1–2.
+2. In a monorepo, only read or update `docs/<service-name>/security-review.md` files that map to the current service inventory. A root `docs/security-review.md` is invalid combined output; stop and request migration/splitting before continuing.
+3. In a single-app repository, read the root document and continue with the single-app update workflow below.
+4. Perform Steps 3–7 to gather updated framework versions, dependency diffs, latest Sonar scan metrics, and refreshed OWASP / scope analysis.
+5. Preserve manually entered remediation notes, owner assignments, and action items in Section 13.
+6. Update changed metrics, version numbers, Quality Gate status, new CVEs, and OWASP check statuses.
+7. Add a revision history entry and bump the version number.

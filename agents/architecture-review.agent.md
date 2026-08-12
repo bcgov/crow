@@ -28,9 +28,7 @@ You are a world-class Software Architect and Verification Agent. Your purpose is
    - **Windows**: `%USERPROFILE%\.copilot\templates\architecture.md`
    - **macOS / Linux**: `~/.copilot/templates/architecture.md`
 3. Read the template file contents thoroughly to grasp its structure.
-4. Check if `/docs/architecture.md` (or per-service docs) already exist in the target repository.
-   - If they exist, read them and switch to **Update Mode** (see Step 7).
-   - If they do not exist, proceed with full generation (Steps 2–6).
+4. Do not inspect or write any architecture output until Step 2 has classified the repository as a single application or monorepo.
 
 ### Step 2: Monorepo Detection
 
@@ -41,12 +39,16 @@ Determine whether the repository is a monorepo by checking for:
 - Separate `Dockerfile` files in different subdirectories with independent entry points.
 
 **If monorepo is detected:**
-- Identify each independently deployable service boundary.
-- Run Steps 3–6 once per service, scoped to that service's directory subtree.
-- Generate `docs/<service-name>/architecture.md` for each service.
-- Generate a root `docs/architecture-index.md` listing all services with links, shared infrastructure notes, and inter-service communication patterns.
+- Build and retain a complete service inventory before continuing. For every independently deployable service, record a stable service name, repository-relative source subtree, manifest/build file, deployment entry point, and output path `docs/<service-name>/architecture.md`.
+- **Blocking monorepo output rule:** Generate exactly one architecture document per service at `docs/<service-name>/architecture.md`. A monorepo MUST NOT have a combined `docs/architecture.md`; do not create, update, or use that root-level file as a substitute.
+- Run Steps 3–6 once per inventoried service, scoped to that service's directory subtree.
+- Generate or update a root `docs/architecture-index.md` listing every inventoried service, linking every service document, and documenting shared infrastructure and inter-service communication patterns.
+- **Hard failure gate (before analysis and before any write):** stop with a visible error if service discovery is incomplete or ambiguous, if any service lacks a unique output path, if a root `docs/architecture.md` exists at all, or if the expected service inventory cannot be reconciled with the generated/indexed documents. A root file is invalid regardless of its contents; do not proceed by falling back to a combined report.
+- **Mechanical pre-write check:** run a filesystem check (for example, `Test-Path docs/architecture.md` on Windows or `test -e docs/architecture.md` on Unix) and verify it is false; verify that the number of service output paths equals the number of inventoried services and that every path is under `docs/<service-name>/`. If any check fails, do not write a final document.
 
 **If single-app repo:** Proceed normally with one `docs/architecture.md`.
+
+**Repository classification is authoritative for all later steps.** Never use the single-app output path after a repository has been classified as a monorepo.
 
 ### Step 3: Codebase Knowledge Graph Indexing (If Available)
 
@@ -117,7 +119,7 @@ Analyze the target workspace using search, directory listing, file reading, know
 ### Step 4: Interpolate & Write the Architecture Document
 
 - Create `/docs` directory at the repository root if it does not exist.
-- For monorepos, create `/docs/<service-name>/` per service.
+- For monorepos, create `/docs/<service-name>/` per inventoried service and never create `/docs/architecture.md`.
 - Interpolate discovered values into the template structure. Preserve all section headers and table structures exactly as laid out.
 - **Do not leave generic placeholder values.** For each cell:
   - If a value was discovered: fill it in and annotate with `Verified` or `Inferred`.
@@ -125,9 +127,11 @@ Analyze the target workspace using search, directory listing, file reading, know
   - If it could not be determined: write `Unknown — requires manual review`.
 - Generate an accurate **Mermaid** context diagram reflecting actual application flows. Validate that the Mermaid syntax is correct (balanced brackets, valid node IDs, proper arrow syntax).
 - Set the Revision History date to today's date and version to `1.0`.
-- Write the final document to `/docs/architecture.md` (or per-service path).
+- Write the final document to `/docs/architecture.md` only for a single-app repository. For a monorepo, write only to the corresponding `docs/<service-name>/architecture.md`.
 
 ### Step 5: Verification & Output Summary
+
+Before presenting completion, apply the monorepo verification gate from Step 2. In a monorepo, verify exactly one architecture document exists for every inventoried service, each document is service-scoped, `docs/architecture-index.md` links all services, and root `docs/architecture.md` does not exist. Any failed assertion is a failed architecture review, not a partial success.
 
 For each checklist item in Section 12 of the template:
 1. Attempt to verify the assertion against discovered evidence.
