@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "MARKER=\"$HOME/.copilot/agents/architecture-review.agent.md\"; if [ -f \"$MARKER\" ]; then echo \"[crow] Warning: it looks like crow is both installed as the bcgov-crow plugin AND manually cloned into ~/.copilot. Precedence between the two is not guaranteed. See the 'Do not use both install methods at once' section in crow's README to resolve this.\" >&2; fi",
+        "powershell": "$marker = Join-Path $env:USERPROFILE '.copilot\\agents\\architecture-review.agent.md'; if (Test-Path $marker) { Write-Warning \"[crow] It looks like crow is both installed as the bcgov-crow plugin AND manually cloned into %USERPROFILE%\\.copilot. Precedence between the two is not guaranteed. See the 'Do not use both install methods at once' section in crow's README to resolve this.\" }",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

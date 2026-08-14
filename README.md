@@ -43,12 +43,64 @@ Report templates used by the agents:
 - `templates/executive-report.md` — Executive summary Markdown template
 - `templates/executive-report.html` — Visual HTML dashboard template with SVG charts, severity gauges, STRIDE heatmap, and print-to-PDF support
 
-# Use in VS Code
+# Installation
 
-## On Windows
+CROW supports two install methods. **Pick one — do not use both at the same time** (see [Do not use both install methods at once](#do-not-use-both-install-methods-at-once) below).
 
-Check out the Git repo into the `%USERPROFILE%\.copilot` folder to make the agents and skills available globally in VS Code.
+## Option 1: Manual global clone (primary, fully supported)
 
-## On macOS / Linux
+Use this method for full functionality, including the executive report template renderer and the security detection modules, which currently rely on being read from a global `.copilot` folder path.
 
-Check out the Git repo into the `~/.copilot` folder to make the agents and skills available globally in VS Code.
+### On Windows
+
+Check out the Git repo into the `%USERPROFILE%\.copilot` folder to make the agents and skills available globally in VS Code and the Copilot CLI.
+
+### On macOS / Linux
+
+Check out the Git repo into the `~/.copilot` folder to make the agents and skills available globally in VS Code and the Copilot CLI.
+
+### Updating
+
+```bash
+git -C ~/.copilot pull
+```
+
+(`%USERPROFILE%\.copilot` on Windows.)
+
+## Option 2: Install as a Copilot CLI plugin (secondary / experimental)
+
+```bash
+copilot plugin install bcgov/crow
+```
+
+To update:
+
+```bash
+copilot plugin update bcgov-crow
+```
+
+To uninstall:
+
+```bash
+copilot plugin uninstall bcgov-crow
+```
+
+This installs all four agents (`architecture-review`, `security-review`, `security-remediation`, `executive-report`) and both skills (`security-review`, `sonar-scan`). Verify with `copilot plugin list`, `/agent`, and `/skills list`.
+
+> **Known limitation:** the agents in this repo read template and detection-module files from a hardcoded global path (`%USERPROFILE%\.copilot\templates\...` / `~/.copilot/skills/security-review/modules/...`). These paths are only guaranteed to resolve under the manual-clone method (Option 1). If you install purely as a plugin, verify these paths still resolve for your CLI version before relying on `executive-report` rendering or agent-driven security remediation — otherwise use Option 1.
+
+## Do not use both install methods at once
+
+If you already have crow manually cloned into `~/.copilot` and then also install the `bcgov-crow` plugin (or vice versa), both sources will define agents and skills with the **same file names**. GitHub's docs describe dedup/precedence rules based on config level (repo > user > org > enterprise), but a manual clone and a plugin install both resolve to the **user level**, so this is a same-level name collision — precedence between them is **not guaranteed**, and duplicate entries have been reported upstream in the CLI (see [github/copilot-cli#530](https://github.com/github/copilot-cli/issues/530)).
+
+To check which method(s) are active:
+
+- Run `copilot plugin list` to see if `bcgov-crow` is installed.
+- Check whether `~/.copilot/agents/architecture-review.agent.md` (or `%USERPROFILE%\.copilot\agents\architecture-review.agent.md`) exists on disk — if so, the manual clone is also present.
+
+If both are present, a warning is printed at the start of your Copilot CLI session (via a bundled `sessionStart` hook). To resolve it, either:
+
+- Remove the manual clone (delete the `crow` checkout from `~/.copilot`), and keep using the plugin, **or**
+- Uninstall the plugin (`copilot plugin uninstall bcgov-crow`) and keep using the manual clone.
+
+Remember that updates are independent per method — updating one does not update the other.
