@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "type": "command",
+        "bash": "MARKER=\"$HOME/.copilot/.git\"; if [ -e \"$MARKER\" ]; then echo \"[crow] Warning: it looks like crow is manually cloned into ~/.copilot. Do not combine that checkout with a Crow plugin or APM installation; precedence between duplicate agents and skills is not guaranteed. See the installation section in Crow's README.\" >&2; fi",
+        "powershell": "$marker = Join-Path $env:USERPROFILE '.copilot\\.git'; if (Test-Path $marker) { Write-Warning \"[crow] It looks like crow is manually cloned into %USERPROFILE%\\.copilot. Do not combine that checkout with a Crow plugin or APM installation; precedence between duplicate agents and skills is not guaranteed. See the installation section in Crow's README.\" }",
+        "timeoutSec": 5
+      }
+    ]
+  }
+}

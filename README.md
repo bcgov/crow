@@ -10,20 +10,23 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 
 ## Available Agents
 
-- **Architecture Review Agent** — Inspects a repository, analyzes its tech stack, and generates a verified `architecture.md` document in `/docs`.
-- **Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, finding classification (Confirmed/Probable/Informational), and cross-file data flow tracing via codebase-memory-mcp.
-- **Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
-- **Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
+- **Crow Architecture Review Agent** — Inspects a repository, analyzes its tech stack, and generates a verified `architecture.md` document in `/docs`.
+- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, finding classification (Confirmed/Probable/Informational), and cross-file data flow tracing via codebase-memory-mcp.
+- **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
+- **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
 
 ## Available Skills
 
-- **sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
+- **crow-architecture-review** — Bundles the architecture review workflow and document template.
+- **crow-executive-report** — Bundles the executive report workflow, templates, schema, dashboard assets, and renderer.
+- **crow-security-review** — Provides framework-specific detection modules and the security review document template.
+- **crow-sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
 
 ## Security Review Detection Modules
 
-Language-specific detection pattern modules that guide the Security & Dependency Review Agent's manual code analysis. These focus on vulnerabilities that SonarQube does not effectively detect (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
+Language-specific detection pattern modules that guide the Crow Security & Dependency Review Agent's manual code analysis. These focus on vulnerabilities that SonarQube does not effectively detect (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
 
-Located in `skills/security-review/modules/`:
+Located in `.apm/skills/crow-security-review/modules/`:
 
 - **auth-and-access-control** — Authorization gaps, IDOR, privilege escalation per framework (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI)
 - **framework-security-config** — Per-framework secure defaults and misconfigurations (CSRF, debug modes, middleware ordering, auto-escaping)
@@ -34,73 +37,117 @@ Located in `skills/security-review/modules/`:
 - **api-and-session-security** — Rate limiting, CORS, cookie flags, JWT implementation flaws, anti-forgery enforcement, HTTP verb constraints
 - **frontend-spa-security** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security
 
-## Templates
+## Bundled Resources
 
-Report templates used by the agents:
+Resources are owned by the skills that consume them:
 
-- `templates/architecture.md` — Architecture document template
-- `templates/security-review.md` — Security review template with YAML frontmatter for machine-readable metadata
-- `templates/executive-report.md` — Executive summary Markdown template
-- `templates/executive-report.html` — Visual HTML dashboard template with SVG charts, severity gauges, STRIDE heatmap, and print-to-PDF support
+- `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
+- `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
+- `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
+- `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
 
 # Installation
 
-CROW supports two install methods. **Pick one — do not use both at the same time** (see [Do not use both install methods at once](#do-not-use-both-install-methods-at-once) below).
+CROW is distributed as both an APM package and a Copilot CLI plugin.
 
-## Option 1: Manual global clone (primary, fully supported)
+## Option 1: APM package (recommended)
 
-Use this method for full functionality, including the executive report template renderer and the security detection modules, which currently rely on being read from a global `.copilot` folder path.
+APM installs Crow globally without requiring the Crow Git repository to occupy the Copilot profile directory. APM manages the package cache and installs the agents and skills into the user-level Copilot locations.
 
 ### On Windows
 
-Check out the Git repo into the `%USERPROFILE%\.copilot` folder to make the agents and skills available globally in VS Code and the Copilot CLI.
+Install APM if it is not already available:
+
+```powershell
+irm https://aka.ms/apm-windows | iex
+```
+
+Install Crow globally:
+
+```powershell
+apm install bcgov/crow#v0.1.0 --global --target copilot
+```
 
 ### On macOS / Linux
 
-Check out the Git repo into the `~/.copilot` folder to make the agents and skills available globally in VS Code and the Copilot CLI.
-
-### Updating
+Install APM if it is not already available:
 
 ```bash
-git -C ~/.copilot pull
+curl -sSL https://aka.ms/apm-unix | sh
 ```
 
-(`%USERPROFILE%\.copilot` on Windows.)
+Install Crow globally:
 
-## Option 2: Install as a Copilot CLI plugin (secondary / experimental)
+```bash
+apm install bcgov/crow#v0.1.0 --global --target copilot
+```
+
+The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
+
+```text
+<normal checkout, optional>       C:\Users\<user>\src\crow
+APM package cache                 C:\Users\<user>\.apm
+Global Copilot agents and skills C:\Users\<user>\.copilot
+```
+
+Verify the installation in Copilot CLI with `/agent` and `/skills list`, or restart VS Code and select a Crow agent from the agent picker.
+
+To install a local development checkout without placing it in `.copilot`:
+
+```powershell
+apm install C:\path\to\crow --global --target copilot
+```
+
+## Option 2: Copilot CLI plugin
+
+Install directly from the Crow repository:
 
 ```bash
 copilot plugin install bcgov/crow
 ```
 
-To update:
+The plugin manifest uses the same `.apm` source files as the APM package, including the `crow-` prefixes. Verify with `copilot plugin list`, `/agent`, and `/skills list`.
 
-```bash
-copilot plugin update bcgov-crow
+## Building an APM/plugin bundle
+
+From a Crow checkout, generate a versioned, integrity-checked plugin bundle:
+
+```powershell
+apm install
+apm pack --archive --output build
 ```
 
-To uninstall:
+The resulting archive is:
 
-```bash
-copilot plugin uninstall bcgov-crow
+```text
+build/bcgov-crow-0.1.0.zip
 ```
 
-This installs all four agents (`architecture-review`, `security-review`, `security-remediation`, `executive-report`) and both skills (`security-review`, `sonar-scan`). Verify with `copilot plugin list`, `/agent`, and `/skills list`.
+The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
-> **Known limitation:** the agents in this repo read template and detection-module files from a hardcoded global path (`%USERPROFILE%\.copilot\templates\...` / `~/.copilot/skills/security-review/modules/...`). These paths are only guaranteed to resolve under the manual-clone method (Option 1). If you install purely as a plugin, verify these paths still resolve for your CLI version before relying on `executive-report` rendering or agent-driven security remediation — otherwise use Option 1.
+```powershell
+apm install .\build\bcgov-crow-0.1.0.zip --global --target copilot
+```
 
-## Do not use both install methods at once
+For Copilot CLI, unpack and install the plugin directory:
 
-If you already have crow manually cloned into `~/.copilot` and then also install the `bcgov-crow` plugin (or vice versa), both sources will define agents and skills with the **same file names**. GitHub's docs describe dedup/precedence rules based on config level (repo > user > org > enterprise), but a manual clone and a plugin install both resolve to the **user level**, so this is a same-level name collision — precedence between them is **not guaranteed**, and duplicate entries have been reported upstream in the CLI (see [github/copilot-cli#530](https://github.com/github/copilot-cli/issues/530)).
+```powershell
+Expand-Archive .\build\bcgov-crow-0.1.0.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.1.0
+```
+
+## Do not use multiple Crow installations at once
+
+An APM installation and an old manual Git checkout both install Crow's agents and skills at user scope. Installing both can create duplicate names with precedence that depends on the client and version. A manual Git checkout at `%USERPROFILE%\.copilot` also mixes Crow files with Copilot runtime state.
 
 To check which method(s) are active:
 
-- Run `copilot plugin list` to see if `bcgov-crow` is installed.
-- Check whether `~/.copilot/agents/architecture-review.agent.md` (or `%USERPROFILE%\.copilot\agents\architecture-review.agent.md`) exists on disk — if so, the manual clone is also present.
+- Inspect the APM installation with `apm` and check whether Crow agents are present in the user-level Copilot profile.
+- A `.git` directory at `~/.copilot/.git` or `%USERPROFILE%\.copilot\.git` indicates the old manual-clone installation.
 
-If both are present, a warning is printed at the start of your Copilot CLI session (via a bundled `sessionStart` hook). To resolve it, either:
+If multiple installations are present, remove all but one:
 
-- Remove the manual clone (delete the `crow` checkout from `~/.copilot`), and keep using the plugin, **or**
-- Uninstall the plugin (`copilot plugin uninstall bcgov-crow`) and keep using the manual clone.
+- Remove Crow through the APM installation workflow, or
+- Move the old Git checkout out of `%USERPROFILE%\.copilot` / `~/.copilot`.
 
-Remember that updates are independent per method — updating one does not update the other.
+The bundled session-start hook warns only when it detects the old manual Git checkout, so APM's normal global installation does not produce a false duplicate warning.

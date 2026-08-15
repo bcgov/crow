@@ -5,3 +5,8 @@ vscode.session.*
 ide/
 logs/
 session-state/
+
+
+# APM dependencies
+apm_modules/
+build/

@@ -1,11 +1,11 @@
 ---
-name: security-review
-description: 'Provides language- and framework-specific detection pattern modules that guide manual security code review — authorization gaps, framework misconfigurations, cross-file data-flow tracing, secrets in infrastructure files, deserialization risks, crypto/transport issues, API/session security flaws, and frontend SPA security. Use when reviewing a repository for security vulnerabilities that automated SAST tools (like SonarQube) do not effectively detect.'
+name: crow-security-review
+description: 'Provides language- and framework-specific detection pattern modules that guide manual security code review — authorization gaps, framework misconfigurations, cross-file data-flow tracing, secrets in infrastructure files, deserialization risks, crypto/transport issues, API/session security flaws, and frontend SPA security. Use with the Crow Security & Dependency Review Agent or Crow Security Remediation Agent when reviewing a repository for security vulnerabilities that automated SAST tools (like SonarQube) do not effectively detect.'
 ---
 
 # Security Review Detection Modules
 
-This skill bundles the detection pattern modules used by the **Security & Dependency Review Agent** and the **Security Remediation Agent** to guide manual code analysis for vulnerability classes that SonarQube and similar SAST tools miss (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
+This skill bundles the detection pattern modules used by the **Crow Security & Dependency Review Agent** and the **Crow Security Remediation Agent** to guide manual code analysis for vulnerability classes that SonarQube and similar SAST tools miss (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
 
 ## When to use this skill
 
@@ -15,6 +15,7 @@ Load the relevant module(s) below when performing a manual security review or re
 
 Located in `modules/`:
 
+- **`security-review-template.md`** — Security review document structure with YAML frontmatter for machine-readable metadata.
 - **`modules/auth-and-access-control.md`** — Authorization gaps, IDOR, privilege escalation per framework.
 - **`modules/framework-security-config.md`** — Per-framework secure defaults and misconfigurations (CSRF, debug modes, middleware ordering, auto-escaping).
 - **`modules/data-flow-sinks.md`** — Cross-file entry-to-sink tracing protocol for SQL injection, command injection, SSRF, and path traversal.
@@ -31,4 +32,4 @@ Located in `modules/`:
 3. Apply the documented detection patterns during manual code inspection, cross-referencing findings with what automated scans already caught to avoid duplicate work.
 4. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
 
-> **Note:** The `architecture-review`, `security-review`, and `security-remediation` agents in this repo currently reference these modules via a hardcoded global path (`~/.copilot/skills/security-review/modules/` or `%USERPROFILE%\.copilot\skills\security-review\modules\`), which assumes crow has been cloned into the global `~/.copilot` folder. If you installed crow purely as a plugin, verify this path still resolves for your CLI version before relying on agent-driven security remediation.
+The `security-review` and `security-remediation` agents load these modules and the bundled `security-review-template.md` from this skill.

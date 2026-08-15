@@ -1,5 +1,5 @@
 ---
-name: sonar-scan
+name: crow-sonar-scan
 description: Triggers when the user asks for a code analysis, quality scan, or SonarQube / SonarCloud scan using the sonar-mcp server.
 ---
 

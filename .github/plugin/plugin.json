@@ -1,28 +1,26 @@
 {
   "name": "bcgov-crow",
-  "description": "CROW (Continuous Remediation & Optimization Workflows) — agents and skills for architecture review, security & dependency review, security remediation, and executive reporting. Applies evidence-based verification, CVE provenance tagging, and cross-file data-flow tracing via codebase-memory-mcp.",
-  "version": "1.0.0",
+  "version": "0.1.0",
+  "description": "CROW agents and skills for architecture review, security review, remediation, and executive reporting.",
   "author": {
     "name": "bcgov"
   },
   "repository": "https://github.com/bcgov/crow",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "keywords": [
-    "architecture-review",
-    "security-review",
-    "security-remediation",
-    "executive-report",
-    "sonarqube",
-    "codebase-memory-mcp",
-    "cve",
-    "vulnerability-remediation"
+    "crow-architecture-review",
+    "crow-security-review",
+    "crow-security-remediation",
+    "crow-executive-report"
   ],
   "agents": [
-    "./agents"
+    ".apm/agents"
   ],
   "skills": [
-    "./skills/security-review",
-    "./skills/sonar-scan"
+    ".apm/skills/crow-architecture-review",
+    ".apm/skills/crow-executive-report",
+    ".apm/skills/crow-security-review",
+    ".apm/skills/crow-sonar-scan"
   ],
-  "hooks": "./hooks.json"
+  "hooks": "hooks.json"
 }
