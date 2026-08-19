@@ -46,4 +46,64 @@ If the project key or project name cannot be resolved from the `sonar.config` fi
 Retrieve the currently checked-out branch name for the repository being scanned. Provide this as the target branch name parameter for the Sonar scan.
 
 ## Scan Execution Method
-Once all parameters have been successfully resolved, trigger the Sonar scan using the appropriate tool from the sonar-mcp server, supplying the resolved project key, branch, project path, and additional scan parameters.
+
+Use the `sonar_run_scan` tool with the following required parameters:
+
+- `projectKey`
+- `branch`
+- `projectDir` (an absolute path)
+
+The optional parameters are `extraArgs`, `timeoutMs` (10 seconds to 1 hour,
+default 15 minutes), `useMsBuild`, `runTests`, `testsDir`, and `solutionFile`.
+The server supplies the SonarQube URL and token from its environment; do not
+put either credential in `extraArgs`.
+
+The server rejects `extraArgs` that attempt to override `sonar.host.url`,
+`sonar.token`, `sonar.login`, `sonar.password`, `sonar.projectKey`, or
+`sonar.branch.name`. Pass only additional, non-protected scanner properties.
+
+### Scanner selection
+
+- Set `useMsBuild: false` to force the generic `sonar-scanner` workflow.
+- Set `useMsBuild: true` to force the MSBuild workflow.
+- If `useMsBuild` is omitted, the server automatically selects MSBuild when
+  `solutionFile` is provided or .NET code is found recursively (up to five
+  levels deep), excluding hidden directories and `node_modules`, `bin`, `obj`,
+  and `dist`. Otherwise it uses the generic scanner.
+
+### MSBuild workflow
+
+When MSBuild is selected, resolve the build target in this order:
+
+1. An explicit `solutionFile` (absolute or relative to `projectDir`).
+2. A single recursively discovered `.slnx`.
+3. A single recursively discovered `.sln`.
+4. A single recursively discovered `.csproj` or `.vbproj`.
+
+If more than one candidate exists at the selected priority, the scan fails;
+retry with `solutionFile` identifying the intended file. The selected target
+is passed to both `dotnet build` and `dotnet test`, so do not use `testsDir` to
+select a separate .NET test project or solution.
+
+MSBuild test execution is enabled by `runTests: true`, disabled by
+`runTests: false`, or auto-detected when omitted. Auto-detection looks for
+test-named project files or `*Test.cs`/`*Tests.cs` files. When enabled, tests
+write results under `<projectDir>\TestResults` and the scanner collects:
+
+- `**/TestResults/**/coverage.opencover.xml`
+- `**/TestResults/**/*.trx`
+
+### Generic scanner workflow
+
+For non-.NET projects, `testsDir` may be an absolute path or a path relative
+to `projectDir`. If omitted, the server checks for a sibling `../tests`
+directory. It runs `npm test` only when a test script is present (or when
+`runTests: true` explicitly requests the configured directory), and configures
+LCOV report paths for the project and discovered tests directory. `testsDir`
+is ignored by the MSBuild workflow.
+
+The `timeoutMs` value is a total timeout for the scan sequence. For MSBuild
+scans it covers begin, build, test (when enabled), and end; for generic scans
+it covers the optional Node test run and scanner invocation. Review the
+returned output tail and then use `sonar_get_quality_gate` with the same
+`projectKey` and `branch` to verify the result.
