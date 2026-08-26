@@ -1,12 +1,14 @@
 name: bcgov-crow
-version: 0.1.0
-description: Global agents and skills for architecture review, security review, remediation, and executive reporting.
+version: 0.2.0
+description: Global agents and skills for application architecture, secure development, architecture review, security review, remediation, and executive reporting.
 type: hybrid
 author:
   name: bcgov
 license: MIT
 repository: https://github.com/bcgov/crow
 keywords:
+  - crow-application-architecture
+  - crow-application-development
   - crow-architecture-review
   - crow-security-review
   - crow-security-remediation

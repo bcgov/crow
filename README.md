@@ -18,6 +18,8 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 ## Available Skills
 
 - **crow-architecture-review** — Bundles the architecture review workflow and document template.
+- **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules.
+- **crow-application-development** — Technology-routed implementation guidance for .NET, ASP.NET Core, secure persistence, testing, CI, and containers.
 - **crow-executive-report** — Bundles the executive report workflow, templates, schema, dashboard assets, and renderer.
 - **crow-security-review** — Provides framework-specific detection modules and the security review document template.
 - **crow-sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
@@ -42,6 +44,8 @@ Located in `.apm/skills/crow-security-review/modules/`:
 Resources are owned by the skills that consume them:
 
 - `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
+- `.apm/skills/crow-application-architecture/` — Context-routed architecture principles, .NET modules, and review evidence
+- `.apm/skills/crow-application-development/` — Context-routed .NET implementation modules and review evidence
 - `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
 - `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
