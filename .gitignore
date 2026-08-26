@@ -5,6 +5,7 @@ vscode.session.*
 ide/
 logs/
 session-state/
+**/evidence/
 
 
 # APM dependencies

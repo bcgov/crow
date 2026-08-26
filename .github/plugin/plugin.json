@@ -1,13 +1,14 @@
 {
   "name": "bcgov-crow",
-  "version": "0.1.0",
-  "description": "CROW agents and skills for architecture review, security review, remediation, and executive reporting.",
+  "version": "0.2.1",
+  "description": "CROW agents and skills for accessible B.C. government UX, architecture, security review, remediation, and executive reporting.",
   "author": {
     "name": "bcgov"
   },
   "repository": "https://github.com/bcgov/crow",
   "license": "MIT",
   "keywords": [
+    "crow-bcgov-ux",
     "crow-architecture-review",
     "crow-security-review",
     "crow-security-remediation",
@@ -17,6 +18,7 @@
     ".apm/agents"
   ],
   "skills": [
+    ".apm/skills/crow-bcgov-ux",
     ".apm/skills/crow-application-architecture",
     ".apm/skills/crow-application-development",
     ".apm/skills/crow-architecture-review",

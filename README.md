@@ -10,6 +10,7 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 
 ## Available Agents
 
+- **Crow B.C. Government UX Agent** — Designs and implements new interfaces, or reviews and remediates existing applications, using the current B.C. Design System and WCAG 2.2 AA. Supports the frontend technologies covered by Crow while keeping user-journey design out of scope.
 - **Crow Architecture Review Agent** — Inspects a repository, analyzes its tech stack, and generates a verified `architecture.md` document in `/docs`.
 - **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, finding classification (Confirmed/Probable/Informational), and cross-file data flow tracing via codebase-memory-mcp.
 - **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
@@ -17,6 +18,7 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 
 ## Available Skills
 
+- **crow-bcgov-ux** — Technology-routed B.C. Design System and accessibility guidance for creating UX or reviewing and updating an existing application. Includes HTML/CSS/Razor, React-family, Vue-family, Angular, Svelte, and Blazor modules.
 - **crow-architecture-review** — Bundles the architecture review workflow and document template.
 - **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules.
 - **crow-application-development** — Technology-routed implementation guidance for .NET, ASP.NET Core, secure persistence, testing, CI, and containers.
@@ -43,6 +45,7 @@ Located in `.apm/skills/crow-security-review/modules/`:
 
 Resources are owned by the skills that consume them:
 
+- `.apm/skills/crow-bcgov-ux/` — B.C. government UX foundations, WCAG 2.2 AA acceptance criteria, existing-app review/remediation workflow, technology modules, and an optional `DESIGN.md` specification template
 - `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
 - `.apm/skills/crow-application-architecture/` — Context-routed architecture principles, .NET modules, and review evidence
 - `.apm/skills/crow-application-development/` — Context-routed .NET implementation modules and review evidence
