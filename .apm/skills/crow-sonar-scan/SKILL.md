@@ -62,6 +62,22 @@ The server rejects `extraArgs` that attempt to override `sonar.host.url`,
 `sonar.token`, `sonar.login`, `sonar.password`, `sonar.projectKey`, or
 `sonar.branch.name`. Pass only additional, non-protected scanner properties.
 
+`projectName` and `version` are metadata to resolve before the scan, but they
+are not direct `sonar_run_scan` parameters. Pass resolved values through
+`extraArgs` using SonarQube's scanner property names:
+
+```text
+-Dsonar.projectName=<resolved project name>
+-Dsonar.projectVersion=<resolved version>
+```
+
+Each property must be one array element, including when the project name
+contains spaces. Include `sonar.projectName` whenever it can be resolved using
+the configuration or fallback above. Include `sonar.projectVersion` only when
+a non-empty version was resolved; do not invent a version or pass a placeholder.
+The server passes these properties to the generic scanner and translates the
+`-D` prefix for the MSBuild scanner.
+
 ### Scanner selection
 
 - Set `useMsBuild: false` to force the generic `sonar-scanner` workflow.

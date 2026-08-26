@@ -229,7 +229,7 @@ Always reference and follow the **`crow-sonar-scan` skill** (`skill: "crow-sonar
    - **Project Key & Name Fallbacks:** If unresolvable from `sonar.config`:
      - *Project Key Fallback:* Repository folder name with spaces replaced by dashes (`-`).
      - *Project Name Fallback:* Repository folder name formatted with proper capitalization and spaces.
-   - **Scan Execution:** Execute `sonar_run_scan` supplying the resolved project key, project name, version, `projectDir` (absolute path), and `branch` bound to the active workspace branch discovered in Step 6.1.
+   - **Scan Execution:** Execute `sonar_run_scan` with its required direct parameters: the resolved `projectKey`, absolute `projectDir`, and `branch` bound to the active workspace branch discovered in Step 6.1. Add supported optional tool parameters only as required by the skill. Pass the resolved project name through `extraArgs` as one `-Dsonar.projectName=<resolved project name>` array element. When a non-empty version was resolved, pass it as one `-Dsonar.projectVersion=<resolved version>` array element; omit that property rather than inventing a version or passing a placeholder. Do not pass `projectName`, `version`, or `projectVersion` as direct tool parameters.
 
 4. **Dynamic Branch Parameter Binding:**
    - When fetching scan metrics post-scan, **EVERY** branch-scoped tool call (`sonar_get_quality_gate`, `sonar_list_issues`, `sonar_list_security_hotspots`, `sonar_get_last_scan`) **MUST** explicitly bind the `branch` parameter to the active branch discovered in Step 6.1 (e.g., `branch: "dev"` or `branch: "main"`).
