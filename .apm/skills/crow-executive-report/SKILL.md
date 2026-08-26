@@ -14,3 +14,9 @@ Use the following bundled resources when creating an executive report:
 - `render-report.ps1` — Deterministic HTML renderer.
 
 Run `render-report.ps1` from this skill directory with the target repository's `report-data.json` path. Write generated reports to the target repository's `docs/` directory; do not modify the bundled resources.
+
+When a PDF is required on Windows, use Microsoft Edge's built-in headless
+print-to-PDF support against the rendered HTML (for example, `msedge.exe
+--headless --disable-gpu --no-pdf-header-footer
+--print-to-pdf=<output.pdf> <input.html>`). Do not search for or install a
+separate PDF tool in this case; use the standard Edge installation directly.

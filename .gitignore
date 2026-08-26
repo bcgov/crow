@@ -5,8 +5,12 @@ vscode.session.*
 ide/
 logs/
 session-state/
+**/evidence/
 
 
 # APM dependencies
 apm_modules/
 build/
+
+# Ignore codebase files
+.codebase-memory/
