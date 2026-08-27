@@ -41,7 +41,7 @@ if (-not (Test-Path $templateFile)) { throw "Template not found: $templateFile" 
 if (-not (Test-Path $DataFile)) { throw "Data file not found: $DataFile" }
 
 # --- Load inputs ---
-$data = Get-Content $DataFile -Raw | ConvertFrom-Json
+$data = Get-Content $DataFile -Raw -Encoding UTF8 | ConvertFrom-Json
 $html = Get-Content $templateFile -Raw -Encoding UTF8
 
 # --- Inject CSS ---
@@ -66,11 +66,46 @@ function Get-RiskClass([string]$risk) {
 # --- Helper: safe percentage ---
 function Get-Pct([double]$count, [double]$total) {
     if ($total -le 0) { return 0 }
-    [math]::Round(($count / $total) * 100, 1)
+    [math]::Min(100, [math]::Max(0, [math]::Round(($count / $total) * 100, 1)))
 }
 
 function ConvertTo-HtmlText($value) {
     [System.Net.WebUtility]::HtmlEncode([string]$value)
+}
+
+function ConvertTo-NonNegativeInteger($value, [string]$fieldName) {
+    $parsed = 0L
+    $text = [Convert]::ToString($value, [Globalization.CultureInfo]::InvariantCulture)
+    if (-not [long]::TryParse(
+        $text,
+        [Globalization.NumberStyles]::Integer,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [ref]$parsed
+    ) -or $parsed -lt 0) {
+        throw "Field '$fieldName' must be a non-negative integer."
+    }
+    $parsed
+}
+
+function ConvertTo-Percentage($value, [string]$fieldName) {
+    $parsed = 0.0
+    $text = [Convert]::ToString($value, [Globalization.CultureInfo]::InvariantCulture)
+    if (-not [double]::TryParse(
+        $text,
+        [Globalization.NumberStyles]::Float,
+        [Globalization.CultureInfo]::InvariantCulture,
+        [ref]$parsed
+    ) -or [double]::IsNaN($parsed) -or [double]::IsInfinity($parsed)) {
+        throw "Field '$fieldName' must be a finite number."
+    }
+    [math]::Min(100, [math]::Max(0, $parsed))
+}
+
+function ConvertTo-InvariantNumber($value) {
+    if ($value -isnot [IFormattable]) {
+        throw "Numeric placeholder value '$value' is not formattable."
+    }
+    $value.ToString($null, [Globalization.CultureInfo]::InvariantCulture)
 }
 
 function ConvertTo-RegexReplacedText([string]$inputText, [string]$pattern, [string]$replacement) {
@@ -82,32 +117,49 @@ function ConvertTo-RegexReplacedText([string]$inputText, [string]$pattern, [stri
 }
 
 # --- Compute derived values ---
-$total = [int]($data.critical_count + $data.high_count + $data.medium_count + $data.low_count + $data.informational_count)
+$criticalCount = ConvertTo-NonNegativeInteger $data.critical_count 'critical_count'
+$highCount = ConvertTo-NonNegativeInteger $data.high_count 'high_count'
+$mediumCount = ConvertTo-NonNegativeInteger $data.medium_count 'medium_count'
+$lowCount = ConvertTo-NonNegativeInteger $data.low_count 'low_count'
+$informationalCount = ConvertTo-NonNegativeInteger $data.informational_count 'informational_count'
+$confirmedCount = ConvertTo-NonNegativeInteger $data.confirmed_count 'confirmed_count'
+$probableCount = ConvertTo-NonNegativeInteger $data.probable_count 'probable_count'
+$coverageGaps = ConvertTo-NonNegativeInteger $data.coverage_gaps 'coverage_gaps'
+$totalDeps = ConvertTo-NonNegativeInteger $data.total_deps 'total_deps'
+$outdatedDeps = ConvertTo-NonNegativeInteger $data.outdated_deps 'outdated_deps'
+$vulnerableDeps = ConvertTo-NonNegativeInteger $data.vulnerable_deps 'vulnerable_deps'
+$abandonedDeps = ConvertTo-NonNegativeInteger $data.abandoned_deps 'abandoned_deps'
+
+$total = $criticalCount + $highCount + $mediumCount + $lowCount + $informationalCount
 $circ = 251.2  # 2 * pi * 40
 
-$critArc   = if ($total -gt 0) { [math]::Round(($data.critical_count / $total) * $circ, 2) } else { 0 }
-$highArc   = if ($total -gt 0) { [math]::Round(($data.high_count / $total) * $circ, 2) } else { 0 }
-$medArc    = if ($total -gt 0) { [math]::Round(($data.medium_count / $total) * $circ, 2) } else { 0 }
-$lowArc    = if ($total -gt 0) { [math]::Round(($data.low_count / $total) * $circ, 2) } else { 0 }
+$critArc   = if ($total -gt 0) { [math]::Round(($criticalCount / $total) * $circ, 2) } else { 0 }
+$highArc   = if ($total -gt 0) { [math]::Round(($highCount / $total) * $circ, 2) } else { 0 }
+$medArc    = if ($total -gt 0) { [math]::Round(($mediumCount / $total) * $circ, 2) } else { 0 }
+$lowArc    = if ($total -gt 0) { [math]::Round(($lowCount / $total) * $circ, 2) } else { 0 }
 $critHighArc    = [math]::Round($critArc + $highArc, 2)
 $critHighMedArc = [math]::Round($critArc + $highArc + $medArc, 2)
 
-$confirmedPct = Get-Pct $data.confirmed_count $total
-$probablePct  = Get-Pct $data.probable_count $total
-$infoPct      = Get-Pct $data.informational_count $total
+$confirmedPct = Get-Pct $confirmedCount $total
+$probablePct  = Get-Pct $probableCount $total
+$infoPct      = Get-Pct $informationalCount $total
 
-$totalDeps = [int]($data.total_deps)
-$depsHealthyPct     = if ($totalDeps -gt 0) { Get-Pct ($totalDeps - $data.outdated_deps - $data.vulnerable_deps) $totalDeps } else { 100 }
-$depsOutdatedPct    = Get-Pct $data.outdated_deps $totalDeps
-$depsVulnerablePct  = Get-Pct $data.vulnerable_deps $totalDeps
+$depsHealthyPct     = if ($totalDeps -gt 0) { Get-Pct ($totalDeps - $outdatedDeps - $vulnerableDeps) $totalDeps } else { 100 }
+$depsOutdatedPct    = Get-Pct $outdatedDeps $totalDeps
+$depsVulnerablePct  = Get-Pct $vulnerableDeps $totalDeps
 
-$totalEntryPoints = if ($null -ne $data.coverage_gaps -and $null -ne $data.coverage_pct) {
-    if ($data.coverage_pct -gt 0 -and $data.coverage_pct -lt 100) {
-        [math]::Round($data.coverage_gaps / (1 - ($data.coverage_pct / 100)), 0)
-    } else { $data.coverage_gaps }
+$coveragePct = if ($data.PSObject.Properties['coverage_pct']) {
+    ConvertTo-Percentage $data.coverage_pct 'coverage_pct'
+} else {
+    100
+}
+$totalEntryPoints = if ($data.PSObject.Properties['coverage_pct']) {
+    if ($coveragePct -gt 0 -and $coveragePct -lt 100) {
+        [math]::Round($coverageGaps / (1 - ($coveragePct / 100)), 0)
+    } else { $coverageGaps }
 } else { 0 }
-$coveragePct = if ($data.PSObject.Properties['coverage_pct']) { $data.coverage_pct } else {
-    if ($totalEntryPoints -gt 0) { Get-Pct ($totalEntryPoints - $data.coverage_gaps) $totalEntryPoints } else { 100 }
+if (-not $data.PSObject.Properties['coverage_pct']) {
+    $coveragePct = if ($totalEntryPoints -gt 0) { Get-Pct ($totalEntryPoints - $coverageGaps) $totalEntryPoints } else { 100 }
 }
 
 # --- OWASP bar chart: compute percentages relative to max ---
@@ -129,7 +181,7 @@ $owaspCounts = @{}
 foreach ($cat in $owaspCats) {
     $owaspCounts[$cat] = 0
     if ($data.PSObject.Properties['owasp'] -and $data.owasp.PSObject.Properties[$cat]) {
-        $owaspCounts[$cat] = [int]$data.owasp.$cat
+        $owaspCounts[$cat] = ConvertTo-NonNegativeInteger $data.owasp.$cat "owasp.$cat"
     }
 }
 $owaspMax = ($owaspCounts.Values | Measure-Object -Maximum).Maximum
@@ -140,14 +192,16 @@ $owaspHtml = ""
 foreach ($cat in $owaspCats) {
     $cnt = $owaspCounts[$cat]
     $pct = Get-Pct $cnt $owaspMax
+    $cntText = ConvertTo-InvariantNumber $cnt
+    $pctText = ConvertTo-InvariantNumber $pct
     $color = $owaspColors[$cat]
     $name = $owaspNames[$cat]
     $owaspHtml += @"
   <div class="bar-row">
     <span class="bar-label">$cat</span>
     <div class="bar-track">
-      <div class="bar-fill" style="width:${pct}%; background:${color};"></div>
-      <span class="bar-value">$cnt &mdash; $name</span>
+      <div class="bar-fill" style="width:${pctText}%; background:${color};"></div>
+      <span class="bar-value">$cntText &mdash; $name</span>
     </div>
   </div>`n
 "@
@@ -221,39 +275,12 @@ $html = ConvertTo-RegexReplacedText $html '(?s)<tr>\s*<td>\{\{TECH_DEBT_COMPONEN
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat per component.*?<tr>\s*<td>\{\{COMPONENT_NAME\}\}.*?</tr>' $strideHtml.TrimEnd()
 
 # --- Replace scalar placeholders ---
-$scalars = @{
+$textScalars = @{
     'APPLICATION_NAME'     = $data.application_name
     'APPLICATION_ACRONYM'  = $data.application_acronym
     'REPORT_DATE'          = $data.report_date
     'OVERALL_RISK'         = $data.overall_risk
-    'OVERALL_RISK_CLASS'   = Get-RiskClass $data.overall_risk
     'QUALITY_GATE_STATUS'  = $data.quality_gate_status
-    'CRITICAL_COUNT'       = $data.critical_count
-    'HIGH_COUNT'           = $data.high_count
-    'MEDIUM_COUNT'         = $data.medium_count
-    'LOW_COUNT'            = $data.low_count
-    'INFO_COUNT'           = $data.informational_count
-    'TOTAL_FINDINGS'       = $total
-    'CONFIRMED_COUNT'      = $data.confirmed_count
-    'PROBABLE_COUNT'       = $data.probable_count
-    'COVERAGE_GAPS'        = $data.coverage_gaps
-    'CRITICAL_ARC'         = $critArc
-    'HIGH_ARC'             = $highArc
-    'MEDIUM_ARC'           = $medArc
-    'LOW_ARC'              = $lowArc
-    'CRIT_HIGH_ARC'        = $critHighArc
-    'CRIT_HIGH_MED_ARC'    = $critHighMedArc
-    'CONFIRMED_PCT'        = $confirmedPct
-    'PROBABLE_PCT'         = $probablePct
-    'INFO_PCT'             = $infoPct
-    'TOTAL_DEPS'           = $data.total_deps
-    'OUTDATED_DEPS'        = $data.outdated_deps
-    'VULNERABLE_DEPS'      = $data.vulnerable_deps
-    'ABANDONED_DEPS'       = $data.abandoned_deps
-    'DEPS_HEALTHY_PCT'     = $depsHealthyPct
-    'DEPS_OUTDATED_PCT'    = $depsOutdatedPct
-    'DEPS_VULNERABLE_PCT'  = $depsVulnerablePct
-    'COVERAGE_PCT'         = $coveragePct
     'EXECUTIVE_BRIEF'      = $data.executive_brief
     'TECH_STACK_SUMMARY'   = $data.tech_stack_summary
     'ARCH_PATTERN'         = $data.arch_pattern
@@ -266,8 +293,47 @@ $scalars = @{
     'ARCHITECTURE_DOC_PATH'= $data.architecture_doc_path
 }
 
-foreach ($key in $scalars.Keys) {
-    $html = $html.Replace("{{$key}}", (ConvertTo-HtmlText $scalars[$key]))
+$tokenScalars = @{
+    'OVERALL_RISK_CLASS' = Get-RiskClass $data.overall_risk
+}
+
+$numericScalars = @{
+    'CRITICAL_COUNT'      = $criticalCount
+    'HIGH_COUNT'          = $highCount
+    'MEDIUM_COUNT'        = $mediumCount
+    'LOW_COUNT'           = $lowCount
+    'INFO_COUNT'          = $informationalCount
+    'TOTAL_FINDINGS'      = $total
+    'CONFIRMED_COUNT'     = $confirmedCount
+    'PROBABLE_COUNT'      = $probableCount
+    'COVERAGE_GAPS'       = $coverageGaps
+    'CRITICAL_ARC'        = $critArc
+    'HIGH_ARC'            = $highArc
+    'MEDIUM_ARC'          = $medArc
+    'LOW_ARC'             = $lowArc
+    'CRIT_HIGH_ARC'       = $critHighArc
+    'CRIT_HIGH_MED_ARC'   = $critHighMedArc
+    'CONFIRMED_PCT'       = $confirmedPct
+    'PROBABLE_PCT'        = $probablePct
+    'INFO_PCT'            = $infoPct
+    'TOTAL_DEPS'          = $totalDeps
+    'OUTDATED_DEPS'       = $outdatedDeps
+    'VULNERABLE_DEPS'     = $vulnerableDeps
+    'ABANDONED_DEPS'      = $abandonedDeps
+    'DEPS_HEALTHY_PCT'    = $depsHealthyPct
+    'DEPS_OUTDATED_PCT'   = $depsOutdatedPct
+    'DEPS_VULNERABLE_PCT' = $depsVulnerablePct
+    'COVERAGE_PCT'        = $coveragePct
+}
+
+foreach ($key in $textScalars.Keys) {
+    $html = $html.Replace("{{$key}}", (ConvertTo-HtmlText $textScalars[$key]))
+}
+foreach ($key in $tokenScalars.Keys) {
+    $html = $html.Replace("{{$key}}", $tokenScalars[$key])
+}
+foreach ($key in $numericScalars.Keys) {
+    $html = $html.Replace("{{$key}}", (ConvertTo-InvariantNumber $numericScalars[$key]))
 }
 
 # --- Write output ---
