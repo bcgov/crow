@@ -12,6 +12,7 @@ This module covers safe implementation only. Database selection, schema/domain m
 - Parameterize raw SQL. Prefer LINQ, `FromSqlInterpolated`, or explicit parameters; never concatenate or interpolate untrusted values into `FromSqlRaw`/`ExecuteSqlRaw`.
 - Handle optimistic concurrency explicitly where competing updates matter.
 - Apply resilient execution only for transient provider failures and ensure retried operations are safe.
+- Verify Unicode-capable column types, database encoding, driver parameters, literals, indexes, and collation with round-trip migrations/tests. Do not assume .NET strings prevent storage-layer corruption.
 
 ## Authorization and data access
 
@@ -49,4 +50,3 @@ Load `data-flow-sinks.md`, `auth-and-access-control.md`, and `secrets-and-creden
 - Microsoft Learn, [SQL queries in EF Core](https://learn.microsoft.com/ef/core/querying/sql-queries)
 - Microsoft Learn, [Connection resiliency](https://learn.microsoft.com/ef/core/miscellaneous/connection-resiliency)
 - Microsoft Learn, [Applying migrations](https://learn.microsoft.com/ef/core/managing-schemas/migrations/applying)
-

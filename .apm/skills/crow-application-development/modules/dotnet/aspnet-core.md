@@ -3,7 +3,7 @@
 ## Startup and middleware
 
 - Keep environment-specific developer diagnostics inside an explicit development guard.
-- Use centralized exception handling and Problem Details. Log the exception once and return no internal detail.
+- Use centralized exception handling and RFC 9457 Problem Details. Log the exception once and return no internal detail.
 - Configure forwarded headers only for known proxies/networks and run the middleware before HTTPS/auth decisions.
 - Use HTTPS redirection and HSTS in production where TLS terminates compatibly with the platform.
 - Add security headers centrally. Build a restrictive CSP from actual resource needs; do not normalize `unsafe-inline` or `unsafe-eval`.
@@ -15,6 +15,7 @@
 - Apply `[ApiController]` for controller APIs or equivalent endpoint filters for minimal APIs.
 - Use dedicated request/response models and bounded collections, body sizes, uploads, pagination, and query complexity.
 - Return Problem Details/ValidationProblemDetails consistently.
+- For externally consumed APIs, implement the documented compatibility/deprecation policy and versioned OpenAPI. Prefer maintained `Asp.Versioning` packages when framework support beyond a simple route convention is required.
 - Keep OpenAPI enabled only in approved environments or behind authorization/configuration.
 - Do not catch `Exception` in every action. Let the centralized handler process unexpected failures; catch only when the action can add correct recovery or contract semantics.
 
@@ -57,4 +58,4 @@ For endpoint work, load `auth-and-access-control.md`, `framework-security-config
 - Microsoft Learn, [Authorization in ASP.NET Core](https://learn.microsoft.com/aspnet/core/security/authorization/introduction)
 - Microsoft Learn, [Prevent Cross-Site Request Forgery](https://learn.microsoft.com/aspnet/core/security/anti-request-forgery)
 - Microsoft Learn, [Rate limiting middleware](https://learn.microsoft.com/aspnet/core/performance/rate-limit)
-
+- RFC Editor, [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457)

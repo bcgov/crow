@@ -26,21 +26,6 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 - **crow-security-review** — Provides framework-specific detection modules and the security review document template.
 - **crow-sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
 
-## Security Review Detection Modules
-
-Language-specific detection pattern modules that guide the Crow Security & Dependency Review Agent's manual code analysis. These focus on vulnerabilities that SonarQube does not effectively detect (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
-
-Located in `.apm/skills/crow-security-review/modules/`:
-
-- **auth-and-access-control** — Authorization gaps, IDOR, privilege escalation per framework (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI)
-- **framework-security-config** — Per-framework secure defaults and misconfigurations (CSRF, debug modes, middleware ordering, auto-escaping)
-- **data-flow-sinks** — Cross-file entry-to-sink tracing protocol for SQL injection, command injection, SSRF, and path traversal
-- **secrets-and-credentials** — Secrets in infrastructure files (Docker, CI/CD, Kubernetes, Terraform, Helm) that source-code scanners miss
-- **deserialization-and-integrity** — Insecure deserialization per language, gadget chain reachability, unsigned data acceptance, CI/CD integrity
-- **crypto-and-transport** — Context-appropriate algorithm assessment, key management lifecycle, TLS configuration, certificate validation
-- **api-and-session-security** — Rate limiting, CORS, cookie flags, JWT implementation flaws, anti-forgery enforcement, HTTP verb constraints
-- **frontend-spa-security** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security
-
 ## Bundled Resources
 
 Resources are owned by the skills that consume them:
@@ -72,7 +57,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.1.0 --global --target copilot
+apm install bcgov/crow#v0.2.2 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -86,7 +71,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.1.0 --global --target copilot
+apm install bcgov/crow#v0.2.2 --global --target copilot
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -127,20 +112,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.1.0.zip
+build/bcgov-crow-0.2.2.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.1.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.2.2.zip --global --target copilot
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.1.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.1.0
+Expand-Archive .\build\bcgov-crow-0.2.2.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.2.2
 ```
 
 ## Do not use multiple Crow installations at once

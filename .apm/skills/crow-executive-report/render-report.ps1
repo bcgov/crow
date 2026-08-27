@@ -69,6 +69,18 @@ function Get-Pct([double]$count, [double]$total) {
     [math]::Round(($count / $total) * 100, 1)
 }
 
+function ConvertTo-HtmlText($value) {
+    [System.Net.WebUtility]::HtmlEncode([string]$value)
+}
+
+function ConvertTo-RegexReplacedText([string]$inputText, [string]$pattern, [string]$replacement) {
+    [regex]::Replace(
+        $inputText,
+        $pattern,
+        [System.Text.RegularExpressions.MatchEvaluator] { param($match) $replacement }
+    )
+}
+
 # --- Compute derived values ---
 $total = [int]($data.critical_count + $data.high_count + $data.medium_count + $data.low_count + $data.informational_count)
 $circ = 251.2  # 2 * pi * 40
@@ -148,11 +160,11 @@ if ($data.PSObject.Properties['findings']) {
         $sevClass = Get-RiskClass $f.severity
         $findingsHtml += @"
     <tr>
-      <td>$($f.title)</td>
-      <td><span class="risk-badge $sevClass">$($f.severity)</span></td>
-      <td>$($f.classification)</td>
-      <td>$($f.business_risk)</td>
-      <td>$($f.action)</td>
+      <td>$(ConvertTo-HtmlText $f.title)</td>
+      <td><span class="risk-badge $sevClass">$(ConvertTo-HtmlText $f.severity)</span></td>
+      <td>$(ConvertTo-HtmlText $f.classification)</td>
+      <td>$(ConvertTo-HtmlText $f.business_risk)</td>
+      <td>$(ConvertTo-HtmlText $f.action)</td>
     </tr>`n
 "@
     }
@@ -165,11 +177,11 @@ if ($data.PSObject.Properties['tech_debt']) {
         $riskClass = Get-RiskClass $t.risk
         $techDebtHtml += @"
     <tr>
-      <td>$($t.component)</td>
-      <td>$($t.category)</td>
-      <td><span class="risk-badge $riskClass">$($t.risk)</span></td>
-      <td>$($t.impact)</td>
-      <td>$($t.action)</td>
+      <td>$(ConvertTo-HtmlText $t.component)</td>
+      <td>$(ConvertTo-HtmlText $t.category)</td>
+      <td><span class="risk-badge $riskClass">$(ConvertTo-HtmlText $t.risk)</span></td>
+      <td>$(ConvertTo-HtmlText $t.impact)</td>
+      <td>$(ConvertTo-HtmlText $t.action)</td>
     </tr>`n
 "@
     }
@@ -188,11 +200,11 @@ function Get-StrideCellClass([string]$level) {
 $strideHtml = ""
 if ($data.PSObject.Properties['stride']) {
     foreach ($s in $data.stride) {
-        $strideHtml += "    <tr>`n      <td>$($s.component)</td>`n"
+        $strideHtml += "    <tr>`n      <td>$(ConvertTo-HtmlText $s.component)</td>`n"
         foreach ($dim in @('S','T','R','I','D','E')) {
             $val = $s.$dim
             $cls = Get-StrideCellClass $val
-            $strideHtml += "      <td class=`"$cls`">$val</td>`n"
+            $strideHtml += "      <td class=`"$cls`">$(ConvertTo-HtmlText $val)</td>`n"
         }
         $strideHtml += "    </tr>`n"
     }
@@ -200,13 +212,13 @@ if ($data.PSObject.Properties['stride']) {
 
 # --- Replace repeating sections ---
 # OWASP bars
-$html = $html -replace '(?s)<!-- Repeat for each OWASP.*?</div>\s*</div>\s*\n\s*</div>', "$owaspHtml</div>"
+$html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat for each OWASP.*?</div>\s*</div>\s*\n\s*</div>' "$owaspHtml</div>"
 # Findings rows
-$html = $html -replace '(?s)<!-- Repeat row per finding -->\s*<tr>.*?</tr>', $findingsHtml.TrimEnd()
+$html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat row per finding -->\s*<tr>.*?</tr>' $findingsHtml.TrimEnd()
 # Tech debt rows (match the single template row)
-$html = $html -replace '(?s)<tr>\s*<td>\{\{TECH_DEBT_COMPONENT\}\}.*?</tr>', $techDebtHtml.TrimEnd()
+$html = ConvertTo-RegexReplacedText $html '(?s)<tr>\s*<td>\{\{TECH_DEBT_COMPONENT\}\}.*?</tr>' $techDebtHtml.TrimEnd()
 # STRIDE rows
-$html = $html -replace '(?s)<!-- Repeat per component.*?<tr>\s*<td>\{\{COMPONENT_NAME\}\}.*?</tr>', $strideHtml.TrimEnd()
+$html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat per component.*?<tr>\s*<td>\{\{COMPONENT_NAME\}\}.*?</tr>' $strideHtml.TrimEnd()
 
 # --- Replace scalar placeholders ---
 $scalars = @{
@@ -255,7 +267,7 @@ $scalars = @{
 }
 
 foreach ($key in $scalars.Keys) {
-    $html = $html.Replace("{{$key}}", [string]$scalars[$key])
+    $html = $html.Replace("{{$key}}", (ConvertTo-HtmlText $scalars[$key]))
 }
 
 # --- Write output ---

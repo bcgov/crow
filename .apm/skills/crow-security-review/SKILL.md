@@ -1,6 +1,6 @@
 ---
 name: crow-security-review
-description: 'Provides language- and framework-specific detection pattern modules that guide manual security code review — authorization gaps, framework misconfigurations, cross-file data-flow tracing, secrets in infrastructure files, deserialization risks, crypto/transport issues, API/session security flaws, and frontend SPA security. Use with the Crow Security & Dependency Review Agent or Crow Security Remediation Agent when reviewing a repository for security vulnerabilities that automated SAST tools (like SonarQube) do not effectively detect.'
+description: 'Provides detection modules for manual security review, including authorization, framework configuration, cross-file data flow, secrets, deserialization, crypto, API/session and SPA security, LLM prompt injection, second-order injection, and Markdown security. Use with the Crow Security & Dependency Review Agent or Crow Security Remediation Agent.'
 ---
 
 # Security Review Detection Modules
@@ -24,10 +24,11 @@ Located in `modules/`:
 - **`modules/crypto-and-transport.md`** — Context-appropriate algorithm assessment, key management lifecycle, TLS configuration, certificate validation.
 - **`modules/api-and-session-security.md`** — Rate limiting, CORS, cookie flags, JWT implementation flaws, anti-forgery enforcement, HTTP verb constraints.
 - **`modules/frontend-spa-security.md`** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security.
+- **`modules/llm-prompt-and-markdown-security.md`** — Direct and stored/second-order prompt injection, RAG and tool-calling trust boundaries, insecure model-output handling, excessive agency, and Markdown/frontmatter/rendering risks.
 
 ## How to use
 
-1. Identify the repository's tech stack (languages, frameworks, infra-as-code tooling).
+1. Identify the repository's tech stack, LLM/agent integrations, document ingestion/rendering pipelines, and infrastructure-as-code tooling.
 2. Read the module(s) that match the vulnerability class or framework under review.
 3. Apply the documented detection patterns during manual code inspection, cross-referencing findings with what automated scans already caught to avoid duplicate work.
 4. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
