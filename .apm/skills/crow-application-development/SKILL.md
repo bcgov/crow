@@ -11,12 +11,12 @@ Use this skill while implementing or changing an application. Data architecture 
 
 1. Inspect manifests and the affected entry point to identify the technology and workload.
 2. Load [`modules/foundation.md`](modules/foundation.md) for every change.
-3. For .NET, load [`modules/dotnet/foundation.md`](modules/dotnet/foundation.md).
-4. Add only the modules required by the task:
+3. Load [`modules/unicode-and-utf8.md`](modules/unicode-and-utf8.md) whenever the change reads, writes, validates, compares, searches, serializes, stores, exports, imports, or renders text.
+4. For .NET, load [`modules/dotnet/foundation.md`](modules/dotnet/foundation.md).
+5. Add only the modules required by the task:
    - [`modules/dotnet/aspnet-core.md`](modules/dotnet/aspnet-core.md) for HTTP, MVC, Razor, Blazor, API, auth, middleware, or hosted SPA work.
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
-5. Load [`evidence/dotnet-repository-review.md`](evidence/dotnet-repository-review.md) only when local precedent or recommendation provenance is needed.
 6. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
@@ -25,8 +25,9 @@ Use this skill while implementing or changing an application. Data architecture 
 2. Reuse existing abstractions and conventions; add a new abstraction only when it owns policy or isolates a real boundary.
 3. Implement validation, authorization, failure behavior, cancellation, telemetry, and secure configuration with the feature.
 4. Add or update focused tests for success, denial, invalid input, and material failure paths.
-5. Run the repository's existing formatter/linter first, then the smallest relevant tests, then build/package checks.
-6. Run the repository's established security and quality scans. Do not weaken gates to make the change pass.
+5. For text-bearing changes, test representative Indigenous-language and multilingual values across the complete affected round trip.
+6. Run the repository's existing formatter/linter first, then the smallest relevant tests, then build/package checks.
+7. Run the repository's established security and quality scans. Do not weaken gates to make the change pass.
 
 ## Security integration
 
@@ -42,4 +43,3 @@ Load the relevant `../crow-security-review/modules/` files before implementing t
 - SPA/client work: `frontend-spa-security.md`.
 
 Apply these as definition-of-done criteria. Run a security review after implementation as verification, not as the first time security is considered.
-

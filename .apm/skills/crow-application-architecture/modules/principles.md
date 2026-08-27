@@ -25,6 +25,8 @@ For each module or service, define:
 - failure, retry, timeout, and idempotency behavior;
 - telemetry emitted without secrets or sensitive payloads;
 - deployment and rollback unit.
+- service-level objectives, capacity/abuse limits, and degradation behavior;
+- contract ownership, compatibility, deprecation, and consumer migration.
 
 Use contracts at boundaries. Do not share mutable persistence models, framework request objects, or internal exceptions across them.
 
@@ -34,6 +36,7 @@ Use contracts at boundaries. Do not share mutable persistence models, framework 
 - Validate untrusted input at the boundary and enforce invariants again where state changes.
 - Propagate cancellation and deadlines through external calls.
 - Define readiness separately from liveness; readiness may include critical dependency checks, while liveness must not create cascading failure.
+- Design overload behavior explicitly with bounded queues, backpressure, concurrency limits, and load shedding rather than allowing unbounded resource growth.
 - Use structured logs, metrics, and distributed traces with correlation identifiers. Redact sensitive data before it reaches a telemetry sink.
 - Keep secrets outside source and ordinary configuration files. Prefer workload/managed identity over long-lived credentials.
 - Make configuration errors fail startup outside local development rather than silently weakening security.
@@ -41,7 +44,7 @@ Use contracts at boundaries. Do not share mutable persistence models, framework 
 ## Evolution and verification
 
 - Prefer reversible decisions, stable public contracts, and additive change.
+- Use expand/migrate/contract sequencing for schemas and public contracts so mixed-version deployments remain safe.
 - Test architectural rules where practical: dependency direction, authorization defaults, serialization contracts, and startup configuration.
 - Correlate artifacts with source commits and produce immutable, repeatable builds.
 - Document exceptions with an owner, rationale, risk, and review date.
-

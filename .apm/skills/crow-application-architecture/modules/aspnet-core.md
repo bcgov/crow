@@ -15,8 +15,8 @@ Load this module only for HTTP APIs, MVC, Razor Pages, Blazor, or ASP.NET Core-h
 
 - Use controllers, minimal APIs, Razor, or Blazor consistently within a bounded surface; choose based on application needs rather than novelty.
 - Use request/response contracts instead of exposing persistence entities.
-- Return RFC 7807 Problem Details for API failures and validation errors. Do not leak exception messages or stack traces.
-- Version externally consumed APIs and define compatibility/deprecation policy.
+- Return RFC 9457 Problem Details for API failures and validation errors. Do not leak exception messages or stack traces.
+- Version externally consumed APIs and define compatibility/deprecation policy. When a library is warranted, prefer the maintained `Asp.Versioning` family over legacy `Microsoft.AspNetCore.Mvc.Versioning`.
 - Keep SPA build/runtime concerns isolated from the API. If independently deployable evolution is likely, avoid coupling the SPA build into the API publish artifact.
 
 ## Identity and access
@@ -51,4 +51,4 @@ Before implementation starts, load the relevant `crow-security-review` modules n
 - Microsoft Learn, [Rate limiting middleware in ASP.NET Core](https://learn.microsoft.com/aspnet/core/performance/rate-limit)
 - Microsoft Learn, [Health checks in ASP.NET Core](https://learn.microsoft.com/aspnet/core/host-and-deploy/health-checks)
 - Microsoft Learn, [Overview of OpenTelemetry](https://learn.microsoft.com/dotnet/core/diagnostics/observability-with-otel)
-
+- RFC Editor, [RFC 9457: Problem Details for HTTP APIs](https://www.rfc-editor.org/rfc/rfc9457)

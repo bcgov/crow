@@ -216,6 +216,31 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 | DoS through unhandled exceptions in critical paths | `Pass / Flagged / N/A` | |
 | Swallowed exceptions masking security-relevant failures | `Pass / Flagged / N/A` | |
 
+### OWASP Top 10 for LLM Applications
+*Complete this section when the application invokes an LLM/agent, performs retrieval or embeddings, exposes model-selected tools, renders model output, or ingests documents into a model context.*
+
+| Check Item | Status | Details / Evidence |
+| :--- | :--- | :--- |
+| LLM01 direct prompt injection | `Pass / Flagged / N/A` | |
+| LLM01 indirect or stored/second-order prompt injection | `Pass / Flagged / N/A` | |
+| LLM02 sensitive information disclosure through prompts, logs, retrieval, or output | `Pass / Flagged / N/A` | |
+| LLM05 model output reaches HTML, Markdown, SQL, shell, files, URLs, or tools without destination-specific validation | `Pass / Flagged / N/A` | |
+| LLM06 model/agent has excessive permissions, unbounded tools, or missing confirmation | `Pass / Flagged / N/A` | |
+| LLM08 vector/embedding retrieval lacks authorization, tenant isolation, provenance, or poisoning controls | `Pass / Flagged / N/A` | |
+| LLM10 token, iteration, tool, document-size, or cost consumption is unbounded | `Pass / Flagged / N/A` | |
+| CWE-1427 untrusted input is improperly neutralized before LLM prompting | `Pass / Flagged / N/A` | |
+
+### Markdown and Documentation Security
+
+| Check Item | Status | Details / Evidence |
+| :--- | :--- | :--- |
+| Tracked Markdown family files and consuming pipelines were inventoried | `Pass / Flagged / N/A` | |
+| Untrusted Markdown cannot pass raw HTML/MDX/script content to an active renderer | `Pass / Flagged / N/A` | |
+| Links, images, embeds, includes, and previews restrict dangerous schemes and SSRF-capable remote fetches | `Pass / Flagged / N/A` | |
+| YAML/frontmatter uses safe parsing and cannot execute template directives or unsafe object construction | `Pass / Flagged / N/A` | |
+| Invisible/bidirectional Unicode, hidden comments, and encoded directive-like content are reviewed where agents ingest Markdown | `Pass / Flagged / N/A` | |
+| Markdown/report fields are encoded for downstream HTML, terminal, issue, CI, and prompt contexts | `Pass / Flagged / N/A` | |
+
 ---
 
 ## 7. Secure Coding Practices Review

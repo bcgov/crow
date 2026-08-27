@@ -72,30 +72,51 @@ This section documents the actual project structure and highlights the real arch
 
 ## 4. API Surface & Contracts
 
-### 6.1 API Versioning Strategy
+### 4.1 API Versioning Strategy
 *Document the API versioning approach (URL path, header, query parameter) and the current active versions.*
 
 | API Version | Status | Base Path / Header | Sunset Date |
 | :--- | :--- | :--- | :--- |
 | | `Active / Deprecated / Sunset` | | |
 
-### 6.2 Contract Documentation
+### 4.2 Contract Documentation
 *Reference OpenAPI/Swagger specs, AsyncAPI definitions, or GraphQL schemas.*
 
 | Contract Type | Location | Auto-Generated |
 | :--- | :--- | :--- |
 | | | `Yes / No` |
 
-### 6.3 Contract Testing
+### 4.3 Contract Testing
 *Document any consumer-driven contract tests (Pact, Spring Cloud Contract, etc.) or schema validation pipelines.*
 
 ---
 
-## 7. Security Architecture
+## 5. Unicode, UTF-8 & Indigenous-Language Readiness
+
+*Document the end-to-end ability to receive, store, process, search, transmit, display, export, and print Indigenous-language and multilingual text without corruption.*
+
+| Boundary | Encoding / Unicode Type | Collation / Comparison | Round-Trip Evidence | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| UI and HTTP input/output | | | | `Verified / Gap / Unknown / N/A` |
+| Application processing and validation | | | | `Verified / Gap / Unknown / N/A` |
+| Database, indexes, and search | | | | `Verified / Gap / Unknown / N/A` |
+| Messages, caches, and integrations | | | | `Verified / Gap / Unknown / N/A` |
+| Files, imports, exports, reports, and printing | | | | `Verified / Gap / Unknown / N/A` |
+| Runtime globalization data and fonts | | | | `Verified / Gap / Unknown / N/A` |
+
+- **Normalization policy:**
+- **Identifier vs. linguistic comparison policy:**
+- **Grapheme-aware operations:**
+- **Known incompatible downstream systems and migration plan:**
+- **Representative Indigenous-language test corpus:**
+
+---
+
+## 6. Security Architecture
 
 This section defines the security posture, authentication/authorization model, cryptographic controls, and compliance assertions.
 
-### 7.1 Authentication & Authorization Model
+### 6.1 Authentication & Authorization Model
 *Describe how users and services authenticate to this application and how authorization decisions are made.*
 
 | Aspect | Implementation |
@@ -106,22 +127,22 @@ This section defines the security posture, authentication/authorization model, c
 | **Token Format** | `JWT / Opaque / Session Cookie` |
 | **Token Storage** | `HttpOnly Cookie / Header / Secure Store` |
 
-### 7.2 Cryptographic Controls
+### 6.2 Cryptographic Controls
 - **Secret Generation:** All tokens, keys, and nonces **MUST** be generated using cryptographically secure pseudorandom number generators (e.g., `RandomNumberGenerator`, `crypto.randomBytes`, `/dev/urandom`).
 - **Transience of Secrets:** Plaintext secret values **MUST** reside strictly in transit or volatile memory. They **MUST NEVER** be stored in cleartext in the database, configuration files, environment variables persisted to disk, or log outputs.
 - **Credential Storage:** Only one-way hashes (minimum SHA-256, prefer bcrypt/scrypt/Argon2 for passwords) are persisted in credential stores.
 - **Side-Channel Mitigation:** Authentication validation **MUST** use constant-time comparison or introduce artificial uniform delays on rejection paths to prevent timing attacks.
 
-### 7.3 Concurrency & Data Integrity
+### 6.3 Concurrency & Data Integrity
 - **Lock Granularity:** Prefer localized (per-resource/per-user) locks over global process-wide locks. Concurrent read operations **MUST NOT** be blocked by unrelated write locks.
 - **Race Condition Prevention:** Multi-step privilege alterations **MUST** execute atomically within a single lock boundary or transaction to prevent TOCTOU races.
 - **DB-Level Invariants:** For uniqueness constraints under concurrency, prefer database-level partial unique indexes over application-level check-then-act patterns.
 
-### 7.4 Audit & Logging
+### 6.4 Audit & Logging
 - **Structured Audit Events:** Security-relevant state changes (role mutations, credential lifecycle events, data deletions) **MUST** emit structured `[AUDIT]` log entries.
 - **PII Redaction:** Audit entries **MUST** reference entities by hashed identifiers or UUIDs only. Zero cleartext secrets, tokens, or personally identifiable information in log streams.
 
-### 7.5 Data Classification
+### 6.5 Data Classification
 *Identify the sensitivity tiers of data handled by this application.*
 
 | Data Category | Classification | Encryption at Rest | Encryption in Transit | Retention Policy |
@@ -130,9 +151,9 @@ This section defines the security posture, authentication/authorization model, c
 
 ---
 
-## 8. Deployment & Infrastructure
+## 7. Deployment & Infrastructure
 
-### 8.1 Environment Topology
+### 7.1 Environment Topology
 
 | Environment | Purpose | Hosting | URL / Endpoint |
 | :--- | :--- | :--- | :--- |
@@ -141,7 +162,7 @@ This section defines the security posture, authentication/authorization model, c
 | **Staging** | Pre-production validation | | |
 | **Production** | Live workload | | |
 
-### 8.2 CI/CD Pipeline
+### 7.2 CI/CD Pipeline
 *Document the build, test, and deployment pipeline.*
 
 ```mermaid
@@ -160,7 +181,7 @@ graph LR
 | **Deployment Strategy** | `Rolling / Blue-Green / Canary / Recreate` |
 | **Infrastructure-as-Code** | `Terraform / Bicep / Helm / Pulumi / None` |
 
-### 8.3 Container & Orchestration
+### 7.3 Container & Orchestration
 
 | Aspect | Details |
 | :--- | :--- |
@@ -171,9 +192,9 @@ graph LR
 
 ---
 
-## 9. Observability
+## 8. Observability
 
-### 9.1 Logging
+### 8.1 Logging
 | Aspect | Details |
 | :--- | :--- |
 | **Framework** | `Serilog / NLog / log4j / Winston / stdlib` |
@@ -181,20 +202,20 @@ graph LR
 | **Structured Format** | `JSON / plaintext` |
 | **Correlation ID** | `Yes / No` |
 
-### 9.2 Metrics & Monitoring
+### 8.2 Metrics & Monitoring
 | Aspect | Details |
 | :--- | :--- |
 | **Metrics Library** | `Prometheus / OpenTelemetry / App Insights / StatsD` |
 | **Dashboard** | `Grafana / Azure Dashboard / Datadog / None` |
 | **Key SLIs** | *List: latency p95, error rate, throughput, saturation* |
 
-### 9.3 Distributed Tracing
+### 8.3 Distributed Tracing
 | Aspect | Details |
 | :--- | :--- |
 | **Tracing Library** | `OpenTelemetry / Jaeger / Zipkin / App Insights / None` |
 | **Propagation** | `W3C TraceContext / B3 / None` |
 
-### 9.4 Health Checks & Alerts
+### 8.4 Health Checks & Alerts
 | Endpoint / Check | Purpose | Alert Threshold |
 | :--- | :--- | :--- |
 | `/health` or `/healthz` | Liveness | |
@@ -202,7 +223,7 @@ graph LR
 
 ---
 
-## 10. Resilience & Disaster Recovery
+## 9. Resilience & Disaster Recovery
 
 | Aspect | Details |
 | :--- | :--- |
@@ -216,7 +237,7 @@ graph LR
 
 ---
 
-## 11. Architecture Decision Records (ADRs)
+## 10. Architecture Decision Records (ADRs)
 
 Key architectural decisions are recorded to capture history and trade-offs.
 
@@ -226,7 +247,7 @@ Key architectural decisions are recorded to capture history and trade-offs.
 
 ---
 
-## 12. Architecture Review Agent Verification & Compliance Checklist
+## 11. Architecture Review Agent Verification & Compliance Checklist
 
 *This section provides a checklist utilized by the Architecture Verification Agent to validate codebase alignment. Each item is annotated with its verification confidence.*
 
@@ -239,6 +260,8 @@ Key architectural decisions are recorded to capture history and trade-offs.
 ### Checklist
 
 - [ ] **Technical Currency:** All core runtimes and database engines are within active support phases. No EOL platforms in production. `[Confidence: ]`
+- [ ] **Unicode End-to-End:** Representative Indigenous-language text round-trips through input, storage, processing, search/integration, export, and rendering without loss. `[Confidence: ]`
+- [ ] **Globalization Runtime:** Production hosts/images include required ICU/CLDR, locale, timezone, and font assets; invariant globalization is not used where culture-aware behavior is required. `[Confidence: ]`
 - [ ] **No Hardcoded Credentials:** Zero secret or token literals exist in source code commits. `[Confidence: ]`
 - [ ] **Cryptographic Controls:** Secret generation uses secure RNG; credentials are hashed before storage. `[Confidence: ]`
 - [ ] **Side-Channel Defenses:** Authentication paths use constant-time comparison or artificial timing normalization. `[Confidence: ]`

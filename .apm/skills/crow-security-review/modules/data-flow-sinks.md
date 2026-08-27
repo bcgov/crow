@@ -14,6 +14,8 @@
    - Redirect URL construction
    - Deserialization of external data
    - LDAP/XPath query construction
+   - LLM prompt/message construction, retrieval context, and memory ingestion
+   - Model-output-driven tools, commands, URLs, SQL, file writes, or unsafe HTML/Markdown rendering
 3. **For each sink**, run `trace_path direction="inbound"` to find which entry points reach it
 4. **For reachable paths**, read intermediate code at each hop to check for sanitization/validation
 5. **Classify** as Confirmed (no sanitization found), Probable (sanitization may exist but couldn't fully verify), or safe (sanitization verified)
@@ -101,3 +103,7 @@ Classification: Confirmed
 - Command injection through argument arrays built across multiple methods
 - Path traversal where the path is constructed in a utility method separate from the file access
 - Template injection where template name comes from a database lookup driven by user input
+- Direct or stored/second-order prompt injection where untrusted content reaches an LLM context and influences a privileged sink
+- Insecure model-output handling where model text reaches executable or active-content sinks without independent validation/encoding
+
+For LLM, agent, RAG, or Markdown paths, load `llm-prompt-and-markdown-security.md` and trace across storage/retrieval boundaries; a database or vector store is an intermediate hop, not the end of the flow.

@@ -113,6 +113,13 @@ Analyze the target workspace using search, directory listing, file reading, know
 - Search for ADRs in `docs/adr/`, `adr/`, `decisions/`, `doc/architecture/decisions/`, or root-level `ADR-*.md` files.
 - Index existing ADRs by ID, title, status, and date.
 
+#### Pass H: Unicode, UTF-8 & Indigenous-Language Readiness
+- Load `modules/unicode-and-utf8.md` from the `crow-application-architecture` skill.
+- Trace text end to end across user input, HTTP, application processing, serialization, queues/events, caches, databases, search/indexes, integrations, files, exports/imports, reports, PDFs, email, printing, and fonts.
+- Verify explicit UTF-8/Unicode encoding, database column types and collation, normalization/comparison policy, grapheme-aware user-visible operations, ICU/locale/font availability, and malformed-input behavior.
+- Check for ASCII-only validation, diacritic stripping, lossy transliteration, byte/code-unit length assumptions, non-Unicode database fields, invariant globalization, or minimal images lacking required globalization/font assets.
+- Require round-trip evidence using representative Indigenous-language text, including combining marks and syllabics. Mark untested boundaries `Unknown — requires manual review`; never infer readiness from language-level string support alone.
+
 ### Step 4: Interpolate & Write the Architecture Document
 
 - Create `/docs` directory at the repository root if it does not exist.
@@ -140,6 +147,7 @@ Present a concise summary to the user:
 - Architecture pattern detected.
 - Security compliance state (how many checks passed/failed/unknown).
 - Any critical findings (EOL tech, hardcoded secrets, missing observability).
+- Unicode/UTF-8 readiness and any boundary that cannot preserve Indigenous-language characters.
 - File location(s) of the generated document(s).
 
 ---
