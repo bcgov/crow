@@ -1,7 +1,7 @@
 {
   "name": "bcgov-crow",
-  "version": "0.2.2",
-  "description": "CROW agents and skills for accessible B.C. government UX, architecture, security review, remediation, and executive reporting.",
+  "version": "0.3.0",
+  "description": "CROW agents and skills for accessible B.C. government UX, architecture, security, remediation, reporting, Crow authoring, review, and releases.",
   "author": {
     "name": "bcgov"
   },
@@ -12,7 +12,10 @@
     "crow-architecture-review",
     "crow-security-review",
     "crow-security-remediation",
-    "crow-executive-report"
+    "crow-executive-report",
+    "crow-agent-skill-authoring",
+    "crow-agent-skill-review",
+    "crow-release"
   ],
   "agents": [
     ".apm/agents"
@@ -24,7 +27,10 @@
     ".apm/skills/crow-architecture-review",
     ".apm/skills/crow-executive-report",
     ".apm/skills/crow-security-review",
-    ".apm/skills/crow-sonar-scan"
+    ".apm/skills/crow-sonar-scan",
+    ".apm/skills/crow-agent-skill-authoring",
+    ".apm/skills/crow-agent-skill-review",
+    ".apm/skills/crow-release"
   ],
   "hooks": "hooks.json"
 }
