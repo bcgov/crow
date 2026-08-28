@@ -1,0 +1,27 @@
+# Testing Plan
+
+<!--
+Living index for this repository's automated testing effort, analogous to WAORepo's Docs/README.md.
+Refresh at the end of every crow-testing engagement.
+-->
+
+## Start here: guides
+
+- [Unit Test Organization Guide](guides/Unit%20Test%20Organization%20Guide.md)
+- [Integration Test Organization Guide](guides/Integration%20Test%20Organization%20Guide.md)
+
+## Testability notes
+
+- [Low-hanging fruit, design issues, and candidates for testing](testability-notes.md)
+
+## Feature scenarios
+
+<!-- One row per feature that has gone through the scenario-doc-first workflow. -->
+
+| Feature | Scenarios doc | Status |
+|---|---|---|
+| | | |
+
+## Overall status
+
+<!-- Brief, current-state summary: what's covered, what's next, any known gaps. -->
