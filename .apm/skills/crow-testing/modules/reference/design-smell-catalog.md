@@ -2,9 +2,12 @@
 
 Deeper catalog of design choices that make testing unnecessarily hard. Use during `discovery.md` scans when
 the compact list there isn't enough. Each item is a candidate non-blocking finding for
-`docs/testing/testability-notes.md` — flag, don't fix, unless asked. Where a real SonarQube/Microsoft rule
-exists, it's noted for stronger justification when handing off; where none exists, that's stated plainly
-rather than invented.
+`docs/testing/testability-notes.md` — flag, don't fix, unless asked. Every entry ties to testing through at
+least one of two lenses: **(a)** it makes tests harder to write or isolate, or **(b)** it increases the
+*number* of tests needed because correctness isn't enforced by construction (e.g. immutability doesn't just
+make a test easier to write — it eliminates the bug class the test would have existed to catch). Where a
+real SonarQube/Microsoft rule exists, it's noted for stronger justification when handing off; where none
+exists, that's stated plainly rather than invented.
 
 - **Nullable-but-required fields.** A nullable property validated as required at every call site is simpler
   as a non-nullable type; the validation (and its tests) disappear entirely. (No single canonical rule ID;
@@ -57,3 +60,34 @@ rather than invented.
   responsibilities needs many test cases to cover all of its internal paths at once. Several small
   functions, each doing one thing, can each be covered with a handful of focused tests — mirroring F#'s
   bias toward small composable functions over large procedural blocks.
+- **Mutable state by default.** Settable properties and mutable collections (`List<T>`, `Dictionary<K,V>`)
+  let any code path mutate shared state between a test's Arrange and Assert steps, producing order-dependent
+  or flaky tests and requiring defensive cloning in setup. Prefer `record` types with `init`-only setters
+  and `with`-expressions for copies, and expose `IReadOnlyList<T>`/`ImmutableArray<T>` instead of a mutable
+  collection — the object you Arrange is then guaranteed to be the object you Assert against. More
+  fundamentally, immutability doesn't just make that test easier to write: it *eliminates* whole bug classes
+  (unintended aliasing, a caller mutating shared state, thread-safety issues from concurrent mutation)
+  outright, so there's no bug left in that category for any test to need to catch. (`CA2227` — collection
+  properties should be read-only; `CA1002` — do not expose generic lists.)
+- **Non-exhaustive branching.** A `switch`/`if-else` chain with a catch-all `default` over an enum or
+  union-style type silently swallows a newly added case — existing tests stay green while the new case is
+  mishandled at runtime, giving a false sense of coverage. Prefer a `switch` *expression* without a discard
+  arm (the compiler warns on missing enum members) so adding a case breaks the build instead of passing
+  silently, mirroring F#'s exhaustive `match` warnings. This is the purest form of angle (b): a compiler
+  error stands in for the test entirely — no test can forget to cover a case the compiler already rejects.
+- **Reference equality hiding value differences.** A domain type left as an ordinary class compares by
+  reference, so `Assert.Equal(expected, actual)` only passes if both sides are the same object reference —
+  rarely the intent — forcing brittle property-by-property assertions that silently stop covering a newly
+  added field. This isn't only a test-authoring inconvenience: a hand-rolled or forgotten `Equals` override
+  that omits a field is a real production bug (two "equal" records treated as different, or vice versa) that
+  exists whether or not a test ever exercises it. Prefer a `record`/`record struct` for domain value types:
+  compiler-generated structural equality means a single `Assert.Equal` covers every field automatically,
+  including ones added later, and there's no hand-written override left to get wrong. (`CA1815` — override
+  `Equals`/`==` on value types that need value semantics.)
+- **Exceptions as control flow for expected business outcomes.** Communicating an expected outcome like
+  "validation failed" via a thrown exception forces tests into `Assert.Throws<T>` with fragile message-text
+  matching, and makes multi-step pipelines hard to test in isolation (the first failure throws, so
+  downstream handling can't be exercised independently). This is a broader, pipeline-composition version of
+  "Partial functions and silent nulls" above — prefer a `Result<TSuccess, TError>`-style return, chained
+  with `Select`/`SelectMany` or `switch` expressions, so each step is independently testable and the whole
+  chain is asserted on its final result value, not a caught exception.
