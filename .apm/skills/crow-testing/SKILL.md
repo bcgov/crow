@@ -23,13 +23,17 @@ locally is not.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
      against SQL Server.
 6. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
-   for the situation at hand (e.g. property-based test generators, the legacy T-SQL harness case, the fuller
+   for the situation at hand (e.g. property-based test generators, the stored-procedure-only harness case, the fuller
    design-smell catalog). Never load a reference file speculatively.
 7. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md), and
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md) when producing the
    corresponding `docs/testing/` artifacts described in the `crow-testing` agent workflow.
-8. Add future technology stacks as sibling folders under `modules/dotnet/` (e.g. `modules/node/`,
+8. When writing property-based tests in .NET, copy from
+   [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
+   [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) rather than
+   regenerating equivalent generator code from scratch.
+9. Add future technology stacks as sibling folders under `modules/dotnet/` (e.g. `modules/node/`,
    `modules/python/`) and route to them here. Never load unrelated technology modules.
 
 ## Out of scope

@@ -22,7 +22,8 @@ rule as `dotnet/unit-tests.md`.
 ## The one exception: pure T-SQL with no EF code path
 
 If the logic under test is a stored procedure/function with no EF Core code path at all, don't force it into
-this pattern — see [`reference/legacy-tsql-harness.md`](../reference/legacy-tsql-harness.md) (load only when
+this pattern (this isn't automatically a legacy case — see the file for why) — see
+[`reference/legacy-tsql-harness.md`](../reference/legacy-tsql-harness.md) (load only when
 this specific case applies).
 
 ## Connection & environment

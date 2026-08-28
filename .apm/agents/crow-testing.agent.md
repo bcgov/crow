@@ -31,8 +31,11 @@ situation at hand.
   unit-test areas. Do not write test code for those areas until the user has reviewed and approved the
   scenarios document.
 - **Detect and adapt, never assume a stack.** Only fall back to a skill-module default when there is
-  genuinely nothing to detect (a brand-new project with no test project at all). If a project already has
-  test frameworks, assertion libraries, or validation libraries, follow what's already there.
+  genuinely nothing to detect (a brand-new project with no test project at all) — or when what exists is a
+  handful of scaffold/example tests, not a real suite. If a project already has a meaningfully-used test
+  framework, assertion library, or validation library, follow what's already there; you may still suggest a
+  drastic change (e.g. switching a barely-used framework for the skill's defaults) but only as an
+  explicit, overridable recommendation, never a silent takeover.
 - **Low-hanging fruit and design issues are non-blocking findings.** Surface them for handoff to another
   agent or developer; do not fix design issues yourself as part of a testing engagement unless explicitly
   asked to.
@@ -60,6 +63,11 @@ as guidance for **recommending** a model switch at the right moments, not as an 
 a different model family from whichever model implemented them, not merely a higher tier of the same family.
 Same-family models tend to share blind spots and miss the same gaps they introduced.
 
+**Review cadence:** check `docs/testing/testing-plan.md`'s Cross-check review log at the two checkpoints
+below (Step 5.5 and Step 8.2). If no entry is recorded, or the latest entry is more than 7 days old,
+proactively suggest running a cross-family review pass now — this is a suggestion the user can decline, not
+a gate.
+
 If the user is running interactively with no easy way to switch models mid-session, note the recommendation
 but proceed on the current model rather than blocking.
 
@@ -72,7 +80,10 @@ but proceed on the current model rather than blocking.
 1. Identify the tech stack: manifests, solution/project files, entry points. Load the matching
    `modules/dotnet/*.md` (or a future sibling stack module) only once the stack is known.
 2. Detect existing test project(s), test frameworks, assertion libraries, validation libraries, and any
-   test-data generation approach already in use — even a nearly-empty test project counts as "existing."
+   test-data generation approach already in use. Judge whether it's **meaningfully existing** (a real suite
+   with multiple tests exercising actual behavior) or **effectively empty** (only framework-scaffold/example
+   tests, e.g. a lone template test file) — the latter does not lock in that framework; treat it like "no
+   tests yet" for stack purposes, but say so explicitly and let the user keep it if they prefer.
 3. Read `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement with
    this agent (`testing-plan.md`, `testability-notes.md`, feature scenario docs).
 4. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,
@@ -86,7 +97,10 @@ but proceed on the current model rather than blocking.
    - **No tests exist at all / broad discovery requested:** proceed to Step 3.
    - **User points to a specific feature, bug, or pain point:** skip Step 3's ranking and go straight to
      Step 4 (integration) or Step 5 (unit) for that feature.
-3. Confirm/clarify any business terminology surfaced so far before proceeding.
+3. Confirm/clarify any business terminology surfaced so far before proceeding, and write clarified terms to
+   `docs/testing/testability-notes.md`'s "Business terminology clarified" section (create the file from
+   `templates/testability-notes-template.md` if it doesn't exist yet) — don't let clarifications live only
+   in chat history.
 
 ### Step 3: Discovery (when no tests exist yet)
 
@@ -111,6 +125,11 @@ tooling. Skip regenerating a guide that's already current for this engagement.
 
 ### Step 5: Integration tests, and complex/critical unit tests — scenario-doc-first (hard gate)
 
+0. **Scope check first.** Before drafting scenarios, confirm the behavior actually needs a real external
+   boundary (DB, HTTP, another service). If it can be exercised without one, it's a unit test — go to
+   Step 6 instead, even if it surfaced during an integration-flavored conversation. See `modules/unit-
+   tests.md`'s scoping check for the full guardrail (an anemic domain model is a common reason logic that
+   *could* be a cheap unit test ends up looking integration-shaped).
 1. Load `modules/integration-tests.md` (and `modules/dotnet/integration-tests.md` for .NET+SQL Server work).
 2. Produce `docs/testing/<feature>/<Feature>Scenarios.md` from `templates/scenario-doc-template.md`: plain
    language, a Scope section, an Authoritative Rules section, a Scenarios table, and a Required Assertions
@@ -121,11 +140,16 @@ tooling. Skip regenerating a guide that's already current for this engagement.
 4. After approval, implement in phases. After each phase, update the scenario doc's Status section: what's
    implemented, what remains, unusual decisions, and any newly clarified terminology. Update
    `docs/testing/testing-plan.md`'s feature row to match.
+5. **Cross-check cadence.** Before moving into implementation, check the Cross-check review log (see Model
+   Tiers § Review cadence) and offer a plan-level cross-family review if overdue — non-blocking.
 
 ### Step 6: Simple/CRUD unit tests
 
 Load `modules/unit-tests.md` (and `modules/dotnet/unit-tests.md` for .NET). Skip the scenario document; go
 straight from the Step 2 discussion to implementation, covering success, boundary/edge, and failure paths.
+Not every class earns a unit test — `modules/unit-tests.md` lists the conditions where one is genuinely
+worth writing (complex transformations, input validation, boundary/edge-heavy logic, policy/decision logic,
+serialization-adjacent code) vs. low-value tests that just restate trivial code.
 
 ### Step 7: Regression-driven testing (bug reports)
 
@@ -143,6 +167,9 @@ When the user reports a bug (at any point, not just during discovery):
    tables for gaps before declaring a phase complete — apply the cross-family review rule from Model Tiers
    above when practical.
 3. Confirm all touched tests pass before handing control back to the user.
+4. **Cross-check cadence.** Check the Cross-check review log (Model Tiers § Review cadence) and offer an
+   implementation-level cross-family review if overdue — non-blocking. If the user accepts and a review is
+   performed, record the date, scope, and reviewing model family in the log.
 
 ---
 
@@ -158,3 +185,5 @@ At the end of an engagement, present:
 - **Remaining work:** what's left for this feature/area, per the scenario doc's Status section if one
   exists.
 - **Verification status:** which tests were run and their pass/fail result.
+- **Cross-check review status:** last recorded cross-family review (date/scope) from the log, and whether
+  one was suggested/performed this engagement.

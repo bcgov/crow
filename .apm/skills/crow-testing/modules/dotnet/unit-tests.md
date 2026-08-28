@@ -7,8 +7,13 @@ exists before recommending anything.
 
 1. Look for an existing test project and its frameworks (xUnit/NUnit/MSTest), assertion library
    (FluentAssertions, built-in asserts, Shouldly, etc.), validation library (FluentValidation or none), and
-   test-data generation approach already in use. If any of these exist, follow the project's existing
-   choice — do not introduce a competing library.
+   test-data generation approach already in use. Judge whether it's **meaningfully existing** — a real
+   suite with multiple tests exercising actual behavior — or **effectively empty** (only a framework's
+   scaffold/example test, or 1-2 trivial tests). A meaningfully-existing choice should be followed, not
+   competed with. An effectively-empty one does not lock anything in: you may still default normally
+   (step 2) and suggest it explicitly, framed as overridable ("I see only a placeholder NUnit test — I'd
+   suggest starting fresh with xUnit/CsCheck since nothing is established yet; say the word to keep NUnit
+   instead").
 2. **Only when there is no test project yet** (a brand-new .NET project with nothing to detect), default to:
    - **xUnit** as the test framework.
    - **CsCheck** for property-based testing of validation rules and invariants with many input combinations

@@ -5,6 +5,14 @@ Non-blocking findings from discovery/implementation passes -- for handoff to ano
 not to be fixed as part of a testing engagement itself unless explicitly requested.
 -->
 
+## Business terminology clarified
+
+<!-- Homework/discussion findings -- record here so clarifications don't live only in chat history. -->
+
+| Term | Clarified meaning | Where it came from |
+|---|---|---|
+| | | |
+
 ## Low-hanging fruit
 
 <!-- Easy-to-test, commonly-missed, high-defect-risk areas. -->

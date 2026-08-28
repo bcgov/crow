@@ -22,6 +22,18 @@ Refresh at the end of every crow-testing engagement.
 |---|---|---|
 | | | |
 
+## Cross-check review log
+
+<!--
+Record every cross-family review pass here (a different model family than the one that planned/implemented
+reviewing the work). The agent checks this log after scenario-doc approval and after verification, and
+proactively suggests a review if none is recorded or the latest entry is more than 7 days old.
+-->
+
+| Date | Scope (feature/whole repo) | Reviewing model family | Notes |
+|---|---|---|---|
+| | | | |
+
 ## Overall status
 
 <!-- Brief, current-state summary: what's covered, what's next, any known gaps. -->
