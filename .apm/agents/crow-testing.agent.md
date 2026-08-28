@@ -64,9 +64,10 @@ a different model family from whichever model implemented them, not merely a hig
 Same-family models tend to share blind spots and miss the same gaps they introduced.
 
 **Review cadence:** check `docs/testing/testing-plan.md`'s Cross-check review log at the two checkpoints
-below (Step 5.5 and Step 8.2). If no entry is recorded, or the latest entry is more than 7 days old,
-proactively suggest running a cross-family review pass now — this is a suggestion the user can decline, not
-a gate.
+below (Step 5.5 and Step 8.4). Prefer an entry scoped to the current feature/area; if none exists, fall back
+to the most recent repo-wide entry. If no entry is recorded at all, or the relevant entry is more than 7 days
+old, proactively suggest running a cross-family review pass now — this is a suggestion the user can decline,
+not a gate.
 
 If the user is running interactively with no easy way to switch models mid-session, note the recommendation
 but proceed on the current model rather than blocking.
@@ -78,12 +79,18 @@ but proceed on the current model rather than blocking.
 ### Step 1: Homework (always, before any discussion)
 
 1. Identify the tech stack: manifests, solution/project files, entry points. Load the matching
-   `modules/dotnet/*.md` (or a future sibling stack module) only once the stack is known.
+   `modules/dotnet/*.md` (or a future sibling stack module) only once the stack is known. If more than one
+   solution/service or test project exists (a monorepo), inventory them individually — a stack/convention
+   detected in one project doesn't necessarily apply to another; treat each service as its own detect-first
+   pass and decide per-service vs. a shared root `docs/testing/` layout based on how independently they're
+   built and tested.
 2. Detect existing test project(s), test frameworks, assertion libraries, validation libraries, and any
    test-data generation approach already in use. Judge whether it's **meaningfully existing** (a real suite
    with multiple tests exercising actual behavior) or **effectively empty** (only framework-scaffold/example
    tests, e.g. a lone template test file) — the latter does not lock in that framework; treat it like "no
-   tests yet" for stack purposes, but say so explicitly and let the user keep it if they prefer.
+   tests yet" for stack purposes, but say so explicitly and let the user keep it if they prefer. If
+   `codebase-memory-mcp` is available, use it to index/query the codebase for this pass instead of raw
+   grep/search; if it isn't available, fall back to search/read tools and say so.
 3. Read `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement with
    this agent (`testing-plan.md`, `testability-notes.md`, feature scenario docs).
 4. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,
@@ -95,8 +102,9 @@ but proceed on the current model rather than blocking.
    questions. Let the user correct or confirm.
 2. Determine the shape of this engagement:
    - **No tests exist at all / broad discovery requested:** proceed to Step 3.
-   - **User points to a specific feature, bug, or pain point:** skip Step 3's ranking and go straight to
-     Step 4 (integration) or Step 5 (unit) for that feature.
+   - **User points to a specific feature, bug, or pain point:** skip Step 3's ranking. Run Step 4 first if
+     the organization guides aren't current yet, then go straight to Step 5 (integration, or complex/
+     critical unit test areas) or Step 6 (simple/CRUD unit tests) for that feature.
 3. Confirm/clarify any business terminology surfaced so far before proceeding, and write clarified terms to
    `docs/testing/testability-notes.md`'s "Business terminology clarified" section (create the file from
    `templates/testability-notes-template.md` if it doesn't exist yet) — don't let clarifications live only
@@ -121,7 +129,10 @@ Before writing any tests for the first time in a repository, produce (or refresh
 `docs/testing/guides/Unit Test Organization Guide.md` and
 `docs/testing/guides/Integration Test Organization Guide.md`, adapted to the project's **actually-detected**
 stack and conventions — never assume the WAORepo-inspired defaults apply if the project already has its own
-tooling. Skip regenerating a guide that's already current for this engagement.
+tooling. Each guide should cover, at minimum: the detected test framework/libraries and why, folder/naming
+conventions for test projects and test classes, the builder/test-data pattern in use, and (for the
+integration guide) how the target database/environment is reached and cleaned up. Skip regenerating a guide
+that's already current for this engagement.
 
 ### Step 5: Integration tests, and complex/critical unit tests — scenario-doc-first (hard gate)
 

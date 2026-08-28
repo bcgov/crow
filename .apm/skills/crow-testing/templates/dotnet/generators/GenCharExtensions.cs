@@ -27,9 +27,9 @@ namespace YourProject.Tests.Generators
         {
             'ı', 'İ',           // Turkish I (dotless i, dotted I)
             'ß', 'ẞ',           // German Eszett (changes length on ToUpper)
-            'ﬁ', 'ﬂ', 'æ', 'œ', // Ligatures (may decompose)
-            'K',                // Kelvin Sign (normalizes to K)
-            'Å'                 // Angstrom (normalizes to A with ring)
+            '\ufb01', '\ufb02', 'æ', 'œ', // Ligatures (may decompose)
+            '\u212A',           // Kelvin Sign (normalizes to 'K')
+            '\u212B'            // Angstrom Sign (normalizes to 'Å', U+00C5)
         };
 
         // Right-to-Left (RTL) samples for Bidi testing
@@ -147,7 +147,7 @@ namespace YourProject.Tests.Generators
         }
 
         /// <summary>
-        /// Generates whitespace, including dangerous invisible characters (ZWJ, ZWNJ, BOM).
+        /// Generates whitespace, including tricky Unicode spaces (non-breaking, ideographic, zero-width).
         /// </summary>
         public static Gen<char> UnicodeWhitespace()
         {

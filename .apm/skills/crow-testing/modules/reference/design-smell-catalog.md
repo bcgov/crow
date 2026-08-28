@@ -72,9 +72,12 @@ exists, that's stated plainly rather than invented.
 - **Non-exhaustive branching.** A `switch`/`if-else` chain with a catch-all `default` over an enum or
   union-style type silently swallows a newly added case — existing tests stay green while the new case is
   mishandled at runtime, giving a false sense of coverage. Prefer a `switch` *expression* without a discard
-  arm (the compiler warns on missing enum members) so adding a case breaks the build instead of passing
-  silently, mirroring F#'s exhaustive `match` warnings. This is the purest form of angle (b): a compiler
-  error stands in for the test entirely — no test can forget to cover a case the compiler already rejects.
+  arm: the compiler emits a warning (`CS8509`) on missing enum members, and with `TreatWarningsAsErrors`
+  (or `<WarningsAsErrors>CS8509</WarningsAsErrors>`) enabled that warning becomes a build break instead of a
+  silent pass — mirroring F#'s exhaustive `match` warnings, which most F# projects already build as errors.
+  Without that setting it's still a visible warning, not a guarantee, so recommend enabling it alongside
+  this fix. This is the purest form of angle (b): a compiler error stands in for the test entirely — no
+  test can forget to cover a case the compiler already rejects.
 - **Reference equality hiding value differences.** A domain type left as an ordinary class compares by
   reference, so `Assert.Equal(expected, actual)` only passes if both sides are the same object reference —
   rarely the intent — forcing brittle property-by-property assertions that silently stop covering a newly

@@ -16,8 +16,10 @@ locally is not.
    [`modules/discovery.md`](modules/discovery.md).
 3. Load [`modules/unit-tests.md`](modules/unit-tests.md) when the work is unit-level.
 4. Load [`modules/integration-tests.md`](modules/integration-tests.md) when the work crosses a real
-   framework/external boundary (state machines, combinatorial rules, date math, multi-entity calculations,
-   data merge/migration — see that module's scoping criteria).
+   framework/external boundary. Signals it might (state machines, combinatorial rules, date math,
+   multi-entity calculations, data merge/migration) are not sufficient on their own — apply that module's
+   scoping criteria and `modules/unit-tests.md`'s scoping check before committing to this path; the same
+   logic is often a unit test if it can be exercised without a real DB/HTTP/external boundary.
 5. For .NET (`.sln`, `.slnx`, `.csproj`, `.fsproj`, `global.json` present), also load:
    - [`modules/dotnet/unit-tests.md`](modules/dotnet/unit-tests.md) for unit-level work.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
@@ -33,8 +35,9 @@ locally is not.
    [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
    [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) rather than
    regenerating equivalent generator code from scratch.
-9. Add future technology stacks as sibling folders under `modules/dotnet/` (e.g. `modules/node/`,
-   `modules/python/`) and route to them here. Never load unrelated technology modules.
+9. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
+   `modules/python/`), each with its own `unit-tests.md`/`integration-tests.md` pair mirroring
+   `modules/dotnet/`, and route to them here. Never load unrelated technology modules.
 
 ## Out of scope
 

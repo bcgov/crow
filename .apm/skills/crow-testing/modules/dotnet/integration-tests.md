@@ -13,7 +13,13 @@ rule as `dotnet/unit-tests.md`.
   adopting once logic has migrated to EF Core). If the project already uses any of these, follow the
   project's existing choice instead.
 - **Negative-ID seeding convention:** give test-seeded rows explicit negative primary keys so they can never
-  collide with real DEV/TEST data, and so seeded rows are trivially identifiable and cleanable.
+  collide with real DEV/TEST data, and so seeded rows are trivially identifiable and cleanable. For
+  `IDENTITY` columns this requires `SET IDENTITY_INSERT <table> ON` around the insert (and back `OFF`
+  after) — EF Core will not otherwise let you supply an explicit key for an identity column. Clean up
+  explicitly in the test's teardown (`DELETE ... WHERE Id < 0`, scoped to the seeded rows) since, unlike the
+  T-SQL harness's `BEGIN TRANSACTION ... ROLLBACK` pattern, a normal EF Core test commits its changes to the
+  shared database — don't rely on an ambient transaction unless the test explicitly wraps its own EF calls
+  in one and rolls it back at the end.
 - Tag integration tests distinctly from unit tests (e.g. `[Trait("Category","Integration")]`) so they can be
   run/excluded separately.
 - Project scalar fields when asserting persisted EF state (e.g. `.Select(x => new { x.Id, x.Field })`)

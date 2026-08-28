@@ -2,6 +2,10 @@
 
 Deeper guidance for writing property-based tests with CsCheck. Load only when actually authoring one.
 
+**Prerequisites:** add the `CsCheck` NuGet package to the test project. The generator templates below
+target a modern .NET TFM; if the project targets .NET 5 or earlier, drop or replace any `TimeOnly`/`DateOnly`
+generators in `GenDateExtensions.cs` (introduced in .NET 6) with `DateTime`-based equivalents.
+
 ## When to reach for a property-based test
 
 Use it for invariants that must hold across a **wide, hard-to-enumerate space of inputs** — not for a

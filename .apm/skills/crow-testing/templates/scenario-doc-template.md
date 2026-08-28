@@ -1,12 +1,11 @@
 # [Feature Name] Scenarios
 
 <!--
-Fill in from the DrawerAssignmentReassignmentScenarios.md pattern:
-- Plain language, tables first, prose only where a table would lose meaning.
+Fill in following a plain-language, table-first pattern:
+- Tables first, prose only where a table would lose meaning.
 - This document is a living artifact: keep it current as implementation progresses, don't just write it
   once at the start.
 -->
-
 ## Scope
 
 <!-- What is being tested, and what is explicitly out of scope. -->

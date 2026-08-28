@@ -1,7 +1,7 @@
 # Testing Plan
 
 <!--
-Living index for this repository's automated testing effort, analogous to WAORepo's Docs/README.md.
+Living index for this repository's automated testing effort.
 Refresh at the end of every crow-testing engagement.
 -->
 
