@@ -1,0 +1,39 @@
+name: Crow asset validation
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Crow assets (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run deterministic asset checks
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
+
+      - name: Test architecture output validation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
+
+      - name: Test release safety guards
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
