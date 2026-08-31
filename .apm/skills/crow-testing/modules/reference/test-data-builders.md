@@ -155,7 +155,7 @@ Test runners execute test classes in parallel by default. Two consequences:
   copy instead.
 - If the object graph is genuinely expensive to generate and you cache it in a shared fixture, return an
   immutable snapshot or a deep copy; otherwise one test's mutation corrupts another's arrangement. See the
-  "Mutable state by default" entry in [`design-smell-catalog.md`](design-smell-catalog.md).
+  "Mutable state by default" entry in [`design-smell-entries.md`](design-smell-entries.md).
 
 ## Where builders live
 

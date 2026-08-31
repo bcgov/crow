@@ -25,22 +25,28 @@ not to be fixed as part of a testing engagement itself unless explicitly request
 
 <!-- E.g. nullable-but-required fields, primitive obsession, hidden static state -- see
      modules/reference/design-smell-catalog.md for the fuller catalog used to find these, and
-     modules/reference/testability-improvements.md for how the filter stage and priority are decided. -->
+     modules/reference/testability-improvements.md for how the filter stage and priority are decided.
+     "Recorded at" lets a later engagement notice a finding whose cost/priority depended on the TFM at
+     discovery time -- e.g. a fix that needed a backport package may become a built-in after a migration. -->
 
-| Location | Issue | Simpler alternative | Defect caught today at | Filter it moves to | Priority | Impact if unaddressed |
-|---|---|---|---|---|---|---|
-| | | | | | | |
+| Location | Issue | Simpler alternative | Defect caught today at | Filter it moves to | Priority | Impact if unaddressed | Recorded at (TFM / LangVersion) |
+|---|---|---|---|---|---|---|---|
+| | | | | | | | |
 
 ## Accepted constraints and decisions
 
 <!-- Findings that will NOT be actioned, and why. Record these so the same proposal isn't re-raised on the
      next engagement. Common causes: a UI framework requires two-way binding, the ORM requires mutable
      navigation collections, the target framework predates the feature, or the user simply decided against
-     it. A constraint is not a smell. -->
+     it. A constraint is not a smell.
 
-| Finding | Why it can't change | Decided by | Date |
-|---|---|---|---|
-| | | | |
+     "Recorded at" matters most here: if the reason mentions the target framework or language version (e.g.
+     "not available until net8.0", "requires C# 11"), a later engagement can compare it against the
+     project's *current* TFM/LangVersion and flag it as possibly stale -- see crow-testing.agent.md Step 1. -->
+
+| Finding | Why it can't change | Decided by | Date | Recorded at (TFM / LangVersion) |
+|---|---|---|---|---|
+| | | | | |
 
 ## Candidates for testing
 

@@ -110,6 +110,16 @@ but proceed on the current model rather than blocking.
    this agent (`testing-plan.md`, `testability-notes.md`, feature scenario docs).
 5. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,
    so later discussion can reference them concretely instead of asking generically.
+6. **If `testability-notes.md` or `modernization-handoff.md` already exist, check for stale
+   platform-dependent findings.** Read the current TFM/`LangVersion` from the project file(s) identified in
+   item 1 (`modules/discovery.md`'s homework step reads these in more detail — `.editorconfig`, `<Nullable>`,
+   `<LangVersion>`, `<EnforceCodeStyleInBuild>` — when it runs in Step 3, but the raw TFM is already visible
+   from the manifests read here). Compare it against the `Recorded at (TFM / LangVersion)` value on each row
+   of the "Accepted constraints and decisions" and "Design issues affecting testability" tables, and the
+   "Recorded against" line of any `modernization-handoff.md`. Collect only the entries where **both** hold:
+   the current TFM/LangVersion is newer than the recorded one, **and** the entry's own reason/finding text
+   actually references the framework or language version (e.g. "not available until", a TFM, a C# version
+   number) — don't re-flag a decline that had nothing to do with the platform. Carry this list into Step 3.
 
 ### Step 2: Open the discussion (interview-style, assumptions surfaced)
 
@@ -127,20 +137,33 @@ but proceed on the current model rather than blocking.
 
 ### Step 3: Discovery (when no tests exist yet)
 
-1. Load `modules/discovery.md` and apply it to the Step 1 scan results.
-2. Rank candidate testing areas favoring low-hanging fruit (easy to test, commonly missed, high defect
+1. **If Step 1.6 found stale platform-dependent entries, present them first, as their own short list** —
+   "recorded against net8.0, this project is now on net10.0 — worth revisiting?" — separately from the
+   newly-ranked candidates below, so a migration-driven re-review doesn't get lost among new findings.
+2. Load `modules/discovery.md` and apply it to the Step 1 scan results.
+3. Rank candidate testing areas favoring low-hanging fruit (easy to test, commonly missed, high defect
    risk), and present them **in batches grouped by feature/module** — not one flat list.
-3. Flag testability-improving design issues as non-blocking findings (load
+4. Flag testability-improving design issues as non-blocking findings (load
    `modules/reference/design-smell-catalog.md` only if the compact list in `discovery.md` isn't enough for
    the area in question).
-4. Write findings to `docs/testing/testability-notes.md` using the skill's
-   `templates/testability-notes-template.md`, and refresh `docs/testing/testing-plan.md` using
-   `templates/testing-plan-template.md`. **If a finding is cross-cutting** (a habit or convention affecting
-   many files, not one location) **or the user asks for a fuller writeup before deciding**, graduate it to
-   its own `docs/testing/modernization-handoff.md` using
-   `templates/modernization-handoff-template.md` instead of a table row — that template also has a "who
-   could help" section for naming a specific agent/tool, when one genuinely fits, as a suggestion.
-5. Ask the user which batch/area to start with.
+5. Write findings to `docs/testing/testability-notes.md` using the skill's
+   `templates/testability-notes-template.md` — including the current TFM/`LangVersion` in the "Recorded at"
+   column of any new row, so a later migration can compare against it — and refresh
+   `docs/testing/testing-plan.md` using `templates/testing-plan-template.md`. **If a finding is
+   cross-cutting** (a habit or convention affecting many files, not one location) **or the user asks for a
+   fuller writeup before deciding**, graduate it to its own `docs/testing/modernization-handoff.md` using
+   `templates/modernization-handoff-template.md` instead of a table row (record the same TFM/LangVersion in
+   its "Recorded against" line) — that template also has a "who could help" section for naming a specific
+   agent/tool, when one genuinely fits, as a suggestion.
+6. Ask the user which batch/area to start with.
+7. **If the chosen area has no real coverage and its behavior isn't well understood, present the
+   characterization plan before starting it.** State what you intend to pin and in what order, the proposed
+   time-box, and — if the code has no seam and `modules/reference/legacy-seams.md` applies — which
+   dependency-breaking technique you'd introduce and the mark it leaves on the production code (e.g. "I'd
+   add a `protected virtual` around the clock read and override it in a test subclass"). This is a
+   lightweight go-ahead, not the full hard gate in Step 5 — there's no scenario doc possible yet, since
+   understanding the behavior is the point of the exercise — but the technique and the budget are decisions
+   worth surfacing before code changes, not after.
 
 ### Step 4: Generate or refresh the organization guides
 
@@ -191,7 +214,10 @@ When the user reports a bug (at any point, not just during discovery):
    coverage at all** and its current behavior isn't well understood, pin it first with characterization
    tests (`modules/reference/characterization-tests.md`) so the fix is verifiable rather than hopeful — and
    if it can't be called in isolation at all, see `modules/reference/legacy-seams.md` before assuming it
-   can't be unit tested.
+   can't be unit tested. **Before starting that characterization/seam work, present the plan first** —
+   same lightweight checkpoint as Step 3.6: what you intend to pin, the proposed time-box, and (if a seam
+   technique applies) which one and the mark it leaves on production code. Proceed on a go-ahead, not silent
+   agent-side decision.
 4. Update the relevant scenario doc / `testing-plan.md` status to reflect the pass.
 
 ### Step 8: Verification

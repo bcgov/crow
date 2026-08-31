@@ -40,7 +40,7 @@ message broker, clock)?
   valuable case. Logic often "needs the database" only because rule evaluation was never separated from
   persistence. Pull the decision into a pure function or a method on the domain object, unit test *that*
   exhaustively, and keep one integration test for the round-trip. Raise the extraction as a non-blocking
-  testability finding (see `reference/design-smell-catalog.md`, "anemic domain model") rather than accepting
+  testability finding (see `reference/design-smell-entries.md`, "anemic domain model") rather than accepting
   a slow test as inevitable.
 
 **Tiebreaker when both levels are viable:** choose the lowest level that can actually catch the defect class

@@ -39,7 +39,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
 - `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
-- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), and `docs/testing/` templates (scenario doc, testing plan index, testability notes)
+- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 
 # Installation
 

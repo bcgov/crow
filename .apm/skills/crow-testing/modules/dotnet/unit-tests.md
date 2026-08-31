@@ -128,6 +128,6 @@ Everything above still applies (xUnit runs F# test projects the same way; CsChec
 F#-specific notes: prefer **FsCheck** over CsCheck when the project is F#-first and already leans on
 FsCheck's idioms (its `Arbitrary`/`Gen` API is more natural from F# than CsCheck's fluent C# API — detect
 first, same rule as everything else here); and F#'s discriminated unions/records already make many of the
-`design-smell-catalog.md` DDD/F# smells (illegal states representable, exhaustive matching) structural
+`design-smell-entries.md` DDD/F# smells (illegal states representable, exhaustive matching) structural
 rather than optional, so testing effort there is usually better spent on the boundary between F# and any
 C#-consuming code than on re-validating invariants the type system already guarantees.

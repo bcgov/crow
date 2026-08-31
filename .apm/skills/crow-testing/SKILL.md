@@ -40,7 +40,10 @@ locally is not.
    - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
      re-platform, or a move between stored procedures and application code.
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
-     `discovery.md` isn't enough.
+     `discovery.md` isn't enough. Loads the triage table only; it links to `design-smell-entries.md` for
+     any one entry's full detail.
+   - `design-smell-entries.md` — writing up one specific smell found via the catalog's triage table. Loaded
+     from `design-smell-catalog.md`, not directly — don't load it just to scan.
    - `testability-improvements.md` — writing up testability findings, or deciding whether a design change is
      worth proposing at all. Pairs with the catalog: that one identifies smells, this one prioritizes and
      justifies the fixes.
@@ -80,3 +83,9 @@ locally is not.
 - End-to-end (E2E) / browser UI test automation — not covered yet; a future `modules/e2e/` addition can slot
   into this router without restructuring it.
 - Authoring CI/CD pipelines, build/release tasks, or Azure DevOps Server configuration.
+
+## For maintainers of this skill
+
+[`MAINTENANCE.md`](MAINTENANCE.md) is a trigger table for keeping this skill current as C#/.NET (and future
+stacks) gain new versions and features. It is written for whoever edits this skill, not for the agent — it
+is never loaded during a testing engagement.
