@@ -25,8 +25,16 @@ locally is not.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
      against SQL Server.
 6. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
-   for the situation at hand (e.g. property-based test generators, the stored-procedure-only harness case, the fuller
-   design-smell catalog). Never load a reference file speculatively.
+   for the situation at hand. Available reference material, and its trigger:
+   - `property-based-testing.md` — writing a property-based test or its generators.
+   - `reusable-test-suites.md` — the same field type or contract is tested on three or more models, and
+     copying a test file per model is the alternative.
+   - `test-data-builders.md` — writing or reviewing a test data builder.
+   - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
+     `discovery.md` isn't enough.
+   - `legacy-tsql-harness.md` — the logic under test is a stored procedure/function with no EF code path.
+
+   Never load a reference file speculatively.
 7. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md), and
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md) when producing the

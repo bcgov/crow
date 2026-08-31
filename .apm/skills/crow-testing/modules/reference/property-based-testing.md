@@ -56,6 +56,47 @@ public void SanitizedName_OnlyContainsValidSlugCharacters()
 - Pair a small number of property-based tests (covering the general rule) with a handful of example-based
   tests (covering specific, named edge cases a reader will recognize).
 
+## Pair properties with explicit boundary examples
+
+For any rule with a threshold, write **both**: the three boundary examples (N-1, N, N+1) as ordinary tests,
+and a property covering the space on either side. The examples pin the exact boundary in a form a reviewer
+can verify at a glance and a failure names precisely; the property covers the range the examples don't. A
+property alone tends to under-sample the boundary — the single most likely place for an off-by-one — while
+examples alone say nothing about the other 200 characters.
+
+```csharp
+[Fact]
+public void Email_At_Exact_200_Chars_Should_Pass()   // boundary example, exact and readable
+{
+    var email = new string('a', 188) + "@example.com";
+    Assert.Equal(200, email.Length);
+    Validator.TestValidate(BuildModelWithEmail(email))
+             .ShouldNotHaveValidationErrorFor(EmailExpression);
+}
+
+[Fact]
+public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space beyond it
+{
+    Gen.String[Gen.Char.AlphaNumeric, 210, 260].Sample(local =>
+    {
+        var model = BuildModelWithEmail(local + "@test.com");
+        Validator.TestValidate(model).ShouldHaveValidationErrorFor(EmailExpression);
+    }, iter: 10, seed: "EmailTooLong");
+}
+```
+
+## Iteration counts and seed naming
+
+- **Iterations:** 10-20 is usually right for validation rules. The generator's *bias* matters far more than
+  raw volume — a well-shaped generator finds the bug in 10 iterations, while a uniform one may not find it in
+  10,000. Raise the count only for genuinely large state spaces, and watch the effect on suite runtime; slow
+  tests get skipped, which costs more coverage than the extra iterations bought.
+- **Seeds:** give every `Sample` call an explicit, descriptive seed naming what's being generated
+  (`seed: "EmailTooLong"`, `seed: "ValidWithinLimits"`). This keeps runs reproducible, makes a failing test's
+  intent readable without parsing the generator, and avoids two unrelated tests sharing an accidental seed.
+  When a property discovers a real bug, record the reported failing seed in the fix's test so the exact case
+  stays covered.
+
 ## Biased character generators (for string/format validation)
 
 A uniform-random `Gen.String` under-samples the edge cases that actually cause bugs. A generator that biases
