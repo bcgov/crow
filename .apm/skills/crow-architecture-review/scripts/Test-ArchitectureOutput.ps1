@@ -19,6 +19,12 @@ $root = (Resolve-Path $RepoRoot).Path
 $docsPath = Join-Path $root 'docs'
 $rootArchitecturePath = Join-Path $docsPath 'architecture.md'
 $outputPaths = [System.Collections.Generic.List[string]]::new()
+$pathComparison = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+    [System.StringComparison]::OrdinalIgnoreCase
+}
+else {
+    [System.StringComparison]::Ordinal
+}
 
 function Add-ValidationError {
     param([string]$Message)
@@ -67,8 +73,11 @@ function Resolve-RepositoryPath {
     }
 
     $resolved = [System.IO.Path]::GetFullPath((Join-Path $root $RelativePath))
-    $rootPrefix = $root.TrimEnd('\') + '\'
-    if (-not $resolved.StartsWith($rootPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $rootPrefix = $root.TrimEnd(
+        [System.IO.Path]::DirectorySeparatorChar,
+        [System.IO.Path]::AltDirectorySeparatorChar) +
+        [System.IO.Path]::DirectorySeparatorChar
+    if (-not $resolved.StartsWith($rootPrefix, $pathComparison)) {
         Add-ValidationError "$Description resolves outside the repository: $RelativePath"
         return $null
     }
@@ -256,7 +265,7 @@ else {
             }
 
             $name = [string]$service.name
-            $normalizedOutput = ([string]$service.outputPath).Replace('\', '/').TrimStart('/')
+            $normalizedOutput = ([string]$service.outputPath).Replace('\', '/')
             if ($name -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
                 Add-ValidationError "Service name contains unsupported path characters: $name"
             }
@@ -266,10 +275,10 @@ else {
                 }
                 $names[$name] = $true
             }
-            if ($normalizedOutput -notmatch '^docs/[^/]+/architecture\.md$') {
+            if ($normalizedOutput -cnotmatch '^docs/[^/]+/architecture\.md$') {
                 Add-ValidationError "Invalid service output path '$normalizedOutput'. Expected docs/<service-name>/architecture.md."
             }
-            elseif ($normalizedOutput -ne "docs/$name/architecture.md") {
+            elseif ($normalizedOutput -cne "docs/$name/architecture.md") {
                 Add-ValidationError "Service '$name' output path must be docs/$name/architecture.md."
             }
             if ($paths.ContainsKey($normalizedOutput)) {
@@ -317,6 +326,16 @@ else {
         }
         if ($indexContent -cmatch '\b(SERVICE_NAME|SERVICE_SOURCE_PATH|PRIMARY_TECHNOLOGY|STATUS)\b') {
             Add-ValidationError 'Architecture index contains unresolved template placeholders.'
+        }
+        $indexTemplatePath = Join-Path $PSScriptRoot '..\resources\architecture-index-template.md'
+        $indexTemplateContent = [System.IO.File]::ReadAllText((Resolve-Path $indexTemplatePath).Path)
+        foreach ($instruction in @(
+            $indexTemplateContent -split '\r?\n' |
+                Where-Object { $_ -match '^(Document|Describe)\s' }
+        )) {
+            if ($indexContent.Contains($instruction)) {
+                Add-ValidationError "Architecture index contains unresolved template instruction '$instruction'."
+            }
         }
         $indexWithoutCodeFences = [regex]::Replace(
             $indexContent,

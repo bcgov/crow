@@ -21,10 +21,10 @@ Do not load monorepo or update guidance when the observable repository state doe
 
 Write completed documents only to the paths selected by the classification module. Do not modify bundled templates.
 
-Before writing, validate the selected paths:
+Before writing, resolve `scripts/Test-ArchitectureOutput.ps1` relative to this installed skill directory, not relative to the target repository. Pass the target repository separately:
 
 ```powershell
-& .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.ps1 -RepoRoot <repository-root> -Classification SingleApp -Phase PreWrite
+& <crow-architecture-review-skill-directory>\scripts\Test-ArchitectureOutput.ps1 -RepoRoot <repository-root> -Classification SingleApp -Phase PreWrite
 ```
 
 After writing, rerun with `-Phase PostWrite`. For a monorepo, pass `-Classification Monorepo -ServiceInventoryPath <inventory.json>` in both phases. The inventory format and output contract are defined in the classification module. Treat a non-zero exit code as a failed architecture review.
