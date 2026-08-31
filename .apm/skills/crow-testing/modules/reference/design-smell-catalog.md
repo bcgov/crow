@@ -45,9 +45,15 @@ prioritized, justified recommendation, and when *not* to recommend a change at a
 | Exceptions as control flow | Unit, via brittle throw assertions | Unit, on a returned result | — |
 | Untestable time/randomness | **Production** | Unit | — |
 | Boundary enforced only by convention | Code review, intermittently | **Build** (architecture test) | — |
+| Code predating a language feature that would enforce the rule | Unit (or runtime) | **Compiler** | — |
 
 Where a real SonarQube/Microsoft rule exists it's noted for stronger justification when handing off; `—`
 means no canonical rule ID exists for that smell, stated plainly rather than invented.
+
+**The `Rule` column is also a scope boundary.** Where a rule ID is listed, an analyzer already reports it —
+SonarQube runs on these projects anyway. Cite the rule if you land on the smell while reading code, but
+don't spend discovery time searching for it; the finding is already on a dashboard. Your effort is worth
+more on the rows marked `—`, which no tool will ever raise.
 
 ## The entries
 
@@ -82,6 +88,14 @@ means no canonical rule ID exists for that smell, stated plainly rather than inv
   a design change at all: assert the rule as an **architecture test** over the compiled assembly, moving it
   from intermittent human review to a failing build. See
   [`unit-test-types.md`](unit-test-types.md) § architecture tests.
+- **Code predating a language feature that would enforce the rule.** A rule defended by hand-written checks
+  and their tests, on a project whose target framework has since gained a feature that would defend it at
+  compile time — a clock read inline instead of through `TimeProvider`, an `int?` that should be `required`,
+  raw identifiers that should be strongly typed. No analyzer reports these; they are design migrations, not
+  rule violations, which is exactly why they survive. See
+  [`language-features-for-testability.md`](language-features-for-testability.md) for the ones worth
+  proposing, how to check what the project's TFM actually allows, and what to do when a UI or ORM framework
+  makes the change impossible.
 
 ## DDD / F#-inspired smells (apply equally well to C#)
 

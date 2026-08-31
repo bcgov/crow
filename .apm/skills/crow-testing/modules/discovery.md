@@ -29,7 +29,9 @@ techniques, and surfaces cheap high-value work a coverage-driven scan misses.
 If an area's current behavior isn't understood well enough to state what it *should* do — common in legacy
 code with no tests — propose
 [characterization tests](reference/characterization-tests.md) to pin present behavior first, rather than
-skipping the area or guessing at a specification.
+skipping the area or guessing at a specification. If the code can't be called in isolation at all, see
+[`reference/legacy-seams.md`](reference/legacy-seams.md); if the area is being replaced rather than changed,
+see [`reference/migration-testing.md`](reference/migration-testing.md).
 
 Present candidates **in batches grouped by feature/module**, not one flat list — this keeps the review
 conversation manageable and lets the user redirect early. For each batch, ask which area to start with
@@ -47,6 +49,13 @@ For the fuller catalog of design-smell patterns to look for, see
 [`reference/design-smell-catalog.md`](reference/design-smell-catalog.md) — load it only if the compact list
 above isn't enough for the area under review. Every entry there is framed by which **band-pass filter stage**
 the smell pushes a defect past, so the biggest filter jump is the biggest win.
+
+**Don't duplicate the analyzers.** SonarQube and the built-in Roslyn rules run on these projects anyway, so
+a scan that re-derives `CA`/`S`-numbered findings by hand adds nothing. Mention one if you land on it while
+reading code — the rule ID makes it easy to justify — but spend the effort on what no tool reports. See
+[`reference/language-features-for-testability.md`](reference/language-features-for-testability.md) for that
+boundary, and for design migrations (an inline clock read, a nullable field that should be `required`) that
+analyzers never suggest.
 
 When writing the findings up, use
 [`reference/testability-improvements.md`](reference/testability-improvements.md) to prioritize and justify

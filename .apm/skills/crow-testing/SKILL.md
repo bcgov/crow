@@ -35,11 +35,18 @@ locally is not.
      loaded once, during discovery or feature scoping.
    - `characterization-tests.md` — the area's current behavior isn't understood well enough to specify;
      legacy code with no coverage.
+   - `legacy-seams.md` — you want to test existing code but can't call it in isolation, and refactoring
+     first isn't safe because there are no tests yet.
+   - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
+     re-platform, or a move between stored procedures and application code.
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
      `discovery.md` isn't enough.
    - `testability-improvements.md` — writing up testability findings, or deciding whether a design change is
      worth proposing at all. Pairs with the catalog: that one identifies smells, this one prioritizes and
      justifies the fixes.
+   - `language-features-for-testability.md` — reviewing an existing codebase for design migrations that
+     newer language/runtime features would enable. Also defines the boundary against SonarQube/Roslyn:
+     what the analyzers already report (don't re-derive it) versus what they never will.
    - `legacy-tsql-harness.md` — the logic under test is a stored procedure/function with no EF code path.
    - `integration/harness-selection.md` — starting DB-backed integration work. This is the **entry point**
      for a family of single-decision files (`fixtures.md`, `seeding-and-ids.md`, `cleanup-and-isolation.md`,

@@ -31,6 +31,17 @@ not to be fixed as part of a testing engagement itself unless explicitly request
 |---|---|---|---|---|---|---|
 | | | | | | | |
 
+## Accepted constraints and decisions
+
+<!-- Findings that will NOT be actioned, and why. Record these so the same proposal isn't re-raised on the
+     next engagement. Common causes: a UI framework requires two-way binding, the ORM requires mutable
+     navigation collections, the target framework predates the feature, or the user simply decided against
+     it. A constraint is not a smell. -->
+
+| Finding | Why it can't change | Decided by | Date |
+|---|---|---|---|
+| | | | |
+
 ## Candidates for testing
 
 <!-- Ranked list of areas worth testing next, grouped by feature/module, most valuable first. -->

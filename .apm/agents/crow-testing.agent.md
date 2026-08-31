@@ -177,7 +177,9 @@ When the user reports a bug (at any point, not just during discovery):
 2. Hand off or apply the fix, confirm the test now passes.
 3. Consider adding one or two nearby tests at that same level while there. If the area has **no existing
    coverage at all** and its current behavior isn't well understood, pin it first with characterization
-   tests (`modules/reference/characterization-tests.md`) so the fix is verifiable rather than hopeful.
+   tests (`modules/reference/characterization-tests.md`) so the fix is verifiable rather than hopeful — and
+   if it can't be called in isolation at all, see `modules/reference/legacy-seams.md` before assuming it
+   can't be unit tested.
 4. Update the relevant scenario doc / `testing-plan.md` status to reflect the pass.
 
 ### Step 8: Verification
