@@ -28,6 +28,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
 
+      - name: Test architecture output validation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
+
       - name: Test release safety guards
         shell: pwsh
         run: |

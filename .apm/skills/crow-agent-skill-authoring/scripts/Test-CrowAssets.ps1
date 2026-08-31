@@ -122,18 +122,18 @@ if ($errors.Count -eq 0) {
     }
     else {
         $apmSourcePath = Join-Path $root '.apm'
-        $sourceFiles = @(Get-ChildItem $apmSourcePath -File -Recurse)
+        $sourceFiles = @(Get-ChildItem $apmSourcePath -File -Recurse -Force)
         foreach ($sourceFile in $sourceFiles) {
             $relativePath = $sourceFile.FullName.Substring($root.Length + 1)
             $normalizedPath = $relativePath.Replace('\', '/')
-            $isEvidence = $normalizedPath -match '(^|/)(evidence|research|transcripts?)/'
+            $isEvidence = $normalizedPath -match '(^|/)(evidence|research|transcripts?)(/|\.|$)'
             $isIncluded = @($includePaths | Where-Object {
                 $normalizedPath -eq $_ -or
                     $normalizedPath.StartsWith("$_/", [System.StringComparison]::OrdinalIgnoreCase)
             }).Count -gt 0
 
-            if ($isEvidence -and $isIncluded) {
-                Add-ValidationError "Publication allowlist includes evidence or research content: $relativePath"
+            if ($isEvidence) {
+                Add-ValidationError "Creation evidence must remain outside .apm: $relativePath"
             }
             elseif (-not $isEvidence -and -not $isIncluded) {
                 Add-ValidationError "Publication allowlist omits Crow source asset: $relativePath"
@@ -256,6 +256,28 @@ if ($errors.Count -eq 0) {
         if ('.apm/agents' -notin @($plugin.agents)) {
             Add-ValidationError "plugin.json must include '.apm/agents'."
         }
+
+        $apmKeywords = @(
+            [regex]::Matches($apmContent, '(?m)^\s{2}-\s+(crow-[a-z0-9-]+)\s*$') |
+                ForEach-Object { $_.Groups[1].Value } |
+                Sort-Object -Unique
+        )
+        $pluginKeywords = @($plugin.keywords | Sort-Object -Unique)
+        foreach ($keyword in @($apmKeywords | Where-Object { $_ -notin $pluginKeywords })) {
+            Add-ValidationError "plugin.json keywords are missing '$keyword' from apm.yml."
+        }
+        foreach ($keyword in @($pluginKeywords | Where-Object { $_ -notin $apmKeywords })) {
+            Add-ValidationError "plugin.json keyword '$keyword' is not declared in apm.yml."
+        }
+
+        $readmePath = Join-Path $root 'README.md'
+        $readmeContent = [System.IO.File]::ReadAllText($readmePath)
+        foreach ($skillPath in $actualSkillPaths) {
+            $skillName = Split-Path $skillPath -Leaf
+            if (-not $readmeContent.Contains("**$skillName**")) {
+                Add-ValidationError "README.md does not list skill '$skillName'."
+            }
+        }
     }
 
     $moduleFiles = @(Get-ChildItem $skillsPath -File -Filter '*.md' -Recurse |
@@ -286,9 +308,47 @@ if ($errors.Count -eq 0) {
     }
     foreach ($trackedFile in $trackedFiles) {
         $normalized = $trackedFile.Replace('\', '/')
-        if ($normalized -match '(^|/)evidence/' -or
-            $normalized -match '(^|/)(research|transcripts?)/') {
+        if ($normalized -match '(^|/)(evidence|research|transcripts?)(/|\.|$)') {
             Add-ValidationError "Tracked creation evidence is not public-release safe: $trackedFile"
+        }
+    }
+
+    $evidenceDirectories = @(
+        Get-ChildItem (Join-Path $root '.apm') -Directory -Recurse -Force |
+            Where-Object { $_.Name -in @('evidence', 'research', 'transcript', 'transcripts') }
+    )
+    foreach ($evidenceDirectory in $evidenceDirectories) {
+        Add-ValidationError "Creation evidence must remain outside .apm: $($evidenceDirectory.FullName)"
+    }
+
+    $architectureAgentPath = Join-Path $agentsPath 'crow-architecture-review.agent.md'
+    $architectureTemplatePath = Join-Path $skillsPath 'crow-architecture-review\architecture-template.md'
+    if ((Test-Path $architectureAgentPath) -and (Test-Path $architectureTemplatePath)) {
+        $architectureAgentContent = [System.IO.File]::ReadAllText($architectureAgentPath)
+        $stepHeadings = @(
+            [regex]::Matches($architectureAgentContent, '(?m)^###\s+Step\s+([0-9]+):') |
+                ForEach-Object { [int]$_.Groups[1].Value }
+        )
+        foreach ($duplicateStep in @($stepHeadings | Group-Object | Where-Object Count -gt 1)) {
+            Add-ValidationError "Architecture agent contains duplicate Step $($duplicateStep.Name) headings."
+        }
+        foreach ($stepReference in [regex]::Matches($architectureAgentContent, '\bStep\s+([0-9]+)\b')) {
+            $stepNumber = [int]$stepReference.Groups[1].Value
+            if ($stepNumber -notin $stepHeadings) {
+                Add-ValidationError "Architecture agent references missing Step $stepNumber."
+            }
+        }
+
+        $templateContent = [System.IO.File]::ReadAllText($architectureTemplatePath)
+        $templateSections = @(
+            [regex]::Matches($templateContent, '(?m)^##\s+([0-9]+)\.') |
+                ForEach-Object { [int]$_.Groups[1].Value }
+        )
+        foreach ($sectionReference in [regex]::Matches($architectureAgentContent, '\bSection\s+([0-9]+)\b')) {
+            $sectionNumber = [int]$sectionReference.Groups[1].Value
+            if ($sectionNumber -notin $templateSections) {
+                Add-ValidationError "Architecture agent references missing template Section $sectionNumber."
+            }
         }
     }
 }
@@ -304,3 +364,4 @@ Write-Host "Crow asset validation: $($errors.Count) error(s), $($warnings.Count)
 if ($errors.Count -gt 0 -or ($StrictContext -and $warnings.Count -gt 0)) {
     exit 1
 }
+exit 0
