@@ -15,6 +15,8 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 - **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, finding classification (Confirmed/Probable/Informational), and cross-file data flow tracing via codebase-memory-mcp.
 - **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
 - **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
+- **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
+- **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
 
 ## Available Skills
 
@@ -25,6 +27,9 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 - **crow-executive-report** — Bundles the executive report workflow, templates, schema, dashboard assets, and renderer.
 - **crow-security-review** — Provides framework-specific detection modules and the security review document template.
 - **crow-sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
+- **crow-agent-skill-authoring** — Guides consistent agent and skill creation or updates, with templates and deterministic package validation.
+- **crow-agent-skill-review** — Provides the review rubric for context/token optimization, deterministic automation, public release, and knowledge/execution separation.
+- **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions.
 
 ## Bundled Resources
 
@@ -37,6 +42,24 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
 - `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
+- `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
+- `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
+- `.apm/skills/crow-release/` — Semantic-version policy and deterministic version/package/release scripts
+
+## Agent and skill authoring conventions
+
+Crow separates knowledge from execution so agents load less context and mechanical work remains reproducible:
+
+- agents own role, decisions, tool orchestration, failure behaviour, and completion gates;
+- `SKILL.md` files are concise routers that load only relevant knowledge;
+- modules own optional domain knowledge and acceptance criteria;
+- templates own stable output shapes;
+- scripts own deterministic validation, transformation, rendering, packaging, checksums, and release operations;
+- authoring evidence stays outside `.apm/`, Git tracking, and release archives.
+
+Existing routed application, UX, and security modules already follow the knowledge side of this pattern, while the executive-report renderer is an example of deterministic execution. When updating older large agents, prefer extracting reusable policy into routed modules and replacing repeated document checks or transformations with scripts rather than adding more unconditional prompt context.
+
+Use the **Crow Agent & Skill Authoring Agent** to make changes, the **Crow Agent & Skill Review Agent** for an independent review, and include a rubber-duck review before release. The reusable version classification and user-decision rules are defined in the [Crow versioning policy](.apm/skills/crow-release/modules/versioning.md).
 
 # Installation
 
@@ -57,7 +80,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.2.2 --global --target copilot
+apm install bcgov/crow#v0.3.0 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -71,7 +94,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.2.2 --global --target copilot
+apm install bcgov/crow#v0.3.0 --global --target copilot
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -112,20 +135,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.2.2.zip
+build/bcgov-crow-0.3.0.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.2.2.zip --global --target copilot
+apm install .\build\bcgov-crow-0.3.0.zip --global --target copilot
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.2.2.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.2.2
+Expand-Archive .\build\bcgov-crow-0.3.0.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.3.0
 ```
 
 ## Do not use multiple Crow installations at once
