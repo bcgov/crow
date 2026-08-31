@@ -1,0 +1,5 @@
+.gitattributes -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.json -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.md -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.ps1 -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.yml -text whitespace=trailing-space,space-before-tab,cr-at-eol
