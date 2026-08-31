@@ -11,6 +11,10 @@ hard-won decisions — isolation model, seeding conventions, cleanup ordering �
 package list and often absent from the project's own documentation. Follow what you find over the defaults
 below; if you deliberately deviate, say so and why.
 
+This covers **infrastructure decisions, not language idiom** — an old C# style in an existing suite records
+when it was written, not a decision to keep writing it. See
+[`../reference/language-features-for-testability.md`](../reference/language-features-for-testability.md).
+
 ## Default pattern (only when no integration test project exists yet)
 
 - Use a **real `DbContext` against a real SQL Server database** (the project's DEV/TEST environment), not

@@ -98,6 +98,10 @@ but proceed on the current model rather than blocking.
    project's own documentation. Follow the conventions you find over this skill's defaults; where you
    deliberately deviate, state the deviation and the reason. A package list tells you the framework; only
    the code tells you the pattern.
+   **Scope this to infrastructure decisions, not language idiom.** Some conventions encode a decision; others
+   only encode when the code was written. Follow the first; don't propagate the second just because it's
+   prevalent. Where an `.editorconfig` declares a style, it outranks counting occurrences — see
+   `modules/reference/language-features-for-testability.md`.
 4. Read `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement with
    this agent (`testing-plan.md`, `testability-notes.md`, feature scenario docs).
 5. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,

@@ -32,6 +32,9 @@ Rank findings by these, in order:
    available; integration -> unit is next; unit -> unit (just fewer or simpler tests) is real but smaller.
 2. **Blast radius.** A single seam that unblocks unit testing for a whole module beats a type change that
    improves one class. Prefer fixes whose benefit compounds across future tests, not just today's.
+   A **habit** is the largest blast radius there is — its scope is everything written from here on, so a
+   convention change ("new code uses the current idiom") normally outranks fixing any individual instance,
+   and usually costs less.
 3. **Cost and risk of the change.** A type change with compiler-enforced call-site updates is far safer than
    restructuring behavior. Prefer changes where the compiler finds every affected site for you.
 4. **Whether the code is already being touched.** A smell inside the feature currently being tested is

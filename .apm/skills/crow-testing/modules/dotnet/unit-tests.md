@@ -10,6 +10,12 @@ and any `Builders/`, `Suites/`, or `Utilities/` helpers before writing code.** C
 not the package list — the shape of an existing suite (shared abstract suites, builder style, diagnostics
 setup) should override this module's defaults. State any deliberate deviation and why.
 
+**Match the structure, not the vintage.** Follow the existing suite's infrastructure decisions exactly, but
+write new tests to the project's declared style (`.editorconfig`) and the idiom its target framework
+supports — an older C# style in the surrounding files records when they were written, not a decision to keep
+writing that way. See
+[`../reference/language-features-for-testability.md`](../reference/language-features-for-testability.md).
+
 ## Detect first, default second
 
 1. Look for an existing test project and its frameworks (xUnit/NUnit/MSTest), assertion library

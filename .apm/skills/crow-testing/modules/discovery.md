@@ -8,6 +8,11 @@ Before saying anything to the user, scan:
 - The tech stack and project structure (manifests, entry points, solution/project files).
 - Any existing test project(s), frameworks, and assertion/validation libraries already in use (even if
   nearly empty).
+- **What the project's target framework allows versus what its code actually uses** — retargeting rewrites
+  nothing, so a modern TFM often carries older-style code. Read `.editorconfig` and the csproj switches
+  (`<Nullable>`, `<LangVersion>`, `<EnforceCodeStyleInBuild>`) as declarations of intent; a declared style
+  the code drifts from is a settled argument with nothing enforcing it. See
+  [`reference/language-features-for-testability.md`](reference/language-features-for-testability.md).
 - `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement.
 - Business terminology and rules as they appear in code (domain types, method names) and docs.
 

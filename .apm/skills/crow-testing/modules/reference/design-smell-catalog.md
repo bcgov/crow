@@ -92,7 +92,9 @@ more on the rows marked `—`, which no tool will ever raise.
   and their tests, on a project whose target framework has since gained a feature that would defend it at
   compile time — a clock read inline instead of through `TimeProvider`, an `int?` that should be `required`,
   raw identifiers that should be strongly typed. No analyzer reports these; they are design migrations, not
-  rule violations, which is exactly why they survive. See
+  rule violations, which is exactly why they survive. Retargeting rewrites nothing, so **new code usually
+  keeps arriving in the old style** — which makes this a live finding about what the team is still writing,
+  not a historical one about code already shipped. See
   [`language-features-for-testability.md`](language-features-for-testability.md) for the ones worth
   proposing, how to check what the project's TFM actually allows, and what to do when a UI or ORM framework
   makes the change impossible.
