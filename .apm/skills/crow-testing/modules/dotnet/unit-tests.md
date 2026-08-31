@@ -3,6 +3,13 @@
 Applies when the repository has a `.sln`/`.slnx`/`.csproj`/`.fsproj`/`global.json`. Detect what already
 exists before recommending anything.
 
+## Study the existing suite before generating anything
+
+If a test project already exists with real tests in it, **read a representative test class, its base classes,
+and any `Builders/`, `Suites/`, or `Utilities/` helpers before writing code.** Conventions live in the code,
+not the package list — the shape of an existing suite (shared abstract suites, builder style, diagnostics
+setup) should override this module's defaults. State any deliberate deviation and why.
+
 ## Detect first, default second
 
 1. Look for an existing test project and its frameworks (xUnit/NUnit/MSTest), assertion library

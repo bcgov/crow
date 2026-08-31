@@ -4,16 +4,11 @@ Stack-agnostic scoping and workflow. Load a `dotnet/unit-tests.md`-style module 
 
 ## When a unit test is the right tool
 
-Unit tests are for behavior that can be exercised without a real framework/external boundary: pure logic,
-validation rules, calculations, mapping, state transitions confined to a single class/module. If correctness
-depends on a real database, HTTP pipeline, or other external system, see `integration-tests.md` instead.
+**Choosing between unit and integration is decided in [`foundation.md`](foundation.md) § "Choosing the
+level"** — the boundary question, the extract-a-seam third branch, the tiebreaker, and how to split
+assertions when a feature needs both. Read that first; it is the authoritative rule.
 
-**Scoping check (use this before scoping something as integration work, too):** can the behavior be
-exercised without a real external boundary? If yes, it's a unit test even if it came up during an
-integration-flavored conversation — don't let it drift into a scenario doc/DB-backed test by default. An
-**anemic domain model** (business rules living entirely in services over plain data-bag entities) is a
-common reason logic that could be a cheap unit test ends up looking integration-shaped instead; see
-`reference/design-smell-catalog.md`.
+What's local to this module is the *value* filter — given that a unit test is possible, is it worth writing?
 
 **A unit test earns its keep** when the code under test is:
 - a **complex transformation or mapping** (multi-step calculations, non-trivial data reshaping),
@@ -25,6 +20,11 @@ common reason logic that could be a cheap unit test ends up looking integration-
 **Not every class needs a unit test.** A trivial pass-through, a property getter, or a class with no real
 branching adds a low-value test that's expensive to maintain and cheap to skip — prefer covering it (if at
 all) through whatever integration/end-to-end path already exercises it.
+
+For *what kinds* of unit tests a given piece of code calls for — a code-shape-to-test-type catalog — see
+[`reference/unit-test-types.md`](reference/unit-test-types.md). For code whose current behavior isn't
+understood well enough to specify, see
+[`reference/characterization-tests.md`](reference/characterization-tests.md).
 
 ## Workflow
 

@@ -91,9 +91,16 @@ but proceed on the current model rather than blocking.
    tests yet" for stack purposes, but say so explicitly and let the user keep it if they prefer. If
    `codebase-memory-mcp` is available, use it to index/query the codebase for this pass instead of raw
    grep/search; if it isn't available, fall back to search/read tools and say so.
-3. Read `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement with
+3. **If the suite is meaningfully existing, study it before generating anything.** Read a representative
+   test class, its base classes, and any `Infrastructure/`, `Fixtures/`, `Builders/`, or `Utilities/`
+   helpers. Test infrastructure encodes hard-won decisions — isolation model, seeding conventions, cleanup
+   ordering, parallelization stance — that are invisible from a package list and frequently absent from the
+   project's own documentation. Follow the conventions you find over this skill's defaults; where you
+   deliberately deviate, state the deviation and the reason. A package list tells you the framework; only
+   the code tells you the pattern.
+4. Read `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement with
    this agent (`testing-plan.md`, `testability-notes.md`, feature scenario docs).
-4. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,
+5. Note business terminology and rules as they appear in code (domain types, method/class names) and docs,
    so later discussion can reference them concretely instead of asking generically.
 
 ### Step 2: Open the discussion (interview-style, assumptions surfaced)
@@ -128,7 +135,7 @@ but proceed on the current model rather than blocking.
 Before writing any tests for the first time in a repository, produce (or refresh, if already present)
 `docs/testing/guides/Unit Test Organization Guide.md` and
 `docs/testing/guides/Integration Test Organization Guide.md`, adapted to the project's **actually-detected**
-stack and conventions — never assume the WAORepo-inspired defaults apply if the project already has its own
+stack and conventions — never assume this skill's defaults apply if the project already has its own
 tooling. Each guide should cover, at minimum: the detected test framework/libraries and why, folder/naming
 conventions for test projects and test classes, the builder/test-data pattern in use, and (for the
 integration guide) how the target database/environment is reached and cleaned up. Skip regenerating a guide
@@ -136,11 +143,11 @@ that's already current for this engagement.
 
 ### Step 5: Integration tests, and complex/critical unit tests — scenario-doc-first (hard gate)
 
-0. **Scope check first.** Before drafting scenarios, confirm the behavior actually needs a real external
-   boundary (DB, HTTP, another service). If it can be exercised without one, it's a unit test — go to
-   Step 6 instead, even if it surfaced during an integration-flavored conversation. See `modules/unit-
-   tests.md`'s scoping check for the full guardrail (an anemic domain model is a common reason logic that
-   *could* be a cheap unit test ends up looking integration-shaped).
+0. **Scope check first.** Before drafting scenarios, apply `modules/foundation.md` § "Choosing the level".
+   If the behavior can be exercised without a real external boundary, it's a unit test — go to Step 6
+   instead, even if it surfaced during an integration-flavored conversation. If it needs a boundary only
+   because of how the code is currently structured, propose extracting the seam rather than accepting a
+   slow test.
 1. Load `modules/integration-tests.md` (and `modules/dotnet/integration-tests.md` for .NET+SQL Server work).
 2. Produce `docs/testing/<feature>/<Feature>Scenarios.md` from `templates/scenario-doc-template.md`: plain
    language, a Scope section, an Authoritative Rules section, a Scenarios table, and a Required Assertions
@@ -168,7 +175,9 @@ When the user reports a bug (at any point, not just during discovery):
 1. Apply the band-pass filter loop from `modules/foundation.md`: reproduce the bug as a failing test at the
    lowest test level that can catch it, simplifying the data needed as much as that level allows.
 2. Hand off or apply the fix, confirm the test now passes.
-3. Consider adding one or two nearby tests at that same level while there.
+3. Consider adding one or two nearby tests at that same level while there. If the area has **no existing
+   coverage at all** and its current behavior isn't well understood, pin it first with characterization
+   tests (`modules/reference/characterization-tests.md`) so the fix is verifiable rather than hopeful.
 4. Update the relevant scenario doc / `testing-plan.md` status to reflect the pass.
 
 ### Step 8: Verification

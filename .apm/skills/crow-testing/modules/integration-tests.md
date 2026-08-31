@@ -5,9 +5,12 @@ detail.
 
 ## When to write an integration test (scoping criteria)
 
-Write one only when a feature both matches one or more of the signals below **and** genuinely needs a real
-external boundary (DB, HTTP, another service) to be exercised correctly — check `unit-tests.md`'s scoping
-check first; a state machine or combinatorial rule that only touches in-memory objects is still a unit test.
+**The unit-vs-integration decision itself is made in [`foundation.md`](foundation.md) § "Choosing the
+level"** — including the extract-a-seam case (logic that only *looks* like it needs a database) and how to
+split assertions when a feature needs both levels. Apply that rule first.
+
+Once a real boundary is genuinely required, these are the signals that an integration test is worth the
+cost:
 
 - State machines / multi-step workflows where the outcome depends on a sequence of prior state.
 - Combinatorial business rules or permission/role combinations impractical to eyeball manually.
@@ -16,8 +19,9 @@ check first; a state machine or combinatorial rule that only touches in-memory o
   computed oracle value.
 - Data merge/migration logic, where a bug silently corrupts real data.
 
-Do **not** default to an integration test for simple CRUD with no branching logic, or for validation already
-covered by a unit test — those stay in `unit-tests.md`.
+A signal alone is not sufficient — a state machine or combinatorial rule over in-memory objects is a unit
+test. Do **not** default to an integration test for simple CRUD with no branching logic, or for validation
+already covered by a unit test.
 
 ## Scenario-doc-first workflow (hard gate)
 

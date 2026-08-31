@@ -11,6 +11,13 @@ appear at a real framework/DB boundary, E2E (out of scope here) catches whole-sy
 catch integration-level defects with a unit test, and don't wait for an E2E test to catch a defect a unit
 test could have caught instantly.
 
+**The compiler and type system are filter stage zero — below unit tests, and the cheapest filter in the
+model.** A defect the type system rejects needs no test at all: it can't reach a test run, a review, or
+production. So the cheapest possible fix for a defect class is usually a design change that makes the
+invalid case fail to compile, not a new test. `reference/design-smell-catalog.md` catalogs the design
+choices that push defects *past* the filter that should have caught them, and
+`reference/testability-improvements.md` covers what to recommend and in what order.
+
 **Regression-driven loop (use this whenever a bug is reported):**
 1. Reproduce the bug as a *failing* test at the lowest test level that can actually catch it.
 2. If it's not reproducible at that level, try the level above and repeat.
@@ -18,6 +25,37 @@ test could have caught instantly.
 4. Hand off the fix (or apply it), confirm the test now passes, and consider adding one or two nearby tests
    at that same level while you're there.
 5. Update the relevant scenario doc / `testing-plan.md` status to reflect the pass.
+
+## Choosing the level: the canonical rule
+
+**This is the one authoritative statement of the rule. Other modules point here rather than restating it.**
+
+Ask: **can this behavior be exercised without a real external boundary** (database, HTTP call, file system,
+message broker, clock)?
+
+- **No boundary needed → unit test.** Cheap, fast, precise failure messages.
+- **Boundary is genuinely intrinsic → integration test.** The behavior *is* the round-trip: persistence,
+  query semantics, transactions, triggers, mapping/configuration, wiring.
+- **Boundary is an accident of the current design → extract a seam first.** This is the most common and most
+  valuable case. Logic often "needs the database" only because rule evaluation was never separated from
+  persistence. Pull the decision into a pure function or a method on the domain object, unit test *that*
+  exhaustively, and keep one integration test for the round-trip. Raise the extraction as a non-blocking
+  testability finding (see `reference/design-smell-catalog.md`, "anemic domain model") rather than accepting
+  a slow test as inevitable.
+
+**Tiebreaker when both levels are viable:** choose the lowest level that can actually catch the defect class
+— that is the band-pass principle above, applied. A defect that a unit test can catch should not be left to
+an integration test.
+
+**When a feature legitimately needs both levels, split the assertions — never duplicate them:**
+
+| Level | Asserts |
+|---|---|
+| Unit | The business rules and decisions themselves: every branch, boundary, and edge case. |
+| Integration | That the decision is correctly *wired and persisted*: one happy path, one representative failure, plus anything only the boundary can break (constraints, concurrency, mapping, transactions). |
+
+Re-asserting the full rule matrix at the integration level is the failure to watch for: it is slow,
+redundant, and doubles the maintenance cost of every rule change.
 
 ## Not every test should be automated
 

@@ -21,6 +21,16 @@ Favor low-hanging fruit: areas that are easy to test, commonly skipped, and pron
 examples: input validation, boundary/edge-case handling, date/schedule math, permission/role combinations,
 and anywhere a bug has already been reported.
 
+To turn an observed piece of code into a concrete proposal — which *kind* of test it calls for and roughly
+how many — use [`reference/unit-test-types.md`](reference/unit-test-types.md). It maps code shapes (guard
+clauses, mappers, state machines, multiple implementations of one interface, wide outputs) to test types and
+techniques, and surfaces cheap high-value work a coverage-driven scan misses.
+
+If an area's current behavior isn't understood well enough to state what it *should* do — common in legacy
+code with no tests — propose
+[characterization tests](reference/characterization-tests.md) to pin present behavior first, rather than
+skipping the area or guessing at a specification.
+
 Present candidates **in batches grouped by feature/module**, not one flat list — this keeps the review
 conversation manageable and lets the user redirect early. For each batch, ask which area to start with
 rather than assuming.
@@ -35,7 +45,13 @@ using `templates/testability-notes-template.md`.
 
 For the fuller catalog of design-smell patterns to look for, see
 [`reference/design-smell-catalog.md`](reference/design-smell-catalog.md) — load it only if the compact list
-above isn't enough for the area under review.
+above isn't enough for the area under review. Every entry there is framed by which **band-pass filter stage**
+the smell pushes a defect past, so the biggest filter jump is the biggest win.
+
+When writing the findings up, use
+[`reference/testability-improvements.md`](reference/testability-improvements.md) to prioritize and justify
+them — and to decide which ones not to raise at all. A finding that names the cost of leaving the smell in
+place gets scheduled; one that only names the smell gets ignored.
 
 ## Output of a discovery pass
 

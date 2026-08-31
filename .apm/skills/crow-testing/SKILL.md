@@ -16,10 +16,11 @@ locally is not.
    [`modules/discovery.md`](modules/discovery.md).
 3. Load [`modules/unit-tests.md`](modules/unit-tests.md) when the work is unit-level.
 4. Load [`modules/integration-tests.md`](modules/integration-tests.md) when the work crosses a real
-   framework/external boundary. Signals it might (state machines, combinatorial rules, date math,
-   multi-entity calculations, data merge/migration) are not sufficient on their own — apply that module's
-   scoping criteria and `modules/unit-tests.md`'s scoping check before committing to this path; the same
-   logic is often a unit test if it can be exercised without a real DB/HTTP/external boundary.
+   framework/external boundary. The unit-vs-integration decision itself lives in `modules/foundation.md`
+   § "Choosing the level" (already loaded per item 1) — apply it before committing to either path. Signals
+   that integration *might* be right (state machines, combinatorial rules, date math, multi-entity
+   calculations, data merge/migration) are not sufficient on their own; the same logic is often a unit test,
+   or should become one by extracting a seam.
 5. For .NET (`.sln`, `.slnx`, `.csproj`, `.fsproj`, `global.json` present), also load:
    - [`modules/dotnet/unit-tests.md`](modules/dotnet/unit-tests.md) for unit-level work.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
@@ -30,11 +31,26 @@ locally is not.
    - `reusable-test-suites.md` — the same field type or contract is tested on three or more models, and
      copying a test file per model is the alternative.
    - `test-data-builders.md` — writing or reviewing a test data builder.
+   - `unit-test-types.md` — proposing *what* to test in an area (code-shape-to-test-type catalog). Usually
+     loaded once, during discovery or feature scoping.
+   - `characterization-tests.md` — the area's current behavior isn't understood well enough to specify;
+     legacy code with no coverage.
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
      `discovery.md` isn't enough.
+   - `testability-improvements.md` — writing up testability findings, or deciding whether a design change is
+     worth proposing at all. Pairs with the catalog: that one identifies smells, this one prioritizes and
+     justifies the fixes.
    - `legacy-tsql-harness.md` — the logic under test is a stored procedure/function with no EF code path.
+   - `integration/harness-selection.md` — starting DB-backed integration work. This is the **entry point**
+     for a family of single-decision files (`fixtures.md`, `seeding-and-ids.md`, `cleanup-and-isolation.md`,
+     `environment-and-diagnostics.md`); it fans out to whichever sibling matches the decision in front of
+     you. Load the siblings one at a time, not as a set.
 
    Never load a reference file speculatively.
+
+   **Size discipline for future additions:** core modules stay small and answer "what do I do now";
+   reference files are single-decision and independently loadable. A reference file that outgrows its one
+   decision should be **split**, not allowed to grow.
 7. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md), and
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md) when producing the
