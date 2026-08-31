@@ -59,9 +59,14 @@ locally is not.
    reference files are single-decision and independently loadable. A reference file that outgrows its one
    decision should be **split**, not allowed to grow.
 7. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
-   [`templates/testing-plan-template.md`](templates/testing-plan-template.md), and
-   [`templates/testability-notes-template.md`](templates/testability-notes-template.md) when producing the
-   corresponding `docs/testing/` artifacts described in the `crow-testing` agent workflow.
+   [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
+   [`templates/testability-notes-template.md`](templates/testability-notes-template.md), and
+   [`templates/modernization-handoff-template.md`](templates/modernization-handoff-template.md) when
+   producing the corresponding `docs/testing/` artifacts described in the `crow-testing` agent workflow.
+   The last one is only for a cross-cutting finding (a habit/convention across many files) or when the user
+   asks for a fuller writeup than a `testability-notes.md` row — see
+   [`modules/reference/testability-improvements.md`](modules/reference/testability-improvements.md) §
+   Handing off.
 8. When writing property-based tests in .NET, copy from
    [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
    [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) rather than

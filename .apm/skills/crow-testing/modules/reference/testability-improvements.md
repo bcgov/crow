@@ -99,3 +99,15 @@ Write findings into `docs/testing/testability-notes.md` (see
 `templates/testability-notes-template.md`) with the filter stage and priority recorded, so whoever picks
 them up inherits the reasoning rather than just the verdict. Mention the highest-priority one or two in the
 engagement summary; leave the rest in the document.
+
+**Graduate to a standalone document when either holds:**
+- **The finding is cross-cutting** — a habit or convention showing up across many files or the whole
+  codebase (e.g. "new code keeps arriving in the pre-C#8 style"), not a single location. A table row loses
+  the pattern; a doc can show it.
+- **The user asks for a fuller writeup** before deciding, regardless of scope.
+
+Either condition alone is enough — don't require both. Use `templates/modernization-handoff-template.md`
+for `docs/testing/modernization-handoff.md`. It reuses this file's five-part finding shape and priority
+order, at a larger grain, and adds a "who could help" section for naming a specific agent or tool as a
+suggestion — never a requirement, and crow-testing never invokes it. **This agent documents; it does not
+fix.** That line holds regardless of which artifact the finding lands in.

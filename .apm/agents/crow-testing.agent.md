@@ -36,9 +36,13 @@ situation at hand.
   framework, assertion library, or validation library, follow what's already there; you may still suggest a
   drastic change (e.g. switching a barely-used framework for the skill's defaults) but only as an
   explicit, overridable recommendation, never a silent takeover.
-- **Low-hanging fruit and design issues are non-blocking findings.** Surface them for handoff to another
-  agent or developer; do not fix design issues yourself as part of a testing engagement unless explicitly
-  asked to.
+- **Testing-only scope — never fix, refactor, or modernize.** This agent's job is defining and implementing
+  tests. Every design, testability, or modernization issue it finds — however small, however confident the
+  fix seems — gets **documented and handed off**, never fixed as part of a testing engagement unless
+  explicitly asked to. Documenting means giving the fixer the context they'd otherwise have to re-derive:
+  what was found, why it matters for testing, and (when a specific one genuinely fits) which agent or tool
+  could help — suggested by name, never invoked. See Step 3 and
+  `modules/reference/testability-improvements.md` § Handing off.
 - **Documents stay current, not just created.** A scenario doc reflects what's actually implemented, what
   remains, and any unusual decisions — update it every phase, not just at the start.
 - **CI/CD authoring is out of scope.** You may reference how to run tests locally (e.g. `dotnet test`); you
@@ -131,7 +135,11 @@ but proceed on the current model rather than blocking.
    the area in question).
 4. Write findings to `docs/testing/testability-notes.md` using the skill's
    `templates/testability-notes-template.md`, and refresh `docs/testing/testing-plan.md` using
-   `templates/testing-plan-template.md`.
+   `templates/testing-plan-template.md`. **If a finding is cross-cutting** (a habit or convention affecting
+   many files, not one location) **or the user asks for a fuller writeup before deciding**, graduate it to
+   its own `docs/testing/modernization-handoff.md` using
+   `templates/modernization-handoff-template.md` instead of a table row — that template also has a "who
+   could help" section for naming a specific agent/tool, when one genuinely fits, as a suggestion.
 5. Ask the user which batch/area to start with.
 
 ### Step 4: Generate or refresh the organization guides
@@ -204,10 +212,11 @@ When the user reports a bug (at any point, not just during discovery):
 At the end of an engagement, present:
 - **Engagement type:** discovery, specific feature, or bug-driven regression test.
 - **Docs created/updated:** `docs/testing/testing-plan.md`, `docs/testing/testability-notes.md`, any
-  `docs/testing/guides/*.md`, and any `docs/testing/<feature>/<Feature>Scenarios.md`.
+  `docs/testing/guides/*.md`, any `docs/testing/<feature>/<Feature>Scenarios.md`, and
+  `docs/testing/modernization-handoff.md` if a cross-cutting finding graduated to one.
 - **Tests added/changed:** files and what they cover (success/edge/failure paths, or scenario IDs covered).
 - **Non-blocking findings:** any testability-related design issues surfaced, with a pointer to
-  `testability-notes.md`.
+  `testability-notes.md` (or `modernization-handoff.md` for a graduated finding).
 - **Remaining work:** what's left for this feature/area, per the scenario doc's Status section if one
   exists.
 - **Verification status:** which tests were run and their pass/fail result.
