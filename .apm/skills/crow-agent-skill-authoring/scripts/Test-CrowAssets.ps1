@@ -115,7 +115,7 @@ if ($errors.Count -eq 0) {
         $apmContent,
         '(?m)^\s{2}-\s+(\.apm/[^\s#]+)\s*$')
     $includePaths = @($includeMatches | ForEach-Object {
-        $_.Groups[1].Value.TrimEnd('/').Replace('/', '\')
+        $_.Groups[1].Value.TrimEnd('/').Replace('\', '/')
     })
     if ($includePaths.Count -eq 0) {
         Add-ValidationError 'apm.yml does not contain explicit .apm publication paths.'
@@ -128,7 +128,8 @@ if ($errors.Count -eq 0) {
             $normalizedPath = $relativePath.Replace('\', '/')
             $isEvidence = $normalizedPath -match '(^|/)(evidence|research|transcripts?)/'
             $isIncluded = @($includePaths | Where-Object {
-                $relativePath -eq $_ -or $relativePath.StartsWith("$_\", [System.StringComparison]::OrdinalIgnoreCase)
+                $normalizedPath -eq $_ -or
+                    $normalizedPath.StartsWith("$_/", [System.StringComparison]::OrdinalIgnoreCase)
             }).Count -gt 0
 
             if ($isEvidence -and $isIncluded) {

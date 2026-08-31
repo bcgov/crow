@@ -46,11 +46,11 @@ $versionTags = @(& git -C $root tag --list 'v[0-9]*' --sort=-v:refname)
 if ($LASTEXITCODE -ne 0) {
     throw 'Unable to inspect Git tags.'
 }
-$latestVersionTag = @($versionTags | Select-Object -First 1)
+$previousVersionTag = @($versionTags | Where-Object { $_ -ne $tag } | Select-Object -First 1)
 
 $newMajor = [int]($Version.Split('.')[0])
-if ($latestVersionTag.Count -gt 0) {
-    $previousVersion = $latestVersionTag[0].TrimStart('v')
+if ($previousVersionTag.Count -gt 0) {
+    $previousVersion = $previousVersionTag[0].TrimStart('v')
     $previousMajor = [int]($previousVersion.Split('.')[0])
     if ($newMajor -gt $previousMajor -and -not $ConfirmMajor) {
         throw "Publishing major version $Version requires an explicit user decision and the -ConfirmMajor switch."
@@ -58,6 +58,11 @@ if ($latestVersionTag.Count -gt 0) {
 }
 elseif ($newMajor -gt 0 -and -not $ConfirmMajor) {
     throw "Publishing the first major version requires an explicit user decision and the -ConfirmMajor switch."
+}
+
+$tagType = (& git -C $root cat-file -t "refs/tags/$tag" 2>$null)
+if ($LASTEXITCODE -ne 0 -or $tagType.Trim() -ne 'tag') {
+    throw "Create and push annotated tag '$tag' before packaging the release."
 }
 
 $worktreeStatus = @(& git -C $root status --porcelain)
@@ -77,9 +82,9 @@ if ($headCommit -ne $remoteCommit) {
     throw "HEAD $headCommit does not match origin/$Branch $remoteCommit."
 }
 
-$tagCommit = (& git -C $root rev-list -n 1 $tag 2>$null)
+$tagCommit = (& git -C $root rev-parse "$tag^{}" 2>$null)
 if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($tagCommit)) {
-    throw "Create and push annotated tag '$tag' before packaging the release."
+    throw "Annotated tag '$tag' does not resolve to a commit."
 }
 if ($tagCommit.Trim() -ne $headCommit) {
     throw "Tag '$tag' does not point to HEAD."

@@ -8,9 +8,16 @@ permissions:
 
 jobs:
   validate:
-    name: Validate Crow assets
-    runs-on: windows-latest
+    name: Validate Crow assets (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
 
     steps:
       - name: Check out repository
@@ -20,3 +27,8 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
+
+      - name: Test release safety guards
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
