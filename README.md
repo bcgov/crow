@@ -80,7 +80,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.3.0 --global --target copilot
+apm install bcgov/crow#v0.3.1 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -94,7 +94,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.3.0 --global --target copilot
+apm install bcgov/crow#v0.3.1 --global --target copilot
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -135,20 +135,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.3.0.zip
+build/bcgov-crow-0.3.1.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.3.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.3.1.zip --global --target copilot
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.3.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.3.0
+Expand-Archive .\build\bcgov-crow-0.3.1.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.3.1
 ```
 
 ## Do not use multiple Crow installations at once
