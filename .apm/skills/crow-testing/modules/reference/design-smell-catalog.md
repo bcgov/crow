@@ -44,6 +44,7 @@ prioritized, justified recommendation, and when *not* to recommend a change at a
 | Partial functions and silent nulls | Runtime, at every call site | Unit, one explicit outcome | — |
 | Exceptions as control flow | Unit, via brittle throw assertions | Unit, on a returned result | — |
 | Untestable time/randomness | **Production** | Unit | — |
+| Boundary enforced only by convention | Code review, intermittently | **Build** (architecture test) | — |
 
 Where a real SonarQube/Microsoft rule exists it's noted for stronger justification when handing off; `—`
 means no canonical rule ID exists for that smell, stated plainly rather than invented.
@@ -75,6 +76,12 @@ means no canonical rule ID exists for that smell, stated plainly rather than inv
 - **Missing seams at framework boundaries.** Direct instantiation of `HttpClient`, file I/O, or DB access
   inside business logic (instead of behind an injectable interface) forces every test through the real
   dependency or forces heavy mocking.
+- **Boundary enforced only by convention.** A layering rule, dependency direction, or module boundary that
+  exists only in a diagram and in reviewers' heads erodes silently — every violation is individually
+  reasonable, and six months later everything references everything. Unlike the other entries the fix isn't
+  a design change at all: assert the rule as an **architecture test** over the compiled assembly, moving it
+  from intermittent human review to a failing build. See
+  [`unit-test-types.md`](unit-test-types.md) § architecture tests.
 
 ## DDD / F#-inspired smells (apply equally well to C#)
 

@@ -72,14 +72,26 @@ public class OrderStateTransitionTests : IAsyncLifetime      // NOT IClassFixtur
 Reach for a class-shared fixture only when setup is genuinely expensive *and* every test in the class is
 strictly read-only against it. If you do, say so in a comment — the next person will assume per-test.
 
+**Separate the two lifetimes rather than compromising between them.** Expensive *infrastructure* — an
+in-process host, a database container, a connection — can safely start once per class, because it holds no
+test-specific state. *Seeded data* still resets per test. Where infrastructure is class-shared, give the
+fixture a `ResetAsync()` that clears the tables the feature touches and call it at the start of each test;
+that keeps startup cost amortized without reintroducing order-dependent tests. This is why "start the
+container once per class" and "give every test a clean slate" are not in conflict.
+
 Whichever you choose, **create a fresh `DbContext` per fixture instance**, mirroring the request-scoped
 lifetime a context has in production.
 
 ## What to mock, and what not to
 
-Draw the line at the **process boundary**. Real: the database, `DbContext`, repositories, unit-of-work, and
-the service under test. Mocked: external systems — search indexes, notification senders, third-party HTTP
-APIs, message buses.
+Draw the line at **ownership, not distance**. The database is in another process and still stays real,
+because your team controls its schema, its constraints, and when it changes. What you don't own is what you
+can't control and shouldn't depend on in a test — payment gateways, email and notification providers,
+search indexes, third-party HTTP APIs, message brokers.
+
+**Fake only what you don't own.** Faking something you own means the test can no longer catch broken SQL, a
+bad mapping, a violated constraint, or a query that translates differently than you assumed — which is most
+of what an integration test exists for.
 
 Over-mocking is the common failure: mock the repository layer and the test proves nothing the unit tests
 already did. If you're mocking the `DbContext`, you wanted a unit test — go back to `unit-tests.md`'s

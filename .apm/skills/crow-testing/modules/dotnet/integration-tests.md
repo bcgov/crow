@@ -26,17 +26,32 @@ below; if you deliberately deviate, say so and why.
   seeding code.
 - Tag integration tests distinctly from unit tests (e.g. `[Trait("Category","Integration")]`) so they can be
   run/excluded separately.
-- Project scalar fields when asserting persisted EF state (e.g. `.Select(x => new { x.Id, x.Field })`)
-  rather than asserting whole entities — avoids noisy failure messages from circular navigation properties.
+- Decide **where the test enters the system** — directly at the service, or as a real HTTP request against
+  the app hosted in-process (`WebApplicationFactory<Program>`). Entering at HTTP covers routing, model
+  binding, validation, auth, and middleware in the same test and survives internal refactoring, at the cost
+  of speed and failure-message precision. See
+  [`reference/integration/harness-selection.md`](../reference/integration/harness-selection.md).
 
 ## What is real, and what is mocked
 
-Draw the line at the **process boundary**. Real: the database, `DbContext`, repositories, unit-of-work, and
-the service under test. Mocked: external systems — search indexes, email/notification senders, third-party
-HTTP APIs, message buses.
+**Fake only what you don't own.** Ownership is the test, not distance — the database is in another process
+and still stays real, because your team controls its schema and constraints. Real: the database,
+`DbContext`, repositories, unit-of-work, and the service under test. Faked: what you don't control —
+payment gateways, email/notification providers, search indexes, third-party HTTP APIs, message brokers.
 
 Mocking the repository or `DbContext` means the test proves nothing the unit tests didn't. If that's where
 you're heading, re-check `unit-tests.md`'s scoping check; you probably want a unit test.
+
+## Asserting persisted state
+
+- **Read back through a fresh scope/context.** Asserting through the same `DbContext` the operation used
+  shows you the change tracker, not the database — the test passes on state that was never saved.
+- **Filter by an identifier the test supplied**, never `SingleAsync()` over the whole table. A test that
+  assumes it's the only writer breaks the moment it isn't, and the failure looks unrelated to the cause.
+- **Assert both halves of the contract.** When an operation is expected to fail, also assert that nothing
+  was written — a rejection that quietly persisted a row is exactly the defect an integration test is for.
+- Project scalar fields (e.g. `.Select(x => new { x.Id, x.Field })`) rather than asserting whole entities —
+  avoids noisy failure messages from circular navigation properties.
 
 ## Where the detail lives
 

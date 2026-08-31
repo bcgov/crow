@@ -20,6 +20,7 @@ Use it as a lookup: find the shape you actually observed in the code, then propo
 | Operation expected to be safe to repeat | **Idempotency**: applying twice equals applying once | Example + property-based |
 | Order-independent operation (merges, sets, aggregation) | **Commutativity/ordering**: shuffled input yields the same result | Property-based |
 | Large or structured output (reports, generated documents, formatted text) | **Approval/snapshot**: compare against a reviewed baseline | Approval |
+| A structural rule people are asked to follow in review (layering, dependency direction, naming, no cross-feature references) | **Architecture tests**: assert the rule over compiled types | Reflection-based assertion library |
 | Code whose current behavior is not understood | **Characterization tests** — see [`characterization-tests.md`](characterization-tests.md) | Approval + example |
 
 ## Notes on the less obvious entries
@@ -47,6 +48,19 @@ message delivery, and re-run imports all assume idempotency that nothing verifie
 **Approval testing earns its place for wide outputs**, where writing dozens of field assertions is tedious
 and unreadable. The trade-off: a reviewed baseline is only as good as the review, and a careless "approve
 all" silently blesses a regression. Use it where the output is genuinely large, and read the diff.
+
+**Architecture tests move a whole defect class down a filter stage.** Rules like "the domain must not
+reference infrastructure", "no feature folder may reference another", "handlers must be sealed", or
+"everything in this namespace ends in `Validator`" are normally enforced by human code review — which is to
+say, enforced intermittently. A reflection-based test over the compiled assembly turns each one into a
+failing build. In `foundation.md`'s terms this is close to filter stage zero: the erosion is caught at build
+time by a rule, not by whoever happens to review the pull request.
+
+They apply to any codebase with a structural rule worth keeping — layered, modular, or feature-sliced — and
+are cheap: a handful of tests covering the rules the team already argues about in review. Propose them when
+you see a boundary that exists only by convention, especially one that has already been violated somewhere.
+Keep them few and name them after the rule, so a failure reads as "this rule was broken" rather than "some
+architecture test failed".
 
 ## How to use this during discovery
 
