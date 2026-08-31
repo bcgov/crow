@@ -81,9 +81,9 @@ Don't recommend a change when:
   same singleton adds indirection and changes nothing about what a test can control.
 - **You can't name the defect class it prevents.** If the justification is "cleaner" rather than "this class
   of bug becomes impossible / catchable earlier", it isn't a testability finding — leave it out.
-- **An analyzer already reports it.** SonarQube and the built-in Roslyn rules run on these projects anyway.
-  Re-raising a `CA`/`S`-numbered finding by hand adds noise, not information — it's already on a dashboard
-  with a severity. Cite the rule if you happen across the smell; don't go looking for it. See
+- **A verified active analyzer already reports it.** Confirm Roslyn enforcement or current SonarQube results
+  before treating a `CA`/`S`-numbered finding as covered. Cite the rule if you happen across the smell; do not
+  duplicate a verified result. See
   [`language-features-for-testability.md`](language-features-for-testability.md) for what tooling covers and
   what it never will.
 - **A framework requires the current shape.** Two-way data binding, ORM materialization, and model binding

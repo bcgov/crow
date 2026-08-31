@@ -7,8 +7,10 @@ Load when writing or reviewing a fixture for a database-backed integration test.
 A fixture is the "given" of a scenario, extracted so tests only express the "when" and "then". It owns:
 
 - **ID allocation** for every entity it seeds (see [`seeding-and-ids.md`](seeding-and-ids.md)).
-- **Cleanup of its own footprint before seeding** (see
+- **Failure-safe cleanup of its exact run-owned footprint** (see
   [`cleanup-and-isolation.md`](cleanup-and-isolation.md)).
+- **Fail-closed environment verification before mutation** (see
+  [`environment-and-diagnostics.md`](environment-and-diagnostics.md)).
 - **Seeding a coherent starting state** — several related entities in the shape a real scenario requires,
   not one row at a time.
 - **Exposing the seeded IDs as properties** (`CustomerId`, `OrderId`, `AgentId`) so tests reference them by
@@ -21,22 +23,26 @@ public sealed class OrderAssignmentFixture : IntegrationTestBase, IAsyncLifetime
     public MyDbContext Context { get; private set; } = null!;
     public int CustomerId { get; private set; }
     public int OrderId { get; private set; }
+    public string RunId { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(12));
 
     public async Task InitializeAsync()
     {
         Context    = CreateContext();
-        CustomerId = TestDataConventions.NextNegativeId();
-        OrderId    = TestDataConventions.NextNegativeId();
+        await AssertAllowedDatabaseAsync(Context);
+        CustomerId = TestDataConventions.NextCandidateId();
+        OrderId    = TestDataConventions.NextCandidateId();
 
-        await PurgeAsync();                                  // self-healing: clear prior residue first
-
-        await new CustomerTestDataBuilder(Context).CreateAsync(CustomerId);
+        await new CustomerTestDataBuilder(Context).CreateAsync(CustomerId, RunId);
         await new OrderTestDataBuilder(Context).CreateAsync(
-            OrderId, CustomerId, status: OrderStatus.Open,
+            OrderId, CustomerId, RunId, status: OrderStatus.Open,
             configure: o => o.AssignedToId = AgentId);        // per-scenario tweaks via callback
     }
 
-    public async Task DisposeAsync() => await Context.DisposeAsync();
+    public async Task DisposeAsync()
+    {
+        try { await PurgeAsync(); }
+        finally { await Context.DisposeAsync(); }
+    }
 
     public OrderService CreateService(Roles role = Roles.None) => new(
         new UnitOfWork(Context, LoggerFactory, new CurrentUser { Id = 1, Role = role }),
@@ -74,10 +80,10 @@ strictly read-only against it. If you do, say so in a comment — the next perso
 
 **Separate the two lifetimes rather than compromising between them.** Expensive *infrastructure* — an
 in-process host, a database container, a connection — can safely start once per class, because it holds no
-test-specific state. *Seeded data* still resets per test. Where infrastructure is class-shared, give the
-fixture a `ResetAsync()` that clears the tables the feature touches and call it at the start of each test;
-that keeps startup cost amortized without reintroducing order-dependent tests. This is why "start the
-container once per class" and "give every test a clean slate" are not in conflict.
+test-specific state. *Seeded data* still resets per test. Where infrastructure is class-shared, reset seeded state per test. A disposable or dedicated database may
+clear feature tables; an approved shared database must delete only the exact keys and run markers owned by
+the completed test. This keeps startup cost amortized without reintroducing order-dependent tests or
+touching unrelated data.
 
 Whichever you choose, **create a fresh `DbContext` per fixture instance**, mirroring the request-scoped
 lifetime a context has in production.

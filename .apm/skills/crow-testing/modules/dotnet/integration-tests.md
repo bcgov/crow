@@ -17,17 +17,16 @@ when it was written, not a decision to keep writing it. See
 
 ## Default pattern (only when no integration test project exists yet)
 
-- Use a **real `DbContext` against a real SQL Server database** (the project's DEV/TEST environment), not
-  `Microsoft.EntityFrameworkCore.InMemory` — the in-memory provider hides real constraint, collation, and
-  query-translation behavior.
-- No Testcontainers (may not be available in the target environment), no Respawn-style full DB reset (tests
-  typically run against a **shared** DEV/TEST database used by other developers), no tSQLt (not worth
-  adopting once logic has migrated to EF Core). If the project already uses any of these, follow the
-  project's existing choice instead.
-- Seed test rows with explicit **negative primary keys** so they can never collide with real DEV/TEST data.
-  This has real mechanics attached (identity inserts, connection pooling, idempotent re-seeding) — see
-  [`reference/integration/seeding-and-ids.md`](../reference/integration/seeding-and-ids.md) before writing
-  seeding code.
+- Use a **real `DbContext` against the real SQL Server provider**, not
+  `Microsoft.EntityFrameworkCore.InMemory`; the in-memory provider hides constraint, collation, transaction,
+  and query-translation behavior.
+- Prefer a disposable database or a database dedicated to automated tests. Follow an existing container,
+  database-reset, or transaction strategy when the project already has one. Use a shared DEV/TEST database
+  only when isolated infrastructure is unavailable, the user explicitly approves it, and the mandatory
+  environment and run-ownership safeguards in the integration reference modules are implemented.
+- Treat every seeded row as run-owned data. Key sign alone never proves ownership; use a unique run marker and
+  clean only exact rows owned by that run. See
+  [`reference/integration/seeding-and-ids.md`](../reference/integration/seeding-and-ids.md).
 - Tag integration tests distinctly from unit tests (e.g. `[Trait("Category","Integration")]`) so they can be
   run/excluded separately.
 - Decide **where the test enters the system** — directly at the service, or as a real HTTP request against
@@ -81,7 +80,9 @@ this specific case applies).
 
 ## Connection & environment
 
-- Integration tests run against DEV and optionally TEST — never UAT or PROD.
+- Integration tests run against disposable, dedicated-test, or explicitly approved DEV/TEST databases —
+  never UAT or production.
 - Connection string via configuration, never a committed secret — only a placeholder in source control.
-  Layering, fail-fast wiring, and diagnostics:
+  Fail closed on a server/database allowlist before any shared-database mutation. Layering, wiring, and
+  diagnostics:
   [`environment-and-diagnostics.md`](../reference/integration/environment-and-diagnostics.md).

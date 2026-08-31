@@ -50,10 +50,9 @@ prioritized, justified recommendation, and when *not* to recommend a change at a
 Where a real SonarQube/Microsoft rule exists it's noted for stronger justification when handing off; `—`
 means no canonical rule ID exists for that smell, stated plainly rather than invented.
 
-**The `Rule` column is also a scope boundary.** Where a rule ID is listed, an analyzer already reports it —
-SonarQube runs on these projects anyway. Cite the rule if you land on the smell while reading code, but
-don't spend discovery time searching for it; the finding is already on a dashboard. Your effort is worth
-more on the rows marked `—`, which no tool will ever raise.
+**The `Rule` column is also a scope boundary only when the matching analyzer is active.** Verify Roslyn
+configuration and current SonarQube results before assuming a finding is already reported. Cite the rule if
+you land on a covered smell, and spend dedicated discovery effort on rows the active toolset cannot raise.
 
 For the full explanation of any one row — what the smell looks like, why it matters, and the preferred
 alternative — see [`design-smell-entries.md`](design-smell-entries.md). Load it once you've landed on a

@@ -15,13 +15,15 @@ don't infer the procedure's intended behavior from its SQL alone if a spec exist
 ## Approach
 
 - Invoke the stored procedure directly via Dapper or a raw `SqlConnection`, not through EF Core.
+- Prefer a disposable or dedicated test database. For an explicitly approved shared DEV/TEST database, run
+  the same fail-closed server/database allowlist check required by
+  [`integration/environment-and-diagnostics.md`](integration/environment-and-diagnostics.md).
 - **Wrap setup, execution, and assertions in a transaction that's always rolled back**
   (`BEGIN TRANSACTION` ... seed ... `EXEC` ... assert ... `ROLLBACK TRANSACTION`). This guarantees the
-  shared DEV/TEST database is left pristine regardless of the outcome, without relying on cleanup code that
-  could be skipped by a failing assertion.
-- Still use the negative-ID seeding convention from `dotnet/integration-tests.md` (alongside the
-  transaction, not instead of it) so seeded rows are trivially identifiable if a rollback is ever skipped,
-  and distinct negative values per scenario so concurrently run scenarios don't collide.
+  database is left pristine when the connection remains healthy, without relying on cleanup code that could
+  be skipped by a failing assertion.
+- Tag seeded rows with a unique run identifier and use distinct generated values per scenario. Key sign alone
+  is not proof of ownership if a rollback or connection fails.
 - Document required assertions as enumerated, named blocks (`Assertion 1: <name>`, `Assertion 2: <name>`,
   ...), each with a one-line intent and the concrete query/check that proves it — this keeps a stored
   procedure's expected behavior reviewable even though it can't be expressed as ordinary EF entity

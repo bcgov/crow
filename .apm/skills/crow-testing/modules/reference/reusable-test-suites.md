@@ -49,18 +49,18 @@ public abstract class EmailValidationTestSuite<TModel, TValidator>
 The concrete class then contains **no assertions at all** — only implementations of the abstract members:
 
 ```csharp
-public class EditWorkerAddressFieldsTests
-    : AddressValidationTestSuite<EditWorkerModel, EditWorkerValidator>
+public class UserProfileAddressFieldsTests
+    : AddressValidationTestSuite<UserProfile, UserProfileValidator>
 {
-    public EditWorkerAddressFieldsTests(ITestOutputHelper output) : base(output) { }
+    public UserProfileAddressFieldsTests(ITestOutputHelper output) : base(output) { }
 
-    protected override EditWorkerModel BuildModelWithAddress(AddressModel address)
-        => new EditWorkerModelBuilder().WithAddress(address).Build();
+    protected override UserProfile BuildModelWithAddress(AddressModel address)
+        => new UserProfileBuilder().WithAddress(address).Build();
 
-    protected override Expression<Func<EditWorkerModel, string?>> CityExpression
+    protected override Expression<Func<UserProfile, string?>> CityExpression
         => x => x.Address.City;
 
-    protected override AddressModel GetAddress(EditWorkerModel model) => model.Address;
+    protected override AddressModel GetAddress(UserProfile model) => model.Address;
 }
 ```
 

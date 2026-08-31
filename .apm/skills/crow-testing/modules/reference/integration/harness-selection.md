@@ -26,20 +26,22 @@ underneath directly. Don't drive a rule matrix through HTTP.
 
 | Harness | Use when | Isolation mechanism |
 |---|---|---|
-| **EF + real database + fixtures** | The logic under test is C#/EF (services, repositories, business rules) | Explicit seeding with reserved IDs, explicit teardown |
-| **In-memory host + real database** | Testing a feature end to end through its HTTP entrance | Same as above, plus per-test reset of the tables the feature touches |
+| **EF + real database + fixtures** | The logic under test is C#/EF (services, repositories, business rules) | Disposable/dedicated database, or exact run-owned seeding and teardown |
+| **In-memory host + real database** | Testing a feature end to end through its HTTP entrance | Same as above, plus per-test reset of run-owned state |
 | **Raw-SQL transaction rollback** | The logic under test is *only* SQL (triggers, computed columns, constraints) with no C#/EF path | One transaction per test, always rolled back, never committed |
 | **Legacy T-SQL harness** | Stored procedures/functions with no EF code path, exercised as scripts | See [`../legacy-tsql-harness.md`](../legacy-tsql-harness.md) |
 
 ## EF + real database + fixtures
 
-The default for anything with a C# code path. Uses a real `DbContext` against a real DEV/TEST database, so
-constraints, computed columns, triggers, and query translation all behave as in production.
+The default for anything with a C# code path. Use a real `DbContext` against the real provider, preferably
+with a disposable database or one dedicated to automated tests, so constraints, computed columns, triggers,
+and query translation behave as in production without risking unrelated data.
 
 Cost: you own seeding and cleanup explicitly. See [`fixtures.md`](fixtures.md),
 [`seeding-and-ids.md`](seeding-and-ids.md), and [`cleanup-and-isolation.md`](cleanup-and-isolation.md).
 
-**Disqualifier:** none for C#-path logic — this is the baseline.
+**Disqualifier:** a shared persistent database without explicit user approval, an exact server/database
+allowlist, unique run ownership, and exact cleanup. Do not proceed until those controls exist.
 
 ## In-memory host + real database
 

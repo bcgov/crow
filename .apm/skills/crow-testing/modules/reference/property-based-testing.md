@@ -2,9 +2,8 @@
 
 Deeper guidance for writing property-based tests with CsCheck. Load only when actually authoring one.
 
-**Prerequisites:** add the `CsCheck` NuGet package to the test project. The generator templates below
-target a modern .NET TFM; if the project targets .NET 5 or earlier, drop or replace any `TimeOnly`/`DateOnly`
-generators in `GenDateExtensions.cs` (introduced in .NET 6) with `DateTime`-based equivalents.
+**Prerequisites:** use the project's existing property-testing library when one is established. Add the
+`CsCheck` NuGet package only when no meaningful convention exists and the user accepts the dependency.
 
 ## When to reach for a property-based test
 
@@ -68,7 +67,7 @@ examples alone say nothing about the other 200 characters.
 [Fact]
 public void Email_At_Exact_200_Chars_Should_Pass()   // boundary example, exact and readable
 {
-    var email = new string('a', 188) + "@example.com";
+    var email = new string('a', 184) + "@example.invalid";
     Assert.Equal(200, email.Length);
     Validator.TestValidate(BuildModelWithEmail(email))
              .ShouldNotHaveValidationErrorFor(EmailExpression);
@@ -79,7 +78,7 @@ public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space bey
 {
     Gen.String[Gen.Char.AlphaNumeric, 210, 260].Sample(local =>
     {
-        var model = BuildModelWithEmail(local + "@test.com");
+        var model = BuildModelWithEmail(local + "@example.invalid");
         Validator.TestValidate(model).ShouldHaveValidationErrorFor(EmailExpression);
     }, iter: 10, seed: "EmailTooLong");
 }
@@ -99,30 +98,12 @@ public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space bey
 
 ## Biased character generators (for string/format validation)
 
-A uniform-random `Gen.String` under-samples the edge cases that actually cause bugs. A generator that biases
-toward realistic input while still guaranteeing coverage of known-nasty characters catches more real bugs
-per iteration. Below is a quick at-a-glance illustration of the idea:
+A uniform-random `Gen.String` under-samples the edge cases that cause bugs. Build a project-specific generator
+that heavily samples accepted common input while deliberately including small sets for normalization,
+homoglyph, right-to-left, full-width, and unusual-whitespace cases relevant to the field. Keep the weights and
+character sets visible so reviewers can verify the distribution.
 
-```csharp
-public static Gen<char> SmartLetter() =>
-    Gen.Frequency(
-        (50, Gen.OneOf(Gen.Char['a', 'z'], Gen.Char['A', 'Z'])),  // common case: plain ASCII
-        (25, Gen.Char['\u00C0', '\u00FF']),                       // common: accented Latin-1
-        (10, Gen.OneOfConst('і', 'ο', 'а')),                      // homoglyphs (security/spoofing)
-        (10, Gen.OneOfConst('ı', 'İ', 'ß')),                      // normalization hazards (Turkish I, ß)
-        (5,  Gen.OneOfConst('א', 'ا')));                          // RTL scripts (bidi handling)
-```
-
-**Don't just adapt this — copy the real, already-tested files.** `templates/dotnet/generators/` has three
-ready-to-use generator utilities, tried and proven, that save you from regenerating (and re-introducing
-mistakes into) this kind of code from scratch:
-
-- `GenCharExtensions.cs` — the full biased Unicode/ASCII character generator set (homoglyphs, RTL,
-  normalization hazards, wide/fullwidth chars, smart whitespace).
-- `GenCustom.cs` — phone-number generators and `GenStringTrimmed` (guarantees no leading/trailing
-  whitespace while still allowing it in the middle).
-- `GenDateExtensions.cs` — date/time/period generators (future/past dates, same-day and multi-day periods,
-  nullable variants).
-
-Copy the file(s) you need into the project's test-utilities namespace and rename the placeholder
-`YourProject.Tests.Generators` namespace to match.
+Build the smallest project-specific generator that expresses the accepted domain constraints. Keep copied
+third-party or internal-project utilities out of generated tests unless their licence and attribution permit
+reuse. Verify generator APIs against the version already referenced by the target project instead of assuming
+the example above is source-compatible.
