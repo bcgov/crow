@@ -17,7 +17,8 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/dotnet/aspnet-core.md`](modules/dotnet/aspnet-core.md) for HTTP, MVC, Razor, Blazor, API, auth, middleware, or hosted SPA work.
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
-6. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
+6. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
+7. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
 
@@ -28,6 +29,12 @@ Use this skill while implementing or changing an application. Data architecture 
 5. For text-bearing changes, test representative Indigenous-language and multilingual values across the complete affected round trip.
 6. Run the repository's existing formatter/linter first, then the smallest relevant tests, then build/package checks.
 7. Run the repository's established security and quality scans. Do not weaken gates to make the change pass.
+
+For routed platform boundaries, confirm shared-service reuse before adding a
+new capability; identify the contract owner and version/compatibility policy;
+request only the minimum disclosed data for the stated subject and purpose;
+propagate timeout, retry, idempotency, cancellation, and retry-exhaustion
+behavior; define a safe, visible fallback; and plan migration and rollback.
 
 ## Security integration
 

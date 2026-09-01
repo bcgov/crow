@@ -82,6 +82,10 @@ Verify these against the live component page before exact implementation:
 - Make errors specific: identify the field/problem and explain how to correct it without blaming the user.
 - Preserve entered values after validation failures where safe.
 - Announce asynchronous status changes without unnecessarily moving focus.
+- For automated eligibility, denial, or external-register results, explain the
+  outcome at the point of use and provide the approved correction, review, or
+  contact path. Identify pending, degraded, offline, stale, and assisted
+  states instead of implying a final result.
 
 ## Sensitive information in forms
 

@@ -71,7 +71,7 @@ This section lists known vulnerabilities (CVEs) identified across direct and tra
 
 | CVE ID | Affected Component | Vulnerable Version | Severity | Fixed Version | Provenance | Remediation Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | `CRITICAL / HIGH / MEDIUM / LOW` | | `[SonarQube] / [NVD-verified] / [AI-estimated]` | `Open / Patched / Mitigated / Ignored` |
+| | | | `Critical / High / Medium / Low / Informational` | | `[SonarQube] / [NVD-verified] / [AI-estimated]` | `Open / Patched / Mitigated / Ignored` |
 
 ---
 
@@ -114,6 +114,21 @@ This section evaluates key security controls, hardcoded secret checks, and crypt
 | **Input Validation & Sanitization** | *SQL injection, XSS, SSRF protection patterns* | `Pass / Needs Review` |
 | **Cryptography & Hashing** | *Algorithms used (SHA-256, bcrypt, AES-GCM, etc.)* | `Pass / Needs Review` |
 | **Audit & Logging Hygiene** | *Structured [AUDIT] events, PII redaction* | `Pass / Needs Review` |
+
+### 5.1 Platform, data minimization, and proof controls (conditional)
+
+Complete this section when the application uses a shared/canonical data
+source, external decision service, or digital proof. Use `N/A` with a reason
+when it does not apply, and `Unknown` when evidence is unavailable.
+
+| Control | Status | Evidence / scope |
+| :--- | :--- | :--- |
+| Data requests and responses are minimized to the stated purpose | `Pass / Flagged / Unknown / N/A` | |
+| Subject, tenant, audience, and purpose scope are enforced by the provider | `Pass / Flagged / Unknown / N/A` | |
+| Pairwise identifiers prevent unnecessary cross-party correlation | `Pass / Flagged / Unknown / N/A` | |
+| Proof audience, expiry, revocation, replay resistance, and minimal disclosure are verified | `Pass / Flagged / Unknown / N/A` | |
+| Assurance level and any identity downgrade/fallback are safe and re-authorized | `Pass / Flagged / Unknown / N/A` | |
+| Observable decisions retain privacy-preserving audit context and provenance | `Pass / Flagged / Unknown / N/A` | |
 
 ---
 
@@ -387,7 +402,7 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 
 *For each finding, document using the structure below. Repeat for each finding.*
 
-### [SEVERITY] Finding Title
+### [SEVERITY: Critical | High | Medium | Low | Informational] Finding Title
 - **Finding ID:** `SEC-NNN`
 - **Classification:** `Confirmed / Probable / Informational`
 - **Location:** `path/to/file.ext:line_number`

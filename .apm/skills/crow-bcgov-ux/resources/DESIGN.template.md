@@ -59,6 +59,21 @@ For each shared component, record:
 
 Document labels, instructions, requirements, validation timing, field errors, summaries, focus, announcements, preservation of input, and confirmation. Identify sensitive fields, their default masked presentation, authorization boundary, accessible show/mask interaction, and when they return to the masked state.
 
+## Decisions and service states
+
+Use this section only when the supplied surface presents an automated
+eligibility/denial decision or an external-register result, or can reach a
+degraded, asynchronous, offline, stale, or assisted state. Document:
+
+- the point-of-use explanation and the approved reason/factor wording;
+- decision source, version, timestamp or freshness, where observable;
+- the correction, review, contact, or alternate-channel recourse available;
+- clear pending, unavailable, offline, stale, and assisted messaging and next
+  actions;
+- accessible status announcements and duplicate-submission prevention.
+
+Do not define a journey, invent policy, or change the decision outcome here.
+
 ## Motion
 
 Document necessary motion and reduced-motion behaviour.

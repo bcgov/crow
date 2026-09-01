@@ -52,14 +52,16 @@ if (Test-Path $cssFile) {
 
 # --- Helper: risk class from risk level ---
 function Get-RiskClass([string]$risk) {
-    switch ($risk.ToUpper()) {
-        'CRITICAL' { 'critical' }
-        'HIGH'     { 'high' }
-        'MODERATE' { 'moderate' }
-        'MEDIUM'   { 'moderate' }
-        'LOW'      { 'low' }
-        'SECURE'   { 'secure' }
-        default    { 'low' }
+    $normalizedRisk = if ($null -eq $risk) { '' } else { $risk.Trim().ToUpperInvariant() }
+    switch ($normalizedRisk) {
+        'CRITICAL'          { 'critical' }
+        'BLOCKER'           { 'critical' }
+        'HIGH'              { 'high' }
+        'MODERATE'          { 'moderate' }
+        'MEDIUM'            { 'moderate' }
+        'LOW'               { 'low' }
+        'SECURE'            { 'secure' }
+        default             { 'low' }
     }
 }
 

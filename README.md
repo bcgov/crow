@@ -11,19 +11,19 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 ## Available Agents
 
 - **Crow B.C. Government UX Agent** — Designs and implements new interfaces, or reviews and remediates existing applications, using the current B.C. Design System and WCAG 2.2 AA. Supports the frontend technologies covered by Crow while keeping user-journey design out of scope.
-- **Crow Architecture Review Agent** — Inspects a repository and creates or updates verified architecture documentation under `docs/`, with service-scoped documents and an index for monorepos.
-- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, finding classification (Confirmed/Probable/Informational), and cross-file data flow tracing via codebase-memory-mcp.
+- **Crow Architecture Review Agent** — Inspects a repository and creates or updates verified architecture documentation under `docs/`, with conditional platform-role, reuse, custodianship, contract, and degradation assessment plus service-scoped documents and an index for monorepos.
+- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, the approved Critical/Blocking through Informational severity scheme, conditional data/proof checks, and cross-file data flow tracing via codebase-memory-mcp.
 - **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
 - **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
 - **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
-- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance since CROW has no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
+- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance since CROW has no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
 
 ## Available Skills
 
-- **crow-bcgov-ux** — Technology-routed B.C. Design System and accessibility guidance for creating UX or reviewing and updating an existing application. Includes HTML/CSS/Razor, React-family, Vue-family, Angular, Svelte, and Blazor modules.
+- **crow-bcgov-ux** — Technology-routed B.C. Design System and accessibility guidance for creating UX or reviewing and updating an existing application, including point-of-use decision explanations and clear degraded/async/offline/assisted states without journey design. Includes HTML/CSS/Razor, React-family, Vue-family, Angular, Svelte, and Blazor modules.
 - **crow-architecture-review** — Routes repository classification, inspection, document generation or update, and deterministic output validation.
-- **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules.
+- **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules plus conditional, technology-neutral platform alignment and reuse guidance.
 - **crow-application-development** — Technology-routed implementation guidance for .NET, ASP.NET Core, secure persistence, testing, CI, and containers.
 - **crow-executive-report** — Bundles the executive report workflow, templates, schema, dashboard assets, and renderer.
 - **crow-security-review** — Provides framework-specific detection modules and the security review document template.
@@ -39,12 +39,12 @@ Resources are owned by the skills that consume them:
 
 - `.apm/skills/crow-bcgov-ux/` — B.C. government UX foundations, WCAG 2.2 AA acceptance criteria, existing-app review/remediation workflow, technology modules, and an optional `DESIGN.md` specification template
 - `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
-- `.apm/skills/crow-application-architecture/` — Context-routed architecture principles and .NET modules
+- `.apm/skills/crow-application-architecture/` — Context-routed architecture principles, conditional platform-alignment/reuse guidance, and .NET modules
 - `.apm/skills/crow-application-development/` — Context-routed .NET implementation modules
 - `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
 - `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
-- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
+- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-release/` — Semantic-version policy and deterministic version/package/release scripts
@@ -83,7 +83,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.4.0 --global --target copilot
+apm install bcgov/crow#v0.4.1 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -97,7 +97,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.4.0 --global --target copilot
+apm install bcgov/crow#v0.4.1 --global --target copilot
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -138,20 +138,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.4.0.zip
+build/bcgov-crow-0.4.1.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.4.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.4.1.zip --global --target copilot
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.4.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.4.0
+Expand-Archive .\build\bcgov-crow-0.4.1.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.4.1
 ```
 
 ## Do not use multiple Crow installations at once

@@ -27,6 +27,11 @@ Use this skill when adding or changing Crow agents, skills, modules, templates, 
 8. Run [`scripts/Test-CrowAssets.ps1`](scripts/Test-CrowAssets.ps1), then the repository's package checks.
 9. Run the dedicated Crow review and a rubber-duck review. Resolve material findings before completion.
 
+For cross-cutting platform or reuse guidance, prefer a conditionally routed
+technology-neutral module over a new monolithic agent or skill. Preserve
+contract owners, approval gates, freshness/evidence qualifiers, and existing
+UX or testing boundaries.
+
 ## Deterministic-first rule
 
 Use a script instead of model prose when the operation can be expressed as stable inputs, transformations, and exit codes. Good candidates include manifest synchronization, naming checks, link validation, context-size measurement, schema validation, packaging, checksums, and release creation. Keep judgment-heavy work such as capability boundaries and ambiguity resolution in the agent.

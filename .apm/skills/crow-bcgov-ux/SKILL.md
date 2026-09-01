@@ -32,6 +32,10 @@ For an existing-app review or remediation, also load:
 
 - [`modules/review-remediation.md`](modules/review-remediation.md).
 
+When a supplied surface shows automated eligibility/denial, external register
+results, or degraded/async/offline/assisted states, also load
+[`modules/decision-and-service-states.md`](modules/decision-and-service-states.md).
+
 Load only the matching technology module:
 
 - HTML/CSS, server-rendered templates, CMS themes, or Razor: [`modules/technology/web.md`](modules/technology/web.md)
@@ -63,6 +67,7 @@ Before designing or editing:
 6. **Accessibility:** apply every relevant acceptance criterion in the accessibility module before implementation.
 7. **Implementation:** use official packages and the target framework's idioms. Centralize tokens and shared primitives; do not scatter copied values.
 8. **Verification:** run the repository's existing linter/formatter, focused tests, build, accessibility automation, and required manual checks.
+9. **Service states (when routed):** explain consequential automated or external decisions at the point of use, provide available recourse and provenance, and make degraded, pending, stale, offline, and assisted states clear without changing journey or policy design.
 
 ## Review and remediation workflow
 

@@ -77,6 +77,9 @@ is already current.
 5. Stop for explicit user review and approval before writing test code.
 6. After approval, implement in phases. Keep scenario status and `testing-plan.md` synchronized.
 7. Check the cross-family review cadence before implementation and offer a plan review when overdue.
+8. When the feature crosses an independently versioned shared/canonical
+   dependency, route the conditional contract and resilience guidance in
+   `integration-tests.md`; do not expand this into E2E testing.
 
 ## Step 6: Simple unit tests
 

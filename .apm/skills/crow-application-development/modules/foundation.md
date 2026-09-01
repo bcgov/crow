@@ -12,3 +12,10 @@
 - Prefer deterministic builds, pinned/locked dependencies, immutable artifacts, and least-privilege runtime identities.
 - Tests must assert observable behavior, not implementation details. Cover security denial and failure behavior as first-class cases.
 - Keep public contracts backward compatible by default; test serialization and mixed-version behavior when contracts or schemas evolve.
+- For shared or canonical dependencies, apply the routed platform-alignment
+  module: prefer reuse, name the contract owner, request minimal
+  purpose/subject-scoped data, and document versioning, migration, and rollback.
+- Treat timeout, cancellation, bounded retry, idempotency, fallback, and
+  retry-exhaustion behavior as part of the contract. A fallback must not
+  silently weaken authorization, identity assurance, data minimization, or
+  auditability.
