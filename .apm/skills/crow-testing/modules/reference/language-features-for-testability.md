@@ -7,9 +7,8 @@ recent enough that newer language or BCL features are available. Produces non-bl
 
 ## First: what tooling already covers
 
-First detect which tooling is configured and enforced. `SYSLIB`, `CA`, and `IDE` rules require the matching
-SDK/analyzer configuration; `S` rules require current SonarQube analysis for the repository. Do not spend
-effort re-deriving a finding only after verifying that the active tool reports it.
+**SonarQube and the built-in Roslyn analyzers run on these projects anyway. Do not spend effort re-deriving
+what they already report.** Anything with a rule ID is already on a dashboard, with a severity and a link.
 
 | Already reported by tooling | Rule |
 |---|---|
@@ -24,12 +23,12 @@ effort re-deriving a finding only after verifying that the active tool reports i
 
 The rule to follow:
 
-- **Do not run a dedicated hunt for findings covered by the verified active toolset.**
+- **Never run a dedicated hunt for these.** Zero information gained.
 - **Do mention one if you land on it** while reading code to write a test. It costs nothing at that point,
   and the rule ID makes it trivially justifiable.
 
-Everything below focuses on design migrations rather than rule violations and remains useful regardless of
-which analyzers are active.
+Everything below is in this file precisely because **no analyzer will ever suggest it** — these are design
+migrations, not rule violations.
 
 ## Second: what the project *can* use
 

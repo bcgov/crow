@@ -173,17 +173,6 @@ if ($errors.Count -eq 0) {
                 Add-ValidationError "Version mismatch: apm.yml is $apmVersion and README.md references $readmeVersion."
             }
         }
-
-        $releaseNotesPath = Join-Path $root 'RELEASE_NOTES.md'
-        if (-not (Test-Path -LiteralPath $releaseNotesPath -PathType Leaf)) {
-            Add-ValidationError 'RELEASE_NOTES.md is required for a public Crow release.'
-        }
-        else {
-            $releaseNotesContent = [System.IO.File]::ReadAllText($releaseNotesPath)
-            if ($releaseNotesContent -notmatch ('(?m)^#\s+.*\b' + [regex]::Escape($apmVersion) + '\b.*$')) {
-                Add-ValidationError "RELEASE_NOTES.md does not contain a level-one heading for version $apmVersion."
-            }
-        }
     }
 
     $agentFiles = @(Get-ChildItem $agentsPath -File -Filter '*.agent.md' | Sort-Object Name)

@@ -2,39 +2,62 @@
 
 Load when writing seeding code or test data builders for a database-backed integration test.
 
-## Establish run ownership
+## Reserved-ID convention
 
-Primary-key values do not prove that a row belongs to a test. SQL Server identity seeds and increments are
-configurable, natural keys and GUIDs have different collision properties, and multiple test processes can
-reuse process-local counters.
+Identity columns only ever generate **positive** values, so **negative IDs can never collide with real
+data**. Seed test rows with explicit negative primary keys: they're identifiable by sign programmatically,
+and safe to sweep.
 
-Create a cryptographically random run identifier for each test run and persist `IntTest-{RunId}-` in a
-visible text field on every seeded root. Keep the exact keys created by the fixture in memory. Cleanup may
-delete only rows matched by those exact keys and, where available, the same run marker.
+Pair the sign convention with a **visible tag prefix** on a text column (`IntTest-`), so seeded rows are
+recognizable to a human in the UI or a query result, not just to code. See
+[`environment-and-diagnostics.md`](environment-and-diagnostics.md).
 
-For integer identity keys, a random negative candidate can make test data recognizable, but it is only a
-candidate:
+## Two ID lifetimes
+
+| Allocator | Use for | Why |
+|---|---|---|
+| `NextNegativeId()` — sequential counter | Rows the test creates and tears down | Predictable, easy to sweep |
+| `NextRetainedNegativeId()` — random | Rows deliberately left behind (e.g. reference users other rows point at) | Random allocation avoids colliding with a later run's counter restarting at -1 |
 
 ```csharp
-public static int NextCandidateId() => -RandomNumberGenerator.GetInt32(1, int.MaxValue);
+private static long _nextId = -1;
+public static int NextNegativeId() => (int)Interlocked.Decrement(ref _nextId);
+
+public static int NextRetainedNegativeId() => -RandomNumberGenerator.GetInt32(1, int.MaxValue);
 ```
 
-On a duplicate-key result, clear the change tracker, allocate another candidate, and retry a bounded number
-of times. Never delete the colliding row; it is not owned by the current run. For GUID or natural keys, embed
-the run identifier in the generated value where the schema permits.
+Use `Interlocked` even if tests currently run sequentially — the cost is nil and it removes a landmine if
+parallelism is enabled later.
 
-Do not deliberately retain rows after a run. If a shared reference record is unavoidable, provision it
-outside the test suite through an explicitly reviewed environment setup process.
+For retained rows, wrap seeding in a **duplicate-key retry** (catch the driver's unique/PK-violation error
+numbers, clear the change tracker, allocate a new ID, retry a bounded number of times). Random IDs collide
+rarely, but "rarely" across a long-lived shared database means eventually.
 
-## Insert without destructive pre-cleaning
+## Seed idempotently: delete-then-insert
 
-Do not use delete-then-insert for a candidate key. A previous row with that key may belong to another test
-process or to non-test data. Generate a new run-owned key instead.
+**Always delete any pre-existing row for the key before inserting it**, rather than relying on teardown
+alone:
 
-Setup failures can bypass fixture disposal. Put cleanup in a `finally` block around each completed seeding
-phase where the framework permits it, and provide a separate, explicitly reviewed maintenance operation for
-stale rows identified by their full run marker. Never make ordinary test startup sweep rows by key sign or a
-generic prefix. See [`cleanup-and-isolation.md`](cleanup-and-isolation.md).
+```csharp
+await ExecuteInTransactionAsync(context, async () =>
+{
+    await deleteExistingAsync();     // this row + its dependents
+    await IdentityInsertHelper.ExecuteAsync(context, "dbo.order", async () =>
+    {
+        context.Orders.Add(entity);
+        await context.SaveChangesAsync();
+    });
+});
+```
+
+The reason is specific and easy to miss: **test frameworks do not run teardown when setup throws.** If
+`InitializeAsync` fails partway, `DisposeAsync` never runs and the rows already written are orphaned — so
+the *next* run hits a key violation on IDs it expected to be free. Idempotent seeding makes the suite
+self-healing after any crash, abort, or debugger stop.
+
+Scope the delete correctly: a builder owns **its own table's row**. Dependent rows written by other tables,
+triggers, or side effects belong to the fixture composing the scenario — only it knows every table the code
+under test touches. See [`cleanup-and-isolation.md`](cleanup-and-isolation.md).
 
 ## Inserting explicit identity values
 

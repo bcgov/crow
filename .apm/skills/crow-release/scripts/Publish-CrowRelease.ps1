@@ -36,22 +36,10 @@ $validatorPath = Join-Path $PSScriptRoot '..\..\crow-agent-skill-authoring\scrip
 $buildPath = Join-Path $root 'build'
 $archivePath = Join-Path $buildPath "bcgov-crow-$Version.zip"
 $checksumPath = "$archivePath.sha256"
-$notesPath = Join-Path $root 'RELEASE_NOTES.md'
 
 $apmContent = [System.IO.File]::ReadAllText($apmPath)
 if ($apmContent -notmatch '(?m)^version:\s*' + [regex]::Escape($Version) + '\s*$') {
     throw "apm.yml does not declare version $Version."
-}
-if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) {
-    throw "Release notes file does not exist: $notesPath"
-}
-$trackedNotes = @(& git -C $root ls-files --error-unmatch -- 'RELEASE_NOTES.md' 2>$null)
-if ($LASTEXITCODE -ne 0 -or $trackedNotes.Count -ne 1) {
-    throw 'RELEASE_NOTES.md must be tracked in the release commit.'
-}
-$notesContent = [System.IO.File]::ReadAllText($notesPath)
-if ($notesContent -notmatch ('(?m)^#\s+.*\b' + [regex]::Escape($Version) + '\b.*$')) {
-    throw "Release notes must contain a level-one heading for version $Version."
 }
 
 $versionTags = @(& git -C $root tag --list 'v[0-9]*' --sort=-v:refname)
@@ -157,7 +145,6 @@ $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $archivePath).Hash.ToLowerI
 if (-not $Publish) {
     Write-Host "Package ready: $archivePath"
     Write-Host "Checksum: $checksumPath"
-    Write-Host "Release notes: $notesPath"
     Write-Host "Dry run only. Obtain explicit user approval, then rerun with -Publish."
     return
 }
@@ -176,10 +163,9 @@ Invoke-CheckedCommand gh @(
     'release', 'create', $tag,
     $archivePath,
     $checksumPath,
-    $notesPath,
     '--repo', $Repository,
     '--verify-tag',
-    '--notes-file', $notesPath,
+    '--generate-notes',
     '--fail-on-no-commits'
 )
 Invoke-CheckedCommand gh @('release', 'view', $tag, '--repo', $Repository)

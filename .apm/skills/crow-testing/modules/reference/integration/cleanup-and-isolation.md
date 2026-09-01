@@ -5,9 +5,10 @@ flaky cross-test state.
 
 ## The problem
 
-Prefer a disposable database or one dedicated to automated tests. When an explicitly approved shared
-DEV/TEST database is unavoidable, every test must leave unrelated rows untouched and remove its exact
-run-owned footprint. Key sign and generic prefixes are not ownership proofs.
+Integration tests typically run against a **shared, persistent** DEV/TEST database — not a disposable
+per-run container. Nothing resets it between runs, so every test is responsible for leaving the database as
+it found it. A test that half-cleans doesn't just leak rows; it breaks the *next* run, and the failure
+surfaces somewhere unrelated.
 
 ## Delete in foreign-key dependency order
 
@@ -18,22 +19,25 @@ fails on the first FK constraint it hits.
 private async Task PurgeAsync()
 {
     // deepest dependents first...
-    await ExecAsync("DELETE FROM dbo.order_audit WHERE order_id = @OrderId", new { OrderId });
-    await ExecAsync("DELETE FROM dbo.order_line WHERE order_id = @OrderId", new { OrderId });
+    await Exec($"DELETE FROM dbo.deadline WHERE decision_id IN (SELECT decision_id FROM dbo.order_decision WHERE order_id = {OrderId})");
+    await Exec($"DELETE FROM dbo.order_decision WHERE order_id = {OrderId}");
+    await Exec($"DELETE FROM dbo.task     WHERE customer_id = {CustomerId}");
+    await Exec($"DELETE FROM dbo.activity WHERE customer_id = {CustomerId}");
+
+    // break a circular reference before deleting either side...
+    await Exec($"UPDATE dbo.order SET auth_contact_id = NULL WHERE customer_id = {CustomerId}");
+    await Exec($"DELETE FROM dbo.authorized_contact WHERE customer_id = {CustomerId}");
 
     // ...then the roots
-    await ExecAsync(
-        "DELETE FROM dbo.order WHERE order_id = @OrderId AND test_run = @RunId",
-        new { OrderId, RunId });
-    await ExecAsync(
-        "DELETE FROM dbo.customer WHERE customer_id = @CustomerId AND test_run = @RunId",
-        new { CustomerId, RunId });
+    await Exec($"DELETE FROM dbo.order    WHERE customer_id = {CustomerId}");
+    await Exec($"DELETE FROM dbo.customer WHERE customer_id = {CustomerId}");
 }
 ```
 
 Two things worth noting in that shape:
 
-- **Parameterize every cleanup statement.** Even test-owned values should not be interpolated into SQL.
+- **Circular or optional references need a null-out first.** When A references B and B optionally references
+  A, neither can be deleted until one side's FK is cleared. `UPDATE ... SET fk = NULL` before the deletes.
 - **Cleanup must cover tables the test never wrote to directly.** Triggers, audit tables, and cascading
   service logic all write rows on your behalf. The service under test decides the real footprint, not your
   seeding code.
@@ -59,19 +63,19 @@ SELECT name, OBJECT_NAME(parent_id) AS on_table FROM sys.triggers WHERE is_disab
 ```
 
 Walk the referencing side recursively until you reach leaves; that reverse order is your delete order. Then
-**verify empirically**: run the test once, then query for the current run identifier and exact fixture keys
-across candidate tables. Anything still present is a table you missed. Never sweep all negative keys or every
-row with a generic test prefix.
+**verify empirically**: run the test once, then query for leftover rows with reserved IDs across the
+candidate tables. Anything still present is a table you missed — a sweep helper
+(`SELECT COUNT(*) FROM {table} WHERE {pk} < 0`) makes this cheap to assert in teardown and cheap to re-check
+later for orphans from an earlier aborted run.
 
-## Cleanup must run in failure paths
+## Clean before seeding, not only after
 
-Framework disposal is not guaranteed when setup throws. Wrap completed seeding phases so exact run-owned rows
-are removed in `finally`, and have fixture disposal call the same idempotent cleanup. Stale rows from an
-aborted process require a separate reviewed maintenance operation that matches a full run marker and reports
-what it will delete before mutation.
+Teardown is not guaranteed to run — most frameworks skip disposal when setup throws. So the fixture's first
+act should be to purge its own footprint, making the suite self-healing after any crash or aborted debug
+session. See [`seeding-and-ids.md`](seeding-and-ids.md) for the idempotent delete-then-insert pattern this
+pairs with.
 
-Order of operations in a fixture: **environment check -> allocate run ID -> seed -> test -> cleanup in
-finally -> dispose**.
+Order of operations in a fixture: **purge -> seed -> test -> dispose**.
 
 ## Parallelization against a shared database
 

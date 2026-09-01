@@ -55,10 +55,9 @@ For the fuller catalog of design-smell patterns to look for, see
 above isn't enough for the area under review. Every entry there is framed by which **band-pass filter stage**
 the smell pushes a defect past, so the biggest filter jump is the biggest win.
 
-**Don't duplicate verified analyzer coverage.** Detect whether Roslyn rules are enforced and whether current
-SonarQube results exist for this repository before excluding their findings from discovery. Mention a covered
-finding if you land on it while reading code, but spend dedicated review effort on what the available tools
-do not report. See
+**Don't duplicate the analyzers.** SonarQube and the built-in Roslyn rules run on these projects anyway, so
+a scan that re-derives `CA`/`S`-numbered findings by hand adds nothing. Mention one if you land on it while
+reading code — the rule ID makes it easy to justify — but spend the effort on what no tool reports. See
 [`reference/language-features-for-testability.md`](reference/language-features-for-testability.md) for that
 boundary, and for design migrations (an inline clock read, a nullable field that should be `required`) that
 analyzers never suggest.

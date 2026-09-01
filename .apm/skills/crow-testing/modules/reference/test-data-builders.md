@@ -14,7 +14,7 @@ contract is load-bearing enough to test directly:
 [Fact]
 public void Builder_DefaultValues_ProduceValidModel()
 {
-    var model = new UserProfileBuilder().Build();
+    var model = new EditWorkerModelBuilder().Build();
 
     Assert.NotNull(model.FirstName);
     Assert.True(model.Email != null || model.PrimaryPhone != null,
@@ -32,9 +32,9 @@ appear scattered across unrelated test classes.
 Generate realistic values rather than hand-writing them, then pin the fields the domain actually constrains:
 
 ```csharp
-private Faker<UserProfile> CreateFaker(string locale) =>
-    new AutoFaker<UserProfile>(locale).UseSeed(_seed)
-        .RuleFor(m => m.ProfileId,  f => f.Random.Int(1, 10000))
+private Faker<EditWorkerModel> CreateFaker(string locale) =>
+    new AutoFaker<EditWorkerModel>(locale).UseSeed(_seed)
+        .RuleFor(m => m.WorkerId,   f => f.Random.Int(1, 10000))
         .RuleFor(m => m.LastName,   f => f.Name.LastName())
         .RuleFor(m => m.MononymFlg, f => false)
         .RuleFor(m => m.BirthDt,    f => f.Date.Between(
@@ -56,7 +56,7 @@ Where an auto-faker infers data types from property names, configure the aliases
 names still generate sensible data:
 
 ```csharp
-static UserProfileBuilder()
+static EditWorkerModelBuilder()
 {
     AutoFaker.Configure(builder => builder.WithConventions(config =>
     {
@@ -75,7 +75,7 @@ The most valuable builder methods move the object to a **coherent named state**,
 together the way the domain requires:
 
 ```csharp
-public UserProfileBuilder WithSingleName(string firstName)
+public EditWorkerModelBuilder WithMononym(string firstName)
 {
     _model.FirstName  = firstName;
     _model.LastName   = null;        // a mononym has no surname
@@ -83,7 +83,7 @@ public UserProfileBuilder WithSingleName(string firstName)
     return this;
 }
 
-public UserProfileBuilder WithTranslator(string? language = null)
+public EditWorkerModelBuilder WithTranslator(string? language = null)
 {
     _model.TranslatorRequired = true;
     _model.Language = language ?? "Other";
@@ -91,7 +91,7 @@ public UserProfileBuilder WithTranslator(string? language = null)
 }
 ```
 
-A test then reads `new UserProfileBuilder().WithSingleName("Sample").Build()` — the intent is obvious, and
+A test then reads `new EditWorkerModelBuilder().WithMononym("Madonna").Build()` — the intent is obvious, and
 the three-field invariant can't be got wrong in test #7 the way it was got right in test #3. Compare with
 three separate `WithFirstName`/`WithLastName`/`WithMononymFlg` calls, which push the domain rule into every
 test that touches it.
@@ -104,9 +104,9 @@ but reach for a named state whenever fields must move together.
 Let a builder accept either a finished child object or a configuration callback:
 
 ```csharp
-public UserProfileBuilder WithAddress(AddressModel address) { _model.Address = address; return this; }
+public EditWorkerModelBuilder WithAddress(AddressModel address) { _model.Address = address; return this; }
 
-public UserProfileBuilder WithAddressBuilder(Action<AddressModelBuilder> configure)
+public EditWorkerModelBuilder WithAddressBuilder(Action<AddressModelBuilder> configure)
 {
     var builder = new AddressModelBuilder();
     configure(builder);
@@ -134,7 +134,7 @@ formats?" into a one-line test:
 ```csharp
 foreach (var locale in new[] { "en_CA", "de", "fr", "ja" })
 {
-    var model = new UserProfileBuilder().WithLocale(locale).Build();
+    var model = new EditWorkerModelBuilder().WithLocale(locale).Build();
     _validator.TestValidate(model).ShouldNotHaveAnyValidationErrors();
 }
 ```

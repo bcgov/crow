@@ -17,7 +17,7 @@ CROW's architecture and security agents use **codebase-memory-mcp** for fast cod
 - **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
 - **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
-- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. It scans the repository first, surfaces concrete assumptions for confirmation, and requires an approved `docs/testing/<feature>/<Feature>Scenarios.md` before writing integration tests or complex/critical unit tests. Technology-routed, starting with .NET/C#/F# and SQL Server. End-to-end testing and CI/CD pipeline authoring are out of scope.
+- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests. Technology-routed, starting with .NET/C#/F# and SQL Server. Includes a Model Tiers section (Lightweight/Mid-tier/Premium + a cross-family review rule) since CROW has no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
 
 ## Available Skills
 
@@ -140,9 +140,6 @@ The resulting archive is:
 ```text
 build/bcgov-crow-0.4.0.zip
 ```
-
-Reviewed release notes are maintained in [`RELEASE_NOTES.md`](RELEASE_NOTES.md). The release workflow uses
-that Markdown file as the GitHub Release body and uploads it with the archive and checksum.
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 

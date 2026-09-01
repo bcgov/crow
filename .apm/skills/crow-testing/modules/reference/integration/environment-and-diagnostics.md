@@ -39,25 +39,20 @@ if (string.IsNullOrWhiteSpace(connectionString))
 This is the single highest-value error message in the project: it's what every new developer and every fresh
 CI agent hits first.
 
-Prefer a disposable database or one dedicated to automated tests. A shared DEV/TEST database is allowed only
-after explicit user approval. **Never use UAT or production** because tests seed, mutate, and delete rows.
-
-Before the first mutating command, resolve the actual connected server and database and require an exact match
-against configured `IntegrationTests:AllowedServers` and `IntegrationTests:AllowedDatabases` values. Missing
-allowlists, wildcard entries, connection failures, and mismatches must stop the run. Do not infer safety only
-from a connection-string name or from a database name containing `dev` or `test`.
+Integration tests run against DEV, and optionally TEST. **Never UAT or production** — tests seed, mutate,
+and delete rows. If it's cheap, assert the target environment on startup rather than trusting configuration.
 
 ## Make seeded data recognizable to humans
 
-Run ownership (see [`seeding-and-ids.md`](seeding-and-ids.md)) identifies test rows programmatically. Also tag
-them **visibly**, using a unique run identifier in a text column that appears in the UI:
+Reserved IDs (see [`seeding-and-ids.md`](seeding-and-ids.md)) identify test rows *programmatically*. Also tag
+them **visibly**, by prefixing a text column that appears in the UI:
 
-- `IntTest-{RunId}-` — rows created by one automated integration-test run
+- `IntTest-` — rows created by automated integration tests
 - `QATest-` — rows created by manual exploratory seeding
 - `E2ETest-` — rows created by end-to-end runs
 
-Someone browsing an approved shared DEV/TEST environment can then identify the owning run. Use the same run
-identifier across every seeded row and cleanup query.
+Someone browsing the shared DEV environment can then tell at a glance that a record is test data and where it
+came from, instead of filing a bug about it. Use the same prefix scheme across every seeding mechanism.
 
 ## Enrich database exceptions
 

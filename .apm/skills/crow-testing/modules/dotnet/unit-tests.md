@@ -54,15 +54,15 @@ Tests/
 │   ├── Suites/                       # Reusable abstract suites (one per field type)
 │   │   ├── EmailValidationTestSuite.cs
 │   │   └── AddressValidationTestSuite.cs
-│   ├── UpdateUserProfile/
-│   │   ├── UpdateUserProfileSmokeTests.cs           # start here: "does it work at all?"
-│   │   ├── UpdateUserProfileEmailFieldsTests.cs     # thin subclass of a shared suite
-│   │   ├── UpdateUserProfileNameFieldsTests.cs      # fields unique to this model
-│   │   ├── UpdateUserProfileTrimmingTests.cs        # single source of truth for trimming
+│   ├── EditWorker/
+│   │   ├── EditWorkerSmokeTests.cs           # start here: "does it work at all?"
+│   │   ├── EditWorkerEmailFieldsTests.cs     # thin subclass of a shared suite
+│   │   ├── EditWorkerPersonalInfoFieldsTests.cs  # fields unique to this model
+│   │   ├── EditWorkerTrimmingTests.cs        # single source of truth for trimming
 │   │   └── CrossField/
 │   │       ├── NameInterdependencyTests.cs
-│   │       └── AccountStatusRulesTests.cs
-│   └── CreateUserProfile/                  # same shape per model
+│   │       └── DeceasedWorkerRulesTests.cs
+│   └── PreIqWorker/                  # same shape per model
 ├── Builders/                         # one builder per model
 └── Utilities/                        # generators and shared test helpers
 ```

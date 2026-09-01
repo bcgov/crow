@@ -22,11 +22,9 @@ The same version must appear in:
 
 - `apm.yml`;
 - `.github/plugin/plugin.json`;
-- README installation commands, archive names, and packaging examples;
-- the version heading in `RELEASE_NOTES.md`.
+- README installation commands, archive names, and packaging examples.
 
-The release tag is `v<version>`. GitHub Releases is the publication record. The reviewed Markdown notes,
-APM archive, and SHA-256 checksum are release assets.
+The release tag is `v<version>`. GitHub Releases is the publication record, and the APM archive plus SHA-256 checksum are release assets.
 
 ## Release safety
 
@@ -34,6 +32,6 @@ APM archive, and SHA-256 checksum are release assets.
 - Publish from a clean, pushed default-branch commit.
 - Create and push an annotated tag before creating the GitHub release.
 - Require `gh release create --verify-tag` so publication cannot silently tag the wrong commit.
-- Use the reviewed repository-root `RELEASE_NOTES.md` as the release body and upload it as an asset.
+- Use generated release notes, then review them for public suitability.
 - Do not include research evidence, local caches, internal links, credentials, or untracked scratch files in assets.
 - Keep `apm.yml` on an explicit publication allowlist; Git-ignored files under `.apm/` are otherwise eligible for packaging.

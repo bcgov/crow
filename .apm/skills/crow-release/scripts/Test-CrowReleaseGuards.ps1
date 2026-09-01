@@ -29,11 +29,7 @@ function New-TestRepository {
         (Join-Path $repo 'apm.yml'),
         "name: crow-test`nversion: $Version`n",
         [System.Text.UTF8Encoding]::new($false))
-    [System.IO.File]::WriteAllText(
-        (Join-Path $repo 'RELEASE_NOTES.md'),
-        "# Crow $Version`n",
-        [System.Text.UTF8Encoding]::new($false))
-    Invoke-Git $repo @('add', 'apm.yml', 'RELEASE_NOTES.md')
+    Invoke-Git $repo @('add', 'apm.yml')
     Invoke-Git $repo @('commit', '-m', 'Initial test package')
     return $repo
 }
@@ -62,10 +58,6 @@ function Assert-ThrowsLike {
 try {
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
 
-    Assert-ThrowsLike {
-        & $releaseScript -Version '0.3.1' -RepoRoot $tempRoot -NotesFile '..\private.md'
-    } 'NotesFile' 'External release notes override is rejected'
-
     $majorRepo = New-TestRepository '1.0.0'
     Invoke-Git $majorRepo @('tag', '-a', 'v0.3.0', '-m', 'Previous release')
     Invoke-Git $majorRepo @('tag', '-a', 'v1.0.0', '-m', 'Target release')
@@ -78,21 +70,6 @@ try {
     Assert-ThrowsLike {
         & $releaseScript -Version '0.3.1' -RepoRoot $lightweightRepo
     } 'annotated tag' 'Lightweight release tag is rejected'
-
-    $missingNotesRepo = New-TestRepository '0.3.1'
-    Remove-Item -LiteralPath (Join-Path $missingNotesRepo 'RELEASE_NOTES.md')
-    Assert-ThrowsLike {
-        & $releaseScript -Version '0.3.1' -RepoRoot $missingNotesRepo
-    } 'Release notes file does not exist' 'Missing release notes are rejected'
-
-    $mismatchedNotesRepo = New-TestRepository '0.3.1'
-    [System.IO.File]::WriteAllText(
-        (Join-Path $mismatchedNotesRepo 'RELEASE_NOTES.md'),
-        "# Crow 0.3.0`n",
-        [System.Text.UTF8Encoding]::new($false))
-    Assert-ThrowsLike {
-        & $releaseScript -Version '0.3.1' -RepoRoot $mismatchedNotesRepo
-    } 'level-one heading for version 0\.3\.1' 'Mismatched release notes are rejected'
 }
 finally {
     if (Test-Path $tempRoot) {
