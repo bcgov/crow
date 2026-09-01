@@ -18,8 +18,7 @@
     "crow-agent-skill-authoring",
     "crow-agent-skill-review",
     "crow-release",
-    "crow-testing",
-    "crow-executive-report"
+    "crow-testing"
   ],
   "agents": [
     ".apm/agents"

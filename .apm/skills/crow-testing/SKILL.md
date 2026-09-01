@@ -11,7 +11,8 @@ locally is not.
 
 ## Context-efficient loading
 
-1. Load [`modules/foundation.md`](modules/foundation.md) for every engagement — it is short by design.
+1. Load [`modules/workflow.md`](modules/workflow.md) and
+   [`modules/foundation.md`](modules/foundation.md) for every engagement.
 2. If the repository has no test project yet (or the user wants a fresh discovery pass), load
    [`modules/discovery.md`](modules/discovery.md).
 3. Load [`modules/unit-tests.md`](modules/unit-tests.md) when the work is unit-level.
@@ -65,7 +66,7 @@ locally is not.
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md), and
    [`templates/modernization-handoff-template.md`](templates/modernization-handoff-template.md) when
-   producing the corresponding `docs/testing/` artifacts described in the `crow-testing` agent workflow.
+   producing the corresponding `docs/testing/` artifacts described in `modules/workflow.md`.
    The last one is only for a cross-cutting finding (a habit/convention across many files) or when the user
    asks for a fuller writeup than a `testability-notes.md` row — see
    [`modules/reference/testability-improvements.md`](modules/reference/testability-improvements.md) §

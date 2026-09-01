@@ -1,5 +1,6 @@
 // Ready-to-copy CsCheck generator utility from crow-testing's property-based-testing reference.
 // Rename the namespace below to match the target project's test-utilities namespace before use.
+using System;
 using CsCheck;
 
 namespace YourProject.Tests.Generators

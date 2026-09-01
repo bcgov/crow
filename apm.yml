@@ -35,4 +35,5 @@ includes:
   - .apm/skills/crow-agent-skill-authoring
   - .apm/skills/crow-agent-skill-review
   - .apm/skills/crow-release
+  - .apm/skills/crow-testing
 dependencies: {}

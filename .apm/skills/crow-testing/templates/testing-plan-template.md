@@ -7,12 +7,12 @@ Refresh at the end of every crow-testing engagement.
 
 ## Start here: guides
 
-- [Unit Test Organization Guide](guides/Unit%20Test%20Organization%20Guide.md)
-- [Integration Test Organization Guide](guides/Integration%20Test%20Organization%20Guide.md)
+- `guides/Unit Test Organization Guide.md`
+- `guides/Integration Test Organization Guide.md`
 
 ## Testability notes
 
-- [Low-hanging fruit, design issues, and candidates for testing](testability-notes.md)
+- `testability-notes.md`
 
 ## Feature scenarios
 
