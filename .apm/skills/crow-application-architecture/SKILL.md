@@ -14,7 +14,8 @@ Use this skill when designing a new application or making a structural change to
 3. Load [`modules/unicode-and-utf8.md`](modules/unicode-and-utf8.md) for every application.
 4. Load [`modules/dotnet.md`](modules/dotnet.md) only when a solution contains `.sln`, `.slnx`, `.csproj`, `.vbproj`,`.fsproj`, or `global.json`.
 5. Load [`modules/aspnet-core.md`](modules/aspnet-core.md) only for ASP.NET Core web, API, Razor, Blazor, or hosted SPA projects.
-6. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
+6. Load [`modules/platform-alignment.md`](modules/platform-alignment.md) only when the application provides or consumes a shared capability, canonical register, public service, integration adapter, or other one-to-many dependency.
+7. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
 
 If the application uses multiple technologies, load only the modules for components affected by the current decision.
 
@@ -27,6 +28,7 @@ If the application uses multiple technologies, load only the modules for compone
 5. Record important decisions and rejected alternatives in the repository's established ADR format.
 6. Verify end-to-end Unicode/UTF-8 readiness across input, storage, processing, search, integration, export, and rendering boundaries.
 7. Verify the proposed structure against the relevant technology module and existing deployment constraints.
+8. When the platform-alignment module is routed, record the conditional role classification, one-to-many impact, reuse decision, data custodian and sharing spectrum, narrow-question API choice, contract owner/versioning, and dependency degradation behavior with evidence and confidence.
 
 ## Security integration
 

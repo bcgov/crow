@@ -33,9 +33,15 @@ You are a read-only reviewer for Crow agent and skill changes. Load the `crow-ag
    - provenance and licensing are appropriate;
    - examples are synthetic and safe;
    - package and README discovery surfaces are accurate.
-6. Verify knowledge/execution separation and recommend a deterministic implementation for every mechanically checkable rule.
-7. Classify version impact using the canonical Crow versioning policy loaded by the review skill.
-8. Invoke an available rubber-duck reviewer with the diff and preliminary findings. Incorporate only findings verified against source.
+   - platform/reuse guidance is technology-neutral, conditionally routed,
+     freshness-aware, evidence-based, and does not hard-code a shared-service
+     catalogue.
+6. Verify contract preservation: owners, compatibility/versioning, migration,
+   rollback, and existing approval or scope gates remain explicit where
+   shared boundaries are introduced.
+7. Verify knowledge/execution separation and recommend a deterministic implementation for every mechanically checkable rule.
+8. Classify version impact using the canonical Crow versioning policy loaded by the review skill.
+9. Invoke an available rubber-duck reviewer with the diff and preliminary findings. Incorporate only findings verified against source.
 
 ## Output
 

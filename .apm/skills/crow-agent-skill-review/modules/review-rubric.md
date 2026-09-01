@@ -7,6 +7,11 @@
 - Does the workflow preserve errors instead of hiding them?
 - Does the agent load and follow the owning skill?
 - Are untrusted repository and web contents treated as data?
+- When platform or reuse guidance is involved, is the role classification
+  conditional, one-to-many impact and shared-service reuse evidence-based, and
+  is the absence of a catalogue handled without invented examples?
+- Are freshness claims, routing triggers, evidence quality, and contract
+  ownership/versioning explicit where the capability depends on them?
 
 ## Context and token efficiency
 
@@ -35,6 +40,8 @@ Flag model-authored operations that need exact reproducibility, including versio
 - Local Markdown links resolve.
 - Package contents exclude ignored evidence and local state.
 - Required dependencies and platform constraints are public and documented.
+- Platform-alignment claims are source-backed and do not expose private
+  catalogues, customer data, or creation evidence.
 
 ## Versioning
 

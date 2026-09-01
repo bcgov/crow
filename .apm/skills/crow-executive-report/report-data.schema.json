@@ -2,6 +2,59 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$comment": "Schema for report-data.json consumed by render-report.ps1. The LLM emits ONLY this file; all chart math and HTML rendering is handled by the script.",
 
+  "properties": {
+    "platform_alignment": {
+      "type": ["object", "null"],
+      "description": "Optional, evidence-based platform alignment summary. Null when the architecture evidence does not support it.",
+      "properties": {
+        "role": {
+          "type": ["string", "null"],
+          "enum": ["Public service", "Shared platform", "Canonical register", "Internal system", "Point solution", "Integration adapter", "Unknown", null]
+        },
+        "evidence": { "type": ["string", "null"] },
+        "confidence": { "type": ["string", "null"], "enum": ["Verified", "Inferred", "Unknown", "N/A", null] },
+        "consumer_count": { "type": ["integer", "null"], "minimum": 0 },
+        "reuse_decision": { "type": ["string", "null"] },
+        "data_custodian": { "type": ["string", "null"] },
+        "data_sharing_spectrum": { "type": ["string", "null"], "enum": ["Open", "Shared", "Closed", "Unknown", null] },
+        "contract_owner": { "type": ["string", "null"] },
+        "contract_versioning": { "type": ["string", "null"] },
+        "degradation_behavior": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "platform_metrics": {
+      "type": ["object", "null"],
+      "description": "Optional measured counts or rates with source evidence. Do not derive or invent a maturity score.",
+      "properties": {
+        "shared_dependency_count": { "type": ["integer", "null"], "minimum": 0 },
+        "known_consumer_count": { "type": ["integer", "null"], "minimum": 0 },
+        "contracts_with_owner_count": { "type": ["integer", "null"], "minimum": 0 },
+        "fallback_scenarios_tested_count": { "type": ["integer", "null"], "minimum": 0 },
+        "evidence": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "severity": {
+            "type": "string",
+            "enum": ["Critical", "High", "Medium", "Low", "Informational", "CRITICAL", "HIGH", "MEDIUM", "LOW", "INFORMATIONAL"]
+          },
+          "classification": { "type": "string", "enum": ["Confirmed", "Probable", "Informational"] },
+          "business_risk": { "type": "string" },
+          "action": { "type": "string" }
+        },
+        "required": ["title", "severity", "classification", "business_risk", "action"],
+        "additionalProperties": false
+      }
+    }
+  },
+
   "example": {
     "application_name": "Example App",
     "application_acronym": "EXA",
@@ -30,6 +83,25 @@
     "arch_pattern": "Monolith (MVC)",
     "deployment_model": "Kubernetes on OpenShift",
     "resilience_summary": "Single-region, no DR failover configured",
+    "platform_alignment": {
+      "role": "Unknown",
+      "evidence": null,
+      "confidence": "Unknown",
+      "consumer_count": null,
+      "reuse_decision": null,
+      "data_custodian": null,
+      "data_sharing_spectrum": null,
+      "contract_owner": null,
+      "contract_versioning": null,
+      "degradation_behavior": null
+    },
+    "platform_metrics": {
+      "shared_dependency_count": null,
+      "known_consumer_count": null,
+      "contracts_with_owner_count": null,
+      "fallback_scenarios_tested_count": null,
+      "evidence": null
+    },
 
     "security_doc_path": "docs/security-review.md",
     "architecture_doc_path": "docs/architecture.md",
@@ -43,14 +115,14 @@
     "findings": [
       {
         "title": "SQL Injection in Login Controller",
-        "severity": "CRITICAL",
+        "severity": "Critical",
         "classification": "Confirmed",
         "business_risk": "Attacker could bypass authentication and access all user records",
         "action": "Use parameterized queries in AuthController.cs:45"
       },
       {
         "title": "Missing Authorization on Admin API",
-        "severity": "HIGH",
+        "severity": "High",
         "classification": "Confirmed",
         "business_risk": "Any authenticated user can access admin operations",
         "action": "Add [Authorize(Roles=\"Admin\")] to AdminController"

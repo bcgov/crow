@@ -20,6 +20,9 @@ For large applications, select representative screens across:
 - search, filters, tables, and pagination;
 - dialogs and destructive actions;
 - loading, empty, permission-denied, not-found, offline, success, warning, and error states.
+- automated eligibility/denial or external-register results, including
+  explanation, provenance, recourse, pending, stale, degraded, and assisted
+  states when present.
 
 Do not equate a representative sample with full-app conformance.
 
@@ -31,6 +34,8 @@ Do not equate a representative sample with full-app conformance.
 4. Form semantics, sensitive-value masking and reveal controls, validation, error recovery, and confirmation.
 5. Keyboard, focus, announcements, motion, zoom/reflow, and contrast.
 6. Screen-specific composition and content.
+7. Point-of-use decision explanation, provenance, recourse, and consequential
+   service states when the sampled surface has them.
 
 Prioritize shared root causes. A correction to a token, primitive, or shared template is preferable to repeated page-level overrides when regression risk is controlled.
 

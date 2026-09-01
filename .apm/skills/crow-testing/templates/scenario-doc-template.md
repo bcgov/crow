@@ -32,6 +32,21 @@ Fill in following a plain-language, table-first pattern:
 |---|---|
 | | |
 
+## Conditional external dependency scenarios
+
+Use this table only when the feature has a shared/canonical service, external
+decision source, event contract, or digital proof. Mark non-applicable rows
+`N/A` rather than inventing behavior.
+
+| Scenario | Required assertion |
+|---|---|
+| Upstream outage / timeout | No false success; bounded wait and visible recovery or assisted path |
+| Stale canonical data | Freshness is represented and stale data is not presented as current |
+| Invalid / expired / revoked / replayed proof | Decision is denied or held according to approved behavior |
+| Duplicate event | Processing is idempotent and side effects are not duplicated |
+| Retry exhaustion / cancellation | Work stops or is queued according to contract and remains observable |
+| Fallback / audit | Fallback preserves authorization, assurance, minimization, and available audit/provenance |
+
 ## Status
 
 <!-- Keep this section current every phase. -->
