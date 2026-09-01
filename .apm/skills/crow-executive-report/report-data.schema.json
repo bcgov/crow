@@ -18,6 +18,7 @@
         "data_custodian": { "type": ["string", "null"] },
         "data_sharing_spectrum": { "type": ["string", "null"], "enum": ["Open", "Shared", "Closed", "Unknown", null] },
         "contract_owner": { "type": ["string", "null"] },
+        "contract_versioning": { "type": ["string", "null"] },
         "degradation_behavior": { "type": ["string", "null"] }
       },
       "additionalProperties": false
@@ -91,6 +92,7 @@
       "data_custodian": null,
       "data_sharing_spectrum": null,
       "contract_owner": null,
+      "contract_versioning": null,
       "degradation_behavior": null
     },
     "platform_metrics": {

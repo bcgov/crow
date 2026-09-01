@@ -113,7 +113,7 @@ Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 **Narrative fields** (synthesized by the model):
 - `executive_brief` — 2-3 paragraph plain-language summary
 - `p1_actions`, `p2_actions`, `p3_actions` — prioritized action items
-- `platform_alignment` — optional evidence-backed role, ownership, reuse, data, contract, and degradation summary
+- `platform_alignment` — optional evidence-backed role, ownership, reuse, data, contract owner/versioning, and degradation summary
 - `platform_metrics` — optional nullable measured counts with an evidence field; no maturity score
 
 **Array fields** (model extracts and translates):

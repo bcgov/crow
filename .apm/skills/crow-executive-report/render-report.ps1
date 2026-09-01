@@ -75,6 +75,20 @@ function ConvertTo-HtmlText($value) {
     [System.Net.WebUtility]::HtmlEncode([string]$value)
 }
 
+function Get-ReportProperty($object, [string]$propertyName) {
+    if ($null -eq $object) { return $null }
+    $property = $object.PSObject.Properties[$propertyName]
+    if ($null -eq $property) { return $null }
+    $property.Value
+}
+
+function ConvertTo-OptionalHtmlText($value) {
+    if ($null -eq $value) { return 'Unknown' }
+    $text = [Convert]::ToString($value, [Globalization.CultureInfo]::InvariantCulture)
+    if ([string]::IsNullOrWhiteSpace($text)) { return 'Unknown' }
+    ConvertTo-HtmlText $text
+}
+
 function ConvertTo-NonNegativeInteger($value, [string]$fieldName) {
     $parsed = 0L
     $text = [Convert]::ToString($value, [Globalization.CultureInfo]::InvariantCulture)
@@ -266,6 +280,51 @@ if ($data.PSObject.Properties['stride']) {
     }
 }
 
+# --- Build optional platform alignment section ---
+$platformAlignment = Get-ReportProperty $data 'platform_alignment'
+$platformMetrics = Get-ReportProperty $data 'platform_metrics'
+$platformEvidence = Get-ReportProperty $platformAlignment 'evidence'
+$metricsEvidence = Get-ReportProperty $platformMetrics 'evidence'
+$hasPlatformEvidence = (
+    -not [string]::IsNullOrWhiteSpace([Convert]::ToString($platformEvidence)) -or
+    -not [string]::IsNullOrWhiteSpace([Convert]::ToString($metricsEvidence))
+)
+$platformHtml = ""
+if ($hasPlatformEvidence) {
+    $platformHtml = @"
+<h2>Platform Alignment</h2>
+<p class="section-note">Evidence-backed platform role, reuse, data responsibility, contract, and dependency behavior. Unsupported values are shown as Unknown.</p>
+<div class="flex-row">
+  <div class="flex-col-half">
+    <table class="data-table">
+      <tbody>
+        <tr><th>Role</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'role'))</td></tr>
+        <tr><th>Confidence</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'confidence'))</td></tr>
+        <tr><th>Known Consumers</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'consumer_count'))</td></tr>
+        <tr><th>Reuse Decision</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'reuse_decision'))</td></tr>
+        <tr><th>Data Custodian</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'data_custodian'))</td></tr>
+        <tr><th>Data Sharing</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'data_sharing_spectrum'))</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="flex-col-half">
+    <table class="data-table">
+      <tbody>
+        <tr><th>Contract Owner</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'contract_owner'))</td></tr>
+        <tr><th>Contract Versioning</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'contract_versioning'))</td></tr>
+        <tr><th>Degradation Behavior</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformAlignment 'degradation_behavior'))</td></tr>
+        <tr><th>Shared Dependencies</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformMetrics 'shared_dependency_count'))</td></tr>
+        <tr><th>Consumers Measured</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformMetrics 'known_consumer_count'))</td></tr>
+        <tr><th>Contracts With Owners</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformMetrics 'contracts_with_owner_count'))</td></tr>
+        <tr><th>Fallback Scenarios Tested</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $platformMetrics 'fallback_scenarios_tested_count'))</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="section-note"><strong>Evidence:</strong> $(ConvertTo-OptionalHtmlText $(if ($platformEvidence) { $platformEvidence } else { $metricsEvidence }))</p>
+"@
+}
+
 # --- Replace repeating sections ---
 # OWASP bars
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat for each OWASP.*?</div>\s*</div>\s*\n\s*</div>' "$owaspHtml</div>"
@@ -275,6 +334,8 @@ $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat row per finding -->\s
 $html = ConvertTo-RegexReplacedText $html '(?s)<tr>\s*<td>\{\{TECH_DEBT_COMPONENT\}\}.*?</tr>' $techDebtHtml.TrimEnd()
 # STRIDE rows
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat per component.*?<tr>\s*<td>\{\{COMPONENT_NAME\}\}.*?</tr>' $strideHtml.TrimEnd()
+# Optional platform alignment (omitted when no evidence is supplied)
+$html = $html.Replace('{{PLATFORM_ALIGNMENT_SECTION}}', $platformHtml)
 
 # --- Replace scalar placeholders ---
 $textScalars = @{
