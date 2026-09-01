@@ -326,7 +326,7 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Ensure directory `/docs` exists. In a monorepo, also ensure one `docs/<service-name>/` directory exists for every inventoried service.
 - Emit a **YAML frontmatter block** at the very start of each service document (see Output Format section below). Include the service name and repository-relative service path so scope is mechanically identifiable.
 - Interpolate only that service's findings into its document. Never write a combined monorepo finding table or aggregate frontmatter.
-- For each finding, record: Finding ID (`SEC-NNN`), severity (`Critical` / `High` / `Medium` / `Low` / `Informational`), confidence (`Confirmed` / `Probable` / `Informational`), location, OWASP category, CWE, CVSS score, description, affected code, exploit scenario (for Critical/High), remediation, and fixed code example.
+- For each finding, record: Finding ID (`SEC-NNN`), severity (`Critical` / `High` / `Medium` / `Low` / `Informational`), classification (`Confirmed` / `Probable` / `Informational`), location, OWASP category, CWE, CVSS score, description, affected code, exploit scenario (for Critical/High), remediation, and fixed code example.
 - Apply Evidence Standards: remove any finding that lacks file path, line numbers, or code evidence.
 - Apply False Positive Prevention Rules: remove any finding that violates a prevention rule.
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
