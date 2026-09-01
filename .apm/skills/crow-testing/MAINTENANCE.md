@@ -33,6 +33,20 @@ training cutoff.
 | Expanding to a new tech stack (Node, Python, etc.) | `SKILL.md` item 9, new `modules/<stack>/` folder | The router already supports this without restructuring — add `unit-tests.md`/`integration-tests.md` mirroring `modules/dotnet/` and one routing entry in `SKILL.md`. This row exists mainly to confirm nothing else needs touching. |
 | E2E testing gets brought into scope | `SKILL.md` "Out of scope" note, new `modules/e2e/` | Same no-restructuring guarantee as above. |
 
+## Ready-to-copy template changes
+
+Changing a file under `templates/dotnet/generators/` changes its SHA-256 identity automatically; do not add
+or maintain a separate per-template semantic version. Target projects that installed the file through
+`Sync-CrowTestingTemplate.ps1` detect that source-hash change during their next crow-testing engagement.
+Fingerprints normalize BOM and line endings, so packaging or checkout normalization alone does not create
+false drift.
+
+When changing a template, decide whether downstream customized copies need a short migration note in
+`modules/reference/managed-template-lifecycle.md` or the template's owning reference module. Unchanged
+copies update automatically; merged or retained copies switch to `Manual` mode and never update
+automatically. Customized copies require a user-reviewed merge and cannot rely on the hash registry to
+reconstruct the old template for a three-way merge.
+
 ## What does *not* need touching on a language/version bump
 
 These are stable practices independent of tooling versions, and a version-driven update pass should not

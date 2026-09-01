@@ -34,6 +34,21 @@ proactively suggests a review if none is recorded or the latest entry is more th
 |---|---|---|---|
 | | | | |
 
+## Managed Crow templates
+
+<!--
+Registry for ready-to-copy files installed from the crow-testing skill. Do not edit hashes manually.
+The source hash fingerprints Crow's untouched template; the installed hash fingerprints the project file
+after its recorded namespace adaptation. Mode is Auto until a customized copy is merged or retained, after
+which it remains Manual and is never overwritten automatically. Use scripts/Sync-CrowTestingTemplate.ps1
+to install, register, audit, update, resolve, or unregister entries. Preserve this section when refreshing
+the testing plan.
+-->
+
+| Template ID | Source | Installed path | Namespace | Mode | Source SHA-256 | Installed SHA-256 |
+|---|---|---|---|---|---|---|
+| | | | | | | |
+
 ## Overall status
 
 <!-- Brief, current-state summary: what's covered, what's next, any known gaps. -->

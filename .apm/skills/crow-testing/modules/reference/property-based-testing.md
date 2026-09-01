@@ -124,5 +124,8 @@ mistakes into) this kind of code from scratch:
 - `GenDateExtensions.cs` — date/time/period generators (future/past dates, same-day and multi-day periods,
   nullable variants).
 
-Copy the file(s) you need into the project's test-utilities namespace and rename the placeholder
-`YourProject.Tests.Generators` namespace to match.
+Install the file(s) through `scripts/Sync-CrowTestingTemplate.ps1` so the namespace adaptation and both
+content fingerprints are recorded in `docs/testing/testing-plan.md`. Load
+[`managed-template-lifecycle.md`](managed-template-lifecycle.md) for the commands and update behavior.
+Do not copy these files without registering them: an unregistered copy cannot be distinguished later from
+an unrelated or locally customized file when the bundled template changes.

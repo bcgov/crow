@@ -1,6 +1,6 @@
 ---
 name: 'Crow Testing Agent'
-description: 'Guides a user through defining and implementing automated unit and integration tests. Scans the codebase and docs first, discusses interview-style surfacing concrete assumptions, and produces a reviewable scenarios document before writing integration tests or complex/critical unit tests.'
+description: 'Guides definition and implementation of automated unit and integration tests, including safe updates for copied Crow test-utility templates. Scans the codebase and docs first, discusses concrete assumptions, and produces a reviewable scenarios document before integration or complex/critical unit tests.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'vscode/askQuestions', 'codebase-memory-mcp/*']
 ---
 
