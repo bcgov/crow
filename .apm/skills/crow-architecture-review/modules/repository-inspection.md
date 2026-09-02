@@ -16,6 +16,7 @@ Use codebase-memory-mcp when available to identify structure, clusters, entry po
 6. **Resilience and recovery:** retries, circuit breakers, graceful degradation, backups, failover, RTO, and RPO.
 7. **Architecture decisions:** ADR locations, identifiers, titles, status, dates, and relevant trade-offs.
 8. **Unicode and globalization:** apply the routed Unicode module and trace representative Indigenous-language text across input, storage, processing, search, integration, export, rendering, printing, runtime globalization data, and fonts.
+9. **Platform alignment (when routed):** classify the role only from evidence; assess one-to-many impact, shared-service reuse without assuming a catalogue, data custodianship and purpose/subject scope, narrow question APIs, contract ownership/versioning, dependency degradation, and the open/shared/closed data spectrum.
 
 ## Existing documentation
 

@@ -23,6 +23,30 @@ A signal alone is not sufficient — a state machine or combinatorial rule over 
 test. Do **not** default to an integration test for simple CRUD with no branching logic, or for validation
 already covered by a unit test.
 
+## Shared-service contracts and resilience scenarios
+
+When a real independently versioned provider/consumer boundary exists,
+consider consumer-driven contract tests. Use them conditionally: a contract
+test is not required for every HTTP call, and it does not replace provider
+tests or the scenario approval gate. Record the contract owner, schema/version,
+compatibility promise, consumer expectations, and migration/rollback path.
+
+For an applicable external or canonical dependency, include approved scenarios
+for:
+
+- upstream outage and dependency timeout;
+- stale canonical data or unavailable freshness evidence;
+- invalid, expired, revoked, or replayed digital proof;
+- duplicate event delivery;
+- retry exhaustion and cancellation;
+- safe fallback or assisted handling; and
+- privacy-preserving audit and decision-provenance behavior.
+
+Assert that the system does not over-fetch or silently widen disclosure, does
+not produce a false success, does not duplicate side effects, and does not
+weaken authorization or identity assurance during fallback. Mark scenarios
+`N/A` when the dependency or proof property is not present.
+
 ## Scenario-doc-first workflow (hard gate)
 
 For every integration test area (and any complex/critical unit-test area per `unit-tests.md`):

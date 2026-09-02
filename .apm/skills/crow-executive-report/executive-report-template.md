@@ -67,6 +67,16 @@
 * **Deployment Model:** {{DEPLOYMENT_MODEL}}
 * **Resilience & Disaster Recovery:** {{RESILIENCE_SUMMARY}}
 
+### Optional platform alignment
+
+Include this subsection only when the source architecture document contains
+evidence. Report the conditional role, one-to-many consumer impact, reuse
+decision, data custodian and `Open / Shared / Closed` spectrum, contract owner,
+and degradation behavior. Optional measured counts may include known consumers,
+shared dependencies, contracts with owners, and tested fallback scenarios.
+Leave unsupported values null or state `Unknown`; do not invent a platform
+catalogue or a maturity score.
+
 ---
 
 ## 6. Strategic Recommendations & Action Plan

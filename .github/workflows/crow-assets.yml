@@ -37,3 +37,8 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
+
+      - name: Test testing-template synchronization
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-testing\scripts\Test-CrowTestingTemplateSync.ps1

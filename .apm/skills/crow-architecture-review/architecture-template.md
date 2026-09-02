@@ -41,6 +41,24 @@ graph TD
     App -->|Publishes Events| Broker[Message Broker]
 ```
 
+### 2.3 Platform role, reuse, and data responsibility
+
+Complete this section only when the platform-alignment module is routed. Select
+one role from that module, or record `Unknown` when repository evidence is
+insufficient. Do not invent a shared-service catalogue.
+
+| Assessment | Result | Evidence / Owner | Confidence |
+| :--- | :--- | :--- | :--- |
+| **Conditional role** | `Public service / Shared platform / Canonical register / Internal system / Point solution / Integration adapter / Unknown` | | `Verified / Inferred / Unknown / N/A` |
+| **One-to-many impact** | `Single consumer / Multiple consumers / Unknown` | | `Verified / Inferred / Unknown / N/A` |
+| **Reuse or build decision** | | Discovery performed and accountable owner | `Verified / Inferred / Unknown / N/A` |
+| **Data custodian and permitted purpose/subject scope** | | | `Verified / Inferred / Unknown / N/A` |
+| **Data sharing spectrum** | `Open / Shared / Closed / Unknown` | Classification conditions | `Verified / Inferred / Unknown / N/A` |
+| **Narrow question API vs. broad data access** | | | `Verified / Inferred / Unknown / N/A` |
+
+For one-to-many capabilities, document consumer support, capacity/SLO
+expectations, compatibility notifications, and the consequence of a change.
+
 ---
 
 ## 3. Logical & Structural Component Breakdown
@@ -88,6 +106,16 @@ This section documents the actual project structure and highlights the real arch
 
 ### 4.3 Contract Testing
 *Document any consumer-driven contract tests (Pact, Spring Cloud Contract, etc.) or schema validation pipelines.*
+
+### 4.4 Contract ownership and dependency behavior
+
+| Contract / Dependency | Owner | Version / compatibility policy | Timeout, cancellation, retry and idempotency | Fallback, stale-data and rollback behavior |
+| :--- | :--- | :--- | :--- | :--- |
+| | | | | |
+
+Document whether a dependency failure fails closed, queues work, serves clearly
+marked stale data, or uses an assisted path. Fallbacks must not silently weaken
+authorization, identity assurance, data minimization, or auditability.
 
 ---
 
@@ -272,3 +300,7 @@ Key architectural decisions are recorded to capture history and trade-offs.
 - [ ] **Deployment Pipeline:** CI/CD includes automated tests and security scanning gates. `[Confidence: ]`
 - [ ] **Data Classification:** Sensitive data categories are identified with appropriate encryption and retention controls. `[Confidence: ]`
 - [ ] **Disaster Recovery:** Backup and recovery procedures are documented and tested. `[Confidence: ]`
+- [ ] **Platform Role (conditional):** Where shared, public, canonical, or adapter evidence exists, one role is classified and one-to-many impact and reuse decisions are recorded; otherwise the result is `N/A` or `Unknown` with a reason. `[Confidence: ]`
+- [ ] **Platform Data Responsibility (conditional):** Data custodian, permitted purpose/subject scope, narrow-question versus broad-data access, and the `Open / Shared / Closed` spectrum are evidenced. `[Confidence: ]`
+- [ ] **Contract Ownership (conditional):** External contracts have an owner, compatibility/versioning and deprecation policy, consumer migration path, and rollback evidence. `[Confidence: ]`
+- [ ] **Dependency Degradation (conditional):** Timeouts, cancellation, bounded retries, idempotency, fallback/staleness, and observable audit/provenance behavior are documented and tested where applicable. `[Confidence: ]`

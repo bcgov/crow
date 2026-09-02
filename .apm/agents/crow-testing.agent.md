@@ -19,6 +19,7 @@ owns detailed testing guidance, technology defaults, reference material, and doc
 - Present evidence-based assumptions for confirmation instead of opening with blank-slate questions.
 - Confirm ambiguous business terminology and record clarifications in the relevant testing artifact.
 - Preserve the scenario-document approval gate for integration tests and complex or critical unit tests.
+- When an independently versioned shared or canonical dependency is present, conditionally plan consumer-driven contract tests and outage, timeout, stale-data, proof, duplicate-event, retry, fallback, and audit scenarios; do not expand into E2E.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
 - Keep testability, design, and modernization findings non-blocking and hand them off unless the user
@@ -32,6 +33,7 @@ owns detailed testing guidance, technology defaults, reference material, and doc
 - Read and search repository files and authoritative public documentation required by the routed workflow.
 - Edit test code and the workflow-defined `docs/testing/` artifacts after required decisions are resolved.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests.
+- Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
 - Do not add dependencies, alter production code, invoke another remediation agent, or author CI/CD
   configuration without explicit user authorization.
 

@@ -38,13 +38,13 @@ try {
     $projectRoot = Join-Path $tempRoot 'project'
     $scriptRoot = Join-Path $skillRoot 'scripts'
     $templateRoot = Join-Path $skillRoot 'templates'
-    $generatorRoot = Join-Path $templateRoot 'dotnet\generators'
-    $planRoot = Join-Path $projectRoot 'docs\testing'
+    $generatorRoot = Join-Path $templateRoot 'dotnet/generators'
+    $planRoot = Join-Path $projectRoot 'docs/testing'
     New-Item -ItemType Directory -Path $scriptRoot, $generatorRoot, $planRoot -Force | Out-Null
 
     Copy-Item (Join-Path $PSScriptRoot 'Sync-CrowTestingTemplate.ps1') $scriptRoot
-    Copy-Item (Join-Path $PSScriptRoot '..\templates\dotnet\generators\*.cs') $generatorRoot
-    Copy-Item (Join-Path $PSScriptRoot '..\templates\testing-plan-template.md') (
+    Copy-Item (Join-Path $PSScriptRoot '../templates/dotnet/generators/*.cs') $generatorRoot
+    Copy-Item (Join-Path $PSScriptRoot '../templates/testing-plan-template.md') (
         Join-Path $planRoot 'testing-plan.md')
 
     $script = Join-Path $scriptRoot 'Sync-CrowTestingTemplate.ps1'
@@ -63,7 +63,7 @@ try {
     $mixedPlan = ([System.IO.File]::ReadAllText($plan)).Replace("`r`n", "`n")
     $mixedPlan = $mixedPlan.Replace("# Testing Plan`n", "# Testing Plan`r`n")
     [System.IO.File]::WriteAllText($plan, $mixedPlan, [System.Text.UTF8Encoding]::new($true))
-    $targetRelative = 'tests\Example.Tests\Generators\GenCharExtensions.cs'
+    $targetRelative = 'tests/Example.Tests/Generators/GenCharExtensions.cs'
     $installed = Join-Path $projectRoot $targetRelative
     $common = @('-TargetRepo', $projectRoot)
 
@@ -72,7 +72,7 @@ try {
             '-Action', 'Install',
             '-TemplateId', 'escape',
             '-Source', 'dotnet/generators/GenCharExtensions.cs',
-            '-TargetPath', '..\escape.cs',
+            '-TargetPath', '../escape.cs',
             '-Namespace', 'Example.Tests.Generators'
         ) + $common)
     Invoke-SyncCase -Name 'reserved namespace rejection' -Script $script -ExpectedExit 1 -ExpectedText 'reserved C# keyword' -Arguments (
@@ -80,7 +80,7 @@ try {
             '-Action', 'Install',
             '-TemplateId', 'bad-namespace',
             '-Source', 'dotnet/generators/GenCharExtensions.cs',
-            '-TargetPath', 'tests\bad.cs',
+            '-TargetPath', 'tests/bad.cs',
             '-Namespace', 'Example.class'
         ) + $common)
 
@@ -109,7 +109,7 @@ try {
             '-Action', 'Install',
             '-TemplateId', 'second-gen-char',
             '-Source', 'dotnet/generators/GenCharExtensions.cs',
-            '-TargetPath', 'tests\Second.Tests\Generators\GenCharExtensions.cs',
+            '-TargetPath', 'tests/Second.Tests/Generators/GenCharExtensions.cs',
             '-Namespace', 'Second.Class.Generators'
         ) + $common)
     Invoke-SyncCase -Name 'duplicate installed path rejection' -Script $script -ExpectedExit 1 -ExpectedText 'same installed path' -Arguments (
@@ -191,10 +191,10 @@ try {
         @('-Action', 'Unregister', '-TemplateId', 'example-gen-char') + $common)
 
     $badRoot = Join-Path $tempRoot 'bad-project'
-    New-Item -ItemType Directory -Path (Join-Path $badRoot 'docs\testing') -Force | Out-Null
-    Copy-Item (Join-Path $PSScriptRoot '..\templates\testing-plan-template.md') (
-        Join-Path $badRoot 'docs\testing\testing-plan.md')
-    $badPlan = Join-Path $badRoot 'docs\testing\testing-plan.md'
+    New-Item -ItemType Directory -Path (Join-Path $badRoot 'docs/testing') -Force | Out-Null
+    Copy-Item (Join-Path $PSScriptRoot '../templates/testing-plan-template.md') (
+        Join-Path $badRoot 'docs/testing/testing-plan.md')
+    $badPlan = Join-Path $badRoot 'docs/testing/testing-plan.md'
     [System.IO.File]::WriteAllText(
         $badPlan,
         ([System.IO.File]::ReadAllText($badPlan)).Replace(
@@ -205,8 +205,8 @@ try {
         '-TargetRepo', $badRoot)
 
     $eofRoot = Join-Path $tempRoot 'eof-project'
-    New-Item -ItemType Directory -Path (Join-Path $eofRoot 'docs\testing') -Force | Out-Null
-    $eofPlan = Join-Path $eofRoot 'docs\testing\testing-plan.md'
+    New-Item -ItemType Directory -Path (Join-Path $eofRoot 'docs/testing') -Force | Out-Null
+    $eofPlan = Join-Path $eofRoot 'docs/testing/testing-plan.md'
     $eofContent = @(
         '# Testing Plan',
         '',
@@ -220,7 +220,7 @@ try {
         '-TargetRepo', $eofRoot,
         '-TemplateId', 'eof-gen-char',
         '-Source', 'dotnet/generators/GenCharExtensions.cs',
-        '-TargetPath', 'tests\GenCharExtensions.cs',
+        '-TargetPath', 'tests/GenCharExtensions.cs',
         '-Namespace', 'Eof.Tests.Generators')
     Invoke-SyncCase -Name 'EOF registry audit' -Script $script -ExpectedExit 0 -ExpectedText 'Current' -Arguments @(
         '-Action', 'Audit',

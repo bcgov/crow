@@ -25,6 +25,7 @@ Located in `modules/`:
 - **`modules/api-and-session-security.md`** — Rate limiting, CORS, cookie flags, JWT implementation flaws, anti-forgery enforcement, HTTP verb constraints.
 - **`modules/frontend-spa-security.md`** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security.
 - **`modules/llm-prompt-and-markdown-security.md`** — Direct and stored/second-order prompt injection, RAG and tool-calling trust boundaries, insecure model-output handling, excessive agency, and Markdown/frontmatter/rendering risks.
+- **`modules/platform-data-and-proofs.md`** — Conditional checks for data minimization, scoped questions, pairwise correlation, digital proofs, assurance-level fallback, and privacy-preserving audit context.
 
 ## How to use
 
@@ -32,5 +33,10 @@ Located in `modules/`:
 2. Read the module(s) that match the vulnerability class or framework under review.
 3. Apply the documented detection patterns during manual code inspection, cross-referencing findings with what automated scans already caught to avoid duplicate work.
 4. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
+
+Load `platform-data-and-proofs.md` only when the repository has a shared or
+canonical data flow, an external decision/register dependency, or a digital
+proof/assurance boundary. Apply it to the affected paths; do not report
+undocumented policy as a confirmed vulnerability.
 
 The `security-review` and `security-remediation` agents load these modules and the bundled `security-review-template.md` from this skill.

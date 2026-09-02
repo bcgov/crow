@@ -62,7 +62,7 @@ Extract and synthesize data from both source documents into plain language:
 - Keep `report-data.json` values as plain text. Do not insert HTML or executable Markdown; the deterministic renderer is responsible for context-safe encoding.
 
 #### 1. Security Risks (from `security-review.md`)
-- Identify all `CRITICAL` and `HIGH` severity vulnerabilities, security hotspots, and SAST issues.
+- Identify all `Critical` and `High` severity vulnerabilities, security hotspots, and SAST issues.
 - Prioritize **Confirmed** findings over **Probable** findings in the executive summary.
 - Translate technical terms (e.g. "Unsanitized user input in raw SQL query causing CWE-89") into plain business language (e.g. "Attacker could bypass authentication or access confidential database records").
 - Note CVE provenance: clearly distinguish between scanner-confirmed vulnerabilities (`[SonarQube]`, `[NVD-verified]`) and estimated risks (`[AI-estimated]`).
@@ -77,6 +77,16 @@ Extract and synthesize data from both source documents into plain language:
 - Application acronym, name, organizational alignment.
 - Tech stack overview, primary deployment model, resilience posture.
 - Overall Quality Gate status and overall security risk tier.
+
+#### 4. Optional platform alignment
+
+When the architecture document contains current evidence, include the
+conditional role, one-to-many consumer impact, reuse decision, data custodian,
+data-sharing spectrum, contract owner/versioning, and dependency degradation
+behavior. Include only nullable, source-backed metrics such as consumer or
+contract counts. Do not invent a shared-service catalogue, infer missing
+ownership, or calculate a maturity score. If evidence is absent, emit null or
+`Unknown`.
 
 ### Step 4: Write Markdown Executive Report (`/docs/executive-report.md`)
 
@@ -103,9 +113,11 @@ Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 **Narrative fields** (synthesized by the model):
 - `executive_brief` — 2-3 paragraph plain-language summary
 - `p1_actions`, `p2_actions`, `p3_actions` — prioritized action items
+- `platform_alignment` — optional evidence-backed role, ownership, reuse, data, contract owner/versioning, and degradation summary
+- `platform_metrics` — optional nullable measured counts with an evidence field; no maturity score
 
 **Array fields** (model extracts and translates):
-- `findings[]` — Critical/High issues with `title`, `severity`, `classification`, `business_risk`, `action`
+- `findings[]` — Critical and High issues with `title`, `severity`, `classification`, `business_risk`, `action`
 - `tech_debt[]` — EOL/outdated components with `component`, `category`, `risk`, `impact`, `action`
 - `stride[]` — Per-component STRIDE ratings with `component`, `S`, `T`, `R`, `I`, `D`, `E` (values: "High"/"Medium"/"Low")
 
