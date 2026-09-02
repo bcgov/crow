@@ -1,6 +1,6 @@
 ---
 name: crow-testing
-description: Guide a user through defining and implementing automated unit and integration tests, technology-routed. Use when a project has no tests yet and needs a testing strategy, or when adding tests for a specific feature, bug, or pain point. End-to-end testing is out of scope for now.
+description: Guide definition and implementation of automated unit and integration tests, including managed updates for copied Crow test-utility templates. Use for a new testing strategy, a feature, bug, pain point, or managed-template drift. End-to-end testing is out of scope for now.
 ---
 
 # Testing
@@ -29,6 +29,8 @@ locally is not.
 6. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
    for the situation at hand. Available reference material, and its trigger:
    - `property-based-testing.md` — writing a property-based test or its generators.
+   - `managed-template-lifecycle.md` — installing a ready-to-copy template, or an existing
+     `testing-plan.md` managed-template registry reports drift.
    - `reusable-test-suites.md` — the same field type or contract is tested on three or more models, and
      copying a test file per model is the alternative.
    - `test-data-builders.md` — writing or reviewing a test data builder.
@@ -73,8 +75,9 @@ locally is not.
    Handing off.
 8. When writing property-based tests in .NET, copy from
    [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
-   [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) rather than
-   regenerating equivalent generator code from scratch.
+   [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) through the
+   managed-template script rather than regenerating equivalent generator code or copying it without
+   provenance.
 9. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
    `modules/python/`), each with its own `unit-tests.md`/`integration-tests.md` pair mirroring
    `modules/dotnet/`, and route to them here. Never load unrelated technology modules.

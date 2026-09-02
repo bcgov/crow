@@ -33,6 +33,10 @@ Complete this before opening the discussion:
 6. Record business terms and rules from code and documentation.
 7. If testability notes or a modernization handoff exist, compare platform-dependent findings with the current
    TFM and `LangVersion`. Revisit only findings whose recorded rationale depended on an older platform.
+8. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
+   `reference/managed-template-lifecycle.md` only when installing one or when the audit reports drift.
+   Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
+   customized. Never regenerate `testing-plan.md` wholesale or discard its managed-template registry.
 
 ## Step 2: Open the discussion
 
