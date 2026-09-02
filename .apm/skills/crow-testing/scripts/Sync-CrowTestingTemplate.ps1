@@ -457,7 +457,12 @@ function Assert-UniqueInstalledPaths {
         [Parameter(Mandatory)][string]$RepoRoot
     )
 
-    $comparer = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+    $caseInsensitivePlatform = (
+        [System.IO.Path]::DirectorySeparatorChar -eq '\' -or
+        [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+            [System.Runtime.InteropServices.OSPlatform]::OSX)
+    )
+    $comparer = if ($caseInsensitivePlatform) {
         [System.StringComparer]::OrdinalIgnoreCase
     }
     else {

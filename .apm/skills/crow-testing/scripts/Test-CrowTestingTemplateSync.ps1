@@ -120,6 +120,23 @@ try {
             '-TargetPath', $targetRelative,
             '-Namespace', 'Example.Tests.Generators'
         ) + $common)
+    $caseInsensitivePlatform = (
+        [System.IO.Path]::DirectorySeparatorChar -eq '\' -or
+        [System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform(
+            [System.Runtime.InteropServices.OSPlatform]::OSX)
+    )
+    $caseVariantTarget = 'tests/example.tests/generators/GenCharExtensions.cs'
+    if ($caseInsensitivePlatform -and (Test-Path -LiteralPath (Join-Path $projectRoot $caseVariantTarget))) {
+        Invoke-SyncCase -Name 'case-variant installed path rejection' -Script $script -ExpectedExit 1 `
+            -ExpectedText 'same installed path' -Arguments (
+                @(
+                    '-Action', 'Register',
+                    '-TemplateId', 'case-variant-gen-char',
+                    '-Source', 'dotnet/generators/GenCharExtensions.cs',
+                    '-TargetPath', $caseVariantTarget,
+                    '-Namespace', 'Example.Tests.Generators'
+                ) + $common)
+    }
     Invoke-SyncCase -Name 'current' -Script $script -ExpectedExit 0 -ExpectedText 'Current' -Arguments (
         @('-Action', 'Audit') + $common)
 
