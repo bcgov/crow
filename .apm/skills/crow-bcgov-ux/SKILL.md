@@ -35,6 +35,9 @@ For an existing-app review or remediation, also load:
 When a supplied surface shows automated eligibility/denial, external register
 results, or degraded/async/offline/assisted states, also load
 [`modules/decision-and-service-states.md`](modules/decision-and-service-states.md).
+When those states are caused by authentication, step-up, authorization,
+expiry, revocation, or a dependency trust boundary, use the module's
+technology-neutral guidance for clear status, safe continuation, and recourse.
 
 Load only the matching technology module:
 

@@ -15,6 +15,7 @@ Use this skill with the Crow Architecture Review Agent when creating or updating
 4. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
 5. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
 6. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
+7. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
 
 Do not load monorepo or update guidance when the observable repository state does not require it.
 
@@ -34,3 +35,8 @@ During the bounded architecture inspection, apply the routed platform-alignment
 module conditionally. Preserve `Unknown` or `N/A` when role, reuse, ownership,
 custodianship, or contract evidence is unavailable; absence of a shared
 catalogue is not evidence that a new service is required.
+
+During the bounded inspection, when Zero Trust is routed, record protected
+resources and access paths, enforcement points, authorization separate from
+authentication, least-privilege duration, revocation, degradation, exceptions,
+telemetry, and evidence confidence. Do not infer enterprise-wide posture.

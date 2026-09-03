@@ -20,6 +20,7 @@ owns detailed testing guidance, technology defaults, reference material, and doc
 - Confirm ambiguous business terminology and record clarifications in the relevant testing artifact.
 - Preserve the scenario-document approval gate for integration tests and complex or critical unit tests.
 - When an independently versioned shared or canonical dependency is present, conditionally plan consumer-driven contract tests and outage, timeout, stale-data, proof, duplicate-event, retry, fallback, and audit scenarios; do not expand into E2E.
+- When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Reuse existing integration scenarios rather than creating duplicate matrices.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
 - Keep testability, design, and modernization findings non-blocking and hand them off unless the user

@@ -325,6 +325,29 @@ if ($hasPlatformEvidence) {
 "@
 }
 
+# --- Build optional Zero Trust posture section ---
+$zeroTrust = Get-ReportProperty $data 'zero_trust_posture'
+$zeroTrustEvidence = Get-ReportProperty $zeroTrust 'evidence'
+$zeroTrustHtml = ""
+if (-not [string]::IsNullOrWhiteSpace([Convert]::ToString($zeroTrustEvidence))) {
+    $zeroTrustHtml = @"
+<h2>Zero Trust Posture</h2>
+<p class="section-note">Evidence-backed resource protection summary. This is not an enterprise maturity score.</p>
+<table class="data-table">
+  <tbody>
+    <tr><th>Protected Resources</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'protected_resources'))</td></tr>
+    <tr><th>Enforcement Points</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'enforcement_points'))</td></tr>
+    <tr><th>Least Privilege</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'least_privilege'))</td></tr>
+    <tr><th>Revocation and Expiry</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'revocation_and_expiry'))</td></tr>
+    <tr><th>Exceptions and Degradation</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'exceptions_and_degradation'))</td></tr>
+    <tr><th>Telemetry</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'telemetry'))</td></tr>
+    <tr><th>Confidence</th><td>$(ConvertTo-OptionalHtmlText (Get-ReportProperty $zeroTrust 'confidence'))</td></tr>
+  </tbody>
+</table>
+<p class="section-note"><strong>Evidence:</strong> $(ConvertTo-OptionalHtmlText $zeroTrustEvidence)</p>
+"@
+}
+
 # --- Replace repeating sections ---
 # OWASP bars
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat for each OWASP.*?</div>\s*</div>\s*\n\s*</div>' "$owaspHtml</div>"
@@ -336,6 +359,7 @@ $html = ConvertTo-RegexReplacedText $html '(?s)<tr>\s*<td>\{\{TECH_DEBT_COMPONEN
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat per component.*?<tr>\s*<td>\{\{COMPONENT_NAME\}\}.*?</tr>' $strideHtml.TrimEnd()
 # Optional platform alignment (omitted when no evidence is supplied)
 $html = $html.Replace('{{PLATFORM_ALIGNMENT_SECTION}}', $platformHtml)
+$html = $html.Replace('{{ZERO_TRUST_POSTURE_SECTION}}', $zeroTrustHtml)
 
 # --- Replace scalar placeholders ---
 $textScalars = @{

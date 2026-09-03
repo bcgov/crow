@@ -115,7 +115,24 @@ This section evaluates key security controls, hardcoded secret checks, and crypt
 | **Cryptography & Hashing** | *Algorithms used (SHA-256, bcrypt, AES-GCM, etc.)* | `Pass / Needs Review` |
 | **Audit & Logging Hygiene** | *Structured [AUDIT] events, PII redaction* | `Pass / Needs Review` |
 
-### 5.1 Platform, data minimization, and proof controls (conditional)
+### 5.1 Zero Trust and resource-protection controls (conditional)
+
+Complete this section when the application has a meaningful identity, device,
+resource, transaction, privileged, workload, network, API, external-decision, or cross-service
+trust boundary. Use `N/A` with a reason when it does not apply, and `Unknown`
+when evidence is unavailable.
+
+| Control | Status | Evidence / scope |
+| :--- | :--- | :--- |
+| Protected resources and access paths are inventoried | `Pass / Flagged / Unknown / N/A` | |
+| Authorization is enforced for the requested resource and action, not only at sign-in | `Pass / Flagged / Unknown / N/A` | |
+| Access scope, duration, workload identity, and least privilege are explicit | `Pass / Flagged / Unknown / N/A` | |
+| Expiry, revocation, rotation, and replay handling are defined and tested | `Pass / Flagged / Unknown / N/A` | |
+| Exceptions are time-bound, attributable, approved, and reviewable | `Pass / Flagged / Unknown / N/A` | |
+| Dependency failure degrades safely without silent privilege expansion | `Pass / Flagged / Unknown / N/A` | |
+| Telemetry is privacy-preserving and sufficient to reconstruct access decisions | `Pass / Flagged / Unknown / N/A` | |
+
+### 5.2 Platform, data minimization, and proof controls (conditional)
 
 Complete this section when the application uses a shared/canonical data
 source, external decision service, or digital proof. Use `N/A` with a reason
