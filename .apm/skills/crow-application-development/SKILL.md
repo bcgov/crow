@@ -18,7 +18,7 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
 6. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
-7. When the change crosses an identity, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
+7. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
 8. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop

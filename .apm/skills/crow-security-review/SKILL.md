@@ -38,7 +38,7 @@ Located in `modules/`:
 Load `platform-data-and-proofs.md` only when the repository has a shared or
 canonical data flow, an external decision/register dependency, or a digital
 proof/assurance boundary. Load `../crow-application-architecture/modules/zero-trust.md`
-when the repository has a meaningful identity, resource, transaction,
+when the repository has a meaningful identity, device, resource, transaction,
 privileged, workload, network, API, external-decision, or cross-service trust
 boundary. Apply routed modules to affected paths; do not report undocumented
 policy as a confirmed vulnerability.
