@@ -15,7 +15,8 @@ Use this skill when designing a new application or making a structural change to
 4. Load [`modules/dotnet.md`](modules/dotnet.md) only when a solution contains `.sln`, `.slnx`, `.csproj`, `.vbproj`,`.fsproj`, or `global.json`.
 5. Load [`modules/aspnet-core.md`](modules/aspnet-core.md) only for ASP.NET Core web, API, Razor, Blazor, or hosted SPA projects.
 6. Load [`modules/platform-alignment.md`](modules/platform-alignment.md) only when the application provides or consumes a shared capability, canonical register, public service, integration adapter, or other one-to-many dependency.
-7. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
+7. Load [`modules/zero-trust.md`](modules/zero-trust.md) only when the application has a meaningful identity, device, workload, resource, transaction, privileged, network, API, external-decision, or cross-service trust boundary.
+8. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
 
 If the application uses multiple technologies, load only the modules for components affected by the current decision.
 
@@ -29,6 +30,7 @@ If the application uses multiple technologies, load only the modules for compone
 6. Verify end-to-end Unicode/UTF-8 readiness across input, storage, processing, search, integration, export, and rendering boundaries.
 7. Verify the proposed structure against the relevant technology module and existing deployment constraints.
 8. When the platform-alignment module is routed, record the conditional role classification, one-to-many impact, reuse decision, data custodian and sharing spectrum, narrow-question API choice, contract owner/versioning, and dependency degradation behavior with evidence and confidence.
+9. When the Zero Trust module is routed, inventory protected resources and access paths, identify enforcement points, define least-privilege scope and duration, specify revocation and degradation behavior, document time-bound exceptions, and record only evidence-supported measures.
 
 ## Security integration
 

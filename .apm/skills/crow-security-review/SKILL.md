@@ -26,6 +26,7 @@ Located in `modules/`:
 - **`modules/frontend-spa-security.md`** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security.
 - **`modules/llm-prompt-and-markdown-security.md`** — Direct and stored/second-order prompt injection, RAG and tool-calling trust boundaries, insecure model-output handling, excessive agency, and Markdown/frontmatter/rendering risks.
 - **`modules/platform-data-and-proofs.md`** — Conditional checks for data minimization, scoped questions, pairwise correlation, digital proofs, assurance-level fallback, and privacy-preserving audit context.
+- **`../crow-application-architecture/modules/zero-trust.md`** — Conditional checks for protected resources, explicit access decisions, least privilege, revocation, degradation, exceptions, and evidence-backed outcomes.
 
 ## How to use
 
@@ -36,7 +37,10 @@ Located in `modules/`:
 
 Load `platform-data-and-proofs.md` only when the repository has a shared or
 canonical data flow, an external decision/register dependency, or a digital
-proof/assurance boundary. Apply it to the affected paths; do not report
-undocumented policy as a confirmed vulnerability.
+proof/assurance boundary. Load `../crow-application-architecture/modules/zero-trust.md`
+when the repository has a meaningful identity, resource, transaction,
+privileged, workload, network, API, external-decision, or cross-service trust
+boundary. Apply routed modules to affected paths; do not report undocumented
+policy as a confirmed vulnerability.
 
 The `security-review` and `security-remediation` agents load these modules and the bundled `security-review-template.md` from this skill.

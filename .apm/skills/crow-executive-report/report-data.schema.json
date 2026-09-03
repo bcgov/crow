@@ -35,6 +35,21 @@
       },
       "additionalProperties": false
     },
+    "zero_trust_posture": {
+      "type": ["object", "null"],
+      "description": "Optional, evidence-based resource-protection summary. Null when no relevant trust boundary is evidenced.",
+      "properties": {
+        "protected_resources": { "type": ["string", "null"] },
+        "enforcement_points": { "type": ["string", "null"] },
+        "least_privilege": { "type": ["string", "null"] },
+        "revocation_and_expiry": { "type": ["string", "null"] },
+        "exceptions_and_degradation": { "type": ["string", "null"] },
+        "telemetry": { "type": ["string", "null"] },
+        "evidence": { "type": ["string", "null"] },
+        "confidence": { "type": ["string", "null"], "enum": ["Verified", "Inferred", "Unknown", "N/A", null] }
+      },
+      "additionalProperties": false
+    },
     "findings": {
       "type": ["array", "null"],
       "items": {
