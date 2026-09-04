@@ -1,0 +1,200 @@
+{
+  "schema_version": "1.0",
+  "application": {
+    "name": "Permit Intake Service",
+    "acronym": "PIS",
+    "scope": "One service: the permit intake API and its persistence model. Permit inspection and billing services are out of scope for this run.",
+    "scope_note": "Split larger programs into one run per application or service rather than truncating the rule set.",
+    "repository": "example-org/permit-intake-service",
+    "commit": "0f3c1b2"
+  },
+  "generated": "2026-01-15",
+  "documentation_sources": [
+    {
+      "id": "DOC-1",
+      "title": "Permit intake user guide",
+      "kind": "guide",
+      "status": "available",
+      "location": "docs/intake-user-guide.md",
+      "note": "Last revised two releases before the reviewed commit."
+    },
+    {
+      "id": "DOC-2",
+      "title": "Intake officer training deck",
+      "kind": "training",
+      "status": "unavailable",
+      "location": "Referenced by the intake team; no copy was available in the repository or supplied for this run."
+    }
+  ],
+  "documentation_gap": {
+    "present": true,
+    "summary": "The intake officer training deck was referenced but could not be inspected.",
+    "coverage_impact": "Rules that exist only in training material cannot be confirmed, so reconciliation coverage is reduced and some rules are recorded as implemented-only rather than aligned."
+  },
+  "facet_groups": [
+    {
+      "id": "domain",
+      "label": "Domain",
+      "description": "Business area the rule governs.",
+      "facets": [
+        { "id": "domain.eligibility", "label": "Eligibility", "description": "Decides whether an applicant may proceed." },
+        { "id": "domain.fees", "label": "Fees", "description": "Determines amounts payable." },
+        { "id": "domain.records", "label": "Records", "description": "Governs stored intake records." }
+      ]
+    },
+    {
+      "id": "kind",
+      "label": "Rule kind",
+      "description": "How the rule is enforced in the implementation.",
+      "facets": [
+        { "id": "kind.authorization", "label": "Authorization" },
+        { "id": "kind.validation", "label": "Validation" },
+        { "id": "kind.calculation", "label": "Calculation" },
+        { "id": "kind.lifecycle", "label": "Lifecycle" }
+      ]
+    },
+    {
+      "id": "confidence",
+      "label": "Reconciliation",
+      "description": "Agreement between implementation and documentation.",
+      "facets": [
+        { "id": "confidence.aligned", "label": "Aligned" },
+        { "id": "confidence.code-only", "label": "Implemented only" },
+        { "id": "confidence.docs-only", "label": "Documented only" },
+        { "id": "confidence.conflicting", "label": "Conflicting" }
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "BR-0001",
+      "title": "Applicants must be 19 or older on the submission date",
+      "status": "active",
+      "category": "validation",
+      "statement": "An intake submission is rejected when the applicant's date of birth places them under 19 years of age on the submission date, evaluated in the America/Vancouver time zone.",
+      "rationale": "Age of majority governs who may hold a permit in their own name.",
+      "facets": ["domain.eligibility", "kind.validation", "confidence.aligned"],
+      "citations": [
+        {
+          "path": "src/Intake/Validation/ApplicantAgeRule.cs",
+          "symbol": "ApplicantAgeRule.Validate",
+          "commit": "0f3c1b2",
+          "line": 34
+        }
+      ],
+      "documentation_refs": ["DOC-1"],
+      "match_notes": [
+        { "facet": "domain.eligibility", "reason": "Blocks submission before any downstream processing." }
+      ],
+      "reconciliation": {
+        "classification": "aligned",
+        "note": "The guide and the validator agree on the threshold and the evaluation date."
+      }
+    },
+    {
+      "id": "BR-0002",
+      "title": "Base application fee is calculated from permit class and duration",
+      "status": "active",
+      "category": "calculation",
+      "statement": "The base fee equals the permit class rate multiplied by the requested duration in months, rounded to the nearest cent using banker's rounding, before any exemption is applied.",
+      "facets": ["domain.fees", "kind.calculation", "confidence.code-only"],
+      "citations": [
+        {
+          "path": "src/Intake/Fees/FeeCalculator.cs",
+          "symbol": "FeeCalculator.CalculateBaseFee",
+          "commit": "0f3c1b2",
+          "line": 51
+        },
+        {
+          "path": "src/Intake/Fees/PermitClassRates.cs",
+          "symbol": "PermitClassRates.Table",
+          "commit": "0f3c1b2"
+        }
+      ],
+      "documentation_refs": [],
+      "reconciliation": {
+        "classification": "implemented-only",
+        "note": "No available document describes the rounding mode; the training deck that may describe it was unavailable."
+      }
+    },
+    {
+      "id": "BR-0003",
+      "title": "Only intake officers may reopen a withdrawn application",
+      "status": "active",
+      "category": "authorization",
+      "statement": "Reopening a withdrawn application requires the intake-officer role; applicants receive a permission failure and the attempt is recorded in the audit log.",
+      "facets": ["domain.records", "kind.authorization", "confidence.conflicting"],
+      "citations": [
+        {
+          "path": "src/Intake/Applications/ReopenApplicationHandler.cs",
+          "symbol": "ReopenApplicationHandler.Handle",
+          "commit": "0f3c1b2",
+          "line": 22
+        }
+      ],
+      "documentation_refs": ["DOC-1"],
+      "reconciliation": {
+        "classification": "conflicting",
+        "note": "The guide states that supervisors may also reopen applications; the implementation checks the intake-officer role only."
+      }
+    },
+    {
+      "id": "BR-0004",
+      "title": "Withdrawn applications are purged after seven years",
+      "status": "active",
+      "category": "persistence",
+      "statement": "Withdrawn applications and their attachments are removed seven years after the withdrawal date.",
+      "facets": ["domain.records", "kind.lifecycle", "confidence.docs-only"],
+      "citations": [],
+      "documentation_refs": ["DOC-1"],
+      "reconciliation": {
+        "classification": "documented-only",
+        "note": "The guide describes the retention period, but no scheduled job, migration, or configuration implementing it was found in this service."
+      }
+    },
+    {
+      "id": "BR-0005",
+      "title": "Paper submissions receive a manual review queue entry",
+      "status": "retired",
+      "category": "workflow",
+      "statement": "Paper submissions once created a manual review queue entry before automated validation.",
+      "facets": ["domain.records", "kind.lifecycle", "confidence.code-only"],
+      "citations": [
+        {
+          "path": "src/Intake/Legacy/PaperSubmissionQueue.cs",
+          "symbol": "PaperSubmissionQueue.Enqueue",
+          "commit": "9a4d7e1"
+        }
+      ],
+      "documentation_refs": [],
+      "reconciliation": {
+        "classification": "implemented-only",
+        "note": "The implementation was removed before the reviewed commit; the rule is retained for traceability."
+      },
+      "retirement": {
+        "retired_on": "2026-01-15",
+        "reason": "Paper submissions were discontinued and the queue was deleted."
+      }
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "intake-decision",
+      "title": "Intake decision flow",
+      "description": "Order in which eligibility, authorization, and fee rules are applied to a submission.",
+      "mermaid": "flowchart TD\n  A[Submission received] --> B{Applicant 19 or older?}\n  B -- No --> R[Reject: BR-0001]\n  B -- Yes --> C{Role permits action?}\n  C -- No --> D[Permission failure: BR-0003]\n  C -- Yes --> E[Calculate base fee: BR-0002]\n  E --> F[Persist application record]",
+      "rule_refs": ["BR-0001", "BR-0002", "BR-0003"]
+    },
+    {
+      "id": "application-lifecycle",
+      "title": "Application lifecycle states",
+      "description": "States a permit application moves through, including the retention path.",
+      "mermaid": "stateDiagram-v2\n  [*] --> Draft\n  Draft --> Submitted\n  Submitted --> Withdrawn\n  Submitted --> Approved\n  Withdrawn --> Purged: seven years (BR-0004)\n  Approved --> [*]",
+      "rule_refs": ["BR-0004", "BR-0005"]
+    }
+  ],
+  "open_questions": [
+    "Which role list is correct for reopening a withdrawn application (BR-0003)?",
+    "Is the seven-year retention rule implemented in another service, or not implemented at all (BR-0004)?"
+  ]
+}

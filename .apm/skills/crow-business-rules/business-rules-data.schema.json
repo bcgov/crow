@@ -1,0 +1,267 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/bcgov/crow/business-rules-data.schema.json",
+  "title": "Crow business rule report data",
+  "description": "Snippet-free business rule data for a single application or service. Editor-facing contract; scripts/CrowBusinessRules.psm1 is the authoritative validator and Test-CrowBusinessRules.Tests.ps1 fails when the two drift.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "application",
+    "generated",
+    "documentation_sources",
+    "documentation_gap",
+    "facet_groups",
+    "rules",
+    "diagrams"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "application": {
+      "$ref": "#/$defs/application"
+    },
+    "generated": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "documentation_sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/documentationSource" }
+    },
+    "documentation_gap": {
+      "$ref": "#/$defs/documentationGap"
+    },
+    "facet_groups": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/facetGroup" }
+    },
+    "rules": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    },
+    "diagrams": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagram" }
+    },
+    "open_questions": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "$defs": {
+    "application": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "scope", "repository", "commit"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "scope": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The single application or service covered by this run."
+        },
+        "repository": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "acronym": { "type": "string", "minLength": 1 },
+        "scope_note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "documentationSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "kind", "status", "location"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^DOC-[0-9]{1,4}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "kind": {
+          "type": "string",
+          "enum": ["guide", "training", "policy", "specification", "ticket", "other"]
+        },
+        "status": {
+          "type": "string",
+          "enum": ["available", "unavailable"],
+          "description": "'available' sources were inspected during the run. Only available sources can support an aligned or conflicting classification."
+        },
+        "location": { "type": "string", "minLength": 1 },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "documentationGap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["present"],
+      "properties": {
+        "present": { "type": "boolean" },
+        "summary": { "type": "string", "minLength": 1 },
+        "coverage_impact": { "type": "string", "minLength": 1 }
+      }
+    },
+    "facetGroup": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "facets"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$" },
+        "label": { "type": "string", "minLength": 1 },
+        "facets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/facet" }
+        },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "facet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{1,39}\\.[a-z0-9][a-z0-9-]{0,39}$"
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "status",
+        "category",
+        "statement",
+        "facets",
+        "citations",
+        "documentation_refs",
+        "reconciliation"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^BR-[0-9]{4,6}$",
+          "description": "Stable identifier. Reused across regenerations, never reassigned."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "type": "string", "enum": ["active", "retired"] },
+        "category": {
+          "type": "string",
+          "enum": [
+            "authorization",
+            "validation",
+            "workflow",
+            "calculation",
+            "temporal",
+            "location",
+            "environment",
+            "configuration",
+            "feature-flag",
+            "persistence",
+            "integration",
+            "error-handling",
+            "degradation",
+            "test-derived"
+          ]
+        },
+        "statement": { "type": "string", "minLength": 1 },
+        "facets": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "citations": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/citation" }
+        },
+        "documentation_refs": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^DOC-[0-9]{1,4}$" }
+        },
+        "reconciliation": { "$ref": "#/$defs/reconciliation" },
+        "rationale": { "type": "string", "minLength": 1 },
+        "match_notes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/matchNote" }
+        },
+        "retirement": { "$ref": "#/$defs/retirement" }
+      }
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "symbol", "commit"],
+      "description": "Repository-relative location of the implementation. Source snippets must never be copied into this data.",
+      "properties": {
+        "path": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-][A-Za-z0-9 ._/-]*$"
+        },
+        "symbol": { "type": "string", "minLength": 1 },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{7,40}$" },
+        "line": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "reconciliation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["classification"],
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": [
+            "aligned",
+            "implemented-only",
+            "documented-only",
+            "conflicting",
+            "unverifiable"
+          ]
+        },
+        "note": { "type": "string", "minLength": 1 }
+      }
+    },
+    "retirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retired_on", "reason"],
+      "properties": {
+        "retired_on": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "matchNote": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["facet", "reason"],
+      "properties": {
+        "facet": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 }
+      }
+    },
+    "diagram": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "mermaid", "rule_refs"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{1,39}$" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "minLength": 1 },
+        "mermaid": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mermaid source without init directives, click statements, href/call bindings, absolute URLs, or raw HTML."
+        },
+        "rule_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "pattern": "^BR-[0-9]{4,6}$" }
+        }
+      }
+    }
+  }
+}
