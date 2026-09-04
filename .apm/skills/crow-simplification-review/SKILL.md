@@ -12,13 +12,16 @@ Crow debt ledger. It does not apply fixes.
 
 1. Load [`../crow-application-architecture/modules/minimal-change.md`](../crow-application-architecture/modules/minimal-change.md).
 2. Load [`../crow-application-architecture/modules/impact-analysis.md`](../crow-application-architecture/modules/impact-analysis.md) only when a proposed simplification changes shared behavior or a public boundary.
-3. For a debt report, run [`scripts/Get-CrowDebt.ps1`](scripts/Get-CrowDebt.ps1) and read [`../../../docs/Crow-debt.md`](../../../docs/Crow-debt.md) as the output contract. The report has separate sections for `crow-debt:` markers and conventional debt comments such as `TODO:`, `To-Do:`, `Future:`, `Change:`, `FIXME:`, `HACK:`, `XXX:`, and `NOTE:`.
+3. For a debt report, run [`scripts/Get-CrowDebt.ps1`](scripts/Get-CrowDebt.ps1) from the repository being reviewed. The report has separate sections for `crow-debt:` markers and conventional debt comments such as `TODO:`, `To-Do:`, `Future:`, `Change:`, `FIXME:`, `HACK:`, `XXX:`, and `NOTE:`.
 
 ## Review modes
 
 - **Change review:** inspect the current diff and directly connected files.
 - **Repository audit:** inspect the whole repository only when explicitly requested.
-- **Debt report:** harvest `crow-debt:` comments without changing files.
+- **Debt report:** harvest `crow-debt:` comments without changing files. Use
+  `no-trigger` only when `revisit:` is absent; use `incomplete` when a revisit
+  condition exists but `ceiling:` or `owner:` is missing.
+- **Ledger creation:** copy [`templates/crow-debt-template.md`](templates/crow-debt-template.md) to `docs/Crow-debt.md` in the reviewed repository when the user explicitly requests a real ledger file. Preserve existing entries when updating it.
 
 ## Finding contract
 
@@ -49,8 +52,10 @@ type, simplification, ceiling, owner, and revisit trigger. Mark a row
 future-proofed for legacy libraries and modernization work, not only
 simplification.
 
-The default operation is read-only. Updating `docs/Crow-debt.md` requires an
-explicit user request and must preserve existing entries.
+The default operation is read-only. Creating or updating `docs/Crow-debt.md`
+requires an explicit user request and must preserve existing entries. The
+template is packaged with the skill; the real ledger belongs to the reviewed
+repository's `/docs` folder.
 
 Conventional debt comments are reported as observations in their own section;
 they do not become ledger entries automatically.

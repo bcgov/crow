@@ -49,7 +49,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
-- `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, and deterministic debt scanner
+- `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
 - `.apm/skills/crow-release/` — Semantic-version policy and deterministic version/package/release scripts
 
 ## Agent and skill authoring conventions

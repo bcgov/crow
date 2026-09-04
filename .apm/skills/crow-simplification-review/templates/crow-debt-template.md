@@ -1,14 +1,14 @@
 # Crow debt ledger
 
 This ledger records deliberate, bounded technical debt in the repository. It
-is intentionally broader than simplification: future entries may cover
-legacy libraries, end-of-life technology, modernization work, or other
-accepted trade-offs.
+is intentionally broader than simplification: entries may cover legacy
+libraries, end-of-life technology, modernization work, or other accepted
+trade-offs.
 
 ## Marker format
 
-Add a language-appropriate comment only when a known ceiling and a revisit
-condition exist:
+Add a language-appropriate comment when a known ceiling and revisit condition
+exist:
 
 ```text
 # crow-debt: shortcut; <what was simplified>; ceiling: <known limit>; revisit: <measurable trigger>; owner: <team>

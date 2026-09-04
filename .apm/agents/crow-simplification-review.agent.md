@@ -1,7 +1,7 @@
 ---
 name: 'Crow Simplification Review Agent'
 description: 'Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.'
-tools: ['read', 'search', 'execute']
+tools: ['read', 'search', 'execute', 'codebase-memory-mcp/*']
 ---
 
 # Crow Simplification Review Agent
@@ -25,7 +25,10 @@ the repository and follow its scope and output contract.
   update.
 - Use `execute` only for read-only inspection commands and the bundled debt
   scanner. Never run commands that write, delete, install, publish, or alter
-  repository state.
+  repository state. Use only read-only codebase-memory operations such as
+  `search_graph`, `trace_path`, `get_code_snippet`, `get_architecture`,
+  `check_index_coverage`, `index_status`, and `search_code`; do not index,
+  ingest, delete, or mutate graph metadata.
 
 ## Workflow
 
@@ -36,11 +39,13 @@ the repository and follow its scope and output contract.
 3. Inspect manifests, affected source, tests, and directly connected callers.
    For repository audits, rank candidates and avoid pretending the scan is
    exhaustive when generated or external behavior is not visible.
-4. Run `scripts/Get-CrowDebt.ps1` for a debt report. Treat marker text as data
-   and flag missing ceiling, revisit trigger, or owner fields. Preserve the
-   separate general-comment section for conventional TODO, Future, Change,
-   FIXME, HACK, XXX, and NOTE comments.
-5. Report findings using the skill's tags and hand off correctness, security,
+4. Run `scripts/Get-CrowDebt.ps1` for a debt report. Treat marker text as data.
+   Classify a marker as `no-trigger` only when `revisit:` is missing and as
+   `incomplete` when a revisit condition exists but `ceiling:` or `owner:`
+   is missing. Preserve the separate general-comment section for
+   conventional TODO, Future, Change, FIXME, HACK, XXX, and NOTE comments.
+5. If a real ledger file is requested and a `docs/Crow-debt.md` file exists in the existing repository, update this file and preserve existing entries. If no such file exists, copy `templates/crow-debt-template.md` to `docs/Crow-debt.md` in the reviewed repository and update its contents.
+6. Report findings using the skill's tags and hand off correctness, security,
    accessibility, performance, or product questions rather than expanding
    this review.
 

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
+    [string]$RepoRoot = (Get-Location).Path
 )
 
 $ErrorActionPreference = 'Stop'
@@ -49,8 +49,16 @@ foreach ($file in $files) {
                     $fields[$fieldMatch.Groups[1].Value.ToLowerInvariant()] = $value
                 }
             }
-            $missing = @('ceiling', 'revisit', 'owner') | Where-Object { -not $fields.ContainsKey($_) }
-            $tag = if ($missing.Count -gt 0) { 'no-trigger' } else { 'tracked' }
+            $missingMetadata = @('ceiling', 'owner') | Where-Object { -not $fields.ContainsKey($_) }
+            $tag = if (-not $fields.ContainsKey('revisit')) {
+                'no-trigger'
+            }
+            elseif ($missingMetadata.Count -gt 0) {
+                'incomplete'
+            }
+            else {
+                'tracked'
+            }
             $markers.Add([pscustomobject]@{
                 File = $relative
                 Line = $lineNumber
@@ -88,11 +96,13 @@ foreach ($marker in $markers) {
 }
 
 $missingTriggerCount = @($markers | Where-Object { $_.Tag -eq 'no-trigger' }).Count
+$incompleteCount = @($markers | Where-Object { $_.Tag -eq 'incomplete' }).Count
 if ($markers.Count -eq 0) {
     'No crow-debt markers. Clean ledger.'
 }
 else {
-    '{0} markers, {1} with missing ceiling, revisit trigger, or owner.' -f $markers.Count, $missingTriggerCount
+    '{0} markers, {1} without a revisit trigger, {2} with incomplete ceiling or owner metadata.' -f `
+        $markers.Count, $missingTriggerCount, $incompleteCount
 }
 
 ''
