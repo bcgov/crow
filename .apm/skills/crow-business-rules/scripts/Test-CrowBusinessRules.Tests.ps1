@@ -355,6 +355,51 @@ function Invoke-Renderer {
     }
 }
 
+function Invoke-RendererWithBundledAsset {
+    param(
+        [Parameter(Mandatory)][string]$Directory,
+        [Parameter(Mandatory)][ValidateSet('business-rules.css', 'business-rules.js')]
+        [string]$AssetName,
+        [Parameter(Mandatory)][string]$AssetContent
+    )
+
+    $copiedSkillRoot = Join-Path $Directory 'crow-business-rules'
+    Copy-Item -LiteralPath $skillRoot -Destination $copiedSkillRoot -Recurse
+
+    $copiedAssetPath = Join-Path (Join-Path $copiedSkillRoot 'assets') $AssetName
+    [System.IO.File]::WriteAllText($copiedAssetPath, $AssetContent, $utf8)
+
+    $outputDirectory = Join-Path $Directory 'output'
+    New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+    $dataPath = Save-DataFile -Directory $outputDirectory -Data (New-BaseData)
+    $stubPath = Join-Path $Directory 'stub-mmdc.ps1'
+    Write-StubCli -Path $stubPath
+
+    $copiedRendererPath = Join-Path (Join-Path $copiedSkillRoot 'scripts') 'render-business-rules.ps1'
+    $arguments = @(
+        '-NoProfile', '-File', $copiedRendererPath,
+        '-DataFile', $dataPath,
+        '-MermaidCliPath', $stubPath
+    )
+
+    $previousPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        $output = & $powerShellPath @arguments 2>&1 | Out-String
+        $exitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $previousPreference
+    }
+
+    return [pscustomobject]@{
+        ExitCode     = $exitCode
+        Output       = [regex]::Replace([string]$output, '\s+', ' ')
+        MarkdownPath = Join-Path $outputDirectory 'business-rules.md'
+        HtmlPath     = Join-Path $outputDirectory 'business-rules.html'
+    }
+}
+
 function Invoke-Validator {
     param(
         [Parameter(Mandatory)][string]$DataPath,
@@ -685,6 +730,65 @@ try {
     Assert-Condition ($selfContainedErrors.Count -eq 0) `
         "The rendered report should pass the self-contained check: $($selfContainedErrors -join '; ')"
     Write-Host 'Passed: self-contained check rejects inline handlers and unsafe links'
+    $passed++
+
+    # -----------------------------------------------------------------
+    # 3c. Bundled raw-text assets cannot close their containing elements
+    # -----------------------------------------------------------------
+    foreach ($assetCase in @(
+            @{
+                Name            = 'css-style-closing-sequence'
+                AssetName       = 'business-rules.css'
+                Content         = 'body{color:#111}</style><p>escaped style</p>'
+                ExpectedMessage = 'style-closing sequence'
+            },
+            @{
+                Name            = 'css-style-solidus-closing-sequence'
+                AssetName       = 'business-rules.css'
+                Content         = 'body{color:#111}</style/><p>escaped style</p>'
+                ExpectedMessage = 'style-closing sequence'
+            },
+            @{
+                Name            = 'css-style-attribute-closing-sequence'
+                AssetName       = 'business-rules.css'
+                Content         = 'body{color:#111}</style foo><p>escaped style</p>'
+                ExpectedMessage = 'style-closing sequence'
+            },
+            @{
+                Name            = 'javascript-script-closing-sequence'
+                AssetName       = 'business-rules.js'
+                Content         = 'const value = "</script><p>escaped script</p>";'
+                ExpectedMessage = 'script-closing sequence'
+            },
+            @{
+                Name            = 'javascript-script-solidus-closing-sequence'
+                AssetName       = 'business-rules.js'
+                Content         = 'const value = "</script/><p>escaped script</p>";'
+                ExpectedMessage = 'script-closing sequence'
+            })) {
+        $directory = New-CaseDirectory $assetCase.Name
+        $result = Invoke-RendererWithBundledAsset -Directory $directory `
+            -AssetName $assetCase.AssetName -AssetContent $assetCase.Content
+        Assert-Condition ($result.ExitCode -ne 0) `
+            "Bundled asset '$($assetCase.AssetName)' was allowed to close its containing element."
+        Assert-Contains -Text $result.Output -Expected $assetCase.ExpectedMessage `
+            -Message "Bundled asset '$($assetCase.AssetName)' failed for the wrong reason"
+        Assert-Condition (-not (Test-Path -LiteralPath $result.MarkdownPath)) `
+            "Bundled asset '$($assetCase.AssetName)' left partial Markdown output."
+        Assert-Condition (-not (Test-Path -LiteralPath $result.HtmlPath)) `
+            "Bundled asset '$($assetCase.AssetName)' left partial HTML output."
+    }
+
+    $directory = New-CaseDirectory 'javascript-script-near-match'
+    $result = Invoke-RendererWithBundledAsset -Directory $directory `
+        -AssetName 'business-rules.js' -AssetContent 'const value = "</scriptfoo";'
+    Assert-Condition ($result.ExitCode -eq 0) `
+        "A benign script end-tag near-match was rejected. Output: $($result.Output)"
+    Assert-Condition (Test-Path -LiteralPath $result.MarkdownPath) `
+        'The benign bundled JavaScript case did not publish Markdown output.'
+    Assert-Condition (Test-Path -LiteralPath $result.HtmlPath) `
+        'The benign bundled JavaScript case did not publish HTML output.'
+    Write-Host 'Passed: bundled CSS and JavaScript cannot close their containing raw-text elements'
     $passed++
 
     # -----------------------------------------------------------------

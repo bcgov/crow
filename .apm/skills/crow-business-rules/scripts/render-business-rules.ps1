@@ -562,10 +562,14 @@ try {
     $htmlTemplate = [System.IO.File]::ReadAllText($htmlTemplatePath)
     $css = [System.IO.File]::ReadAllText($cssPath)
     $javaScript = [System.IO.File]::ReadAllText($javaScriptPath)
-    foreach ($assetPair in @(@{ Name = 'business-rules.css'; Content = $css },
-            @{ Name = 'business-rules.js'; Content = $javaScript })) {
-        if ($assetPair.Content -match '(?i)</\s*script') {
-            throw "Bundled asset $($assetPair.Name) contains a script-closing sequence."
+    foreach ($assetPair in @(
+            @{ Name = 'business-rules.css'; Content = $css; Element = 'style' },
+            @{ Name = 'business-rules.js'; Content = $javaScript; Element = 'script' })) {
+        # Match HTML raw-text end-tag name termination: whitespace, '/', '>',
+        # or end of the asset. Whitespace immediately after '</' is not valid.
+        $closingPattern = '(?i)</' + [regex]::Escape($assetPair.Element) + '(?=[\s/>]|$)'
+        if ($assetPair.Content -match $closingPattern) {
+            throw "Bundled asset $($assetPair.Name) contains a $($assetPair.Element)-closing sequence."
         }
     }
 
