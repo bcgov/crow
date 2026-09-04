@@ -38,6 +38,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
 
+      - name: Test business rule validation and rendering
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-business-rules\scripts\Test-CrowBusinessRules.Tests.ps1
+
       - name: Test release safety guards
         shell: pwsh
         run: |
