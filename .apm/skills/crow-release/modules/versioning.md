@@ -6,8 +6,8 @@ Crow uses semantic versioning for the combined APM and Copilot plugin package.
 
 | Change | Version |
 |---|---|
-| Compatible correction, clarification, optimization, or fix to an existing capability | Patch |
-| New agent, skill, module family, supported technology, output type, or other user-visible capability | Minor |
+| Compatible correction, clarification, module or template family, supported technology, new compatible output type or output optimization, documentation, or fix to an existing capability | Patch |
+| New agent or skill | Minor |
 | Incompatible rename, removal, installation change, invocation contract change, or output contract break | Major, only when the user decides |
 
 Use the highest classification present in the release diff. A new capability remains minor even when it also updates existing skills. Security fixes are patch unless they add a new user-visible capability or require an incompatible contract.

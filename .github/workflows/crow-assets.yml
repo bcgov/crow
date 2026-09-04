@@ -28,6 +28,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
 
+      - name: Test Crow debt scanner
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-simplification-review\scripts\Test-CrowDebt.Tests.ps1
+
       - name: Test architecture output validation
         shell: pwsh
         run: |

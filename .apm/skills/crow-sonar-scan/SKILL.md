@@ -28,12 +28,16 @@ If no version is specified in the `sonar.config` file, or if the `sonar.config` 
    - The repository root
    - Any project-specific subfolders/roots within the repository.
    If present, use its content as the version.
+
+2. **`apm.yml`**: If `version.txt` is missing or empty, look for a file named `apm.yml` in the repository root.
+   - Look for the `version` field.
+   - Use its value as the version.
    
-2. **`AssemblyInfo.cs`**: If `version.txt` is missing or empty, search for an `AssemblyInfo.cs` file under the main project's root folder.
+3. **`AssemblyInfo.cs`**: If neither of the above options yields a version, search for an `AssemblyInfo.cs` file under the main project's root folder.
    - Look for the `AssemblyVersion` or `AssemblyFileVersion` attribute (e.g., `[assembly: AssemblyVersion("1.0.0.0")]`).
    - Extract the version number within the quotes.
 
-3. **`*.csproj`**: If neither of the above options yields a version, search for a `.csproj` file in the main project's root folder.
+4. **`*.csproj`**: If none of the above options yields a version, search for a `.csproj` file in the main project's root folder.
    - Look for the `<Version>` or `<AssemblyVersion>` XML element.
    - Extract the inner text as the version.
 
