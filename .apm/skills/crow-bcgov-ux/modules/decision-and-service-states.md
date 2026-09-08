@@ -5,6 +5,11 @@ displays an automated eligibility/denial decision, a result from an external
 register or service, or a degraded, asynchronous, offline, or assisted state.
 This module governs point-of-use communication, not journey or policy design.
 
+For authentication, step-up, authorization, expiry, revocation, or dependency
+failures, explain the user-visible state without exposing security-sensitive
+rules. Distinguish denied, expired, revoked, unavailable, and pending results;
+never imply that a degraded path has the same authority as the normal path.
+
 ## Point-of-use explanation and recourse
 
 When the interface presents an automated or external decision:

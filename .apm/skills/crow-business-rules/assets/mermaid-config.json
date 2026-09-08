@@ -1,0 +1,30 @@
+{
+  "securityLevel": "strict",
+  "startOnLoad": false,
+  "htmlLabels": false,
+  "theme": "neutral",
+  "fontFamily": "BC Sans, Noto Sans, Verdana, Arial, sans-serif",
+  "logLevel": "error",
+  "deterministicIds": true,
+  "deterministicIDSeed": "crow-business-rules",
+  "maxTextSize": 50000,
+  "maxEdges": 500,
+  "flowchart": {
+    "htmlLabels": false,
+    "useMaxWidth": true
+  },
+  "sequence": {
+    "useMaxWidth": true
+  },
+  "class": {
+    "htmlLabels": false,
+    "useMaxWidth": true
+  },
+  "state": {
+    "htmlLabels": false,
+    "useMaxWidth": true
+  },
+  "er": {
+    "useMaxWidth": true
+  }
+}

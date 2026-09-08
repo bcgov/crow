@@ -77,6 +77,14 @@ shared dependencies, contracts with owners, and tested fallback scenarios.
 Leave unsupported values null or state `Unknown`; do not invent a platform
 catalogue or a maturity score.
 
+### Optional Zero Trust posture
+
+Include this subsection only when the source documents contain evidence of a
+relevant trust boundary. Summarize protected resources, access enforcement,
+least-privilege scope and lifetime, revocation, exception handling,
+degradation, and evidence confidence. Report gaps as findings or unknowns; do
+not invent a maturity score or claim enterprise-wide posture.
+
 ---
 
 ## 6. Strategic Recommendations & Action Plan

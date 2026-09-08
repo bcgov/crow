@@ -2,5 +2,8 @@
 *.json -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.md -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.ps1 -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.psm1 -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.html -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.css -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.js -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.yml -text whitespace=trailing-space,space-before-tab,cr-at-eol

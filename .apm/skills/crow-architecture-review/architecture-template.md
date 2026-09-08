@@ -304,3 +304,8 @@ Key architectural decisions are recorded to capture history and trade-offs.
 - [ ] **Platform Data Responsibility (conditional):** Data custodian, permitted purpose/subject scope, narrow-question versus broad-data access, and the `Open / Shared / Closed` spectrum are evidenced. `[Confidence: ]`
 - [ ] **Contract Ownership (conditional):** External contracts have an owner, compatibility/versioning and deprecation policy, consumer migration path, and rollback evidence. `[Confidence: ]`
 - [ ] **Dependency Degradation (conditional):** Timeouts, cancellation, bounded retries, idempotency, fallback/staleness, and observable audit/provenance behavior are documented and tested where applicable. `[Confidence: ]`
+- [ ] **Protected Resources and Access Paths (conditional):** Meaningful protected resources and person-to-application, service-to-service, administrator-to-platform, or partner access paths are inventoried where applicable. `[Confidence: ]`
+- [ ] **Resource Authorization (conditional):** Authorization is enforced for the requested resource and action separately from authentication, with the enforcement point identified. `[Confidence: ]`
+- [ ] **Least Privilege and Lifetime (conditional):** Scope, audience, capability, workload identity, and access duration are minimized and attributable where applicable. `[Confidence: ]`
+- [ ] **Revocation and Exceptions (conditional):** Expiry, revocation, rotation, replay handling, and time-bound exceptions are defined for the applicable boundary. `[Confidence: ]`
+- [ ] **Safe Degradation and Evidence (conditional):** Dependency failures do not silently expand privilege, and privacy-preserving decision evidence and confidence are recorded where observable. `[Confidence: ]`

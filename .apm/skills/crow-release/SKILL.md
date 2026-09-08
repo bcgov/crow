@@ -49,6 +49,7 @@ The publish script requires an existing remote tag and uses `gh release create -
 - Validation, package dry run, specialist review, and rubber-duck review pass.
 - Worktree and release commit are clean and pushed.
 - Archive contents are inspected and contain no evidence or local state.
+- Artifact provenance, protected publishing, and checksum verification protect the package supply chain; they do not by themselves prove enterprise Zero Trust implementation.
 - SHA-256 checksum exists.
 - Publishing occurs only after explicit user approval.
 - The GitHub release and uploaded assets are verified after creation.

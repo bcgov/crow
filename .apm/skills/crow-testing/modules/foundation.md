@@ -26,6 +26,11 @@ choices that push defects *past* the filter that should have caught them, and
    at that same level while you're there.
 5. Update the relevant scenario doc / `testing-plan.md` status to reflect the pass.
 
+Before editing shared behavior, use the bounded impact-analysis module to
+inspect callers, contracts, configuration, and related tests. Record graph
+bounds and blind spots; dynamic dispatch, generated code, external consumers,
+and database or event behavior may require manual follow-up.
+
 ## Choosing the level: the canonical rule
 
 **This is the one authoritative statement of the rule. Other modules point here rather than restating it.**
@@ -62,6 +67,10 @@ redundant, and doubles the maintenance cost of every rule change.
 Some tests need human judgment, exploration, or one-off verification — automating them wastes effort and
 adds maintenance burden. Before proposing to automate something, check it is a good candidate: repeatable,
 deterministic, cheap to keep passing, and actually valuable to re-run on every change.
+
+For non-trivial logic, leave one focused runnable check at the lowest level
+that can catch the defect. Do not add a test framework, fixture hierarchy, or
+full matrix for a trivial pass-through change.
 
 ## Treat automated test code as a first-class citizen
 
