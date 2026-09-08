@@ -41,8 +41,8 @@ prioritized, justified recommendation, and when *not* to recommend a change at a
 | Hidden static/global state | Integration, flakily | Unit | `S2223` |
 | Long procedural methods | Unit, with many cases at once | Unit, few cases each | `S3776` |
 | Boolean parameter soup | Unit, under-tested branches | Unit, named branches | `S107` |
-| Error-prone/ambiguous construction (telescoping constructors, positional-arg confusion, invalid partial construction) | Unit, per invalid combination, or runtime | Construction time (API shape) | `S107` where param count is the trigger |
-| Same decision axis branched-on repeatedly across methods/classes | Unit, per call site, or missed on a new case | Unit, once per case, isolated | `S1871` catches identical branch bodies in *one* switch, not this |
+| Error-prone/ambiguous construction (telescoping constructors, positional-arg confusion, invalid partial construction) | Unit, per invalid combination, or runtime | Unit (construction-time) | — |
+| Same decision axis branched-on repeatedly across methods/classes | Unit, per call site, or missed on a new case | Unit, once per case, isolated | `S1871` (partial — only literal branch duplication) |
 | Cross-cutting concern (retry/caching/telemetry/auth) inlined in business logic | Unit, entangled with the concern | Unit, core rule isolated from the concern | — |
 | Same boolean business rule re-expressed inline in multiple syntactic forms | Unit, per copy, drift undetected | Unit, once, reused | — |
 | Partial functions and silent nulls | Runtime, at every call site | Unit, one explicit outcome | — |

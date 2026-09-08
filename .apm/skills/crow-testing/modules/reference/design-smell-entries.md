@@ -2,7 +2,7 @@
 
 Prose detail for each smell in [`design-smell-catalog.md`](design-smell-catalog.md)'s triage table. Load
 this file only when writing up **one specific** finding — an agent scanning a codebase needs the triage
-table, not all twenty-one entries; this file is for the moment a particular smell needs its full
+table, not all twenty-two entries; this file is for the moment a particular smell needs its full
 explanation.
 
 Each entry is framed the same way `design-smell-catalog.md` frames the whole catalog: the fix moves a
