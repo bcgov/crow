@@ -58,7 +58,7 @@ mapping each entry to its row.
   pipelines, Polly supplies retry/circuit-breaker wrappers, and Scrutor adds decorator registration to
   `Microsoft.Extensions.DependencyInjection`. This fits boundary-oriented, wrapper-shaped concerns
   (retry/caching/telemetry/resilience) best; logging is often too cheap to be worth it, and authorization
-  frequently belongs in a framework policy or is inseparable from the business rule itself — judge those
+  frequently belongs in a framework policy or is inseparable from the business rule itself — judge those concerns
   case by case rather than extracting on reflex.
 - **Same boolean business rule re-expressed inline in multiple syntactic forms.** A rule like "is this order
   eligible for expedited shipping" appears as a LINQ `.Where(...)` predicate in one place and an `if` in
