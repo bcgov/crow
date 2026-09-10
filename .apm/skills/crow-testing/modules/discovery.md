@@ -16,6 +16,28 @@ Before saying anything to the user, scan:
 - `README.md`, `docs/`, ADRs, and any existing `docs/testing/` artifacts from a prior engagement.
 - Business terminology and rules as they appear in code (domain types, method names) and docs.
 
+### Schema and model-contract evidence
+
+When comparing a database schema with application models, mappings, validators, or tests, inspect
+available schema documentation alongside structural definitions:
+
+- SQL `MS_Description` extended properties;
+- database comments or equivalent column/table documentation;
+- defaults, constraints, foreign keys, and indexes;
+- ORM mappings and observed create/update/import paths.
+
+Treat descriptions and comments as **corroborating intent**, not authoritative contract evidence. They
+may be stale, incomplete, or copied forward. Structural constraints and defaults are stronger evidence,
+and reachable runtime behavior is stronger still. The absence of a description is neutral: do not lower
+confidence or stop the investigation because documentation is missing.
+
+Record the source and relevant wording when it changes a finding's confidence or disposition. Keep
+these evidence categories distinct in the report:
+
+1. declared structure (for example, `NOT NULL` or an FK);
+2. documented intent (for example, an `MS_Description`);
+3. observed application behavior (for example, a reachable write path or persisted value).
+
 Only after this scan, open the discussion **interview-style, surfacing concrete assumptions** grounded in
 what was found ("You're using X for validation and have no test project yet — I'll assume unit tests should
 follow Y unless you tell me otherwise") rather than asking the user to describe the codebase from scratch.

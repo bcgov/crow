@@ -75,9 +75,9 @@ The file taxonomy per model, and why each exists:
   model looks like. Include a `[Fact(Skip = "Development scratchpad")]` slot for quick iteration.
 - **`{Entity}{Field}FieldsTests.cs`** — either a ~40-line subclass of a shared suite (for field types that
   repeat across models) or a normal test class (for fields unique to this model).
-- **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for whitespace
-  handling across every string property on the model, so adding a new trimmed property has one obvious home
-  instead of being scattered across per-field files.
+- **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for model
+  normalization/trimming across every string property, so adding a new trimmed property has one obvious
+  home instead of being scattered across per-field files.
 - **`CrossField/*Tests.cs`** — rules spanning more than one field (mutual requirements, conditional
   requirements, interdependencies). These are model-specific by nature and don't belong in a shared suite.
 
@@ -101,6 +101,26 @@ generic suite instead of copying files — see
   purpose — these files are read far more often than they're written.
 
 ## Diagnostics
+
+### Whitespace-sensitive validation
+
+Keep model normalization and validator enforcement as separate test concerns:
+
+- If the model trims string properties, cover that behavior in the model's
+  `{Entity}TrimmingTests.cs` single-source-of-truth file.
+- If a validator must reject whitespace-only input, test the validator directly even when the UI or
+  model usually trims it first. A non-UI caller may bypass that normalization.
+
+For a whitespace-sensitive validator rule, use this compact baseline matrix rather than testing only
+ASCII spaces: spaces (`"   "`), tab (`"\t"`), newline (`"\n"`), carriage-return/newline (`"\r\n"`), and
+mixed whitespace (for example `" \t \n "`). Derive each case's expected validity from the field and
+validator contract; do not assume every field must reject every whitespace character. If the contract
+claims to handle all whitespace, add relevant Unicode cases such as non-breaking or ideographic spaces.
+For an optional field, also assert that `null` and empty string retain their intended validity when the
+contract permits them. Keep these cases with the field's validator tests; do not move them into trimming
+tests unless the behavior under test is model normalization. For broad character/Unicode invariants,
+pair these readable examples with a property-based test as described in
+[`../reference/property-based-testing.md`](../reference/property-based-testing.md).
 
 Inject the test framework's output helper (xUnit: `ITestOutputHelper`) into test classes and write the input
 under test before asserting:

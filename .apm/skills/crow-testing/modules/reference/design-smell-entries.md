@@ -2,7 +2,8 @@
 
 Prose detail for each smell in [`design-smell-catalog.md`](design-smell-catalog.md)'s triage table. Load
 this file only when writing up **one specific** finding — an agent scanning a codebase needs the triage
-table, not all eighteen entries; this file is for the moment a particular smell needs its full explanation.
+table, not all twenty-two entries; this file is for the moment a particular smell needs its full
+explanation.
 
 Each entry is framed the same way `design-smell-catalog.md` frames the whole catalog: the fix moves a
 defect class to an earlier, cheaper filter. See that file for the filter-stage framing and the triage table
@@ -32,6 +33,46 @@ mapping each entry to its row.
 - **Boolean parameter soup.** Methods with several boolean flags controlling behavior are a sign of hidden
   branching that's easy to under-test; consider whether the flags represent a state/strategy that should be
   named explicitly.
+- **Same decision axis branched-on repeatedly across methods/classes.** A switch/if-else keyed on the same
+  type code or enum (order type, worker role, notification channel) appears again in a second, third method
+  — not the identical branch bodies Sonar's duplication/`S1871` already catches, but the *same choice* being
+  made independently each time. A new case means finding and updating every copy, and a copy that's missed
+  keeps compiling and stays green, because nothing connects the copies to each other. Extracting one Strategy
+  per case (a shared interface, or a `Dictionary<TKey, Func<...>>` for a genuinely open/runtime-extensible
+  set) means each case is tested once, in isolation, and adding one adds one new case + one new test,
+  untouched by the rest. Prefer an exhaustive `switch` *expression* over a closed enum instead (see
+  "Non-exhaustive branching" above) when the set of cases is fixed — it keeps the compiler's exhaustiveness
+  check, which `Dictionary<TKey, Func<...>>` gives up. Reach for class-based Strategy over the dictionary
+  form when a case carries its own state, dependencies, or needs DI resolution. Not every repeated switch
+  is this smell — two call sites, or a set that never grows, may not be worth the indirection; the finding is
+  about *drift risk on change*, not switch statements in general.
+- **Cross-cutting concern inlined in business logic.** Retry loops, caching, telemetry, or auth checks
+  written directly inside a method that also contains the actual business rule force every test of the rule
+  to also arrange or mock the concern — a bug in the retry logic and a bug in the rule surface as the same
+  kind of test failure, and it's not obvious which broke. No analyzer suggests extracting the concern;
+  cognitive-complexity rules (`S3776`) only fire once the resulting method is already large, and never point
+  at *why*. Extracting a decorator behind the existing interface lets the core rule's tests stay ignorant of
+  the concern; the decorator itself only needs one test for the concern's own behavior (a retry actually
+  retries, a cache actually caches) — not a full re-test of the rule it wraps. Check first whether the
+  framework already provides this before hand-rolling one: ASP.NET Core middleware *is* Decorator for HTTP
+  pipelines, Polly supplies retry/circuit-breaker wrappers, and Scrutor adds decorator registration to
+  `Microsoft.Extensions.DependencyInjection`. This fits boundary-oriented, wrapper-shaped concerns
+  (retry/caching/telemetry/resilience) best; logging is often too cheap to be worth it, and authorization
+  frequently belongs in a framework policy or is inseparable from the business rule itself; judge those concerns
+  case by case rather than extracting on reflex.
+- **Same boolean business rule re-expressed inline in multiple syntactic forms.** A rule like "is this order
+  eligible for expedited shipping" appears as a LINQ `.Where(...)` predicate in one place and an `if` in
+  another — the same logic, but no analyzer flags it because the two copies aren't token-identical (Sonar's
+  copy-paste detection only catches literal/near-literal duplication, not the same rule expressed
+  differently). Each copy needs its own test, and the copies silently drift: a rule change updates one copy,
+  its test still passes, and the untouched copy becomes a latent bug that only a missed call site reveals.
+  A single named predicate (a method, or a small Specification-style object) tested once and called
+  everywhere the rule applies removes that drift outright. Reach for a full composable Specification
+  (`And`/`Or`/`Not`, or an `Expression<Func<T,bool>>` for translation into an EF/`IQueryable` provider) only
+  when the predicates are actually combined at runtime or need to run inside a query — for a handful of
+  plain call sites, a single static method is the same testability win without the extra machinery. Note a
+  plain `bool` method and `Expression<Func<T,bool>>` are *not* interchangeable when the predicate must be
+  translated by a LINQ provider rather than evaluated in memory.
 - **Missing seams at framework boundaries.** Direct instantiation of `HttpClient`, file I/O, or DB access
   inside business logic (instead of behind an injectable interface) forces every test through the real
   dependency or forces heavy mocking.
@@ -59,6 +100,31 @@ mapping each entry to its row.
   type — an enum, a discriminated-union-style hierarchy, or a record with a private constructor plus named
   factory methods — so the invalid combination fails to compile or fails to construct, rather than needing a
   runtime check (and a test for that check) everywhere the type is used.
+- **Error-prone or ambiguous construction.** A constructor (or factory function) with many parameters —
+  especially several of the same primitive type — invites positional-argument mixups that still compile and
+  can pass silently unless a test specifically probes for that swap. Related but distinct symptoms: required
+  vs. optional properties aren't distinguished in the signature; the object has several genuinely valid
+  "shapes" depending on a mode, forcing overloaded constructors or nullable fields that are only sometimes
+  required; or an invariant spans several properties together and can't be checked until all of them are
+  set, so a partially-built object is briefly (or permanently, if a caller forgets a step) invalid. Every
+  valid/invalid combination needs its own construction-path test under this shape, and a swapped same-typed
+  argument is a defect class ordinary code review is bad at catching.
+
+  The right fix depends on which of those shapes is present — don't reach for the same pattern every time:
+  - **Static factory method(s) + private constructor** — a few clearly named valid configurations exist
+    (`Order.CreateStandard(...)`, `Order.CreateExpedited(...)`). Cheapest fix, no new type, and each factory
+    can enforce its own invariant before returning.
+  - **Builder pattern** — a genuine mix of required and optional properties, or valid combinations too
+    numerous/varied to reduce to a small set of named factories, especially where construction is naturally
+    incremental (fluent/staged) and validation should happen once, at a single `Build()`/`Create()` call.
+  - **Factory Method / Abstract Factory** — the *type* to construct varies by context (polymorphic
+    creation), not just its parameter values.
+
+  This is a **production-code** recommendation and is distinct from
+  [`test-data-builders.md`](test-data-builders.md), which covers builders written to construct *test
+  subjects* — the two are easy to conflate since both are called "builders," but one is an API-design fix
+  shipped in the domain, the other is test infrastructure that never ships. Recommending one doesn't imply
+  the other is unnecessary or redundant.
 - **Large impure functions mixing decision logic with I/O.** When a method both decides something and
   performs a side effect (DB write, HTTP call, file write) in the same body, the decision logic can't be
   tested without the side effect. Extract the pure decision function and keep the impure shell thin enough
