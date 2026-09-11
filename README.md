@@ -25,7 +25,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
 - **Crow Simplification Review Agent** — Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.
-- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance, safe hash-based updates for copied Crow test-utility templates, and no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
+- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Shared validators use one exhaustive direct suite plus thin consumer wiring/context smoke tests. Behaviors that cannot be automated are classified and recorded in a durable `docs/testing/manual-coverage.md` register. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance, safe hash-based updates for copied Crow test-utility templates, and no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
 
 ## Available Skills
 
@@ -41,7 +41,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **crow-agent-skill-review** — Provides the review rubric for context/token optimization, deterministic automation, public release, and knowledge/execution separation.
 - **crow-simplification-review** — Reviews application changes or repositories for unnecessary complexity and reports `crow-debt:` markers without applying fixes.
 - **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions.
-- **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
+- **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, shared-validator test layering, manual-coverage classification and registers, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
 
 ## Bundled Resources
 
@@ -55,7 +55,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
 - `.apm/skills/crow-business-rules/` — Business rule extraction, reconciliation, and diagramming modules, the `business-rules-data.json` schema and synthetic example, Markdown and HTML report templates, B.C.-aligned stylesheet and facet-filtering script, pinned Mermaid configuration, deterministic renderer and validator, and their tests
-- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
+- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, shared-validator layering, manual-coverage classification and register template, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
@@ -95,7 +95,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.6.1 --global --target copilot
+apm install bcgov/crow#v0.6.2 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -109,7 +109,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.6.1 --global --target copilot
+apm install bcgov/crow#v0.6.2 --global --target copilot
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -150,20 +150,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.6.1.zip
+build/bcgov-crow-0.6.2.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.6.1.zip --global --target copilot
+apm install .\build\bcgov-crow-0.6.2.zip --global --target copilot
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.6.1.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.6.1
+Expand-Archive .\build\bcgov-crow-0.6.2.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.6.2
 ```
 
 ## Do not use multiple Crow installations at once

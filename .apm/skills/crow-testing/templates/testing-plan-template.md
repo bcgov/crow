@@ -14,6 +14,10 @@ Refresh at the end of every crow-testing engagement.
 
 - `testability-notes.md`
 
+## Manual coverage
+
+- `manual-coverage.md` — durable register for manual-only and deferred-automation scenarios.
+
 ## Feature scenarios
 
 <!-- One row per feature that has gone through the scenario-doc-first workflow. -->

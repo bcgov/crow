@@ -33,7 +33,13 @@ Complete this before opening the discussion:
 6. Record business terms and rules from code and documentation.
 7. If testability notes or a modernization handoff exist, compare platform-dependent findings with the current
    TFM and `LangVersion`. Revisit only findings whose recorded rationale depended on an older platform.
-8. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
+8. When shared validation is consumed by multiple model validators, load
+   `reference/shared-validator-testing.md` and plan one exhaustive direct suite plus thin wiring/context smoke
+   tests for every consumer.
+9. When an intended behavior is not covered by automation, load `manual-coverage.md`, classify it before
+   proposing a test, and maintain `docs/testing/manual-coverage.md` for manual-only or deferred-automation
+   scenarios. A coverage gap remains an automation task.
+10. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
    `reference/managed-template-lifecycle.md` only when installing one or when the audit reports drift.
    Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
    customized. Never regenerate `testing-plan.md` wholesale or discard its managed-template registry.
@@ -46,6 +52,8 @@ Complete this before opening the discussion:
    - specific feature, bug, or pain point: refresh organization guides if needed, then route to Step 5 or 6.
 3. Clarify ambiguous business terminology and write it to `docs/testing/testability-notes.md`; do not leave
    decisions only in chat.
+4. Record every manual-only or deferred-automation behavior in `docs/testing/manual-coverage.md`, using stable
+   scenario IDs and the required fields from `modules/manual-coverage.md`.
 
 ## Step 3: Discovery
 
@@ -84,6 +92,8 @@ is already current.
 8. When the feature crosses an independently versioned shared/canonical
    dependency, route the conditional contract and resilience guidance in
    `integration-tests.md`; do not expand this into E2E testing.
+9. For shared validators, do not duplicate exhaustive rule matrices in consumers; use the routed
+   shared-validator two-layer strategy.
 
 ## Step 6: Simple unit tests
 
@@ -105,7 +115,9 @@ trivial pass-through code.
 1. Run the existing linter or formatter first, then the smallest relevant test command.
 2. For scenario-gated work, compare implemented tests with every approved scenario and required assertion.
 3. Confirm all touched tests pass.
-4. Check the cross-family review cadence. If a review is performed, record its date, scope, model family, and
+4. Confirm manual-only and deferred-automation entries are included in the completion summary and that
+   unexecuted manual scenarios are not reported as fully tested.
+5. Check the cross-family review cadence. If a review is performed, record its date, scope, model family, and
    disposition in `testing-plan.md`.
 
 ## Output contract
@@ -116,6 +128,7 @@ Report:
 - testing documents created or updated;
 - tests changed and the paths, defect classes, or scenario IDs covered;
 - non-blocking testability findings and their handoff document;
+- manual-only and deferred-automation scenarios, with the register path and execution status;
 - remaining work;
 - exact validation commands and outcomes;
 - cross-check review status.

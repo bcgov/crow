@@ -64,13 +64,19 @@ locally is not.
      for a family of single-decision files (`fixtures.md`, `seeding-and-ids.md`, `cleanup-and-isolation.md`,
      `environment-and-diagnostics.md`); it fans out to whichever sibling matches the decision in front of
      you. Load the siblings one at a time, not as a set.
+   - `shared-validator-testing.md` — a validation contract is extracted into a shared validator and consumed
+     by two or more model validators; use one exhaustive direct suite plus thin consumer wiring/context smoke
+     tests.
 
    Never load a reference file speculatively.
 
    **Size discipline for future additions:** core modules stay small and answer "what do I do now";
    reference files are single-decision and independently loadable. A reference file that outgrows its one
    decision should be **split**, not allowed to grow.
-9. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
+9. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
+   deferred automation. Use [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md)
+   to create or update the consuming project's durable `docs/testing/manual-coverage.md` register.
+10. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md), and
    [`templates/modernization-handoff-template.md`](templates/modernization-handoff-template.md) when
@@ -79,12 +85,12 @@ locally is not.
    asks for a fuller writeup than a `testability-notes.md` row — see
    [`modules/reference/testability-improvements.md`](modules/reference/testability-improvements.md) §
    Handing off.
-10. When writing property-based tests in .NET, copy from
+11. When writing property-based tests in .NET, copy from
    [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
    [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) through the
    managed-template script rather than regenerating equivalent generator code or copying it without
    provenance.
-11. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
+12. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
    `modules/python/`), each with its own `unit-tests.md`/`integration-tests.md` pair mirroring
    `modules/dotnet/`, and route to them here. Never load unrelated technology modules.
 
