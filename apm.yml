@@ -1,5 +1,5 @@
 name: bcgov-crow
-version: 0.6.1
+version: 0.7.0
 description: Global agents and skills for accessible B.C. government UX, platform-aligned application architecture, secure development, architecture and security review, remediation, business rule documentation, executive reporting, Crow authoring, and releases.
 type: hybrid
 author:
@@ -14,6 +14,7 @@ keywords:
   - crow-security-review
   - crow-security-remediation
   - crow-testing
+  - crow-project-context
   - crow-business-rules
   - crow-executive-report
   - crow-agent-skill-authoring
@@ -21,10 +22,12 @@ keywords:
   - crow-simplification-review
   - crow-release
 targets:
+  - claude
+  - codex
   - copilot
+  - cursor
 includes:
   - .apm/agents
-  - .apm/hooks
   - .apm/skills/crow-application-architecture/SKILL.md
   - .apm/skills/crow-application-architecture/modules
   - .apm/skills/crow-application-development/SKILL.md
@@ -40,4 +43,5 @@ includes:
   - .apm/skills/crow-simplification-review
   - .apm/skills/crow-release
   - .apm/skills/crow-testing
+  - .apm/skills/crow-project-context
 dependencies: {}

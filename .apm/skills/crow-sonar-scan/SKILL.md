@@ -11,18 +11,41 @@ This skill contains instructions and automation guidelines for triggering SonarQ
 
 When a user requests a code analysis, quality gate check, or SonarQube scan, follow these preparation steps to construct the arguments for the scan tool.
 
-### 1. Configuration File Parsing (`sonar.config`)
-Always check the repository root for a `sonar.config` file first.
-If `sonar.config` is present, read it and extract the following parameters:
+### 1. Configuration File Parsing (`crow.config`)
+Load the `crow-project-context` skill when it is available, then check the
+repository root for `crow.config` first. Read the `sonar` section and extract
+the following parameters:
 - **Project Key** (`Project Key` or `projectKey`)
 - **Project Name** (`Project Name` or `projectName`)
 - **Version** (`Version` or `version`)
 - **Exclusions** (`Exclusions` or `exclusions`)
 
-Always read the repository root `.gitignore` as well. Resolve each non-comment `.gitignore` entry against the target repository and add it to the SonarQube exclusion configuration (`sonar.exclusions`) only when the entry matches at least one file or folder that actually exists in that repository. Do not add unmatched patterns from generic or default `.gitignore` files. Preserve any exclusions from `sonar.config` and merge both sets; translate `.gitignore` patterns to equivalent SonarQube glob patterns where their syntax differs.
+For migration compatibility, if `crow.config` is absent, check for the legacy
+root `sonar.config` and read its existing flat fields. Do not require or
+create `sonar.config` when `crow.config` is present. Resolve the two formats
+with this deterministic precedence:
+
+| Field | Resolution |
+|---|---|
+| `projectKey`, `projectName`, `version`, `useMsBuild`, `runTests`, `testsDir`, `solutionFile` | Use the non-empty value from `crow.config.sonar`; fill a missing value from legacy `sonar.config`. |
+| `exclusions` | Use the de-duplicated union of `crow.config.sonar.exclusions`, legacy exclusions, and matching `.gitignore` entries. |
+| conflicting non-empty scalar values | Use the Crow value and report the conflict, including both source files. |
+
+When both files exist, do not silently migrate or rewrite either file. The
+legacy file is a read-only compatibility source until the user explicitly asks
+to migrate it.
+
+The committed `crow.config` is public project memory. Never copy an internal
+Sonar URL, token, credential, absolute path, or provider response into it.
+Sonar endpoint and token values are supplied by the `sonar-mcp` server or the
+user's protected Raven/provider connection.
+
+Always read the repository root `.gitignore` as well. Resolve each non-comment `.gitignore` entry against the target repository and add it to the SonarQube exclusion configuration (`sonar.exclusions`) only when the entry matches at least one file or folder that actually exists in that repository. Do not add unmatched patterns from generic or default `.gitignore` files. Preserve configured exclusions and merge all sources; translate `.gitignore` patterns to equivalent SonarQube glob patterns where their syntax differs.
 
 ### 2. Version Resolution Fallback Chain
-If no version is specified in the `sonar.config` file, or if the `sonar.config` file is absent, determine the version using the following hierarchical fallback chain:
+If no version is specified in `crow.config`, the legacy `sonar.config`, or if
+both files are absent, determine the version using the following hierarchical
+fallback chain:
 
 1. **`version.txt`**: Look for a file named `version.txt` in:
    - The repository root
@@ -42,7 +65,8 @@ If no version is specified in the `sonar.config` file, or if the `sonar.config` 
    - Extract the inner text as the version.
 
 ### 3. Project Key & Name Fallbacks
-If the project key or project name cannot be resolved from the `sonar.config` file:
+If the project key or project name cannot be resolved from the resolved Sonar
+configuration:
 - **Project Key Fallback**: Use the repository folder name as the project key. Replace all spaces with dashes (`-`).
 - **Project Name Fallback**: Base the project name on the repository folder name, formatted with proper capitalization and spaces (e.g., `my-cool-project` becomes `My Cool Project`).
 

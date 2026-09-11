@@ -10,6 +10,11 @@ status:
 
 - `available` sources were read during this run;
 - `unavailable` sources are known to exist but could not be inspected.
+- For Raven sources, put the system, a stable public identifier when available,
+  or a symbolic `resource_ref` plus provider name in `location`; put the
+  retrieval date and query context in `note`. Never copy an internal URL,
+  private hostname, credential, or provider response into the report. Do not
+  add schema fields.
 
 Ask the report user once for guides or training documents when none were
 supplied and none are discoverable in the repository. Do not block the run on
