@@ -16,8 +16,11 @@ locations, or must record a resource supplied during the current task.
    project memory was unavailable; do not create it unless the user requests
    configuration memory.
 2. Treat the file as a public reference manifest. Resolve symbolic
-   `connection_ref` and `resource_ref` values through the declared MCP/Raven
-   provider connection, never by guessing an endpoint.
+   `connection_ref` and `resource_ref` values only when the calling agent
+   declares the corresponding read-only MCP/Raven provider tool. Agents
+   without that tool may use local and public descriptors, but must leave
+   private references unresolved and report what provider lookup is needed;
+   never guess an endpoint.
 3. Keep credentials, provider base URLs, internal hostnames, provider response
    bodies, and absolute paths out of the committed file. Raven's protected
    per-user credential storage remains the source for credentials and service

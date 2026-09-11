@@ -40,9 +40,12 @@ try {
     Invoke-Case -Name 'absolute path rejection' -Content ($valid + "`ndocumentation:`n  - path: C:\private.md`n") -ExpectedExit 1
     Invoke-Case -Name 'credential key rejection' -Content ($valid + "`ncredential:`n  token: value`n") -ExpectedExit 1
     Invoke-Case -Name 'reference format rejection' -Content ($valid + "`n  extra_ref: unresolved`n") -ExpectedExit 1
+    Invoke-Case -Name 'unclosed sequence rejection' -Content ($valid + "`ninvalid: [unclosed`n") -ExpectedExit 1
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force
     }
 }
+
+exit 0

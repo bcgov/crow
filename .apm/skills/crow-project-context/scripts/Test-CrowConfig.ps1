@@ -11,11 +11,93 @@ function Add-ConfigError {
     $errors.Add($Message)
 }
 
+function Test-YamlStructure {
+    param([string]$Content)
+
+    $delimiterStack = [System.Collections.Stack]::new()
+    $singleQuoted = $false
+    $doubleQuoted = $false
+    $escaped = $false
+    $lineNumber = 0
+
+    foreach ($line in ($Content -split "`r?`n")) {
+        $lineNumber++
+        if ($line -match '^\t+') {
+            Add-ConfigError "YAML indentation cannot use tabs (line $lineNumber)."
+        }
+
+        for ($index = 0; $index -lt $line.Length; $index++) {
+            $character = $line[$index]
+            if ($singleQuoted) {
+                if ($character -eq "'") {
+                    if ($index + 1 -lt $line.Length -and $line[$index + 1] -eq "'") {
+                        $index++
+                    }
+                    else {
+                        $singleQuoted = $false
+                    }
+                }
+                continue
+            }
+            if ($doubleQuoted) {
+                if ($escaped) {
+                    $escaped = $false
+                }
+                elseif ($character -eq '\') {
+                    $escaped = $true
+                }
+                elseif ($character -eq '"') {
+                    $doubleQuoted = $false
+                }
+                continue
+            }
+            if ($character -eq '#') {
+                break
+            }
+            if ($character -eq "'") {
+                $singleQuoted = $true
+                continue
+            }
+            if ($character -eq '"') {
+                $doubleQuoted = $true
+                continue
+            }
+            if ($character -eq '[' -or $character -eq '{') {
+                $delimiterStack.Push([pscustomobject]@{
+                    Character = $character
+                    Line = $lineNumber
+                })
+                continue
+            }
+            if ($character -eq ']' -or $character -eq '}') {
+                if ($delimiterStack.Count -eq 0) {
+                    Add-ConfigError "Unexpected YAML closing delimiter '$character' on line $lineNumber."
+                    continue
+                }
+                $opening = $delimiterStack.Pop()
+                $expected = if ($opening.Character -eq '[') { ']' } else { '}' }
+                if ($character -ne $expected) {
+                    Add-ConfigError "Mismatched YAML delimiter on line $lineNumber; expected '$expected'."
+                }
+            }
+        }
+    }
+
+    if ($singleQuoted -or $doubleQuoted) {
+        Add-ConfigError 'Unterminated YAML quoted value.'
+    }
+    while ($delimiterStack.Count -gt 0) {
+        $opening = $delimiterStack.Pop()
+        Add-ConfigError "Unclosed YAML delimiter '$($opening.Character)' from line $($opening.Line)."
+    }
+}
+
 if (-not (Test-Path -LiteralPath $ConfigPath -PathType Leaf)) {
     Add-ConfigError "Configuration file was not found: $ConfigPath"
 }
 else {
     $content = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $ConfigPath).Path)
+    Test-YamlStructure -Content $content
     $requiredSections = @(
         'spec_version:',
         '^project:',

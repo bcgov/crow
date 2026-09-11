@@ -301,15 +301,12 @@ Always reference and follow the **`crow-sonar-scan` skill** (`skill: "crow-sonar
    - **Missing Scanner Tool Fallback:** If `sonar_run_scan` is NOT available in session tools, **DO NOT** substitute or present potentially outdated historical scan results. Explicitly state in the document: `"SonarQube scan tool (sonar_run_scan) is not available in the current session. Skipping automated SAST scan step."` Mark Section 4 scan metrics as `Not Run — Scanner Tool Unavailable` and proceed immediately to Step 7.
 
 3. **Config & Parameter Resolution via `crow-sonar-scan` Skill:**
-   Follow all parameter resolution guidelines from the `crow-sonar-scan` skill:
-   - **Configuration File Parsing (`sonar.config`):** Check the repository root for `sonar.config`. If present, extract `projectKey`, `projectName`, `version`, and `exclusions`.
-   - **Version Resolution Fallback Chain:** If version is missing in `sonar.config` or `sonar.config` is absent, follow the skill's hierarchical fallback chain:
-     1. `version.txt` (in repository root or project subfolders)
-     2. `AssemblyInfo.cs` (`AssemblyVersion` or `AssemblyFileVersion` attribute)
-     3. `*.csproj` (`<Version>` or `<AssemblyVersion>` XML element)
-   - **Project Key & Name Fallbacks:** If unresolvable from `sonar.config`:
-     - *Project Key Fallback:* Repository folder name with spaces replaced by dashes (`-`).
-     - *Project Name Fallback:* Repository folder name formatted with proper capitalization and spaces.
+   Follow all parameter resolution guidelines from the `crow-sonar-scan`
+   skill. It reads `crow.config` and its `sonar` section first, falls back to
+   legacy `sonar.config` only when needed, merges exclusions with matching
+   `.gitignore` entries, and reports conflicting values. The skill owns the
+   version fallback chain, project key/name fallbacks, and protected scan
+   parameter rules; do not duplicate or override them here.
    - **Scan Execution:** Execute `sonar_run_scan` with its required direct parameters: the resolved `projectKey`, absolute `projectDir`, and `branch` bound to the active workspace branch discovered in Step 6.1. Add supported optional tool parameters only as required by the skill. Pass the resolved project name through `extraArgs` as one `-Dsonar.projectName=<resolved project name>` array element. When a non-empty version was resolved, pass it as one `-Dsonar.projectVersion=<resolved version>` array element; omit that property rather than inventing a version or passing a placeholder. Do not pass `projectName`, `version`, or `projectVersion` as direct tool parameters.
 
 4. **Dynamic Branch Parameter Binding:**

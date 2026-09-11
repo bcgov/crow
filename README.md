@@ -120,10 +120,11 @@ Install Crow globally:
 apm install bcgov/crow#v0.7.0 --global --target copilot
 ```
 
-Choose `claude`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
+Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
 apm install bcgov/crow#v0.7.0 --global --target claude
+apm install bcgov/crow#v0.7.0 --global --target codex
 apm install bcgov/crow#v0.7.0 --global --target cursor
 ```
 
@@ -141,6 +142,7 @@ To install a local development checkout without directly copying the repository 
 
 ```powershell
 apm install C:\path\to\crow --global --target claude
+apm install C:\path\to\crow --global --target codex
 apm install C:\path\to\crow --global --target copilot
 apm install C:\path\to\crow --global --target cursor
 ```
@@ -174,6 +176,7 @@ The archive contains a standard `plugin.json`, so it can be installed through AP
 
 ```powershell
 apm install .\build\bcgov-crow-0.7.0.zip --global --target claude
+apm install .\build\bcgov-crow-0.7.0.zip --global --target codex
 apm install .\build\bcgov-crow-0.7.0.zip --global --target copilot
 apm install .\build\bcgov-crow-0.7.0.zip --global --target cursor
 ```

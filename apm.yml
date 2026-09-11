@@ -23,6 +23,7 @@ keywords:
   - crow-release
 targets:
   - claude
+  - codex
   - copilot
   - cursor
 includes:
