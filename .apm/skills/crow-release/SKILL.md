@@ -72,6 +72,9 @@ required reviewers for the `release` environment before enabling tag creation.
 The workflow uses
 [`New-CrowReleaseDraft.ps1`](scripts/New-CrowReleaseDraft.ps1) for deterministic
 version, provenance, packaging, checksum, tag, and draft-release checks.
+The workflow pins the APM installer to an immutable commit and verifies its
+SHA-256 before execution. Checkout credentials are not persisted; the final
+tag push receives a scoped token only for the release step.
 
 ## Approval-gated draft release
 
@@ -96,6 +99,11 @@ maintainer approval before a second job:
 6. Creates the GitHub release as a draft with the standard title, rendered
    notes, ZIP, and checksum.
 7. Verifies the draft release and uploaded asset names and digests.
+
+Release notes may be supplied as reviewed input. When no reviewed notes are
+provided, the draft script generates notes from the validated release commit
+subjects and current artifact values; it does not embed a version-specific
+release narrative in reusable code.
 
 This workflow adds a human decision point before tag creation and draft-release
 creation. It must not infer a version from a branch name, silently overwrite

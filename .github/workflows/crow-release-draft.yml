@@ -16,6 +16,10 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  APM_INSTALLER_URL: https://raw.githubusercontent.com/microsoft/apm/a4fb4283c53fbef75078f38e017f430c3dbe1aea/install.sh
+  APM_INSTALLER_SHA256: fac1b4e1bd306b057e72af24608d1773afade2fbcd5e8466790c03e460d24ef5
+
 jobs:
   prepare:
     name: Prepare release candidate
@@ -47,6 +51,7 @@ jobs:
         with:
           ref: ${{ steps.context.outputs.commit_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Read package version
         id: version
@@ -61,7 +66,11 @@ jobs:
       - name: Install APM
         shell: bash
         run: |
-          curl -sSL https://aka.ms/apm-unix | sh
+          installer="$RUNNER_TEMP/apm-install.sh"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "$installer" "$APM_INSTALLER_URL"
+          echo "$APM_INSTALLER_SHA256  $installer" | sha256sum --check --strict
+          sh "$installer"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.apm/bin" >> "$GITHUB_PATH"
 
@@ -107,17 +116,22 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.commit_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Download candidate metadata
         uses: actions/download-artifact@v5
         with:
           name: crow-release-candidate-${{ needs.prepare.outputs.version }}
-          path: candidate
+          path: build/crow-release-candidate
 
       - name: Install APM
         shell: bash
         run: |
-          curl -sSL https://aka.ms/apm-unix | sh
+          installer="$RUNNER_TEMP/apm-install.sh"
+          curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
+            --output "$installer" "$APM_INSTALLER_URL"
+          echo "$APM_INSTALLER_SHA256  $installer" | sha256sum --check --strict
+          sh "$installer"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
           echo "$HOME/.apm/bin" >> "$GITHUB_PATH"
 
@@ -126,8 +140,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          $tokenBytes = [System.Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GH_TOKEN")
+          $encodedToken = [Convert]::ToBase64String($tokenBytes)
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader'
+          $env:GIT_CONFIG_VALUE_0 = "AUTHORIZATION: basic $encodedToken"
           & ./.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1 `
             -Version '${{ needs.prepare.outputs.version }}' `
             -CommitSha '${{ needs.prepare.outputs.commit_sha }}' `
             -Repository '${{ github.repository }}' `
-            -CandidateDirectory ./candidate
+            -CandidateDirectory ./build/crow-release-candidate

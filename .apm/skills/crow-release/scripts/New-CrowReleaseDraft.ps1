@@ -17,6 +17,8 @@ param(
 
     [string]$CandidateDirectory,
 
+    [string]$ReleaseNotesPath,
+
     [switch]$PrepareOnly
 )
 
@@ -162,6 +164,86 @@ function Assert-Candidate {
     }
 }
 
+function Get-ReleaseCommitSubjects {
+    param(
+        [string]$Root,
+        [string]$ApprovedCommit,
+        [string]$ReleaseTag
+    )
+
+    $releaseTags = @(
+        & git -C $Root tag --list 'v*' --sort=-version:refname |
+            Where-Object { $_ -ne $ReleaseTag }
+    )
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to list previous release tags.'
+    }
+
+    $range = if ($releaseTags.Count -gt 0) {
+        "$($releaseTags[0])..$ApprovedCommit"
+    }
+    else {
+        $ApprovedCommit
+    }
+    $subjects = @(
+        & git -C $Root log $range --format='%s' --no-merges
+    )
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Unable to read release commit subjects.'
+    }
+
+    @($subjects | ForEach-Object {
+        $subject = $_.Trim() -replace '[\r\n]+', ' '
+        if (-not [string]::IsNullOrWhiteSpace($subject)) {
+            $subject
+        }
+    })
+}
+
+function Get-GeneratedReleaseNotes {
+    param(
+        [string]$Root,
+        [string]$ApprovedCommit,
+        [string]$ReleaseTag,
+        [string]$Template,
+        [string]$ReleaseVersion,
+        [string]$ArchiveHash
+    )
+
+    $subjects = @(Get-ReleaseCommitSubjects -Root $Root -ApprovedCommit $ApprovedCommit -ReleaseTag $ReleaseTag)
+    if ($subjects.Count -eq 0) {
+        $subjects = @('No non-merge commit subjects were available for this release.')
+    }
+    $change1 = $subjects[0]
+    $change2 = if ($subjects.Count -gt 1) {
+        $subjects[1]
+    }
+    else {
+        'Additional changes are represented by the validated release commit.'
+    }
+    $replacements = @{
+        '{{VERSION}}' = $ReleaseVersion
+        '{{RELEASE_TYPE}}' = 'Automated release draft.'
+        '{{SUMMARY}}' = "Generated from the validated commit $($ApprovedCommit.Substring(0, 12))."
+        '{{HIGHLIGHT_1}}' = 'Validated the source commit, package metadata, and release provenance.'
+        '{{HIGHLIGHT_2}}' = "Captured $($subjects.Count) non-merge commit subject(s) since the previous release tag when available."
+        '{{HIGHLIGHT_3}}' = 'Built the archive and checksum from the validated source.'
+        '{{CHANGE_1}}' = $change1
+        '{{CHANGE_2}}' = $change2
+        '{{ASSET_VALIDATION_RESULT}}' = 'passed.'
+        '{{PACKAGE_DRY_RUN_RESULT}}' = 'passed.'
+        '{{ARCHIVE_INSPECTION_RESULT}}' = 'passed; no evidence or local-state entries.'
+        '{{ADDITIONAL_VALIDATION}}' = 'Exact version consistency and approved-commit checks passed.'
+        '{{SHA256}}' = $ArchiveHash
+        '{{COMPATIBILITY_AND_SCOPE}}' = 'No compatibility claims are inferred beyond the validated package contents.'
+        '{{UPGRADE_NOTES}}' = "Review the generated draft for release-specific details before publishing v$ReleaseVersion."
+    }
+    foreach ($placeholder in $replacements.Keys) {
+        $Template = $Template.Replace($placeholder, $replacements[$placeholder])
+    }
+    return $Template
+}
+
 $root = (Resolve-Path $RepoRoot).Path
 $tag = "v$Version"
 $outputPath = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
@@ -257,26 +339,19 @@ if ($CandidateDirectory) {
     $notesContent = $notesContent.Replace($candidateMetadata.ArchiveSha256, $archiveHash)
 }
 else {
-    $notesContent = [System.IO.File]::ReadAllText($templatePath)
-    $replacements = @{
-        '{{VERSION}}' = $Version
-        '{{RELEASE_TYPE}}' = 'Patch release.'
-        '{{SUMMARY}}' = 'This patch release adds approval-gated draft release preparation and standardizes release artifacts.'
-        '{{HIGHLIGHT_1}}' = 'Added deterministic version, provenance, archive, and checksum validation.'
-        '{{HIGHLIGHT_2}}' = 'Added protected-environment draft release preparation after successful main-branch validation.'
-        '{{HIGHLIGHT_3}}' = 'Standardized release notes and package artifact handling.'
-        '{{CHANGE_1}}' = 'Added a draft-only release operation that never publishes automatically.'
-        '{{CHANGE_2}}' = 'Added commit, tag, release, and artifact race-safety checks.'
-        '{{ASSET_VALIDATION_RESULT}}' = 'passed with 0 errors and 0 warnings.'
-        '{{PACKAGE_DRY_RUN_RESULT}}' = 'passed.'
-        '{{ARCHIVE_INSPECTION_RESULT}}' = 'passed; no evidence or local-state entries.'
-        '{{ADDITIONAL_VALIDATION}}' = 'Exact version consistency and approved-commit checks passed.'
-        '{{SHA256}}' = $archiveHash
-        '{{COMPATIBILITY_AND_SCOPE}}' = 'No breaking installation or invocation changes are introduced.'
-        '{{UPGRADE_NOTES}}' = "Install the matching v$Version tag. Review the draft release before publishing."
+    if ($ReleaseNotesPath) {
+        $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
+        $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
+        $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
     }
-    foreach ($placeholder in $replacements.Keys) {
-        $notesContent = $notesContent.Replace($placeholder, $replacements[$placeholder])
+    else {
+        $notesContent = Get-GeneratedReleaseNotes `
+            -Root $root `
+            -ApprovedCommit $CommitSha `
+            -ReleaseTag $tag `
+            -Template ([System.IO.File]::ReadAllText($templatePath)) `
+            -ReleaseVersion $Version `
+            -ArchiveHash $archiveHash
     }
 }
 

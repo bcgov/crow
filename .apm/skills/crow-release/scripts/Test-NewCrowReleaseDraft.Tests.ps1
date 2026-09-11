@@ -5,8 +5,14 @@ $ErrorActionPreference = 'Stop'
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "crow-release-draft-tests-$([guid]::NewGuid())"
 $remoteRoot = Join-Path ([System.IO.Path]::GetTempPath()) "crow-release-draft-remote-$([guid]::NewGuid()).git"
-$testVersion = '0.7.1'
+$testVersion = (Get-Content (Join-Path $sourceRoot 'apm.yml') |
+    Select-String '^version:' |
+    ForEach-Object { $_.Line -replace '^version:\s*', '' }).Trim()
+if ($testVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+    throw "Unable to resolve a semantic package version from $sourceRoot\apm.yml."
+}
 $testTag = "v$testVersion"
+$testArchiveName = "bcgov-crow-$testVersion.zip"
 $fakeReleaseCreated = $false
 
 function Invoke-Git {
@@ -101,7 +107,18 @@ function global:gh {
             return
         }
         if ($Arguments -contains '--json') {
-            Write-Output '{"isDraft":true,"tagName":"v0.7.1","name":"BCGov Crow - v0.7.1","assets":[{"name":"bcgov-crow-0.7.1.zip"},{"name":"bcgov-crow-0.7.1.zip.sha256"}]}'
+            $tag = $Arguments[2]
+            $version = $tag -replace '^v', ''
+            $release = [ordered]@{
+                isDraft = $true
+                tagName = $tag
+                name = "BCGov Crow - v$version"
+                assets = @(
+                    [ordered]@{ name = "bcgov-crow-$version.zip" }
+                    [ordered]@{ name = "bcgov-crow-$version.zip.sha256" }
+                )
+            }
+            Write-Output ($release | ConvertTo-Json -Compress)
         }
         $global:LASTEXITCODE = 0
         return
@@ -171,8 +188,8 @@ try {
     $tamperedCandidate = Join-Path $tempRoot 'build/tampered'
     Copy-Item -LiteralPath $outputDirectory -Destination $tamperedCandidate -Recurse
     [System.IO.File]::WriteAllText(
-        (Join-Path $tamperedCandidate 'bcgov-crow-0.7.1.zip.sha256'),
-        ("$('0' * 64)  bcgov-crow-0.7.1.zip`n"))
+        (Join-Path $tamperedCandidate "$testArchiveName.sha256"),
+        ("$('0' * 64)  $testArchiveName`n"))
     Assert-ThrowsLike {
         & $testScript -Version $testVersion -CommitSha $commitSha -RepoRoot $tempRoot `
             -OutputDirectory (Join-Path $tempRoot 'build/tampered-final') `
@@ -206,7 +223,7 @@ try {
     & $testScript -Version $testVersion -CommitSha $commitSha -RepoRoot $tempRoot `
         -OutputDirectory (Join-Path $tempRoot 'build/final') `
         -CandidateDirectory $outputDirectory
-    $tagCommit = (& git -C $tempRoot rev-parse 'v0.7.1^{}').Trim()
+    $tagCommit = (& git -C $tempRoot rev-parse "$testTag^{}").Trim()
     if (-not $global:fakeReleaseCreated -or $tagCommit -ne $commitSha) {
         throw 'Draft release verification did not create the expected annotated tag.'
     }
