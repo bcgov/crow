@@ -39,6 +39,5 @@
     ".apm/skills/crow-simplification-review",
     ".apm/skills/crow-release",
     ".apm/skills/crow-testing"
-  ],
-  "hooks": "hooks.json"
+  ]
 }

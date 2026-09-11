@@ -78,11 +78,11 @@ Use the **Crow Agent & Skill Authoring Agent** to make changes, the **Crow Agent
 
 # Installation
 
-CROW is distributed as both an APM package and a Copilot CLI plugin.
+CROW is distributed as an APM package and a Copilot CLI plugin.
 
 ## Option 1: APM package (recommended)
 
-APM installs Crow globally without requiring the Crow Git repository to occupy the Copilot profile directory. APM manages the package cache and installs the agents and skills into the user-level Copilot locations.
+APM installs Crow globally without requiring the Crow Git repository to occupy a client profile directory. APM manages the package cache and installs the agents and skills into the selected client's user-level locations.
 
 ### On Windows
 
@@ -112,20 +112,29 @@ Install Crow globally:
 apm install bcgov/crow#v0.6.1 --global --target copilot
 ```
 
+Choose `claude`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
+
+```text
+apm install bcgov/crow#v0.6.1 --global --target claude
+apm install bcgov/crow#v0.6.1 --global --target cursor
+```
+
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
 
 ```text
 <normal checkout, optional>       C:\Users\<user>\src\crow
 APM package cache                 C:\Users\<user>\.apm
-Global Copilot agents and skills C:\Users\<user>\.copilot
+Global client agents and skills   <client-specific user profile>
 ```
 
-Verify the installation in Copilot CLI with `/agent` and `/skills list`, or restart VS Code and select a Crow agent from the agent picker.
+Verify the installation using the selected client's normal agent or skill discovery commands.
 
-To install a local development checkout without placing it in `.copilot`:
+To install a local development checkout without directly copying the repository into a client profile:
 
 ```powershell
+apm install C:\path\to\crow --global --target claude
 apm install C:\path\to\crow --global --target copilot
+apm install C:\path\to\crow --global --target cursor
 ```
 
 ## Option 2: Copilot CLI plugin
@@ -156,7 +165,9 @@ build/bcgov-crow-0.6.1.zip
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
+apm install .\build\bcgov-crow-0.6.1.zip --global --target claude
 apm install .\build\bcgov-crow-0.6.1.zip --global --target copilot
+apm install .\build\bcgov-crow-0.6.1.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
@@ -165,19 +176,3 @@ For Copilot CLI, unpack and install the plugin directory:
 Expand-Archive .\build\bcgov-crow-0.6.1.zip -DestinationPath .\build\copilot
 copilot plugin install .\build\copilot\bcgov-crow-0.6.1
 ```
-
-## Do not use multiple Crow installations at once
-
-An APM installation and an old manual Git checkout both install Crow's agents and skills at user scope. Installing both can create duplicate names with precedence that depends on the client and version. A manual Git checkout at `%USERPROFILE%\.copilot` also mixes Crow files with Copilot runtime state.
-
-To check which method(s) are active:
-
-- Inspect the APM installation with `apm` and check whether Crow agents are present in the user-level Copilot profile.
-- A `.git` directory at `~/.copilot/.git` or `%USERPROFILE%\.copilot\.git` indicates the old manual-clone installation.
-
-If multiple installations are present, remove all but one:
-
-- Remove Crow through the APM installation workflow, or
-- Move the old Git checkout out of `%USERPROFILE%\.copilot` / `~/.copilot`.
-
-The bundled session-start hook warns only when it detects the old manual Git checkout, so APM's normal global installation does not produce a false duplicate warning.

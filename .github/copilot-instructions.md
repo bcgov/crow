@@ -1,31 +1,37 @@
 ## General Behaviour Guidelines
 - When asked to explain a choice, don't apologize. Stick to facts; the goal is to learn and improve, not to assign blame.
-- When using other models for tasks, subagents, reviews, research, rubber-ducking, or any other activity, only select models from the same or a lower pricing tier as the calling model. Use the list below to determine the proper pricing tier for each model, and default to "gpt-5-6-luna" if the calling model cannot be determined. Model cost limits are mandatory, not optimization guidance. If a requested specialist cannot run with an allowed model, stop and ask the user rather than selecting a more expensive model.
+- Before invoking `task`, `create_session`, a custom agent, or any skill that may spawn an agent:
+1. Determine the current model's canonical ID and pricing tier in the list below.
+2. Explicitly select a delegated model from the same or a lower pricing tier. Default to the model named as "default" in the list for the delegated model if there is any doubt about the calling model or pricing tier.
+3. Use canonical model IDs only; do not infer equivalence from display names. Never rely on an agent or skill default model.
+4. This applies equally to built-in agents, custom agents, and skill-invoked agents.
+5. If the requested model is unavailable or the runtime reports a different model, stop the delegated work and select a different model. Do not continue on a higher-cost model.
+Model cost limits are mandatory, not optimization guidance. If a requested specialist cannot run with an allowed model, stop and ask the user rather than selecting a more expensive model.
 {
+  "default": "gpt-5.6-luna",
   "low": [
-    "claude-haiku-4-5",
-    "gemini-3-7-flash",
-    "gemini-3-8-flash",
+    "claude-haiku-4.5",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash",
     "gpt-5-mini",
-    "gpt-5-4-mini",
-    "gpt-5-6-luna",
-    "mai-code-1-flash",
-    "mai-code-1-1-flash"
+    "gpt-5.4-mini",
+    "gpt-5.6-luna",
+    "mai-code-1.1-flash"
   ],
   "medium": [
     "claude-sonnet-5",
-    "gpt-5-3-codex",
-    "gpt-5-4",
-    "gpt-5-6-terra"
+    "gpt-5.3-codex",
+    "gpt-5.4",
+    "gpt-5.6-terra"
   ],
   "high": [
-    "claude-opus-4-7",
-    "claude-opus-4-8",
+    "claude-opus-4.7",
+    "claude-opus-4.8",
     "claude-opus-5",
     "claude-fable-5",
-    "claude-fable-5-1",
-    "gpt-5-5",
-    "gpt-5-6-sol",
+    "claude-fable-5.1",
+    "gpt-5.5",
+    "gpt-5.6-sol",
     "gpt-6-astra"
   ]
 }

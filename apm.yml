@@ -21,10 +21,11 @@ keywords:
   - crow-simplification-review
   - crow-release
 targets:
+  - claude
   - copilot
+  - cursor
 includes:
   - .apm/agents
-  - .apm/hooks
   - .apm/skills/crow-application-architecture/SKILL.md
   - .apm/skills/crow-application-architecture/modules
   - .apm/skills/crow-application-development/SKILL.md
