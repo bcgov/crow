@@ -10,6 +10,9 @@ status:
 
 - `available` sources were read during this run;
 - `unavailable` sources are known to exist but could not be inspected.
+- For Raven sources, put the system, stable external identifier, and URL or
+  location in `location`; put the retrieval date and query context in `note`.
+  Do not add schema fields or copy sensitive source content into the report.
 
 Ask the report user once for guides or training documents when none were
 supplied and none are discoverable in the repository. Do not block the run on

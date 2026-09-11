@@ -46,8 +46,11 @@ Business Rule Documentation Agent.
    ambiguous or too large for responsible analysis in one run, stop and ask the
    report user to split it, and record the split.
 2. Inventory documentation. Ask once for guides or training material when none
-   were supplied and none are discoverable. Continue and report the gap when
-   they are unavailable.
+   were supplied and none are discoverable. When the business-rules agent has
+   Raven read-only access, search the scoped Jira, Confluence, and Azure DevOps
+   sources before reporting them as unavailable. Read the returned source
+   rather than relying on search snippets. Continue and report the gap when
+   the sources are unavailable or inaccessible.
 3. Extract rules from the implementation and data model using the routed
    extraction module. Record each rule with citations, facets, and a
    reconciliation classification. State which parts of the analysis were
