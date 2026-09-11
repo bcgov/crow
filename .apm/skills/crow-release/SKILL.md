@@ -11,8 +11,11 @@ Use this skill when preparing or publishing a Crow release.
 
 1. Read [`modules/versioning.md`](modules/versioning.md).
 2. Read `../crow-agent-skill-authoring/modules/public-release.md`.
-3. Inspect the complete release diff and the latest published tag.
-4. Do not load unrelated domain modules.
+3. Read `../crow-project-context/SKILL.md` and `crow.config` when present to
+   identify existing public CI/CD and release references. Never copy private
+   pipeline URLs or credentials into the repository.
+4. Inspect the complete release diff and the latest published tag.
+5. Do not load unrelated domain modules.
 
 ## Prepare a version
 

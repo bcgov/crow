@@ -7,6 +7,13 @@ description: 'Provides detection modules for manual security review, including a
 
 This skill bundles the detection pattern modules used by the **Crow Security & Dependency Review Agent** and the **Crow Security Remediation Agent** to guide manual code analysis for vulnerability classes that SonarQube and similar SAST tools miss (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
 
+Before external resource discovery, load
+[`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) and read
+the target repository's `crow.config`. Use its provider references to find
+pipelines, work items, related repositories, and documentation. When a user
+supplies a resource URL, update the manifest only with a verified public
+descriptor or symbolic reference; never write an internal URL or secret.
+
 ## When to use this skill
 
 Load the relevant module(s) below when performing a manual security review or remediating a finding, based on the target repository's tech stack and the vulnerability class in question. Each module documents concrete per-framework patterns (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI, React, Vue, Angular, Svelte, etc.).

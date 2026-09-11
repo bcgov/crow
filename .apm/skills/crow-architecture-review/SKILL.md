@@ -9,13 +9,14 @@ Use this skill with the Crow Architecture Review Agent when creating or updating
 
 ## Context-efficient loading
 
-1. Always load [`modules/repository-classification.md`](modules/repository-classification.md).
-2. After classification, load [`modules/repository-inspection.md`](modules/repository-inspection.md) and [`architecture-template.md`](architecture-template.md).
-3. Load [`modules/update-mode.md`](modules/update-mode.md) only when an architecture document already exists.
-4. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
-5. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
-6. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
-7. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
+1. Load [`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) and read `crow.config` when the repository has one.
+2. Always load [`modules/repository-classification.md`](modules/repository-classification.md).
+3. After classification, load [`modules/repository-inspection.md`](modules/repository-inspection.md) and [`architecture-template.md`](architecture-template.md).
+4. Load [`modules/update-mode.md`](modules/update-mode.md) only when an architecture document already exists.
+5. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
+6. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
+7. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
+8. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
 
 Do not load monorepo or update guidance when the observable repository state does not require it.
 
