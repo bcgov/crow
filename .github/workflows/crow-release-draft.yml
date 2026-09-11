@@ -1,0 +1,133 @@
+name: Crow release draft
+
+on:
+  workflow_run:
+    workflows:
+      - Crow asset validation
+    types:
+      - completed
+    branches:
+      - main
+
+concurrency:
+  group: crow-release-draft-${{ github.event.workflow_run.head_sha }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    name: Prepare release candidate
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      commit_sha: ${{ steps.context.outputs.commit_sha }}
+
+    steps:
+      - name: Resolve approved source
+        id: context
+        shell: pwsh
+        env:
+          VALIDATED_COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          $commitSha = $env:VALIDATED_COMMIT_SHA
+          if ($commitSha -notmatch '^[0-9a-fA-F]{40}$') {
+            throw 'The source commit must be a full 40-character SHA.'
+          }
+          "commit_sha=$commitSha" >> $env:GITHUB_OUTPUT
+
+      - name: Check out exact main commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.context.outputs.commit_sha }}
+          fetch-depth: 0
+
+      - name: Read package version
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content ./apm.yml | Select-String '^version:' | ForEach-Object { $_.Line -replace '^version:\s*', '' }).Trim()
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw "Invalid package version: $version"
+          }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Install APM
+        shell: bash
+        run: |
+          curl -sSL https://aka.ms/apm-unix | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.apm/bin" >> "$GITHUB_PATH"
+
+      - name: Verify APM
+        shell: pwsh
+        run: |
+          if ($null -eq (Get-Command apm -ErrorAction SilentlyContinue)) {
+            throw 'APM was not installed.'
+          }
+
+      - name: Prepare candidate
+        shell: pwsh
+        run: |
+          & ./.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1 `
+            -Version '${{ steps.version.outputs.version }}' `
+            -CommitSha '${{ steps.context.outputs.commit_sha }}' `
+            -OutputDirectory ./build/crow-release-candidate `
+            -PrepareOnly
+
+      - name: Upload candidate
+        uses: actions/upload-artifact@v4
+        with:
+          name: crow-release-candidate-${{ steps.version.outputs.version }}
+          path: build/crow-release-candidate
+          if-no-files-found: error
+          retention-days: 7
+
+  draft:
+    name: Create approved draft release
+    needs: prepare
+    if: needs.prepare.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: release
+    permissions:
+      contents: write
+      actions: read
+
+    steps:
+      - name: Check out exact approved commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare.outputs.commit_sha }}
+          fetch-depth: 0
+
+      - name: Download candidate metadata
+        uses: actions/download-artifact@v5
+        with:
+          name: crow-release-candidate-${{ needs.prepare.outputs.version }}
+          path: candidate
+
+      - name: Install APM
+        shell: bash
+        run: |
+          curl -sSL https://aka.ms/apm-unix | sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.apm/bin" >> "$GITHUB_PATH"
+
+      - name: Create and verify draft release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          & ./.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1 `
+            -Version '${{ needs.prepare.outputs.version }}' `
+            -CommitSha '${{ needs.prepare.outputs.commit_sha }}' `
+            -Repository '${{ github.repository }}' `
+            -CandidateDirectory ./candidate
