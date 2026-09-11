@@ -133,12 +133,31 @@ function global:gh {
 }
 
 try {
+    # Build an independent fixture so the CI checkout's shallow history is not pushed.
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
-    & git clone --local $sourceRoot $tempRoot | Out-Null
+    & git -C $tempRoot init | Out-Null
     if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to create the release test checkout.'
+        throw 'Unable to initialize the release test checkout.'
     }
-    Invoke-Git $tempRoot @('switch', '-C', 'main')
+    Invoke-Git $tempRoot @('checkout', '-b', 'main')
+
+    $trackedFiles = @(& git -C $sourceRoot ls-files)
+    if ($LASTEXITCODE -ne 0 -or $trackedFiles.Count -eq 0) {
+        throw 'Unable to enumerate tracked files for the release test checkout.'
+    }
+    foreach ($relativePath in $trackedFiles) {
+        $sourcePath = Join-Path $sourceRoot $relativePath
+        $targetPath = Join-Path $tempRoot $relativePath
+        $targetParent = Split-Path -Parent $targetPath
+        if (-not (Test-Path -LiteralPath $targetParent)) {
+            New-Item -ItemType Directory -Path $targetParent -Force | Out-Null
+        }
+        Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Force
+    }
+    Invoke-Git $tempRoot @('config', 'user.name', 'Crow Release Tests')
+    Invoke-Git $tempRoot @('config', 'user.email', 'crow-release-tests@example.invalid')
+    Invoke-Git $tempRoot @('add', '-A')
+    Invoke-Git $tempRoot @('commit', '-m', 'Test fixture base')
 
     $copiedFiles = @(
         '.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1',
@@ -158,14 +177,12 @@ try {
         Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Recurse -Force
     }
 
-    Invoke-Git $tempRoot @('config', 'user.name', 'Crow Release Tests')
-    Invoke-Git $tempRoot @('config', 'user.email', 'crow-release-tests@example.invalid')
     Invoke-Git $tempRoot @('add', '-A')
-    Invoke-Git $tempRoot @('commit', '-m', 'Test release draft')
+    Invoke-Git $tempRoot @('commit', '--allow-empty', '-m', 'Test release draft')
     $commitSha = (& git -C $tempRoot rev-parse HEAD).Trim()
 
     & git init --bare $remoteRoot | Out-Null
-    Invoke-Git $tempRoot @('remote', 'set-url', 'origin', $remoteRoot)
+    Invoke-Git $tempRoot @('remote', 'add', 'origin', $remoteRoot)
     Invoke-Git $tempRoot @('push', '--set-upstream', 'origin', 'main')
 
     $outputDirectory = Join-Path $tempRoot 'build/candidate'
