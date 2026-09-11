@@ -46,7 +46,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **crow-agent-skill-authoring** — Guides consistent agent and skill creation or updates, with templates and deterministic package validation.
 - **crow-agent-skill-review** — Provides the review rubric for context/token optimization, deterministic automation, public release, and knowledge/execution separation.
 - **crow-simplification-review** — Reviews application changes or repositories for unnecessary complexity and reports `crow-debt:` markers without applying fixes.
-- **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions.
+- **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions, including an approval-gated draft-release workflow.
 - **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
 - **crow-project-context** — Reads and safely maintains public-reference project memory in `crow.config`, including Sonar settings and provider-neutral CI/CD, work-tracking, repository, and documentation references.
 
@@ -67,7 +67,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
-- `.apm/skills/crow-release/` — Semantic-version policy and deterministic version/package/release scripts
+- `.apm/skills/crow-release/` — Semantic-version policy, release-notes template, and deterministic version/package/draft-release scripts
 
 ## Agent and skill authoring conventions
 
@@ -83,6 +83,19 @@ Crow separates knowledge from execution so agents load less context and mechanic
 Existing routed application, UX, and security modules already follow the knowledge side of this pattern, while the executive-report renderer is an example of deterministic execution. When updating older large agents, prefer extracting reusable policy into routed modules and replacing repeated document checks or transformations with scripts rather than adding more unconditional prompt context.
 
 Use the **Crow Agent & Skill Authoring Agent** to make changes, the **Crow Agent & Skill Review Agent** for an independent review, and include a rubber-duck review before release. The reusable version classification and user-decision rules are defined in the [Crow versioning policy](.apm/skills/crow-release/modules/versioning.md).
+
+## Automated draft releases
+
+After successful Crow asset validation on `main`, the
+[Crow release draft workflow](.github/workflows/crow-release-draft.yml)
+prepares a candidate from the exact merged commit. A protected `release`
+environment must have required reviewers configured. Approval causes the
+workflow to rebuild and verify the archive, create the matching annotated tag,
+and create a GitHub draft release with the ZIP, SHA-256 file, and standardized
+release notes. It never publishes the release automatically. SonarQube runs
+on an internal server and is therefore not invoked by GitHub-hosted workflows;
+the local agent running the release skill must run Sonar through the Sonar MCP
+server and verify the quality gate before approving the draft.
 
 # Installation
 
@@ -103,7 +116,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.7.0 --global --target copilot
+apm install bcgov/crow#v0.7.1 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -117,15 +130,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.7.0 --global --target copilot
+apm install bcgov/crow#v0.7.1 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.7.0 --global --target claude
-apm install bcgov/crow#v0.7.0 --global --target codex
-apm install bcgov/crow#v0.7.0 --global --target cursor
+apm install bcgov/crow#v0.7.1 --global --target claude
+apm install bcgov/crow#v0.7.1 --global --target codex
+apm install bcgov/crow#v0.7.1 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -169,21 +182,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.7.0.zip
+build/bcgov-crow-0.7.1.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.7.0.zip --global --target claude
-apm install .\build\bcgov-crow-0.7.0.zip --global --target codex
-apm install .\build\bcgov-crow-0.7.0.zip --global --target copilot
-apm install .\build\bcgov-crow-0.7.0.zip --global --target cursor
+apm install .\build\bcgov-crow-0.7.1.zip --global --target claude
+apm install .\build\bcgov-crow-0.7.1.zip --global --target codex
+apm install .\build\bcgov-crow-0.7.1.zip --global --target copilot
+apm install .\build\bcgov-crow-0.7.1.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.7.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.7.0
+Expand-Archive .\build\bcgov-crow-0.7.1.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.7.1
 ```

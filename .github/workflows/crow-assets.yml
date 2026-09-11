@@ -2,6 +2,9 @@ name: Crow asset validation
 
 on:
   pull_request:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
@@ -53,6 +56,11 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
+
+      - name: Test release draft preparation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-NewCrowReleaseDraft.Tests.ps1
 
       - name: Test testing-template synchronization
         shell: pwsh
