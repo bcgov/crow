@@ -9,6 +9,12 @@ Use this skill when the task is to discover the business rules an application
 actually enforces, reconcile them with available documentation, and publish the
 result. One run covers one application or service.
 
+When the target repository contains `crow.config`, load
+[`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) before
+inventorying external documentation or work items. Use its symbolic provider
+references to locate scoped sources, and retain only safe descriptors when a
+user supplies a new locator.
+
 ## Context-efficient loading
 
 1. Load [`modules/evidence-and-extraction.md`](modules/evidence-and-extraction.md)

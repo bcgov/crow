@@ -1,0 +1,61 @@
+---
+name: crow-project-context
+description: Reads and safely maintains the public-reference project memory in a repository-root crow.config file, including Sonar settings and provider-neutral CI/CD, work-tracking, repository, and documentation references.
+---
+
+# Crow Project Context
+
+Use this skill when an agent needs project-specific Sonar settings, CI/CD
+references, work-tracking locations, related repositories, documentation
+locations, or must record a resource supplied during the current task.
+
+## Workflow
+
+1. Read `crow.config` at the target repository root before searching external
+   systems. If it is absent, continue with normal discovery and report that
+   project memory was unavailable; do not create it unless the user requests
+   configuration memory.
+2. Treat the file as a public reference manifest. Resolve symbolic
+   `connection_ref` and `resource_ref` values through the declared MCP/Raven
+   provider connection, never by guessing an endpoint.
+3. Keep credentials, provider base URLs, internal hostnames, provider response
+   bodies, and absolute paths out of the committed file. Raven's protected
+   per-user credential storage remains the source for credentials and service
+   endpoints; Crow does not duplicate or manage those secrets.
+4. When a user explicitly asks to remember or update a pipeline, board, ticket,
+   repository, or documentation locator, verify it with the relevant read-only
+   provider tool, then record only a safe public descriptor or a symbolic
+   reference in `crow.config`. A locator supplied only for an immediate lookup
+   is not authorization to mutate project memory; ask for confirmation when
+   the user's intent is ambiguous.
+   Store private locator values in Raven/provider storage or the user-local
+   `~/.crow/crow.config.local` overlay. Never copy an internal URL into the
+   repository, logs, reports, or tool arguments that are not required for the
+   lookup.
+5. Preserve existing entries and unknown fields. Record provenance with
+   `discovered.source`, `discovered.recorded_by`, and `discovered.recorded_on`
+   when adding a learned reference. If the safe descriptor cannot be derived,
+   leave the resource unresolved and report the required private
+   `resource_ref`; do not invent a value.
+6. Stop on malformed configuration, conflicting resource identities, an
+   attempted secret or internal-URL write, or a provider lookup that cannot be
+   independently verified. Surface the failure instead of silently falling
+   back to an unscoped endpoint.
+
+## Raven-aligned secret boundary
+
+Raven stores credentials outside the repository in protected, user-scoped
+storage (DPAPI on Windows and the macOS login Keychain). Crow configuration
+must refer to those connections by name, such as `raven:github` or
+`raven:work-tracking`, and must not contain their values. The public manifest
+is project memory, not a credential store.
+
+## Completion gate
+
+- `crow.config` was read or its absence was reported.
+- Provider lookups used the configured connection and were read-only unless
+  the calling workflow explicitly authorizes a mutation.
+- Any learned reference is sanitized, provenance-marked, and safe for a public
+  repository.
+- A `crow.config` mutation was explicitly requested or confirmed by the user.
+- No internal URL, secret, response body, absolute path, or token was written.

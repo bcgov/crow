@@ -4,6 +4,12 @@ CROW is a collection of agents, skills, and detection modules for agentic softwa
 
 This repo is supposed to be used together with the RAVEN MCP server collection: [RAVEN](https://github.com/bcgov/raven)
 
+Each reviewed repository may keep public project memory in a root `crow.config`
+file. The manifest records Sonar settings and safe references to CI/CD,
+work-tracking, related repositories, and documentation. Internal URLs and
+credentials remain in Raven/provider connections or a user-local overlay and
+must never be committed.
+
 ## MCP Prerequisites
 
 CROW's architecture and security agents use **codebase-memory-mcp** for fast code intelligence, indexing, and cross-file analysis. Install it in your VS Code user profile (global scope) using [Install codebase-memory-mcp globally](vscode:mcp/install?%7B%22name%22%3A%22codebase-memory-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22codebase-memory-mcp%22%5D%7D).
@@ -42,6 +48,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **crow-simplification-review** — Reviews application changes or repositories for unnecessary complexity and reports `crow-debt:` markers without applying fixes.
 - **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions.
 - **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
+- **crow-project-context** — Reads and safely maintains public-reference project memory in `crow.config`, including Sonar settings and provider-neutral CI/CD, work-tracking, repository, and documentation references.
 
 ## Bundled Resources
 
@@ -56,6 +63,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
 - `.apm/skills/crow-business-rules/` — Business rule extraction, reconciliation, and diagramming modules, the `business-rules-data.json` schema and synthetic example, Markdown and HTML report templates, B.C.-aligned stylesheet and facet-filtering script, pinned Mermaid configuration, deterministic renderer and validator, and their tests
 - `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
+- `.apm/skills/crow-project-context/` — Public-safe `crow.config` reading, provider resolution, Raven-aligned secret boundaries, sanitized project-memory update rules, and deterministic config validation
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
@@ -95,7 +103,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.6.1 --global --target copilot
+apm install bcgov/crow#v0.7.0 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -109,14 +117,14 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.6.1 --global --target copilot
+apm install bcgov/crow#v0.7.0 --global --target copilot
 ```
 
 Choose `claude`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.6.1 --global --target claude
-apm install bcgov/crow#v0.6.1 --global --target cursor
+apm install bcgov/crow#v0.7.0 --global --target claude
+apm install bcgov/crow#v0.7.0 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -159,20 +167,20 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.6.1.zip
+build/bcgov-crow-0.7.0.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.6.1.zip --global --target claude
-apm install .\build\bcgov-crow-0.6.1.zip --global --target copilot
-apm install .\build\bcgov-crow-0.6.1.zip --global --target cursor
+apm install .\build\bcgov-crow-0.7.0.zip --global --target claude
+apm install .\build\bcgov-crow-0.7.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.7.0.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.6.1.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.6.1
+Expand-Archive .\build\bcgov-crow-0.7.0.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.7.0
 ```

@@ -9,6 +9,13 @@ Use this skill whenever the current task is defining, planning, or implementing 
 homework (repo scan) before opening any discussion. CI/CD pipeline authoring is out of scope; running tests
 locally is not.
 
+Read `crow.config` through
+[`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) when it
+exists. Use its CI/CD references to understand existing validation pipelines,
+but do not author or mutate pipeline configuration under this skill. If a user
+supplies a pipeline locator, persist only a safe descriptor or symbolic
+reference according to that skill.
+
 ## Context-efficient loading
 
 1. Load [`modules/workflow.md`](modules/workflow.md) and

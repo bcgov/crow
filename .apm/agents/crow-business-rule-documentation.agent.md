@@ -59,6 +59,10 @@ follow its routing: [`SKILL.md`](../skills/crow-business-rules/SKILL.md). The
 skill owns the extraction, reconciliation, diagramming, and rendering detail.
 Load `crow-bcgov-ux` only when changing the bundled HTML shell, CSS, or
 JavaScript assets themselves, not when producing a report.
+Load `crow-project-context` when `crow.config` exists. Use its documentation
+and work-tracking references as discovery hints. Record a newly supplied
+locator only when the user explicitly asks to remember it, and only as a safe
+descriptor or symbolic reference.
 
 ## Core Principles
 

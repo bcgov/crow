@@ -12,6 +12,10 @@ through test design, implementation, documentation, and verification.
 Load the `crow-testing` skill before inspecting or changing anything. Follow its context-efficient routing and
 load [`modules/workflow.md`](../skills/crow-testing/modules/workflow.md) for the engagement workflow. The skill
 owns detailed testing guidance, technology defaults, reference material, and document templates.
+Read `crow.config` through `crow-project-context` when present so existing
+validation pipelines can be referenced without authoring CI/CD configuration.
+Persist only safe public descriptors or symbolic references when the user
+explicitly asks to remember new pipeline details.
 
 ## Core Principles
 

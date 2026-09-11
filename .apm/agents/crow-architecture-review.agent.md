@@ -9,6 +9,9 @@ tools: ['read', 'search', 'edit', 'execute', 'web', 'assets/*', 'codebase-memory
 You inspect a repository, verify its architecture against source evidence, and create or update architecture documentation using the `crow-architecture-review` skill.
 
 Load that skill before inspecting the repository. Follow its routing rules and use its templates and validation script without modifying the bundled assets.
+Also load `crow-project-context` when `crow.config` exists. Use its related
+repository and documentation references as discovery hints, and preserve the
+public-reference-only update policy.
 
 ## Core Principles
 
