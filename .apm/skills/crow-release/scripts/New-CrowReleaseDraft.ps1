@@ -164,129 +164,6 @@ function Assert-Candidate {
     }
 }
 
-function Get-PreviousReleaseTag {
-    param(
-        [string]$Root
-    )
-
-    $releaseTags = @(& git -C $Root tag --list 'v*' --sort=-version:refname)
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to list previous release tags.'
-    }
-    return @($releaseTags | Where-Object { $_ -match '^v[0-9]+\.[0-9]+\.[0-9]+$' } | Select-Object -First 1)
-}
-
-function Get-ReleaseType {
-    param(
-        [string]$Version,
-        [string]$PreviousTag
-    )
-
-    if ($PreviousTag -notmatch '^v([0-9]+)\.([0-9]+)\.([0-9]+)$') {
-        return 'Release'
-    }
-
-    $previousMajor = [int]$Matches[1]
-    $previousMinor = [int]$Matches[2]
-    $versionParts = $Version -split '\.'
-    if ([int]$versionParts[0] -gt $previousMajor) {
-        return 'Major release'
-    }
-    if ([int]$versionParts[1] -gt $previousMinor) {
-        return 'Minor release'
-    }
-    return 'Patch release'
-}
-
-function Get-ChangedReleasePaths {
-    param(
-        [string]$Root,
-        [string]$ApprovedCommit,
-        [string]$PreviousTag
-    )
-
-    $changedPaths = if ($PreviousTag) {
-        @(& git -C $Root diff --name-only "$PreviousTag..$ApprovedCommit")
-    }
-    else {
-        @(& git -C $Root diff-tree --root --no-commit-id --name-only -r $ApprovedCommit)
-    }
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to read changed release paths.'
-    }
-    return @($changedPaths | ForEach-Object {
-        $path = $_.Trim()
-        if (-not [string]::IsNullOrWhiteSpace($path)) {
-            $path
-        }
-    })
-}
-
-function Get-GeneratedReleaseNotes {
-    param(
-        [string]$Root,
-        [string]$ApprovedCommit,
-        [string]$Template,
-        [string]$ReleaseVersion,
-        [string]$ArchiveHash
-    )
-
-    $previousTag = Get-PreviousReleaseTag -Root $Root
-    $changedPaths = @(Get-ChangedReleasePaths `
-        -Root $Root `
-        -ApprovedCommit $ApprovedCommit `
-        -PreviousTag $previousTag)
-    $releaseType = Get-ReleaseType -Version $ReleaseVersion -PreviousTag $previousTag
-    $highlights = [System.Collections.Generic.List[string]]::new()
-    $changes = [System.Collections.Generic.List[string]]::new()
-
-    if ($changedPaths -match '(^|/)\.github/workflows/crow-release-draft\.yml$' -or
-        $changedPaths -match 'New-CrowReleaseDraft\.ps1$') {
-        $highlights.Add('Adds approval-gated draft release automation from the exact validated main-branch commit.')
-        $changes.Add('Prepares, verifies, and packages a release candidate before protected-environment approval.')
-    }
-    if ($changedPaths -match 'crow-release.*(SKILL\.md|templates/)' -or
-        $changedPaths -match 'release-notes-template\.md$') {
-        $highlights.Add('Standardizes release-note structure and artifact naming for reviewable GitHub drafts.')
-        $changes.Add('Documents release validation, provenance, packaging, and draft-publication controls.')
-    }
-    if ($changedPaths -match 'Test-NewCrowReleaseDraft\.Tests\.ps1$' -or
-        $changedPaths -match 'crow-assets\.yml$') {
-        $highlights.Add('Expands cross-platform regression coverage for provenance, checksums, tags, and draft assets.')
-        $changes.Add('Validates release preparation in an independent fixture that works with shallow CI checkouts.')
-    }
-    if ($changedPaths -match '(^|/)(README\.md|apm\.yml|plugin\.json)$') {
-        $changes.Add('Synchronizes package metadata, installation guidance, and release references.')
-    }
-    if ($highlights.Count -eq 0) {
-        $highlights.Add("Updates the Crow package through a $releaseType focused on the changed release assets.")
-    }
-    if ($changes.Count -eq 0) {
-        $changes.Add('Updates the validated package contents described by the release diff.')
-    }
-    $replacements = @{
-        '{{VERSION}}' = $ReleaseVersion
-        '{{RELEASE_TYPE}}' = $releaseType
-        '{{SUMMARY}}' = if ($changedPaths -match 'crow-release|crow-assets\.yml') {
-            'Improves Crow release automation with protected draft creation, deterministic artifacts, and stronger validation.'
-        }
-        else {
-            "Updates the Crow package with $($changedPaths.Count) changed release-scoped file(s)."
-        }
-        '{{HIGHLIGHTS}}' = (($highlights | ForEach-Object { "- $_" }) -join "`n")
-        '{{CHANGES}}' = (($changes | ForEach-Object { "- $_" }) -join "`n")
-        '{{ASSET_VALIDATION_RESULT}}' = 'passed.'
-        '{{PACKAGE_DRY_RUN_RESULT}}' = 'passed.'
-        '{{ARCHIVE_INSPECTION_RESULT}}' = 'passed; no evidence or local-state entries.'
-        '{{ADDITIONAL_VALIDATION}}' = 'Exact version consistency and approved-commit checks passed.'
-        '{{SHA256}}' = $ArchiveHash
-    }
-    foreach ($placeholder in $replacements.Keys) {
-        $Template = $Template.Replace($placeholder, $replacements[$placeholder])
-    }
-    return $Template
-}
-
 $root = (Resolve-Path $RepoRoot).Path
 $tag = "v$Version"
 $outputPath = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
@@ -310,7 +187,6 @@ $notesPath = Join-Path $outputPath 'release-notes.md'
 $metadataPath = Join-Path $outputPath 'crow-release-metadata.json'
 $validatorPath = Join-Path $root '.apm/skills/crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1'
 $releaseGuardsPath = Join-Path $root '.apm/skills/crow-release/scripts/Test-CrowReleaseGuards.ps1'
-$templatePath = Join-Path $root '.apm/skills/crow-release/templates/release-notes-template.md'
 
 Assert-VersionReferences -Root $root -ExpectedVersion $Version
 
@@ -382,19 +258,12 @@ if ($CandidateDirectory) {
     $notesContent = $notesContent.Replace($candidateMetadata.ArchiveSha256, $archiveHash)
 }
 else {
-    if ($ReleaseNotesPath) {
-        $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
-        $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
-        $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
+    if ([string]::IsNullOrWhiteSpace($ReleaseNotesPath)) {
+        throw 'ReleaseNotesPath is required. Generate and review release notes with an LLM before preparing the release.'
     }
-    else {
-        $notesContent = Get-GeneratedReleaseNotes `
-            -Root $root `
-            -ApprovedCommit $CommitSha `
-            -Template ([System.IO.File]::ReadAllText($templatePath)) `
-            -ReleaseVersion $Version `
-            -ArchiveHash $archiveHash
-    }
+    $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
+    $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
+    $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
 }
 
 if ($notesContent -match '\{\{[A-Z0-9_]+\}\}' -or $notesContent -match '(?i)\bhttps?://') {

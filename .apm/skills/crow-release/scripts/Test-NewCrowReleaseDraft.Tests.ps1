@@ -5,6 +5,7 @@ $ErrorActionPreference = 'Stop'
 $sourceRoot = (Resolve-Path (Join-Path $PSScriptRoot '../../../..')).Path
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) "crow-release-draft-tests-$([guid]::NewGuid())"
 $remoteRoot = Join-Path ([System.IO.Path]::GetTempPath()) "crow-release-draft-remote-$([guid]::NewGuid()).git"
+$reviewedNotesPath = Join-Path ([System.IO.Path]::GetTempPath()) "crow-release-notes-$([guid]::NewGuid()).md"
 $testVersion = (Get-Content (Join-Path $sourceRoot 'apm.yml') |
     Select-String '^version:' |
     ForEach-Object { $_.Line -replace '^version:\s*', '' }).Trim()
@@ -187,10 +188,47 @@ try {
     Invoke-Git $tempRoot @('remote', 'add', 'origin', $remoteRoot)
     Invoke-Git $tempRoot @('push', '--set-upstream', 'origin', 'main')
 
+    [System.IO.File]::WriteAllText($reviewedNotesPath, @'
+# BCGov Crow - v{{VERSION}}
+
+## Release type
+
+Patch release
+
+## Summary
+
+Reviewed release notes supplied by the release author.
+
+## Highlights
+
+- Describes the user-facing outcome of the validated release changes.
+
+## Changes
+
+- Includes the reviewed release details rather than commit subjects.
+
+## Validation
+
+- Crow asset validation: passed.
+- Package dry run: passed.
+- Archive inspection: passed.
+- Additional checks: passed.
+
+## Artifacts
+
+- Archive: `bcgov-crow-{{VERSION}}.zip`
+- SHA-256 file: `bcgov-crow-{{VERSION}}.zip.sha256`
+- SHA-256: `{{SHA256}}`
+
+## Installation
+
+Install the packaged archive with APM.
+'@)
+
     $outputDirectory = Join-Path $tempRoot 'build/candidate'
     $testScript = Join-Path $tempRoot '.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1'
     & $testScript -Version $testVersion -CommitSha $commitSha -RepoRoot $tempRoot `
-        -OutputDirectory $outputDirectory -PrepareOnly
+        -OutputDirectory $outputDirectory -ReleaseNotesPath $reviewedNotesPath -PrepareOnly
 
     $metadataPath = Join-Path $outputDirectory 'crow-release-metadata.json'
     $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
@@ -198,11 +236,16 @@ try {
         throw 'Candidate metadata does not match the test release.'
     }
     $notes = Get-Content -LiteralPath (Join-Path $outputDirectory 'release-notes.md') -Raw
-    if ($notes -match 'Automated release draft|Compatibility and scope|Upgrade notes' -or
-        $notes -notmatch 'approval-gated draft release automation') {
-        throw 'Generated release notes do not contain meaningful release-specific content.'
+    if ($notes -notmatch 'Reviewed release notes supplied by the release author' -or
+        $notes -match 'Compatibility and scope|Upgrade notes') {
+        throw 'Reviewed release notes were not preserved.'
     }
-    Write-Host 'Passed: prepares a candidate with exact provenance'
+    Write-Host 'Passed: prepares a candidate with reviewed release notes'
+
+    Assert-ThrowsLike {
+        & $testScript -Version $testVersion -CommitSha $commitSha -RepoRoot $tempRoot `
+            -OutputDirectory (Join-Path $tempRoot 'build/missing-notes') -PrepareOnly
+    } 'ReleaseNotesPath is required' 'Rejects missing reviewed notes'
 
     Assert-ThrowsLike {
         & $testScript -Version $testVersion -CommitSha ('0' * 40) -RepoRoot $tempRoot `
@@ -259,6 +302,9 @@ finally {
     }
     if (Test-Path -LiteralPath $remoteRoot) {
         Remove-Item -LiteralPath $remoteRoot -Recurse -Force
+    }
+    if (Test-Path -LiteralPath $reviewedNotesPath) {
+        Remove-Item -LiteralPath $reviewedNotesPath -Force
     }
     Remove-Item Function:\apm -ErrorAction SilentlyContinue
     Remove-Item Function:\gh -ErrorAction SilentlyContinue
