@@ -25,16 +25,21 @@ release draft. Replace every `{{PLACEHOLDER}}`, remove unused bullets, and
 retain the following stable contract:
 
 - title: `BCGov Crow - v<version>`;
-- release type and concise summary;
-- highlights or changes;
+- semver-accurate release type and a concise outcome-focused summary;
+- highlights and changes that describe capabilities or behavior, not commit
+  subjects or validation mechanics;
 - validation results;
 - exactly the versioned ZIP and SHA-256 artifacts;
-- installation instructions;
-- compatibility and upgrade notes when relevant.
+- installation instructions.
 
 The tag, title, archive name, checksum filename, and version must agree. Do not
 copy generated release text without reviewing it for internal URLs, credentials,
 environment-specific paths, private repository names, or unsupported claims.
+Release notes must be authored and reviewed by an LLM-assisted release author
+or a maintainer using the complete release diff. Do not use raw commit
+subjects, changed-file heuristics, or other deterministic summaries as
+highlights, summary, or changes. Store the reviewed notes at
+`.github/release-notes/v<version>.md` in the release commit.
 
 ## Prepare a version
 
@@ -71,7 +76,8 @@ rebuilds and creates a verified GitHub draft release after approval. Configure
 required reviewers for the `release` environment before enabling tag creation.
 The workflow uses
 [`New-CrowReleaseDraft.ps1`](scripts/New-CrowReleaseDraft.ps1) for deterministic
-version, provenance, packaging, checksum, tag, and draft-release checks.
+version, provenance, packaging, checksum, tag, draft-release, and reviewed-note
+validation. The script does not generate release narrative text.
 The workflow pins the APM installer to an immutable commit and verifies its
 SHA-256 before execution. Checkout credentials are not persisted; the final
 tag push receives a scoped token only for the release step.
@@ -100,10 +106,10 @@ maintainer approval before a second job:
    notes, ZIP, and checksum.
 7. Verifies the draft release and uploaded asset names and digests.
 
-Release notes may be supplied as reviewed input. When no reviewed notes are
-provided, the draft script generates notes from the validated release commit
-subjects and current artifact values; it does not embed a version-specific
-release narrative in reusable code.
+The release workflow requires the reviewed notes file from the exact validated
+commit. The script substitutes only the version and final archive checksum
+placeholders and rejects missing, unresolved, URL-bearing, or inconsistent
+notes. It does not generate narrative text.
 
 This workflow adds a human decision point before tag creation and draft-release
 creation. It must not infer a version from a branch name, silently overwrite

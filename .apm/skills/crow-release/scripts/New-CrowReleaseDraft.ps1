@@ -164,86 +164,6 @@ function Assert-Candidate {
     }
 }
 
-function Get-ReleaseCommitSubjects {
-    param(
-        [string]$Root,
-        [string]$ApprovedCommit,
-        [string]$ReleaseTag
-    )
-
-    $releaseTags = @(
-        & git -C $Root tag --list 'v*' --sort=-version:refname |
-            Where-Object { $_ -ne $ReleaseTag }
-    )
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to list previous release tags.'
-    }
-
-    $range = if ($releaseTags.Count -gt 0) {
-        "$($releaseTags[0])..$ApprovedCommit"
-    }
-    else {
-        $ApprovedCommit
-    }
-    $subjects = @(
-        & git -C $Root log $range --format='%s' --no-merges
-    )
-    if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to read release commit subjects.'
-    }
-
-    @($subjects | ForEach-Object {
-        $subject = $_.Trim() -replace '[\r\n]+', ' '
-        if (-not [string]::IsNullOrWhiteSpace($subject)) {
-            $subject
-        }
-    })
-}
-
-function Get-GeneratedReleaseNotes {
-    param(
-        [string]$Root,
-        [string]$ApprovedCommit,
-        [string]$ReleaseTag,
-        [string]$Template,
-        [string]$ReleaseVersion,
-        [string]$ArchiveHash
-    )
-
-    $subjects = @(Get-ReleaseCommitSubjects -Root $Root -ApprovedCommit $ApprovedCommit -ReleaseTag $ReleaseTag)
-    if ($subjects.Count -eq 0) {
-        $subjects = @('No non-merge commit subjects were available for this release.')
-    }
-    $change1 = $subjects[0]
-    $change2 = if ($subjects.Count -gt 1) {
-        $subjects[1]
-    }
-    else {
-        'Additional changes are represented by the validated release commit.'
-    }
-    $replacements = @{
-        '{{VERSION}}' = $ReleaseVersion
-        '{{RELEASE_TYPE}}' = 'Automated release draft.'
-        '{{SUMMARY}}' = "Generated from the validated commit $($ApprovedCommit.Substring(0, 12))."
-        '{{HIGHLIGHT_1}}' = 'Validated the source commit, package metadata, and release provenance.'
-        '{{HIGHLIGHT_2}}' = "Captured $($subjects.Count) non-merge commit subject(s) since the previous release tag when available."
-        '{{HIGHLIGHT_3}}' = 'Built the archive and checksum from the validated source.'
-        '{{CHANGE_1}}' = $change1
-        '{{CHANGE_2}}' = $change2
-        '{{ASSET_VALIDATION_RESULT}}' = 'passed.'
-        '{{PACKAGE_DRY_RUN_RESULT}}' = 'passed.'
-        '{{ARCHIVE_INSPECTION_RESULT}}' = 'passed; no evidence or local-state entries.'
-        '{{ADDITIONAL_VALIDATION}}' = 'Exact version consistency and approved-commit checks passed.'
-        '{{SHA256}}' = $ArchiveHash
-        '{{COMPATIBILITY_AND_SCOPE}}' = 'No compatibility claims are inferred beyond the validated package contents.'
-        '{{UPGRADE_NOTES}}' = "Review the generated draft for release-specific details before publishing v$ReleaseVersion."
-    }
-    foreach ($placeholder in $replacements.Keys) {
-        $Template = $Template.Replace($placeholder, $replacements[$placeholder])
-    }
-    return $Template
-}
-
 $root = (Resolve-Path $RepoRoot).Path
 $tag = "v$Version"
 $outputPath = if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
@@ -267,7 +187,6 @@ $notesPath = Join-Path $outputPath 'release-notes.md'
 $metadataPath = Join-Path $outputPath 'crow-release-metadata.json'
 $validatorPath = Join-Path $root '.apm/skills/crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1'
 $releaseGuardsPath = Join-Path $root '.apm/skills/crow-release/scripts/Test-CrowReleaseGuards.ps1'
-$templatePath = Join-Path $root '.apm/skills/crow-release/templates/release-notes-template.md'
 
 Assert-VersionReferences -Root $root -ExpectedVersion $Version
 
@@ -339,20 +258,12 @@ if ($CandidateDirectory) {
     $notesContent = $notesContent.Replace($candidateMetadata.ArchiveSha256, $archiveHash)
 }
 else {
-    if ($ReleaseNotesPath) {
-        $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
-        $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
-        $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
+    if ([string]::IsNullOrWhiteSpace($ReleaseNotesPath)) {
+        throw 'ReleaseNotesPath is required. Generate and review release notes with an LLM before preparing the release.'
     }
-    else {
-        $notesContent = Get-GeneratedReleaseNotes `
-            -Root $root `
-            -ApprovedCommit $CommitSha `
-            -ReleaseTag $tag `
-            -Template ([System.IO.File]::ReadAllText($templatePath)) `
-            -ReleaseVersion $Version `
-            -ArchiveHash $archiveHash
-    }
+    $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
+    $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
+    $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
 }
 
 if ($notesContent -match '\{\{[A-Z0-9_]+\}\}' -or $notesContent -match '(?i)\bhttps?://') {
