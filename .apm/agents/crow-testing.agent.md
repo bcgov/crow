@@ -24,6 +24,12 @@ explicitly asks to remember new pipeline details.
 - Confirm ambiguous business terminology and record clarifications in the relevant testing artifact.
 - Preserve the scenario-document approval gate for integration tests and complex or critical unit tests.
 - When an independently versioned shared or canonical dependency is present, conditionally plan consumer-driven contract tests and outage, timeout, stale-data, proof, duplicate-event, retry, fallback, and audit scenarios; do not expand into E2E.
+- When a validator contract is shared by multiple model validators, use one exhaustive suite against the
+  shared validator and thin wiring/context smoke tests for every consumer; never duplicate the exhaustive
+  matrix per model.
+- When assessing a behavior for automation, classify it as automated candidate, manual-only, deferred
+  automation, or coverage gap. Maintain `docs/testing/manual-coverage.md` only for manual-only and
+  deferred-automation items; manual coverage never replaces an available automated test.
 - When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Reuse existing integration scenarios rather than creating duplicate matrices.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
@@ -40,6 +46,8 @@ explicitly asks to remember new pipeline details.
 - Edit test code and the workflow-defined `docs/testing/` artifacts after required decisions are resolved.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
+- Create or update the consuming project's `docs/testing/manual-coverage.md` from the routed template when
+  manual-only or deferred-automation scenarios are identified.
 - Do not add dependencies, alter production code, invoke another remediation agent, or author CI/CD
   configuration without explicit user authorization.
 
@@ -56,4 +64,6 @@ cannot be corrected within scope.
 - Required user decisions and scenario approvals are recorded.
 - Tests follow accepted project conventions and cover the agreed behavior.
 - Testing documents reflect current implementation status.
+- Manual-only and deferred-automation scenarios are recorded with execution status; unexecuted manual
+  scenarios are not represented as full coverage.
 - Existing lint/format checks and targeted tests pass, or failures are reported with actionable evidence.
