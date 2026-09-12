@@ -177,6 +177,8 @@ try {
         Copy-Item -LiteralPath $sourcePath -Destination $targetPath -Recurse -Force
     }
 
+    Add-Content -LiteralPath (Join-Path $tempRoot '.github/workflows/crow-release-draft.yml') `
+        -Value '# release-note generation fixture change'
     Invoke-Git $tempRoot @('add', '-A')
     Invoke-Git $tempRoot @('commit', '--allow-empty', '-m', 'Test release draft')
     $commitSha = (& git -C $tempRoot rev-parse HEAD).Trim()
@@ -194,6 +196,11 @@ try {
     $metadata = Get-Content -LiteralPath $metadataPath -Raw | ConvertFrom-Json
     if ($metadata.Version -ne $testVersion -or $metadata.CommitSha -ne $commitSha.ToLowerInvariant()) {
         throw 'Candidate metadata does not match the test release.'
+    }
+    $notes = Get-Content -LiteralPath (Join-Path $outputDirectory 'release-notes.md') -Raw
+    if ($notes -match 'Automated release draft|Compatibility and scope|Upgrade notes' -or
+        $notes -notmatch 'approval-gated draft release automation') {
+        throw 'Generated release notes do not contain meaningful release-specific content.'
     }
     Write-Host 'Passed: prepares a candidate with exact provenance'
 

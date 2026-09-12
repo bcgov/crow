@@ -25,16 +25,20 @@ release draft. Replace every `{{PLACEHOLDER}}`, remove unused bullets, and
 retain the following stable contract:
 
 - title: `BCGov Crow - v<version>`;
-- release type and concise summary;
-- highlights or changes;
+- semver-accurate release type and a concise outcome-focused summary;
+- highlights and changes that describe capabilities or behavior, not commit
+  subjects or validation mechanics;
 - validation results;
 - exactly the versioned ZIP and SHA-256 artifacts;
-- installation instructions;
-- compatibility and upgrade notes when relevant.
+- installation instructions.
 
 The tag, title, archive name, checksum filename, and version must agree. Do not
 copy generated release text without reviewing it for internal URLs, credentials,
 environment-specific paths, private repository names, or unsupported claims.
+Use a reviewed release-notes input when the release needs domain-specific
+wording. Otherwise, the draft generator classifies the version from the prior
+tag and derives user-facing highlights and changes from changed file groups.
+Do not use raw commit subjects as release-note content.
 
 ## Prepare a version
 
@@ -101,9 +105,9 @@ maintainer approval before a second job:
 7. Verifies the draft release and uploaded asset names and digests.
 
 Release notes may be supplied as reviewed input. When no reviewed notes are
-provided, the draft script generates notes from the validated release commit
-subjects and current artifact values; it does not embed a version-specific
-release narrative in reusable code.
+provided, the draft script generates notes from the semver delta and changed
+file groups, then adds the current artifact values. It does not copy raw
+commit subjects or embed a version-specific release narrative in reusable code.
 
 This workflow adds a human decision point before tag creation and draft-release
 creation. It must not infer a version from a branch name, silently overwrite

@@ -164,38 +164,60 @@ function Assert-Candidate {
     }
 }
 
-function Get-ReleaseCommitSubjects {
+function Get-PreviousReleaseTag {
     param(
-        [string]$Root,
-        [string]$ApprovedCommit,
-        [string]$ReleaseTag
+        [string]$Root
     )
 
-    $releaseTags = @(
-        & git -C $Root tag --list 'v*' --sort=-version:refname |
-            Where-Object { $_ -ne $ReleaseTag }
-    )
+    $releaseTags = @(& git -C $Root tag --list 'v*' --sort=-version:refname)
     if ($LASTEXITCODE -ne 0) {
         throw 'Unable to list previous release tags.'
     }
+    return @($releaseTags | Where-Object { $_ -match '^v[0-9]+\.[0-9]+\.[0-9]+$' } | Select-Object -First 1)
+}
 
-    $range = if ($releaseTags.Count -gt 0) {
-        "$($releaseTags[0])..$ApprovedCommit"
+function Get-ReleaseType {
+    param(
+        [string]$Version,
+        [string]$PreviousTag
+    )
+
+    if ($PreviousTag -notmatch '^v([0-9]+)\.([0-9]+)\.([0-9]+)$') {
+        return 'Release'
+    }
+
+    $previousMajor = [int]$Matches[1]
+    $previousMinor = [int]$Matches[2]
+    $versionParts = $Version -split '\.'
+    if ([int]$versionParts[0] -gt $previousMajor) {
+        return 'Major release'
+    }
+    if ([int]$versionParts[1] -gt $previousMinor) {
+        return 'Minor release'
+    }
+    return 'Patch release'
+}
+
+function Get-ChangedReleasePaths {
+    param(
+        [string]$Root,
+        [string]$ApprovedCommit,
+        [string]$PreviousTag
+    )
+
+    $changedPaths = if ($PreviousTag) {
+        @(& git -C $Root diff --name-only "$PreviousTag..$ApprovedCommit")
     }
     else {
-        $ApprovedCommit
+        @(& git -C $Root diff-tree --root --no-commit-id --name-only -r $ApprovedCommit)
     }
-    $subjects = @(
-        & git -C $Root log $range --format='%s' --no-merges
-    )
     if ($LASTEXITCODE -ne 0) {
-        throw 'Unable to read release commit subjects.'
+        throw 'Unable to read changed release paths.'
     }
-
-    @($subjects | ForEach-Object {
-        $subject = $_.Trim() -replace '[\r\n]+', ' '
-        if (-not [string]::IsNullOrWhiteSpace($subject)) {
-            $subject
+    return @($changedPaths | ForEach-Object {
+        $path = $_.Trim()
+        if (-not [string]::IsNullOrWhiteSpace($path)) {
+            $path
         }
     })
 }
@@ -204,39 +226,60 @@ function Get-GeneratedReleaseNotes {
     param(
         [string]$Root,
         [string]$ApprovedCommit,
-        [string]$ReleaseTag,
         [string]$Template,
         [string]$ReleaseVersion,
         [string]$ArchiveHash
     )
 
-    $subjects = @(Get-ReleaseCommitSubjects -Root $Root -ApprovedCommit $ApprovedCommit -ReleaseTag $ReleaseTag)
-    if ($subjects.Count -eq 0) {
-        $subjects = @('No non-merge commit subjects were available for this release.')
+    $previousTag = Get-PreviousReleaseTag -Root $Root
+    $changedPaths = @(Get-ChangedReleasePaths `
+        -Root $Root `
+        -ApprovedCommit $ApprovedCommit `
+        -PreviousTag $previousTag)
+    $releaseType = Get-ReleaseType -Version $ReleaseVersion -PreviousTag $previousTag
+    $highlights = [System.Collections.Generic.List[string]]::new()
+    $changes = [System.Collections.Generic.List[string]]::new()
+
+    if ($changedPaths -match '(^|/)\.github/workflows/crow-release-draft\.yml$' -or
+        $changedPaths -match 'New-CrowReleaseDraft\.ps1$') {
+        $highlights.Add('Adds approval-gated draft release automation from the exact validated main-branch commit.')
+        $changes.Add('Prepares, verifies, and packages a release candidate before protected-environment approval.')
     }
-    $change1 = $subjects[0]
-    $change2 = if ($subjects.Count -gt 1) {
-        $subjects[1]
+    if ($changedPaths -match 'crow-release.*(SKILL\.md|templates/)' -or
+        $changedPaths -match 'release-notes-template\.md$') {
+        $highlights.Add('Standardizes release-note structure and artifact naming for reviewable GitHub drafts.')
+        $changes.Add('Documents release validation, provenance, packaging, and draft-publication controls.')
     }
-    else {
-        'Additional changes are represented by the validated release commit.'
+    if ($changedPaths -match 'Test-NewCrowReleaseDraft\.Tests\.ps1$' -or
+        $changedPaths -match 'crow-assets\.yml$') {
+        $highlights.Add('Expands cross-platform regression coverage for provenance, checksums, tags, and draft assets.')
+        $changes.Add('Validates release preparation in an independent fixture that works with shallow CI checkouts.')
+    }
+    if ($changedPaths -match '(^|/)(README\.md|apm\.yml|plugin\.json)$') {
+        $changes.Add('Synchronizes package metadata, installation guidance, and release references.')
+    }
+    if ($highlights.Count -eq 0) {
+        $highlights.Add("Updates the Crow package through a $releaseType focused on the changed release assets.")
+    }
+    if ($changes.Count -eq 0) {
+        $changes.Add('Updates the validated package contents described by the release diff.')
     }
     $replacements = @{
         '{{VERSION}}' = $ReleaseVersion
-        '{{RELEASE_TYPE}}' = 'Automated release draft.'
-        '{{SUMMARY}}' = "Generated from the validated commit $($ApprovedCommit.Substring(0, 12))."
-        '{{HIGHLIGHT_1}}' = 'Validated the source commit, package metadata, and release provenance.'
-        '{{HIGHLIGHT_2}}' = "Captured $($subjects.Count) non-merge commit subject(s) since the previous release tag when available."
-        '{{HIGHLIGHT_3}}' = 'Built the archive and checksum from the validated source.'
-        '{{CHANGE_1}}' = $change1
-        '{{CHANGE_2}}' = $change2
+        '{{RELEASE_TYPE}}' = $releaseType
+        '{{SUMMARY}}' = if ($changedPaths -match 'crow-release|crow-assets\.yml') {
+            'Improves Crow release automation with protected draft creation, deterministic artifacts, and stronger validation.'
+        }
+        else {
+            "Updates the Crow package with $($changedPaths.Count) changed release-scoped file(s)."
+        }
+        '{{HIGHLIGHTS}}' = (($highlights | ForEach-Object { "- $_" }) -join "`n")
+        '{{CHANGES}}' = (($changes | ForEach-Object { "- $_" }) -join "`n")
         '{{ASSET_VALIDATION_RESULT}}' = 'passed.'
         '{{PACKAGE_DRY_RUN_RESULT}}' = 'passed.'
         '{{ARCHIVE_INSPECTION_RESULT}}' = 'passed; no evidence or local-state entries.'
         '{{ADDITIONAL_VALIDATION}}' = 'Exact version consistency and approved-commit checks passed.'
         '{{SHA256}}' = $ArchiveHash
-        '{{COMPATIBILITY_AND_SCOPE}}' = 'No compatibility claims are inferred beyond the validated package contents.'
-        '{{UPGRADE_NOTES}}' = "Review the generated draft for release-specific details before publishing v$ReleaseVersion."
     }
     foreach ($placeholder in $replacements.Keys) {
         $Template = $Template.Replace($placeholder, $replacements[$placeholder])
@@ -348,7 +391,6 @@ else {
         $notesContent = Get-GeneratedReleaseNotes `
             -Root $root `
             -ApprovedCommit $CommitSha `
-            -ReleaseTag $tag `
             -Template ([System.IO.File]::ReadAllText($templatePath)) `
             -ReleaseVersion $Version `
             -ArchiveHash $archiveHash
