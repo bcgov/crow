@@ -14,11 +14,13 @@
     },
     "coverage_assessed": {
       "type": ["integer", "null"],
-      "minimum": 0
+      "minimum": 0,
+      "description": "Measured assessed entry points. Use together with coverage_total; an incomplete pair is treated as unknown."
     },
     "coverage_total": {
       "type": ["integer", "null"],
-      "minimum": 0
+      "minimum": 0,
+      "description": "Measured total entry points. Use together with coverage_assessed; an incomplete pair is treated as unknown."
     },
     "platform_alignment": {
       "type": ["object", "null"],

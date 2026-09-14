@@ -398,6 +398,10 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
 - Verify outdated scans: confirm CLI outdated scan commands were executed in Step 5 before writing the dependency inventory table.
 - Verify coverage baseline: confirm all entry points from Step 3 were assessed; document any gaps.
+- When the assessed and total entry-point counts are known from the coverage
+  baseline, write both `coverage_assessed` and `coverage_total` to frontmatter.
+  If either count is unavailable, write both as null; never infer the total
+  from `coverage_baseline_gaps`.
 - **Monorepo finalization gate:** Before writing or updating any report, re-run the service inventory/output-path checks from Step 2. After writing, verify that every inventoried service has exactly one `docs/<service-name>/security-review.md`, every service document contains only its service-scoped findings and frontmatter, `docs/security-index.md` links all service documents, and no root `docs/security-review.md` exists. If any assertion fails, treat the review as failed and do not present it as complete.
 - Set Revision History date to today's date and version to `1.0`.
 
@@ -431,6 +435,8 @@ asvs_requirements: [V2.1.1, ...]
 mitre_techniques: [T1190, ...]
 sonarqube_quality_gate: PASSED | FAILED | NOT_RUN
 coverage_baseline_gaps: <integer>
+coverage_assessed: <integer or null>
+coverage_total: <integer or null>
 tech_stack: [".NET 8", "PostgreSQL 16", ...]
 ---
 ```

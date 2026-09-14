@@ -60,7 +60,7 @@ Extract and synthesize data from both source documents into plain language:
 
 #### 0. YAML Frontmatter (from `security-review.md`) — Primary Data Source
 - Read ONLY the YAML frontmatter block at the top of the security review document.
-- Extract: `overall_risk`, `total_findings`, `critical_count`, `high_count`, `medium_count`, `low_count`, `informational_count`, `confirmed_count`, `probable_count`, `owasp_categories`, `sonarqube_quality_gate`, `coverage_baseline_gaps`, `tech_stack`. If present and evidence-backed, also extract the optional Zero Trust posture fields without deriving a maturity score.
+- Extract: `overall_risk`, `total_findings`, `critical_count`, `high_count`, `medium_count`, `low_count`, `informational_count`, `confirmed_count`, `probable_count`, `owasp_categories`, `sonarqube_quality_gate`, `coverage_baseline_gaps`, `coverage_assessed`, `coverage_total`, `tech_stack`. If present and evidence-backed, also extract the optional Zero Trust posture fields without deriving a maturity score.
 - These values directly populate most KPI fields in `report-data.json` — do NOT re-read the full document body to derive counts.
 - Read at most the Executive Brief / action items sections of the body for narrative content. Do NOT re-ingest the full 400+ line document to fill KPI cards.
 - When present, read only the bounded conditional Zero Trust/resource-protection section of the security review and the corresponding architecture checklist entries to populate the optional posture summary; do not infer missing controls.
@@ -114,6 +114,9 @@ Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 - When `coverage_pct` is not explicitly evidenced, use `coverage_assessed` and
   `coverage_total` if both measured values are available. Do not derive a
   percentage from `coverage_gaps` alone; that count has no denominator.
+- Copy `coverage_assessed` and `coverage_total` from the security-review
+  frontmatter when present. If either value is missing or null, omit both
+  fields rather than estimating the missing denominator.
 - `overall_risk`, `quality_gate_status`
 
 **OWASP counts** (count findings per category from frontmatter `owasp_categories`):

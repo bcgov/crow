@@ -173,10 +173,7 @@ $hasCoverageTotal = $null -ne $data.PSObject.Properties['coverage_total'] -and $
 $coverageIsKnown = $true
 if ($hasCoveragePct) {
     $coveragePct = ConvertTo-Percentage $data.coverage_pct 'coverage_pct'
-} elseif ($hasCoverageAssessed -or $hasCoverageTotal) {
-    if (-not ($hasCoverageAssessed -and $hasCoverageTotal)) {
-        throw "Fields 'coverage_assessed' and 'coverage_total' must be supplied together when 'coverage_pct' is absent."
-    }
+} elseif ($hasCoverageAssessed -and $hasCoverageTotal) {
     $coverageAssessed = ConvertTo-NonNegativeInteger $data.coverage_assessed 'coverage_assessed'
     $coverageTotal = ConvertTo-NonNegativeInteger $data.coverage_total 'coverage_total'
     if ($coverageTotal -eq 0) {
@@ -186,6 +183,10 @@ if ($hasCoveragePct) {
         throw "Field 'coverage_assessed' cannot exceed 'coverage_total'."
     }
     $coveragePct = Get-Pct $coverageAssessed $coverageTotal
+} elseif ($hasCoverageAssessed -or $hasCoverageTotal) {
+    # A partial denominator pair cannot produce a trustworthy percentage.
+    $coveragePct = 0
+    $coverageIsKnown = $false
 } elseif ($coverageGaps -eq 0) {
     # No reported gaps is compatible with full coverage, but gaps alone do not
     # provide a denominator for calculating a partial percentage.

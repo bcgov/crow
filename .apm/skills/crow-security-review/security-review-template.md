@@ -18,6 +18,8 @@ asvs_requirements: []
 mitre_techniques: []
 sonarqube_quality_gate: NOT_RUN
 coverage_baseline_gaps: 0
+coverage_assessed: null
+coverage_total: null
 tech_stack: []
 ---
 
