@@ -111,6 +111,9 @@ Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 **Scalar metrics** (from YAML frontmatter — copy directly):
 - `critical_count`, `high_count`, `medium_count`, `low_count`, `informational_count`
 - `confirmed_count`, `probable_count`, `coverage_gaps`, `coverage_pct`
+- When `coverage_pct` is not explicitly evidenced, use `coverage_assessed` and
+  `coverage_total` if both measured values are available. Do not derive a
+  percentage from `coverage_gaps` alone; that count has no denominator.
 - `overall_risk`, `quality_gate_status`
 
 **OWASP counts** (count findings per category from frontmatter `owasp_categories`):

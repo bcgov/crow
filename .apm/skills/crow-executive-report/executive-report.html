@@ -198,6 +198,9 @@ table.data-table tr:nth-child(even) { background: #fafafa; }
       <!-- Low segment -->
       <circle cx="50" cy="50" r="40" fill="none" stroke="#15803d" stroke-width="14"
         stroke-dasharray="{{LOW_ARC}} 251.2" stroke-dashoffset="-{{CRIT_HIGH_MED_ARC}}" transform="rotate(-90 50 50)"/>
+      <!-- Informational segment -->
+      <circle cx="50" cy="50" r="40" fill="none" stroke="#1d4ed8" stroke-width="14"
+        stroke-dasharray="{{INFO_ARC}} 251.2" stroke-dashoffset="-{{CRIT_HIGH_MED_LOW_ARC}}" transform="rotate(-90 50 50)"/>
       <!-- Center label -->
       <text x="50" y="48" text-anchor="middle" font-size="14" font-weight="700" fill="#1f2937">{{TOTAL_FINDINGS}}</text>
       <text x="50" y="60" text-anchor="middle" font-size="6" fill="#6b7280">findings</text>
@@ -427,13 +430,13 @@ table.data-table tr:nth-child(even) { background: #fafafa; }
     <!-- Coverage baseline gauge -->
     <h3>Assessment Coverage</h3>
     <div class="gauge-container">
-      <span class="gauge-label">{{COVERAGE_PCT}}%</span>
+      <span class="gauge-label">{{COVERAGE_LABEL}}</span>
       <div class="gauge-bar">
         <div class="gauge-fill" style="width:{{COVERAGE_PCT}}%; background: linear-gradient(90deg, #3b82f6, #06b6d4);"></div>
       </div>
       <span style="font-size:0.8em;">entry points assessed</span>
     </div>
-    <p style="font-size:0.8em; color:var(--muted);">{{COVERAGE_GAPS}} entry point(s) not fully assessed</p>
+    <p style="font-size:0.8em; color:var(--muted);">{{COVERAGE_NOTE}}</p>
   </div>
 </div>
 
