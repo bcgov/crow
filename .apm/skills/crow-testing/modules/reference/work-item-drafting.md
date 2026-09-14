@@ -36,6 +36,11 @@ Store the full candidate in `docs/testing/drafts/<key>-<short-slug>.md` and pres
 Keep the subject and summary understandable without technical background. Put implementation details below
 the summary.
 
+Drafts are public repository content. Include only safe, sanitized descriptors: never persist credentials,
+tokens, personal information, private URLs or hostnames, raw request/response payloads, transcripts, or
+unredacted logs/screenshots. Replace sensitive values with placeholders and point to approved secure evidence
+storage when more detail is needed.
+
 ### Bug candidate
 
 ```markdown
