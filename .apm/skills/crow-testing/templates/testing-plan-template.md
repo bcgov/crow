@@ -2,7 +2,23 @@
 
 <!--
 Living index for this repository's automated testing effort.
-Refresh at the end of every crow-testing engagement.
+The current-status rollup comes first for humans and returning agents. Detailed tables remain authoritative.
+Status-vocabulary schema: v2.
+-->
+
+## Current status
+
+| Field | Current value |
+|---|---|
+| Overall phase/status | Draft - awaiting decision / Approved - implementation pending / Active / Automated / Partial / Blocked |
+| Automated coverage | Count and/or links to tested feature rows |
+| Manual QA required | Count and/or `MC-###` references; QA chooses based on release scope |
+| Open decisions | Short list or `None` |
+| Work-item candidates | Count and/or `DRAFT-*` keys; full drafts are linked below |
+
+<!--
+Rollup only. Reconcile these values with the detailed tables below whenever the plan changes. Existing
+documents may be backfilled lazily when next touched; do not mass-rewrite older plans.
 -->
 
 ## Start here: guides
@@ -14,25 +30,31 @@ Refresh at the end of every crow-testing engagement.
 
 - `testability-notes.md`
 
-## Manual coverage
+## Manual QA scope
 
-- `manual-coverage.md` — durable register for manual-only and deferred-automation scenarios.
+- `manual-coverage.md` — recurring manual QA scenarios, steps, expected results, and release triggers.
+  Execution is tracked outside the repository.
+
+## Work-item candidates
+
+<!--
+One row per confirmed bug or explicitly approved actionable design smell. Check this table before creating
+a new candidate. Full plain-language drafts live under `docs/testing/drafts/`.
+-->
+
+| Draft key | Type | Tracking | Subject | Source | Draft path |
+|---|---|---|---|---|---|
+| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Declined / Won't track | | | |
 
 ## Feature scenarios
 
-<!-- One row per feature that has gone through the scenario-doc-first workflow. -->
+<!-- One row per feature or meaningful unit-only work item. -->
 
-| Feature | Scenarios doc | Status |
-|---|---|---|
-| | | |
+| Feature | Scenarios doc | Status | Automated coverage | Manual QA scope | Open decisions |
+|---|---|---|---|---|---|
+| | | | | | |
 
 ## Cross-check review log
-
-<!--
-Record every cross-family review pass here (a different model family than the one that planned/implemented
-reviewing the work). The agent checks this log after scenario-doc approval and after verification, and
-proactively suggests a review if none is recorded or the latest entry is more than 7 days old.
--->
 
 | Date | Scope (feature/whole repo) | Reviewing model family | Notes |
 |---|---|---|---|
@@ -40,19 +62,12 @@ proactively suggests a review if none is recorded or the latest entry is more th
 
 ## Managed Crow templates
 
-<!--
-Registry for ready-to-copy files installed from the crow-testing skill. Do not edit hashes manually.
-The source hash fingerprints Crow's untouched template; the installed hash fingerprints the project file
-after its recorded namespace adaptation. Mode is Auto until a customized copy is merged or retained, after
-which it remains Manual and is never overwritten automatically. Use scripts/Sync-CrowTestingTemplate.ps1
-to install, register, audit, update, resolve, or unregister entries. Preserve this section when refreshing
-the testing plan.
--->
+<!-- Preserve this registry when refreshing the testing plan. -->
 
 | Template ID | Source | Installed path | Namespace | Mode | Source SHA-256 | Installed SHA-256 |
 |---|---|---|---|---|---|---|
 | | | | | | | |
 
-## Overall status
+## Overall notes
 
-<!-- Brief, current-state summary: what's covered, what's next, any known gaps. -->
+<!-- Brief context that cannot be represented by the current-status rollup or detailed tables. -->

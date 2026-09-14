@@ -74,6 +74,8 @@ reference according to that skill.
    - `shared-validator-testing.md` — a validation contract is extracted into a shared validator and consumed
      by two or more model validators; use one exhaustive direct suite plus thin consumer wiring/context smoke
      tests.
+   - `work-item-drafting.md` — a confirmed bug or explicitly approved actionable design smell needs a
+     durable draft candidate. The module does not search or create external work items.
 
    Never load a reference file speculatively.
 
@@ -106,6 +108,11 @@ reference according to that skill.
 - End-to-end (E2E) / browser UI test automation — not covered yet; a future `modules/e2e/` addition can slot
   into this router without restructuring it.
 - Authoring CI/CD pipelines, build/release tasks, or Azure DevOps Server configuration.
+- Searching for or creating work items in Azure DevOps Server (or another tracker) via Raven MCP — not
+  covered yet. This iteration checks only the local candidate index, accepts a user-supplied existing ID/link,
+  and presents durable draft prose for the user to file manually. A future iteration can add direct creation
+  once a write-capable tool is declared and available, gated on explicit per-item user authorization after
+  the final text is shown — never implicit or batch creation.
 
 ## For maintainers of this skill
 

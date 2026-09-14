@@ -34,6 +34,9 @@ explicitly asks to remember new pipeline details.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
 - For bug fixes or shared behavior changes, perform bounded caller, contract, configuration, and test impact analysis using the routed module; disclose graph limits and dynamic or external blind spots.
+- For every confirmed bug or explicitly approved actionable design smell, check the local work-item candidate
+  index before drafting a new item; present and persist draft prose for the user to review rather than
+  searching or filing an external item.
 - Keep testability, design, and modernization findings non-blocking and hand them off unless the user
   explicitly expands the scope.
 - Keep testing documents synchronized with implemented and verified behavior.
@@ -48,8 +51,10 @@ explicitly asks to remember new pipeline details.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
 - Create or update the consuming project's `docs/testing/manual-coverage.md` from the routed template when
   manual-only or deferred-automation scenarios are identified.
-- Do not add dependencies, alter production code, invoke another remediation agent, or author CI/CD
-  configuration without explicit user authorization.
+- Accept a user-supplied work-item ID/link for reference, but do not search or create external work items in
+  this phase. Persist full draft candidates under `docs/testing/drafts/` and index them in `testing-plan.md`.
+- Do not add dependencies, alter production code, invoke another remediation agent, or create/modify a work
+  item in an external tracker without explicit user authorization and a declared write-capable tool.
 
 ## Stop Conditions
 
@@ -64,6 +69,10 @@ cannot be corrected within scope.
 - Required user decisions and scenario approvals are recorded.
 - Tests follow accepted project conventions and cover the agreed behavior.
 - Testing documents reflect current implementation status.
-- Manual-only and deferred-automation scenarios are recorded with execution status; unexecuted manual
-  scenarios are not represented as full coverage.
+- Manual-only and deferred-automation scenarios are recorded as QA scope with steps and expected results;
+  repository docs do not claim that QA executed them.
+- Every touched scenario doc's `Coverage` field/summary and `testing-plan.md`'s Status vocabulary and
+  Manual/deferred rollup are current, or explicitly `Legacy — pending backfill` for untouched pre-existing
+  rows — so a reader can see what's tested, what's automated, and what still needs a human tester from the
+  written docs alone.
 - Existing lint/format checks and targeted tests pass, or failures are reported with actionable evidence.

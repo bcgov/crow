@@ -39,7 +39,11 @@ Complete this before opening the discussion:
 9. When an intended behavior is not covered by automation, load `manual-coverage.md`, classify it before
    proposing a test, and maintain `docs/testing/manual-coverage.md` for manual-only or deferred-automation
    scenarios. A coverage gap remains an automation task.
-10. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
+10. When `docs/testing/testing-plan.md` or existing scenario docs predate the shared Status vocabulary and
+   scenario `Coverage` field (no schema marker present), do not rewrite the whole project. Backfill only the
+   feature(s) actually being worked on in this engagement; leave other pre-existing rows marked
+   `Legacy — pending backfill` rather than assuming their free-text status is current.
+11. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
    `reference/managed-template-lifecycle.md` only when installing one or when the audit reports drift.
    Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
    customized. Never regenerate `testing-plan.md` wholesale or discard its managed-template registry.
@@ -66,6 +70,11 @@ Complete this before opening the discussion:
 5. Ask which candidate batch to start with.
 6. When behavior is unknown and there is no coverage, present a time-boxed characterization plan before code.
    If a seam is required, describe the dependency-breaking technique and its production-code footprint.
+7. If discovery surfaces a **confirmed bug**, or a design smell that directly blocks test authoring or
+   requires an explicitly approved seam/refactor, load `reference/work-item-drafting.md` and create a
+   draft candidate. Check the local `testing-plan.md` Work-item candidates table first. Do not search an
+   external tracker. Suspected/unknown behavior stays on the characterization path above; ordinary
+   testability/design-smell findings stay in `testability-notes.md` or the modernization handoff.
 
 ## Step 4: Organization guides
 
@@ -87,7 +96,9 @@ is already current.
    terminology, authoritative rules, scenarios, required assertions, and status.
 4. Offer to expand partial requirements into a complete scenario set.
 5. Stop for explicit user review and approval before writing test code.
-6. After approval, implement in phases. Keep scenario status and `testing-plan.md` synchronized.
+6. After approval, implement in phases. Keep the scenario doc's top Current status rollup, Coverage
+   field/summary, and `testing-plan.md`'s Feature-scenarios row synchronized as tests land — not just
+   reported in chat.
 7. Check the cross-family review cadence before implementation and offer a plan review when overdue.
 8. When the feature crosses an independently versioned shared/canonical
    dependency, route the conditional contract and resilience guidance in
@@ -101,23 +112,49 @@ Load `unit-tests.md` and the applicable technology module. Skip the scenario doc
 behavior is clear. Cover success, boundary/edge, and failure paths. Do not add tests that merely restate
 trivial pass-through code.
 
+This shortcut (test code + one compact `testing-plan.md` row, no scenario doc or manual-coverage entry)
+applies only when **all** of the following hold: behavior is already clear and local; there is no
+approval-gated complex/critical scenario; the work does not introduce or change a manual-only/deferred
+item; there is no shared-validator exhaustive-matrix obligation; and no meaningful trust/external boundary
+is crossed. If any of these don't hold, route to Step 5 instead.
+
+Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None — simple unit
+work`, `Status` = `Automated — <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
+
 ## Step 7: Bug regressions
 
 1. Reproduce the bug with a failing test at the lowest level that can detect it.
 2. Simplify the reproducing data and verify the fix makes the test pass.
-3. Add only nearby tests that protect the same defect class.
-4. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
+3. Now that the bug is confirmed and reproduced, load `reference/work-item-drafting.md`. Check the local
+   `testing-plan.md` Work-item candidates table; if no matching candidate exists, create a durable
+   draft under `docs/testing/drafts/` and present it to the user. If the user supplies an existing ID/link,
+   reference it. Do not search an external tracker or claim an item was created.
+4. Add only nearby tests that protect the same defect class.
+5. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
    time-box and any seam technique before making production changes.
-5. Update the relevant scenario document and testing plan.
+6. Update the relevant scenario document and testing plan.
+
+The same Step 6 scope limits apply here: if the regression stays within them, the shortcut is test code +
+refreshing the existing `testing-plan.md` row (no new manual-coverage entry). If the fix touches an
+approved scenario document, a shared validator, or a trust/external boundary, update that scenario doc's
+`Coverage` field/summary too, and add a `manual-coverage.md` entry only if a manual-only or deferred item
+is actually discovered or changed.
 
 ## Step 8: Verification
 
 1. Run the existing linter or formatter first, then the smallest relevant test command.
 2. For scenario-gated work, compare implemented tests with every approved scenario and required assertion.
 3. Confirm all touched tests pass.
-4. Confirm manual-only and deferred-automation entries are included in the completion summary and that
-   unexecuted manual scenarios are not reported as fully tested.
-5. Check the cross-family review cadence. If a review is performed, record its date, scope, model family, and
+4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
+   top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
+   Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect
+   this engagement's outcome
+   before it is considered complete. Update `manual-coverage.md` only when this engagement actually
+   produced or changed a recurring manual-only/deferred item. Update the Work-item candidates table and
+   durable draft path whenever a confirmed bug or approved actionable design smell is drafted.
+5. Confirm manual-only and deferred-automation entries state the QA scope, steps, and expected results;
+   do not report QA execution status in repository docs.
+6. Check the cross-family review cadence. If a review is performed, record its date, scope, model family, and
    disposition in `testing-plan.md`.
 
 ## Output contract
@@ -128,7 +165,11 @@ Report:
 - testing documents created or updated;
 - tests changed and the paths, defect classes, or scenario IDs covered;
 - non-blocking testability findings and their handoff document;
-- manual-only and deferred-automation scenarios, with the register path and execution status;
+- what is being tested (feature/behavior, pointing at the scenario doc or `testing-plan.md` row rather than
+  restating it), which parts are automated (with test location), and which require manual QA (with the
+  `MC-###` scope path, steps, and expected result);
+- every confirmed bug or explicitly approved actionable design smell found this engagement, its draft key or
+  user-supplied existing ID/link, and the durable draft/index path;
 - remaining work;
 - exact validation commands and outcomes;
 - cross-check review status.
