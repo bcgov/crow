@@ -10,14 +10,11 @@
 
 ## Highlights
 
-- {{HIGHLIGHT_1}}
-- {{HIGHLIGHT_2}}
-- {{HIGHLIGHT_3}}
+{{HIGHLIGHTS}}
 
 ## Changes
 
-- {{CHANGE_1}}
-- {{CHANGE_2}}
+{{CHANGES}}
 
 ## Validation
 
@@ -45,11 +42,3 @@ Or install the packaged archive:
 ```powershell
 apm install .\build\bcgov-crow-{{VERSION}}.zip --global --target copilot
 ```
-
-## Compatibility and scope
-
-{{COMPATIBILITY_AND_SCOPE}}
-
-## Upgrade notes
-
-{{UPGRADE_NOTES}}

@@ -32,6 +32,7 @@ jobs:
     outputs:
       version: ${{ steps.version.outputs.version }}
       commit_sha: ${{ steps.context.outputs.commit_sha }}
+      notes_path: ${{ steps.notes.outputs.path }}
 
     steps:
       - name: Resolve approved source
@@ -63,6 +64,16 @@ jobs:
           }
           "version=$version" >> $env:GITHUB_OUTPUT
 
+      - name: Locate reviewed release notes
+        id: notes
+        shell: pwsh
+        run: |
+          $path = ".github/release-notes/v${{ steps.version.outputs.version }}.md"
+          if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
+            throw "Reviewed release notes are required at $path. Ask Copilot or a maintainer to author and review them from the complete release diff."
+          }
+          "path=$path" >> $env:GITHUB_OUTPUT
+
       - name: Install APM
         shell: bash
         run: |
@@ -87,6 +98,7 @@ jobs:
           & ./.apm/skills/crow-release/scripts/New-CrowReleaseDraft.ps1 `
             -Version '${{ steps.version.outputs.version }}' `
             -CommitSha '${{ steps.context.outputs.commit_sha }}' `
+            -ReleaseNotesPath '${{ steps.notes.outputs.path }}' `
             -OutputDirectory ./build/crow-release-candidate `
             -PrepareOnly
 
@@ -140,6 +152,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           $tokenBytes = [System.Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GH_TOKEN")
           $encodedToken = [Convert]::ToBase64String($tokenBytes)
           $env:GIT_CONFIG_COUNT = '1'
