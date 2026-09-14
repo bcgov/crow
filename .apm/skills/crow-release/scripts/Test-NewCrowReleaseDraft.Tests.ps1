@@ -49,6 +49,37 @@ function Assert-ThrowsLike {
     throw "$Scenario did not fail as expected."
 }
 
+function Assert-ReviewedReleaseNotes {
+    param(
+        [string]$Root,
+        [string]$ExpectedVersion
+    )
+
+    $notesPath = Join-Path $Root ".github/release-notes/v$ExpectedVersion.md"
+    if (-not (Test-Path -LiteralPath $notesPath -PathType Leaf)) {
+        throw "Reviewed release notes are missing at $notesPath."
+    }
+
+    $notes = [System.IO.File]::ReadAllText($notesPath)
+    $archiveName = "bcgov-crow-$ExpectedVersion.zip"
+    $checksumName = "$archiveName.sha256"
+    $codeSpan = [string][char]0x60
+    $shaReference = "$codeSpan{{SHA256}}$codeSpan"
+
+    if ($notes -notmatch "(?m)^# BCGov Crow - v$([regex]::Escape($ExpectedVersion))\s*$") {
+        throw "Reviewed release notes have an invalid title: $notesPath."
+    }
+    if (-not $notes.Contains("$codeSpan$archiveName$codeSpan") -or
+        -not $notes.Contains("$codeSpan$checksumName$codeSpan")) {
+        throw "Reviewed release notes do not identify the exact archive and checksum file: $notesPath."
+    }
+    if (([regex]::Matches($notes, [regex]::Escape($shaReference))).Count -ne 1) {
+        throw "Reviewed release notes must contain exactly one $shaReference token: $notesPath."
+    }
+
+    Write-Host 'Passed: checked-in release notes use the exact archive and checksum contract'
+}
+
 function global:apm {
     param([Parameter(ValueFromRemainingArguments = $true)][string[]]$Arguments)
 
@@ -134,6 +165,8 @@ function global:gh {
 }
 
 try {
+    Assert-ReviewedReleaseNotes -Root $sourceRoot -ExpectedVersion $testVersion
+
     # Build an independent fixture so the CI checkout's shallow history is not pushed.
     New-Item -ItemType Directory -Path $tempRoot | Out-Null
     & git -C $tempRoot init | Out-Null
