@@ -16,13 +16,19 @@ Fill in following a plain-language, table-first pattern:
 | Automated coverage | Test paths, classes, or methods; use `None` when not automated |
 | Manual QA required | Scenario IDs or `None`; describe recurring QA scope below |
 | Open decisions | Short list or `None` |
-| Work-item candidates | `None`, `DRAFT-*` key/path, or `Existing - <ID/link>` |
+| Work-item candidates | `None`, `DRAFT-*` key/path, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
 
 <!--
 Rollup only: do not duplicate scenario steps or expected results here. Reconcile these values with the
 tables below at every verification pass. Existing documents may be backfilled lazily when this feature is
 next touched; do not mass-rewrite older documents.
 -->
+
+## Test matrix
+
+| ID | What is tested | Coverage | Test reference / manual QA detail |
+|---|---|---|---|
+| S1 | | Automated / Manual QA / Deferred / Coverage gap / Not implemented | |
 
 ## Scope
 
@@ -85,15 +91,14 @@ outside the repository. One-time post-fix checks belong in the related work-item
 -->
 
 - **Scenario IDs:** `MC-###` or `None`
-- **What QA checks:** ...
-- **Expected result:** ...
+- **Manual QA detail:** `manual/<feature>/<Feature>ManualScenarios.md`
 - **Release trigger:** Every release / when <component or behavior> changes / smoke only
 
 ## Related work items
 
 <!-- Point to the testing-plan.md Work-item candidates row and durable draft path; do not duplicate the body. -->
 
-- `None` | `DRAFT-*` | `Existing - <ID/link>`
+- `None` | `DRAFT-*` | `Existing - <ID/link>` | `Created - <provider>:<ID>`
 
 **Remaining work:** <!-- what's left, in plain language -->
 

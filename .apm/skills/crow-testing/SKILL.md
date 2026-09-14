@@ -84,9 +84,13 @@ reference according to that skill.
    decision should be **split**, not allowed to grow.
 9. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
    deferred automation. Use [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md)
-   to create or update the consuming project's durable `docs/testing/manual-coverage.md` register.
+   for the consuming project's single `docs/testing/manual-coverage.md` index and
+   [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md) for linked detail
+   documents under `docs/testing/manual/`.
 10. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
+   [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md), and
+   [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md),
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md), and
    [`templates/modernization-handoff-template.md`](templates/modernization-handoff-template.md) when
    producing the corresponding `docs/testing/` artifacts described in `modules/workflow.md`.
@@ -108,11 +112,12 @@ reference according to that skill.
 - End-to-end (E2E) / browser UI test automation — not covered yet; a future `modules/e2e/` addition can slot
   into this router without restructuring it.
 - Authoring CI/CD pipelines, build/release tasks, or Azure DevOps Server configuration.
-- Searching for or creating work items in Azure DevOps Server (or another tracker) via Raven MCP — not
-  covered yet. This iteration checks only the local candidate index, accepts a user-supplied existing ID/link,
-  and presents durable draft prose for the user to file manually. A future iteration can add direct creation
-  once a write-capable tool is declared and available, gated on explicit per-item user authorization after
-  the final text is shown — never implicit or batch creation.
+- Searching for work items in Azure DevOps Server (or another tracker) via Raven MCP — not covered yet.
+  This iteration checks only the local candidate index, accepts a user-supplied existing ID/link, and
+  presents durable draft prose for the user to file manually. After the user confirms manual filing and
+  supplies the ID/link, the draft may be removed after the index is updated. A future iteration can add
+  direct creation once a write-capable tool is declared and available, gated on explicit per-item user
+  authorization after the final text is shown — never implicit or batch creation.
 
 ## For maintainers of this skill
 

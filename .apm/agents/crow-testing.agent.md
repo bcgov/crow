@@ -49,10 +49,13 @@ explicitly asks to remember new pipeline details.
 - Edit test code and the workflow-defined `docs/testing/` artifacts after required decisions are resolved.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
-- Create or update the consuming project's `docs/testing/manual-coverage.md` from the routed template when
-  manual-only or deferred-automation scenarios are identified.
+- Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked
+  `docs/testing/manual/` detail documents from the routed templates when manual-only or
+  deferred-automation scenarios are identified.
 - Accept a user-supplied work-item ID/link for reference, but do not search or create external work items in
   this phase. Persist full draft candidates under `docs/testing/drafts/` and index them in `testing-plan.md`.
+  If the user later confirms that they manually filed a draft, update the index with the supplied ID/link and
+  remove the local draft only after the index update succeeds.
 - Do not add dependencies, alter production code, invoke another remediation agent, or create/modify a work
   item in an external tracker without explicit user authorization and a declared write-capable tool.
 

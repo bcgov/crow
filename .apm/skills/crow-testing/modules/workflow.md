@@ -56,8 +56,9 @@ Complete this before opening the discussion:
    - specific feature, bug, or pain point: refresh organization guides if needed, then route to Step 5 or 6.
 3. Clarify ambiguous business terminology and write it to `docs/testing/testability-notes.md`; do not leave
    decisions only in chat.
-4. Record every manual-only or deferred-automation behavior in `docs/testing/manual-coverage.md`, using stable
-   scenario IDs and the required fields from `modules/manual-coverage.md`.
+4. Record every recurring manual-only or deferred-automation area in `docs/testing/manual-coverage.md`,
+   then create or update its linked detail document under `docs/testing/manual/<feature>/`, using the
+   required index/detail fields from `modules/manual-coverage.md`.
 
 ## Step 3: Discovery
 
@@ -73,8 +74,10 @@ Complete this before opening the discussion:
 7. If discovery surfaces a **confirmed bug**, or a design smell that directly blocks test authoring or
    requires an explicitly approved seam/refactor, load `reference/work-item-drafting.md` and create a
    draft candidate. Check the local `testing-plan.md` Work-item candidates table first. Do not search an
-   external tracker. Suspected/unknown behavior stays on the characterization path above; ordinary
-   testability/design-smell findings stay in `testability-notes.md` or the modernization handoff.
+   external tracker. Keep the draft durable until the user confirms manual filing and supplies an ID/link,
+   or until a future authorized provider confirms creation. Suspected/unknown behavior stays on the
+   characterization path above; ordinary testability/design-smell findings stay in `testability-notes.md` or
+   the modernization handoff.
 
 ## Step 4: Organization guides
 
@@ -128,7 +131,9 @@ work`, `Status` = `Automated — <test file or TestClass.Method>`, `Manual/defer
 3. Now that the bug is confirmed and reproduced, load `reference/work-item-drafting.md`. Check the local
    `testing-plan.md` Work-item candidates table; if no matching candidate exists, create a durable
    draft under `docs/testing/drafts/` and present it to the user. If the user supplies an existing ID/link,
-   reference it. Do not search an external tracker or claim an item was created.
+   reference it. If the user files the presented draft manually, retain the draft until they confirm success
+   and provide the ID/link; then update the index and delete the draft. Do not search an external tracker or
+   claim an item was created without a verified provider result.
 4. Add only nearby tests that protect the same defect class.
 5. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
    time-box and any seam technique before making production changes.
@@ -137,8 +142,8 @@ work`, `Status` = `Automated — <test file or TestClass.Method>`, `Manual/defer
 The same Step 6 scope limits apply here: if the regression stays within them, the shortcut is test code +
 refreshing the existing `testing-plan.md` row (no new manual-coverage entry). If the fix touches an
 approved scenario document, a shared validator, or a trust/external boundary, update that scenario doc's
-`Coverage` field/summary too, and add a `manual-coverage.md` entry only if a manual-only or deferred item
-is actually discovered or changed.
+`Coverage` field/summary too, and add/update the manual-QA index row plus linked detail document only if a
+recurring manual-only or deferred item is actually discovered or changed.
 
 ## Step 8: Verification
 
@@ -150,10 +155,13 @@ is actually discovered or changed.
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect
    this engagement's outcome
    before it is considered complete. Update `manual-coverage.md` only when this engagement actually
-   produced or changed a recurring manual-only/deferred item. Update the Work-item candidates table and
-   durable draft path whenever a confirmed bug or approved actionable design smell is drafted.
-5. Confirm manual-only and deferred-automation entries state the QA scope, steps, and expected results;
-   do not report QA execution status in repository docs.
+   produced or changed a recurring manual-only/deferred item. Update the manual-QA index row and linked
+   detail document together. Update the Work-item candidates table and durable draft path whenever a
+   confirmed bug or approved actionable design smell is drafted. If the user confirms manual filing, replace
+   the draft path with the supplied work-item reference and remove the local draft only after the index update
+   succeeds.
+5. Confirm manual-only and deferred-automation entries state the QA scope, steps, and expected results in
+   the linked detail document; do not report QA execution status in repository docs.
 6. Check the cross-family review cadence. If a review is performed, record its date, scope, model family, and
    disposition in `testing-plan.md`.
 
@@ -169,7 +177,7 @@ Report:
   restating it), which parts are automated (with test location), and which require manual QA (with the
   `MC-###` scope path, steps, and expected result);
 - every confirmed bug or explicitly approved actionable design smell found this engagement, its draft key or
-  user-supplied existing ID/link, and the durable draft/index path;
+  work-item ID/link, and the current durable draft/index state;
 - remaining work;
 - exact validation commands and outcomes;
 - cross-check review status.

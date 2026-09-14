@@ -20,8 +20,8 @@ Do not add a new component-test framework solely for an isolated scenario when t
 decided not to add that framework.
 
 The scenario doc's `Coverage` field/summary (see `templates/scenario-doc-template.md`) reflects this
-classification per scenario ID — link to the `MC-###` entry rather than duplicating its rationale, steps, or
-evidence. Do not record whether QA has executed a scenario in this repository.
+classification per scenario ID — link to the `MC-###` entry rather than duplicating its rationale or steps.
+Do not record whether QA has executed a scenario in this repository.
 
 ## Workflow
 
@@ -29,11 +29,11 @@ evidence. Do not record whether QA has executed a scenario in this repository.
 2. Identify behaviors crossing UI-rendering, browser, database, external-service, timing, or concurrency
    boundaries.
 3. Classify each behavior using the table above.
-4. Create or update the consuming project's `docs/testing/manual-coverage.md` for every recurring
-   manual-only or deferred-automation item.
-5. Link each entry to its work item (governing this scenario only — see
-   `modules/reference/work-item-drafting.md` if none exists yet), source component, scenario document,
-   dependency, and recheck trigger.
+4. Create or update one concise index row in the consuming project's `docs/testing/manual-coverage.md`
+   for every recurring manual-only or deferred-automation area.
+5. Create or update the linked detail document under
+   `docs/testing/manual/<feature>/<Feature>ManualScenarios.md`. Put the detailed test matrix, prerequisites,
+   steps, expected results, work item, and recheck/automation triggers there.
 6. Include manual-only and deferred items in the handoff and completion summary, clearly stating that the
    register describes QA scope rather than execution results.
 7. Revisit entries after refactors, shared-component changes, test-infrastructure changes, or related
@@ -45,12 +45,14 @@ belong in the work-item draft and should not automatically become recurring `MC-
 
 ## Required register fields
 
-Each entry needs a stable scenario ID, work item or feature link, behavior and scope, classification,
-reason, release/recheck trigger, prerequisites and test data, manual steps, expected result, evidence to
-capture, source files or components, and dependencies.
+Each index entry needs a stable area ID, feature or bug link, detail-document link, classification, release
+trigger, and short QA scope. Each detail document needs a stable scenario ID, work item or feature link,
+behavior and scope, classification, reason, release/recheck trigger, prerequisites and test data, manual
+steps, expected result, and recheck/automation triggers.
 
-Store evidence according to the consuming project's approved security and privacy practices. Redact secrets,
-tokens, credentials, personal information, and sensitive request or response data; do not commit evidence
-that is not safe for the repository or its release package.
+Execution tracking and run evidence belong in external QA systems according to the consuming project's
+security and privacy practices. Do not add execution evidence, screenshots, logs, payloads, or run dates to
+the repository's manual-QA Markdown.
 
-Use `templates/manual-coverage-template.md` for the register shape and individual scenario entries.
+Use `templates/manual-coverage-template.md` for the index shape and
+`templates/manual-scenario-template.md` for each detailed scenario document.

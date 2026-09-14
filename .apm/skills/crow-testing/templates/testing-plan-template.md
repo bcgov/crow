@@ -21,6 +21,12 @@ Rollup only. Reconcile these values with the detailed tables below whenever the 
 documents may be backfilled lazily when next touched; do not mass-rewrite older plans.
 -->
 
+## Test matrix
+
+| Feature / area | Automated coverage | Manual QA scope | Detail reference | Status |
+|---|---|---|---|---|
+| | | | | |
+
 ## Start here: guides
 
 - `guides/Unit Test Organization Guide.md`
@@ -32,8 +38,8 @@ documents may be backfilled lazily when next touched; do not mass-rewrite older 
 
 ## Manual QA scope
 
-- `manual-coverage.md` — recurring manual QA scenarios, steps, expected results, and release triggers.
-  Execution is tracked outside the repository.
+- `manual-coverage.md` — index of recurring manual QA areas and release triggers; links to detailed
+  scenarios under `manual/`. Execution is tracked outside the repository.
 
 ## Work-item candidates
 
@@ -44,7 +50,7 @@ a new candidate. Full plain-language drafts live under `docs/testing/drafts/`.
 
 | Draft key | Type | Tracking | Subject | Source | Draft path |
 |---|---|---|---|---|---|
-| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Declined / Won't track | | | |
+| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Created - <provider>:<ID> / Declined / Won't track | | | |
 
 ## Feature scenarios
 

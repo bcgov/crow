@@ -1,7 +1,8 @@
 # Work-item candidate drafting
 
 Load when the agent identifies a confirmed bug or an actionable design smell that should be tracked as
-work. This module produces a draft candidate; it does not search or create items in an external tracker.
+work. It supports draft-only output and user-confirmed manual filing; automated tracker creation is a future
+capability.
 
 ## When to draft
 
@@ -26,15 +27,21 @@ Use exactly one tracking value:
 
 - `Draft — not filed` — this repository contains a proposed item; no external item was created.
 - `Existing — <ID/link>` — the user supplied an existing work-item ID or link.
+- `Created — <provider>:<ID>` — a declared write-capable provider created the item and returned an ID/link.
 - `Declined / Won't track` — the user explicitly rejected the candidate.
 
-The agent may reference a user-supplied ID or link, but must not validate, search for, or create it.
+When the user files a draft manually, keep `Draft — not filed` until the user confirms filing succeeded and
+supplies the resulting ID/link. Then update the index to `Existing — <ID/link>` and delete the local draft only
+after the reference is persisted. If filing is uncertain, leave the draft and status unchanged.
+
+The agent may reference a user-supplied ID or link, but must not validate or search for it. Automated creation
+requires a declared write-capable provider and explicit per-item authorization.
 
 ## Plain-language draft format
 
 Store the full candidate in `docs/testing/drafts/<key>-<short-slug>.md` and present the same text to the user.
 Keep the subject and summary understandable without technical background. Put implementation details below
-the summary.
+the summary. The draft is durable while it is unfiled or while filing/creation is unconfirmed.
 
 Drafts are public repository content. Include only safe, sanitized descriptors: never persist credentials,
 tokens, personal information, private URLs or hostnames, raw request/response payloads, transcripts, or
@@ -48,7 +55,7 @@ storage when more detail is needed.
 
 - **Draft key:** DRAFT-BUG-XX
 - **Type:** Bug
-- **Tracking:** Draft — not filed | Existing — <ID/link> | Declined / Won't track
+- **Tracking:** Draft — not filed | Existing — <ID/link> | Created — <provider>:<ID> | Declined / Won't track
 
 ## Summary
 
@@ -78,7 +85,7 @@ storage when more detail is needed.
 
 - **Draft key:** DRAFT-SMELL-XX
 - **Type:** Design smell
-- **Tracking:** Draft — not filed | Existing — <ID/link> | Declined / Won't track
+- **Tracking:** Draft — not filed | Existing — <ID/link> | Created — <provider>:<ID> | Declined / Won't track
 - **Behavior change:** None expected | Approved change: <plain-language description>
 
 ## Summary
@@ -110,8 +117,24 @@ Include this focused section when the refactor affects a user-facing path or can
 For an internal-only smell that is fully verified by automated tests, state that the manual happy-path
 section is not applicable and explain why in one sentence. Never invent user-facing steps.
 
+## Filing and cleanup
+
+### Manual filing
+
+1. Present the draft and tell the user to copy it into Azure DevOps Server.
+2. Keep the draft and `testing-plan.md` row unchanged while the user files it.
+3. After the user confirms success and provides the ID/link, update the row to `Existing — <ID/link>`.
+4. Delete the local draft only after the updated index is saved successfully.
+
+### Automated creation
+
+1. Show the final subject/body and target project.
+2. Obtain explicit authorization for this specific item.
+3. Create the item through the declared write-capable provider.
+4. Verify the returned ID/link, persist `Created — <provider>:<ID>`, then delete the draft.
+5. On any failure or uncertainty, retain the draft and report the unresolved state.
+
 ## Future boundary
 
-Direct creation may be considered later with a declared write-capable provider and explicit per-item user
-authorization after the final text is shown. This phase never creates, simulates, or claims to create an
-external work item.
+Direct creation is not available in the current phase. No search, simulation, or claim of external creation is
+permitted without the declared provider, authorization, returned reference, and persistence confirmation.
