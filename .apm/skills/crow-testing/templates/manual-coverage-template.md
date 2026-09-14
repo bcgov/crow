@@ -1,36 +1,30 @@
-# Manual coverage register
+# Manual QA scope index
 
 <!--
-Durable record for manual-only and deferred-automation scenarios. Keep one authoritative entry per
-scenario and link to it from testing plans and completion summaries.
-Only manual-only and deferred-automation scenarios belong in this register; automated candidates and coverage
-gaps belong in the automated test worklist.
+Single index for recurring manual-only and deferred-automation QA scope.
+Keep this document concise. Put setup, steps, and expected results in linked detail
+documents under docs/testing/manual/<feature>/.
+QA selects applicable rows based on the release and records execution outside the repository.
 -->
 
-## Scenarios
+## Current status
 
-### MC-XXX — Short scenario name
+| Field | Current value |
+|---|---|
+| Index status | Current / Needs backfill |
+| Manual QA areas | Count and/or links below |
+| Open decisions | Short list or `None` |
 
-- **Work item:** Link or identifier
-- **Classification:** Manual-only | Deferred automation
-- **Status:** Planned | Ready | Executed | Blocked
-- **Scope:** What behavior is covered and what is excluded.
-- **Reason:** Why the repository's automated tests do not cover this behavior.
-- **Prerequisites:** Environment, account/role, records, feature flags, and data setup.
-- **Steps:**
-  1. ...
-  2. ...
-- **Expected result:** ...
-- **Evidence:** Screenshot, recording, request/response, log, or other durable evidence.
-- **Source:** Files, components, or scenario documents.
-- **Dependencies:** Work items, services, or infrastructure.
-- **Recheck trigger:** Changes that require this scenario to be repeated.
-- **Last reviewed:** YYYY-MM-DD
+## Manual QA areas
+
+| Area ID | Feature / bug | Detail document | Classification | Release trigger | QA scope summary |
+|---|---|---|---|---|---|
+| MC-XXX | | `manual/<feature>/<Feature>ManualScenarios.md` | Manual-only / Deferred automation | Every release / When changed / Smoke only | |
 
 ## Maintenance
 
-- Keep one authoritative entry per manual scenario; link rather than duplicate steps.
-- Change the classification when infrastructure or design changes.
-- Close or remove an entry only when equivalent automated coverage exists and passes, or the behavior is
-  retired.
-- Preserve the reason for manual coverage and historical evidence when updating an entry.
+- Keep one index row per recurring manual-QA area.
+- Link to a detail document instead of copying steps into this index.
+- Update the row and detail document together when scope, classification, or release trigger changes.
+- Close or remove an area only when equivalent automated coverage exists and passes, or the behavior is retired.
+- QA execution results, build evidence, and run dates belong in the team's external test process.
