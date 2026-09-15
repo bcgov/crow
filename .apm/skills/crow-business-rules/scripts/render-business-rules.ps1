@@ -613,7 +613,7 @@ $($options -join "`n")
         $status = Get-Text $rule.status
         $facetRefs = @(Get-Items $rule.facets)
         $ruleIndexRows.Add(@"
-        <tr>
+        <tr data-rule-id="$(ConvertTo-CrowHtmlText $ruleId)">
           <th scope="row"><a href="#$(ConvertTo-CrowHtmlText $cardId)">$(ConvertTo-CrowHtmlText $ruleId)</a></th>
           <td><a href="#$(ConvertTo-CrowHtmlText $cardId)">$(ConvertTo-CrowHtmlText $rule.title)</a></td>
           <td>$(ConvertTo-CrowHtmlText $rule.category)</td>
@@ -736,7 +736,7 @@ $($renderedDiagrams[$diagramId])
       <p class="diagram__rules">Related rules: $($ruleRefs -join ', ')</p>
       <details class="diagram__alternative">
         <summary>Text alternative</summary>
-        <p>Use the related rule links above to review the detailed rule statements and evidence represented by this diagram.</p>
+        <p>$(ConvertTo-CrowHtmlText $diagram.description)</p>
       </details>
     </figure>
 "@)

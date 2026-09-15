@@ -32,8 +32,12 @@
   }
 
   var cards = toArray(ruleList.querySelectorAll(".rule-card"));
+  var indexRows = toArray(document.querySelectorAll(".rule-index tr[data-rule-id]"));
   var inputs = toArray(form.querySelectorAll("input[type=checkbox][data-facet]"));
   var toggles = toArray(document.querySelectorAll(".reasons-toggle"));
+  var ruleNavigationLinks = toArray(document.querySelectorAll(
+    ".rule-index a[href^='#rule-'], .diagram__rules a[href^='#rule-']"
+  ));
   var disclosureDetails = toArray(document.querySelectorAll("details"));
   var totalCount = cards.length;
   var printDisclosureState = null;
@@ -122,6 +126,7 @@
     var index;
     var card;
     var matched;
+    var visibleRuleIds = {};
 
     for (index = 0; index < cards.length; index += 1) {
       card = cards[index];
@@ -130,10 +135,15 @@
         focusWasHidden = true;
       }
       card.hidden = !matched;
+      visibleRuleIds[card.getAttribute("data-rule-id")] = matched;
       if (matched) {
         visibleCount += 1;
         updateReasons(card, selection.selected);
       }
+    }
+    for (index = 0; index < indexRows.length; index += 1) {
+      indexRows[index].hidden =
+        !visibleRuleIds[indexRows[index].getAttribute("data-rule-id")];
     }
 
     if (visibleCount === 0) {
@@ -165,6 +175,21 @@
     });
   }
 
+  function openDirectDisclosure(section) {
+    var child = section.firstElementChild;
+    if (section.tagName && section.tagName.toLowerCase() === "details") {
+      section.open = true;
+      return;
+    }
+    while (child) {
+      if (child.tagName && child.tagName.toLowerCase() === "details") {
+        child.open = true;
+        return;
+      }
+      child = child.nextElementSibling;
+    }
+  }
+
   function openSectionFromHash() {
     var hash = window.location.hash;
     var section;
@@ -176,6 +201,7 @@
     if (!section) {
       return;
     }
+    openDirectDisclosure(section);
     current = section;
     while (current && current !== document) {
       if (current.tagName && current.tagName.toLowerCase() === "details") {
@@ -185,9 +211,38 @@
     }
   }
 
+  function clearFilters() {
+    var index;
+    for (index = 0; index < inputs.length; index += 1) {
+      inputs[index].checked = false;
+    }
+    if (searchInput) {
+      searchInput.value = "";
+    }
+    applyFilter();
+  }
+
+  function bindRuleNavigation(link) {
+    link.addEventListener("click", function (event) {
+      var href = link.getAttribute("href");
+      var target = href ? document.getElementById(href.substring(1)) : null;
+      if (!target || !target.hidden) {
+        return;
+      }
+      event.preventDefault();
+      clearFilters();
+      window.location.hash = target.id;
+      openSectionFromHash();
+      target.focus();
+    });
+  }
+
   var toggleIndex;
   for (toggleIndex = 0; toggleIndex < toggles.length; toggleIndex += 1) {
     bindToggle(toggles[toggleIndex]);
+  }
+  for (toggleIndex = 0; toggleIndex < ruleNavigationLinks.length; toggleIndex += 1) {
+    bindRuleNavigation(ruleNavigationLinks[toggleIndex]);
   }
 
   form.hidden = false;

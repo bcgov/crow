@@ -151,6 +151,10 @@ The HTML report is a filtered document, not an application:
   questions use native collapsible sections while retaining all content;
 - documentation sources, rule references, and diagram references link to their
   targets when a safe URL or in-document anchor is available;
+- the rule index follows filtering state, and diagram links reveal filtered
+  related rules before navigating to them;
+- each diagram's authored `description` explains its meaningful sequence,
+  branches, states, or relationships and is reused as the text alternative;
 - filtered rules are hidden with the `hidden` attribute, and focus moves to the
   status region if the focused rule disappears;
 - without JavaScript, the filter controls stay hidden and all rules, evidence,
