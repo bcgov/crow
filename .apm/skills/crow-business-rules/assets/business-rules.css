@@ -86,6 +86,10 @@ a {
   color: var(--colour-link);
 }
 
+a:visited {
+  color: #5c2d91;
+}
+
 a:hover {
   text-decoration: none;
 }
@@ -134,8 +138,23 @@ a:hover {
   margin-bottom: var(--space-2);
 }
 
+.page-header__details {
+  max-width: 100ch;
+}
+
+.page-header__details summary,
+.rule-index summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding: var(--space-1) 0;
+}
+
+.page-header__details summary {
+  color: #ffffff;
+}
+
 .page-scope {
-  max-width: 70ch;
+  max-width: 100ch;
 }
 
 .page-meta {
@@ -174,7 +193,7 @@ a:hover {
 
 .page-main {
   margin: 0 auto;
-  max-width: 75rem;
+  max-width: 110rem;
   padding: var(--space-4) var(--space-3);
 }
 
@@ -186,9 +205,18 @@ a:hover {
   padding: var(--space-3) var(--space-3) var(--space-4);
 }
 
+.section-details > summary {
+  cursor: pointer;
+  padding-bottom: var(--space-1);
+}
+
+.section-details > summary h2 {
+  display: inline;
+}
+
 .section-note {
   color: var(--colour-muted);
-  max-width: 75ch;
+  max-width: 90ch;
 }
 
 .summary-cards {
@@ -223,7 +251,13 @@ a:hover {
 .data-table {
   border-collapse: collapse;
   margin: var(--space-3) 0;
+  min-width: 38rem;
   width: 100%;
+}
+
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .data-table caption {
@@ -267,6 +301,26 @@ a:hover {
   margin: var(--space-3) 0;
 }
 
+.facet-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  grid-column: 1 / -1;
+  max-width: 32rem;
+}
+
+.facet-search label {
+  font-weight: 700;
+}
+
+.facet-search input {
+  border: 2px solid var(--colour-border);
+  border-radius: var(--radius);
+  font: inherit;
+  min-height: 2.75rem;
+  padding: var(--space-1) var(--space-2);
+}
+
 .facet-group {
   border: 1px solid var(--colour-border);
   border-radius: var(--radius);
@@ -298,8 +352,8 @@ a:hover {
 }
 
 .facet-option input {
-  min-height: 1.25rem;
-  min-width: 1.25rem;
+  min-height: 1.5rem;
+  min-width: 1.5rem;
 }
 
 .facet-count {
@@ -350,6 +404,17 @@ button:hover {
   grid-template-columns: repeat(auto-fill, minmax(22rem, 1fr));
 }
 
+.rule-index {
+  border: 1px solid var(--colour-border);
+  border-radius: var(--radius);
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+}
+
+.rule-index .table-responsive {
+  margin-top: var(--space-2);
+}
+
 .rule-card {
   border: 1px solid var(--colour-border);
   border-top: 4px solid var(--colour-primary);
@@ -396,6 +461,22 @@ button:hover {
   color: var(--colour-attention);
 }
 
+.badge--implemented-only {
+  border-color: var(--colour-link);
+  color: var(--colour-link);
+}
+
+.badge--unverifiable {
+  border-color: var(--colour-muted);
+  color: var(--colour-muted);
+}
+
+.badge--category,
+.badge--status-active {
+  background: var(--colour-canvas);
+  font-weight: 600;
+}
+
 .badge--status-retired {
   border-style: dashed;
 }
@@ -424,6 +505,19 @@ button:hover {
   overflow-wrap: anywhere;
 }
 
+.citation-path,
+.citation-line,
+.citation-symbol,
+.citation-commit {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.citation-symbol {
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 0.85rem;
+}
+
 .citation-line,
 .citation-commit {
   color: var(--colour-muted);
@@ -449,11 +543,20 @@ button:hover {
 
 .diagram__canvas {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .diagram__canvas svg {
   height: auto;
-  max-width: 100%;
+  min-width: 42rem;
+  max-width: none;
+  width: 100%;
+}
+
+.diagram__alternative {
+  border-top: 1px solid var(--colour-border);
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
 }
 
 .page-footer {
@@ -493,7 +596,6 @@ button:hover {
   button {
     border: 1px solid ButtonText;
     color: ButtonText;
-    forced-color-adjust: none;
   }
 
   .match-reason {
@@ -506,6 +608,14 @@ button:hover {
     background: #ffffff;
   }
 
+  details:not([open]) > :not(summary) {
+    display: block;
+  }
+
+  details > summary {
+    display: none;
+  }
+
   .page-nav,
   .facet-filter,
   .reasons-toggle,
@@ -513,11 +623,29 @@ button:hover {
     display: none !important;
   }
 
-  .page-main section,
   .rule-card,
   .diagram {
     break-inside: avoid;
     border: 1px solid #999999;
+  }
+
+  .page-header {
+    background: #ffffff;
+    border-bottom-color: #000000;
+    color: #000000;
+  }
+
+  .page-header__details summary {
+    color: #000000;
+  }
+
+  .page-header__details[open] {
+    display: block;
+  }
+
+  .diagram__canvas svg {
+    min-width: 0;
+    max-width: 100%;
   }
 
   .rule-list {

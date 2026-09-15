@@ -145,6 +145,16 @@ The HTML report is a filtered document, not an application:
 - every visible rule shows the facets it matched;
 - a polite live region announces result counts and the zero-result state;
 - a real reset button restores the full list;
+- a keyword search and compact rule index provide direct access to large rule
+  sets without requiring endless scrolling;
+- report scope, summary, documentation coverage, filters, diagrams, and open
+  questions use native collapsible sections while retaining all content;
+- documentation sources, rule references, and diagram references link to their
+  targets when a safe URL or in-document anchor is available;
+- the rule index follows filtering state, and diagram links reveal filtered
+  related rules before navigating to them;
+- each diagram's authored `description` explains its meaningful sequence,
+  branches, states, or relationships and is reused as the text alternative;
 - filtered rules are hidden with the `hidden` attribute, and focus moves to the
   status region if the focused rule disappears;
 - without JavaScript, the filter controls stay hidden and all rules, evidence,

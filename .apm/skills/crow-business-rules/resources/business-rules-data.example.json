@@ -181,14 +181,14 @@
     {
       "id": "intake-decision",
       "title": "Intake decision flow",
-      "description": "Order in which eligibility, authorization, and fee rules are applied to a submission.",
+      "description": "A submission is received, then checked for age (BR-0001). Eligible submissions are checked for permission (BR-0003); denied actions stop at a permission failure. Permitted submissions continue to base-fee calculation (BR-0002) and persistence of the application record.",
       "mermaid": "flowchart TD\n  A[Submission received] --> B{Applicant 19 or older?}\n  B -- No --> R[Reject: BR-0001]\n  B -- Yes --> C{Role permits action?}\n  C -- No --> D[Permission failure: BR-0003]\n  C -- Yes --> E[Calculate base fee: BR-0002]\n  E --> F[Persist application record]",
       "rule_refs": ["BR-0001", "BR-0002", "BR-0003"]
     },
     {
       "id": "application-lifecycle",
       "title": "Application lifecycle states",
-      "description": "States a permit application moves through, including the retention path.",
+      "description": "A permit application starts in Draft, moves to Submitted, and may then be Withdrawn or Approved. Withdrawn applications move to Purged after seven years (BR-0004); Approved applications complete the lifecycle. The related state rules are BR-0004 and BR-0005.",
       "mermaid": "stateDiagram-v2\n  [*] --> Draft\n  Draft --> Submitted\n  Submitted --> Withdrawn\n  Submitted --> Approved\n  Withdrawn --> Purged: seven years (BR-0004)\n  Approved --> [*]",
       "rule_refs": ["BR-0004", "BR-0005"]
     }
