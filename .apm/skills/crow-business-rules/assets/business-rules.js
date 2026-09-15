@@ -16,6 +16,7 @@
   var ruleList = document.getElementById("rule-list");
   var statusRegion = document.getElementById("filter-status");
   var emptyMessage = document.getElementById("no-results");
+  var searchInput = document.getElementById("rule-search");
 
   if (!form || !ruleList || !statusRegion || !emptyMessage) {
     return;
@@ -33,7 +34,9 @@
   var cards = toArray(ruleList.querySelectorAll(".rule-card"));
   var inputs = toArray(form.querySelectorAll("input[type=checkbox][data-facet]"));
   var toggles = toArray(document.querySelectorAll(".reasons-toggle"));
+  var disclosureDetails = toArray(document.querySelectorAll("details"));
   var totalCount = cards.length;
+  var printDisclosureState = null;
 
   function getFacets(card) {
     var value = card.getAttribute("data-facets");
@@ -89,6 +92,13 @@
     return true;
   }
 
+  function matchesSearch(card, query) {
+    if (!query) {
+      return true;
+    }
+    return card.textContent.toLowerCase().indexOf(query) !== -1;
+  }
+
   function updateReasons(card, selected) {
     var reasons = toArray(card.querySelectorAll(".match-reason"));
     var index;
@@ -105,6 +115,7 @@
 
   function applyFilter() {
     var selection = getSelection();
+    var query = searchInput ? searchInput.value.trim().toLowerCase() : "";
     var activeElement = document.activeElement;
     var focusWasHidden = false;
     var visibleCount = 0;
@@ -114,7 +125,7 @@
 
     for (index = 0; index < cards.length; index += 1) {
       card = cards[index];
-      matched = matchesSelection(card, selection.groups);
+      matched = matchesSelection(card, selection.groups) && matchesSearch(card, query);
       if (!matched && activeElement && card.contains(activeElement)) {
         focusWasHidden = true;
       }
@@ -154,16 +165,64 @@
     });
   }
 
+  function openSectionFromHash() {
+    var hash = window.location.hash;
+    var section;
+    var current;
+    if (!hash || hash.length < 2) {
+      return;
+    }
+    section = document.getElementById(hash.substring(1));
+    if (!section) {
+      return;
+    }
+    current = section;
+    while (current && current !== document) {
+      if (current.tagName && current.tagName.toLowerCase() === "details") {
+        current.open = true;
+      }
+      current = current.parentElement;
+    }
+  }
+
   var toggleIndex;
   for (toggleIndex = 0; toggleIndex < toggles.length; toggleIndex += 1) {
     bindToggle(toggles[toggleIndex]);
   }
 
   form.hidden = false;
+  window.addEventListener("hashchange", openSectionFromHash);
   form.addEventListener("change", applyFilter);
+  if (searchInput) {
+    searchInput.addEventListener("input", applyFilter);
+  }
   form.addEventListener("reset", function () {
+    if (searchInput) {
+      searchInput.value = "";
+    }
     window.setTimeout(applyFilter, 0);
   });
 
+  window.addEventListener("beforeprint", function () {
+    printDisclosureState = [];
+    for (var detailsIndex = 0; detailsIndex < disclosureDetails.length; detailsIndex += 1) {
+      printDisclosureState.push(disclosureDetails[detailsIndex].open);
+      disclosureDetails[detailsIndex].open = true;
+    }
+    for (var index = 0; index < cards.length; index += 1) {
+      cards[index].hidden = false;
+    }
+  });
+  window.addEventListener("afterprint", function () {
+    if (printDisclosureState) {
+      for (var detailsIndex = 0; detailsIndex < disclosureDetails.length; detailsIndex += 1) {
+        disclosureDetails[detailsIndex].open = printDisclosureState[detailsIndex];
+      }
+      printDisclosureState = null;
+    }
+    applyFilter();
+  });
+
+  openSectionFromHash();
   applyFilter();
 })();

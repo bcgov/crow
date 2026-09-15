@@ -21,8 +21,11 @@ Use this skill when preparing or publishing a Crow release.
 ## Release notes standard
 
 Use `templates/release-notes-template.md` as the starting structure for every
-release draft. Replace every `{{PLACEHOLDER}}`, remove unused bullets, and
-retain the following stable contract:
+release draft. Replace narrative and version placeholders, remove unused
+bullets, and retain exactly one `{{SHA256}}` token in the checked-in reviewed
+notes. The approval-gated draft script replaces that token with the final
+archive digest after packaging; do not replace it manually in
+`.github/release-notes/v<version>.md`.
 
 - title: `BCGov Crow - v<version>`;
 - semver-accurate release type and a concise outcome-focused summary;
@@ -107,9 +110,10 @@ maintainer approval before a second job:
 7. Verifies the draft release and uploaded asset names and digests.
 
 The release workflow requires the reviewed notes file from the exact validated
-commit. The script substitutes only the version and final archive checksum
-placeholders and rejects missing, unresolved, URL-bearing, or inconsistent
-notes. It does not generate narrative text.
+commit. The script substitutes the version and the retained `{{SHA256}}`
+checksum token only in the generated candidate notes, then rejects any other
+unresolved placeholder, URL-bearing, or inconsistent notes. It does not
+generate narrative text.
 
 This workflow adds a human decision point before tag creation and draft-release
 creation. It must not infer a version from a branch name, silently overwrite
@@ -145,7 +149,8 @@ treating the scan as successful.
 - A major version was explicitly chosen by the user.
 - Manifests and README versions agree.
 - Release notes use the standard template and the title, tag, archive, and
-  checksum names agree.
+  checksum names agree; the checked-in reviewed notes retain exactly one
+  `{{SHA256}}` token for candidate substitution.
 - Local agent Sonar scan completed for the exact release commit, its quality
   gate passed, and the result was collected in session-local evidence.
 - Validation, package dry run, specialist review, and rubber-duck review pass.
