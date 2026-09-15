@@ -6,6 +6,13 @@
 - Enable nullable reference types and fix warnings through types and guards rather than null-forgiving operators.
 - Prefer async APIs end to end for I/O. Pass `CancellationToken` through controllers, services, EF Core, HTTP, and hosted work.
 - Use primary constructors, records, collection expressions, and other current language features when they improve clarity and match the repository language version.
+- For new or actively touched models, prefer `required` members, strongly typed IDs/value types,
+  `DateOnly`/`TimeOnly`, immutable records, and named factories when they remove invalid combinations or
+  positional-argument ambiguity; do not speculatively rewrite untouched, stable models to this shape. Keep
+  framework binding/materialization models (EF Core entities, DTOs bound by serializers) at the edge when
+  the framework requires a mutable/settable shape, and map to domain types only when it adds real value.
+- For closed enums or union-like states, prefer exhaustive `switch` expressions over catch-all defaults
+  when the build can enforce the warning.
 - Keep public APIs deliberate. Default implementation types to `internal` or `sealed` when extension is not intended.
 - Use `TimeProvider` for testable time and `RandomNumberGenerator` for security-sensitive randomness.
 
@@ -26,7 +33,7 @@
 
 ## Errors and telemetry
 
-- Throw specific exceptions for exceptional conditions; use typed results for expected domain outcomes.
+- Throw specific exceptions for exceptional conditions; use typed results for expected domain outcomes rather than exceptions as control flow.
 - Handle exceptions once at the delivery boundary and translate them into the established contract.
 - Use `ILogger<T>` message templates rather than interpolated strings. Redact values before logging.
 - Add metrics/traces around external calls and important operations, but avoid high-cardinality labels such as raw user IDs or URLs.
