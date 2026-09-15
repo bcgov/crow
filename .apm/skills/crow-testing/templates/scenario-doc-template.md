@@ -72,7 +72,7 @@ scenario is added, removed, or materially changed.
 ## Conditional external dependency scenarios
 
 Use this table only when the feature has a shared/canonical service, external decision source, event
-contract, or digital proof. Mark non-applicable rows `N/A`.
+contract, or digital proof. Omit rows that don't apply to this feature rather than marking them `N/A`.
 
 | Scenario | Required assertion |
 |---|---|
