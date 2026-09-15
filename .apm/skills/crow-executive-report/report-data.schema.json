@@ -3,6 +3,25 @@
   "$comment": "Schema for report-data.json consumed by render-report.ps1. The LLM emits ONLY this file; all chart math and HTML rendering is handled by the script.",
 
   "properties": {
+    "coverage_gaps": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "coverage_pct": {
+      "type": ["number", "null"],
+      "minimum": 0,
+      "maximum": 100
+    },
+    "coverage_assessed": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Measured assessed entry points. Use together with coverage_total; an incomplete pair is treated as unknown."
+    },
+    "coverage_total": {
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "description": "Measured total entry points. Use together with coverage_assessed; an incomplete pair is treated as unknown."
+    },
     "platform_alignment": {
       "type": ["object", "null"],
       "description": "Optional, evidence-based platform alignment summary. Null when the architecture evidence does not support it.",
@@ -86,6 +105,8 @@
     "probable_count": 12,
     "coverage_gaps": 2,
     "coverage_pct": 92,
+    "coverage_assessed": 46,
+    "coverage_total": 48,
 
     "total_deps": 48,
     "outdated_deps": 6,

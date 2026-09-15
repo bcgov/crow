@@ -153,8 +153,10 @@ $critArc   = if ($total -gt 0) { [math]::Round(($criticalCount / $total) * $circ
 $highArc   = if ($total -gt 0) { [math]::Round(($highCount / $total) * $circ, 2) } else { 0 }
 $medArc    = if ($total -gt 0) { [math]::Round(($mediumCount / $total) * $circ, 2) } else { 0 }
 $lowArc    = if ($total -gt 0) { [math]::Round(($lowCount / $total) * $circ, 2) } else { 0 }
+$infoArc   = if ($total -gt 0) { [math]::Round(($informationalCount / $total) * $circ, 2) } else { 0 }
 $critHighArc    = [math]::Round($critArc + $highArc, 2)
 $critHighMedArc = [math]::Round($critArc + $highArc + $medArc, 2)
+$critHighMedLowArc = [math]::Round($critArc + $highArc + $medArc + $lowArc, 2)
 
 $confirmedPct = Get-Pct $confirmedCount $total
 $probablePct  = Get-Pct $probableCount $total
@@ -164,18 +166,34 @@ $depsHealthyPct     = if ($totalDeps -gt 0) { Get-Pct ($totalDeps - $outdatedDep
 $depsOutdatedPct    = Get-Pct $outdatedDeps $totalDeps
 $depsVulnerablePct  = Get-Pct $vulnerableDeps $totalDeps
 
-$coveragePct = if ($data.PSObject.Properties['coverage_pct']) {
-    ConvertTo-Percentage $data.coverage_pct 'coverage_pct'
+$hasCoveragePct = $null -ne $data.PSObject.Properties['coverage_pct'] -and $null -ne $data.coverage_pct
+$hasCoverageAssessed = $null -ne $data.PSObject.Properties['coverage_assessed'] -and $null -ne $data.coverage_assessed
+$hasCoverageTotal = $null -ne $data.PSObject.Properties['coverage_total'] -and $null -ne $data.coverage_total
+
+$coverageIsKnown = $true
+if ($hasCoveragePct) {
+    $coveragePct = ConvertTo-Percentage $data.coverage_pct 'coverage_pct'
+} elseif ($hasCoverageAssessed -and $hasCoverageTotal) {
+    $coverageAssessed = ConvertTo-NonNegativeInteger $data.coverage_assessed 'coverage_assessed'
+    $coverageTotal = ConvertTo-NonNegativeInteger $data.coverage_total 'coverage_total'
+    if ($coverageTotal -eq 0) {
+        throw "Field 'coverage_total' must be greater than zero when calculating assessment coverage."
+    }
+    if ($coverageAssessed -gt $coverageTotal) {
+        throw "Field 'coverage_assessed' cannot exceed 'coverage_total'."
+    }
+    $coveragePct = Get-Pct $coverageAssessed $coverageTotal
+} elseif ($hasCoverageAssessed -or $hasCoverageTotal) {
+    # A partial denominator pair cannot produce a trustworthy percentage.
+    $coveragePct = 0
+    $coverageIsKnown = $false
+} elseif ($coverageGaps -eq 0) {
+    # No reported gaps is compatible with full coverage, but gaps alone do not
+    # provide a denominator for calculating a partial percentage.
+    $coveragePct = 100
 } else {
-    100
-}
-$totalEntryPoints = if ($data.PSObject.Properties['coverage_pct']) {
-    if ($coveragePct -gt 0 -and $coveragePct -lt 100) {
-        [math]::Round($coverageGaps / (1 - ($coveragePct / 100)), 0)
-    } else { $coverageGaps }
-} else { 0 }
-if (-not $data.PSObject.Properties['coverage_pct']) {
-    $coveragePct = if ($totalEntryPoints -gt 0) { Get-Pct ($totalEntryPoints - $coverageGaps) $totalEntryPoints } else { 100 }
+    $coveragePct = 0
+    $coverageIsKnown = $false
 }
 
 # --- OWASP bar chart: compute percentages relative to max ---
@@ -400,6 +418,8 @@ $numericScalars = @{
     'LOW_ARC'             = $lowArc
     'CRIT_HIGH_ARC'       = $critHighArc
     'CRIT_HIGH_MED_ARC'   = $critHighMedArc
+    'CRIT_HIGH_MED_LOW_ARC' = $critHighMedLowArc
+    'INFO_ARC'           = $infoArc
     'CONFIRMED_PCT'       = $confirmedPct
     'PROBABLE_PCT'        = $probablePct
     'INFO_PCT'            = $infoPct
@@ -411,6 +431,13 @@ $numericScalars = @{
     'DEPS_OUTDATED_PCT'   = $depsOutdatedPct
     'DEPS_VULNERABLE_PCT' = $depsVulnerablePct
     'COVERAGE_PCT'        = $coveragePct
+}
+
+$textScalars['COVERAGE_LABEL'] = if ($coverageIsKnown) { "$(ConvertTo-InvariantNumber $coveragePct)%" } else { 'N/A' }
+$textScalars['COVERAGE_NOTE'] = if ($coverageIsKnown) {
+    "$coverageGaps entry point(s) not fully assessed"
+} else {
+    "$coverageGaps entry point(s) not fully assessed; total entry points were not supplied, so coverage cannot be calculated"
 }
 
 foreach ($key in $textScalars.Keys) {
