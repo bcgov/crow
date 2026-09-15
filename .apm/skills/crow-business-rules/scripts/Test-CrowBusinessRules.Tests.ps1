@@ -287,14 +287,14 @@ function New-BaseData {
             [ordered]@{
                 id          = 'intake-decision'
                 title       = 'Intake decision flow'
-                description = 'Order in which intake rules are applied.'
+                description = 'A submission is checked for age (BR-0001), then its fee is calculated (BR-0002) before processing continues.'
                 mermaid     = "flowchart TD`n  A[Submission] --> B[Validate age]`n  B --> C[Calculate fee]"
                 rule_refs   = @('BR-0001', 'BR-0002')
             },
             [ordered]@{
                 id          = 'application-lifecycle'
                 title       = 'Application lifecycle states'
-                description = 'States an application moves through.'
+                description = 'An application starts in Draft and moves to Submitted; the lifecycle diagram shows the transition represented by BR-0003.'
                 mermaid     = "stateDiagram-v2`n  [*] --> Draft`n  Draft --> Submitted"
                 rule_refs   = @('BR-0003')
             }
@@ -647,6 +647,18 @@ try {
             'id="no-results"',
             'class="match-reason"',
             'tabindex="-1"',
+            'class="page-header__details"',
+            'class="section-details"',
+            'class="rule-index"',
+            'id="rule-search"',
+            'class="table-responsive"',
+            'data-rule-id="BR-0001"',
+            'href="#rule-BR-0001"',
+            'href="#doc-DOC-1"',
+            'function openDirectDisclosure(section)',
+            'function clearFilters()',
+            'Text alternative',
+            'A submission is checked for age (BR-0001), then its fee is calculated (BR-0002)',
             '<form id="facet-filter" class="facet-filter" hidden>',
             'Blocks submission before processing.',
             'Documentation gap',
@@ -674,7 +686,21 @@ try {
     $passed++
 
     # -----------------------------------------------------------------
-    # 2. Two diagrams inline without identifier collisions
+    # 2. Print styles expose collapsed content without JavaScript
+    # -----------------------------------------------------------------
+    $stylesheetPath = Join-Path $skillRoot 'assets\business-rules.css'
+    $stylesheet = [System.IO.File]::ReadAllText($stylesheetPath)
+    Assert-Contains -Text $stylesheet -Expected 'details:not([open]) > :not(summary)' `
+        -Message 'Print styles must expose content from closed disclosure elements'
+    Assert-Contains -Text $stylesheet -Expected 'details > summary' `
+        -Message 'Print styles must hide disclosure summaries after exposing their content'
+    Assert-Contains -Text $stylesheet -Expected '@media print' `
+        -Message 'Print styles must include a print media block'
+    Write-Host 'Passed: print styles preserve collapsed report content without JavaScript'
+    $passed++
+
+    # -----------------------------------------------------------------
+    # 3. Two diagrams inline without identifier collisions
     # -----------------------------------------------------------------
     $identifiers = @([regex]::Matches($html, '\sid="([^"]+)"') | ForEach-Object { $_.Groups[1].Value })
     $duplicates = @($identifiers | Group-Object | Where-Object { $_.Count -gt 1 })

@@ -604,6 +604,7 @@ $($options -join "`n")
 "@)
     }
 
+    $ruleIndexRows = New-Object 'System.Collections.Generic.List[string]'
     $ruleCards = New-Object 'System.Collections.Generic.List[string]'
     foreach ($rule in $rules) {
         $ruleId = Get-Text $rule.id
@@ -611,6 +612,15 @@ $($options -join "`n")
         $classification = Get-Text $rule.reconciliation.classification
         $status = Get-Text $rule.status
         $facetRefs = @(Get-Items $rule.facets)
+        $ruleIndexRows.Add(@"
+        <tr data-rule-id="$(ConvertTo-CrowHtmlText $ruleId)">
+          <th scope="row"><a href="#$(ConvertTo-CrowHtmlText $cardId)">$(ConvertTo-CrowHtmlText $ruleId)</a></th>
+          <td><a href="#$(ConvertTo-CrowHtmlText $cardId)">$(ConvertTo-CrowHtmlText $rule.title)</a></td>
+          <td>$(ConvertTo-CrowHtmlText $rule.category)</td>
+          <td>$(ConvertTo-CrowHtmlText $status)</td>
+          <td>$(ConvertTo-CrowHtmlText $classification)</td>
+        </tr>
+"@)
         $matchNotes = @{}
         foreach ($note in Get-Items (Get-CrowProperty $rule 'match_notes')) {
             $matchNotes[$note.facet] = Get-Text $note.reason
@@ -645,7 +655,7 @@ $($options -join "`n")
 
         $documentationItems = New-Object 'System.Collections.Generic.List[string]'
         foreach ($documentationRef in Get-Items $rule.documentation_refs) {
-            $documentationItems.Add("        <li>$(ConvertTo-CrowHtmlText $documentationRef)</li>")
+            $documentationItems.Add("        <li><a href=`"#doc-$(ConvertTo-CrowHtmlText $documentationRef)`">$(ConvertTo-CrowHtmlText $documentationRef)</a></li>")
         }
         $documentationMarkup = ''
         if ($documentationItems.Count -gt 0) {
@@ -695,18 +705,39 @@ $documentationMarkup
 "@)
     }
 
+    $ruleIndexHtml = @"
+      <div class="table-responsive" tabindex="0" role="region" aria-label="Business rule index">
+        <table class="data-table">
+          <caption>Business rule index</caption>
+          <thead>
+            <tr><th scope="col">ID</th><th scope="col">Title</th><th scope="col">Category</th><th scope="col">Status</th><th scope="col">Reconciliation</th></tr>
+          </thead>
+          <tbody>
+$($ruleIndexRows -join "`n")
+          </tbody>
+        </table>
+      </div>
+"@
+
     $diagramMarkup = New-Object 'System.Collections.Generic.List[string]'
     foreach ($diagram in $diagrams) {
         $diagramId = Get-Text $diagram.id
-        $ruleRefs = @(Get-Items $diagram.rule_refs | ForEach-Object { ConvertTo-CrowHtmlText $_ })
+        $ruleRefs = @(Get-Items $diagram.rule_refs | ForEach-Object {
+            $ruleRef = ConvertTo-CrowHtmlText $_
+            "<a href=`"#rule-$ruleRef`">$ruleRef</a>"
+        })
         $diagramMarkup.Add(@"
     <figure class="diagram" id="diagram-$(ConvertTo-CrowHtmlText $diagramId)">
-      <figcaption id="diagram-$(ConvertTo-CrowHtmlText $diagramId)-title">$(ConvertTo-CrowHtmlText $diagram.title)</figcaption>
+      <figcaption id="diagram-$(ConvertTo-CrowHtmlText $diagramId)-title"><h3>$(ConvertTo-CrowHtmlText $diagram.title)</h3></figcaption>
       <p class="diagram__description" id="diagram-$(ConvertTo-CrowHtmlText $diagramId)-description">$(ConvertTo-CrowHtmlText $diagram.description)</p>
       <div class="diagram__canvas">
 $($renderedDiagrams[$diagramId])
       </div>
       <p class="diagram__rules">Related rules: $($ruleRefs -join ', ')</p>
+      <details class="diagram__alternative">
+        <summary>Text alternative</summary>
+        <p>$(ConvertTo-CrowHtmlText $diagram.description)</p>
+      </details>
     </figure>
 "@)
     }
@@ -716,27 +747,36 @@ $($renderedDiagrams[$diagramId])
 
     $documentationRowsHtml = New-Object 'System.Collections.Generic.List[string]'
     foreach ($source in $sources) {
+        $sourceLocation = Get-Text $source.location
+        $locationMarkup = if ($sourceLocation -match '^https://') {
+            "<a href=`"$(ConvertTo-CrowHtmlText $sourceLocation)`">Open source</a>"
+        }
+        else {
+            "<code class=`"source-location`">$(ConvertTo-CrowHtmlText $sourceLocation)</code>"
+        }
         $documentationRowsHtml.Add(@"
-        <tr>
-          <td>$(ConvertTo-CrowHtmlText $source.id)</td>
+        <tr id="doc-$(ConvertTo-CrowHtmlText $source.id)">
+          <th scope="row">$(ConvertTo-CrowHtmlText $source.id)</th>
           <td>$(ConvertTo-CrowHtmlText $source.title)</td>
           <td>$(ConvertTo-CrowHtmlText $source.kind)</td>
           <td>$(ConvertTo-CrowHtmlText $source.status)</td>
-          <td>$(ConvertTo-CrowHtmlText $source.location)</td>
+          <td>$locationMarkup</td>
         </tr>
 "@)
     }
     $documentationHtml = if ($documentationRowsHtml.Count -gt 0) {
         @"
-      <table class="data-table">
-        <caption>Documentation used for reconciliation</caption>
-        <thead>
-          <tr><th scope="col">Source</th><th scope="col">Title</th><th scope="col">Kind</th><th scope="col">Status</th><th scope="col">Location</th></tr>
-        </thead>
-        <tbody>
+      <div class="table-responsive" tabindex="0" role="region" aria-label="Documentation used for reconciliation">
+        <table class="data-table">
+          <caption>Documentation used for reconciliation</caption>
+          <thead>
+            <tr><th scope="col">Source</th><th scope="col">Title</th><th scope="col">Kind</th><th scope="col">Status</th><th scope="col">Location</th></tr>
+          </thead>
+          <tbody>
 $($documentationRowsHtml -join "`n")
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      </div>
 "@
     }
     else {
@@ -769,17 +809,19 @@ $($documentationRowsHtml -join "`n")
 
     $categoryRows = New-Object 'System.Collections.Generic.List[string]'
     foreach ($category in ($categoryCounts.Keys | Sort-Object)) {
-        $categoryRows.Add(("        <tr><td>$(ConvertTo-CrowHtmlText $category)</td>" +
+        $categoryRows.Add(("        <tr><th scope=`"row`">$(ConvertTo-CrowHtmlText $category)</th>" +
             "<td>$($categoryCounts[$category])</td></tr>"))
     }
     $reconciliationHtml = @"
-      <table class="data-table">
-        <caption>Rules by category</caption>
-        <thead><tr><th scope="col">Category</th><th scope="col">Rules</th></tr></thead>
-        <tbody>
+      <div class="table-responsive" tabindex="0" role="region" aria-label="Rules by category">
+    <table class="data-table">
+      <caption>Rules by category</caption>
+      <thead><tr><th scope="col">Category</th><th scope="col">Rules</th></tr></thead>
+      <tbody>
 $($categoryRows -join "`n")
-        </tbody>
-      </table>
+      </tbody>
+    </table>
+      </div>
 "@
 
     $openQuestionsHtml = if ($openQuestions.Count -gt 0) {
@@ -815,6 +857,7 @@ $(@($openQuestions | ForEach-Object { "        <li>$(ConvertTo-CrowHtmlText $_)<
         'FACET_CONTROLS'         = ($facetControls -join "`n")
         'FILTER_STATUS'          = "Showing $($rules.Count) of $($rules.Count) rules."
         'RULE_COUNT'             = [string]$rules.Count
+        'RULE_INDEX'             = $ruleIndexHtml
         'RULE_CARDS'             = ($ruleCards -join "`n")
         'DIAGRAM_SECTIONS'       = ($diagramMarkup -join "`n")
         'RECONCILIATION_SECTION' = $reconciliationHtml

@@ -16,6 +16,7 @@
   var ruleList = document.getElementById("rule-list");
   var statusRegion = document.getElementById("filter-status");
   var emptyMessage = document.getElementById("no-results");
+  var searchInput = document.getElementById("rule-search");
 
   if (!form || !ruleList || !statusRegion || !emptyMessage) {
     return;
@@ -31,9 +32,15 @@
   }
 
   var cards = toArray(ruleList.querySelectorAll(".rule-card"));
+  var indexRows = toArray(document.querySelectorAll(".rule-index tr[data-rule-id]"));
   var inputs = toArray(form.querySelectorAll("input[type=checkbox][data-facet]"));
   var toggles = toArray(document.querySelectorAll(".reasons-toggle"));
+  var ruleNavigationLinks = toArray(document.querySelectorAll(
+    ".rule-index a[href^='#rule-'], .diagram__rules a[href^='#rule-']"
+  ));
+  var disclosureDetails = toArray(document.querySelectorAll("details"));
   var totalCount = cards.length;
+  var printDisclosureState = null;
 
   function getFacets(card) {
     var value = card.getAttribute("data-facets");
@@ -89,6 +96,13 @@
     return true;
   }
 
+  function matchesSearch(card, query) {
+    if (!query) {
+      return true;
+    }
+    return card.textContent.toLowerCase().indexOf(query) !== -1;
+  }
+
   function updateReasons(card, selected) {
     var reasons = toArray(card.querySelectorAll(".match-reason"));
     var index;
@@ -105,24 +119,31 @@
 
   function applyFilter() {
     var selection = getSelection();
+    var query = searchInput ? searchInput.value.trim().toLowerCase() : "";
     var activeElement = document.activeElement;
     var focusWasHidden = false;
     var visibleCount = 0;
     var index;
     var card;
     var matched;
+    var visibleRuleIds = {};
 
     for (index = 0; index < cards.length; index += 1) {
       card = cards[index];
-      matched = matchesSelection(card, selection.groups);
+      matched = matchesSelection(card, selection.groups) && matchesSearch(card, query);
       if (!matched && activeElement && card.contains(activeElement)) {
         focusWasHidden = true;
       }
       card.hidden = !matched;
+      visibleRuleIds[card.getAttribute("data-rule-id")] = matched;
       if (matched) {
         visibleCount += 1;
         updateReasons(card, selection.selected);
       }
+    }
+    for (index = 0; index < indexRows.length; index += 1) {
+      indexRows[index].hidden =
+        !visibleRuleIds[indexRows[index].getAttribute("data-rule-id")];
     }
 
     if (visibleCount === 0) {
@@ -154,16 +175,109 @@
     });
   }
 
+  function openDirectDisclosure(section) {
+    var child = section.firstElementChild;
+    if (section.tagName && section.tagName.toLowerCase() === "details") {
+      section.open = true;
+      return;
+    }
+    while (child) {
+      if (child.tagName && child.tagName.toLowerCase() === "details") {
+        child.open = true;
+        return;
+      }
+      child = child.nextElementSibling;
+    }
+  }
+
+  function openSectionFromHash() {
+    var hash = window.location.hash;
+    var section;
+    var current;
+    if (!hash || hash.length < 2) {
+      return;
+    }
+    section = document.getElementById(hash.substring(1));
+    if (!section) {
+      return;
+    }
+    openDirectDisclosure(section);
+    current = section;
+    while (current && current !== document) {
+      if (current.tagName && current.tagName.toLowerCase() === "details") {
+        current.open = true;
+      }
+      current = current.parentElement;
+    }
+  }
+
+  function clearFilters() {
+    var index;
+    for (index = 0; index < inputs.length; index += 1) {
+      inputs[index].checked = false;
+    }
+    if (searchInput) {
+      searchInput.value = "";
+    }
+    applyFilter();
+  }
+
+  function bindRuleNavigation(link) {
+    link.addEventListener("click", function (event) {
+      var href = link.getAttribute("href");
+      var target = href ? document.getElementById(href.substring(1)) : null;
+      if (!target || !target.hidden) {
+        return;
+      }
+      event.preventDefault();
+      clearFilters();
+      window.location.hash = target.id;
+      openSectionFromHash();
+      target.focus();
+    });
+  }
+
   var toggleIndex;
   for (toggleIndex = 0; toggleIndex < toggles.length; toggleIndex += 1) {
     bindToggle(toggles[toggleIndex]);
   }
+  for (toggleIndex = 0; toggleIndex < ruleNavigationLinks.length; toggleIndex += 1) {
+    bindRuleNavigation(ruleNavigationLinks[toggleIndex]);
+  }
 
   form.hidden = false;
+  window.addEventListener("hashchange", openSectionFromHash);
   form.addEventListener("change", applyFilter);
+  if (searchInput) {
+    searchInput.addEventListener("input", applyFilter);
+  }
   form.addEventListener("reset", function () {
+    if (searchInput) {
+      searchInput.value = "";
+    }
     window.setTimeout(applyFilter, 0);
   });
 
+  window.addEventListener("beforeprint", function () {
+    printDisclosureState = [];
+    for (var detailsIndex = 0; detailsIndex < disclosureDetails.length; detailsIndex += 1) {
+      printDisclosureState.push(disclosureDetails[detailsIndex].open);
+      disclosureDetails[detailsIndex].open = true;
+    }
+    for (var index = 0; index < cards.length; index += 1) {
+      cards[index].hidden = false;
+    }
+  });
+  window.addEventListener("afterprint", function () {
+    if (printDisclosureState) {
+      for (var detailsIndex = 0; detailsIndex < disclosureDetails.length; detailsIndex += 1) {
+        disclosureDetails[detailsIndex].open = printDisclosureState[detailsIndex];
+      }
+      printDisclosureState = null;
+    }
+    applyFilter();
+  });
+
+  openSectionFromHash();
   applyFilter();
 })();
