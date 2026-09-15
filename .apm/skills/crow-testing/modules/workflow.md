@@ -71,9 +71,11 @@ Complete this before opening the discussion:
 5. Ask which candidate batch to start with.
 6. When behavior is unknown and there is no coverage, present a time-boxed characterization plan before code.
    If a seam is required, describe the dependency-breaking technique and its production-code footprint.
-7. If discovery surfaces a **confirmed bug**, or a design smell that directly blocks test authoring or
-   requires an explicitly approved seam/refactor, load `reference/work-item-drafting.md` and create a
-   draft candidate. Check the local `testing-plan.md` Work-item candidates table first. Do not search an
+7. If discovery surfaces a **confirmed bug** — for example, validation or authorization enforced only in
+   UI/client code with no server-side equivalent, per `foundation.md` — or a design smell that directly
+   blocks test authoring or requires an explicitly approved seam/refactor, load
+   `reference/work-item-drafting.md` and create a draft candidate. Check the local `testing-plan.md`
+   Work-item candidates table first. Do not search an
    external tracker. Keep the draft durable until the user confirms manual filing and supplies an ID/link,
    or until a future authorized provider confirms creation. Suspected/unknown behavior stays on the
    characterization path above; ordinary testability/design-smell findings stay in `testability-notes.md` or

@@ -30,7 +30,13 @@ explicitly asks to remember new pipeline details.
 - When assessing a behavior for automation, classify it as automated candidate, manual-only, deferred
   automation, or coverage gap. Maintain `docs/testing/manual-coverage.md` only for manual-only and
   deferred-automation items; manual coverage never replaces an available automated test.
-- When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Reuse existing integration scenarios rather than creating duplicate matrices.
+- When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Exercise these scenarios directly against the API/service layer, independent of any UI-only constraint. Reuse existing integration scenarios rather than creating duplicate matrices.
+- Treat validation or authorization enforced only in UI/client code, with no independent server-side
+  equivalent, as a **confirmed bug** (see `modules/foundation.md`), not a non-blocking finding: reproduce it
+  with a request against the API/service that bypasses the UI, and route it through
+  `reference/work-item-drafting.md`. Detection detail for client-side bypass patterns belongs to
+  `crow-security-review`'s `frontend-spa-security.md`/`auth-and-access-control.md`; this skill does not
+  duplicate it.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
 - For bug fixes or shared behavior changes, perform bounded caller, contract, configuration, and test impact analysis using the routed module; disclose graph limits and dynamic or external blind spots.

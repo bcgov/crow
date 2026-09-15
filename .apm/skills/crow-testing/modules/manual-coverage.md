@@ -39,20 +39,32 @@ Do not record whether QA has executed a scenario in this repository.
 7. Revisit entries after refactors, shared-component changes, test-infrastructure changes, or related
    work-item completion.
 
+## Selecting a representative sample for a shared UI change
+
+For a UI change to something shared/reused across pages (a layout, design-system control, shared component,
+validation pattern), pick one or two representative pages/components instead of enumerating every page.
+Prefer the highest-impact sample: highest-traffic or most business-critical, a realistic/maximal data-state
+variant, or a permission-sensitive/destructive-action view. If the repository also uses `crow-bcgov-ux`,
+reuse its representative-screen categories in
+[`review-remediation.md`](../../crow-bcgov-ux/modules/review-remediation.md) instead of restating them here.
+
+Record the sample and reason in the scope section (see "Required register fields" below), and revisit it
+only when the shared element or affected pages materially change.
+
 Manual coverage is not a substitute for an available unit or integration test. Do not claim a feature is
 fully automated while manual-only, deferred, or coverage-gap scenarios remain. One-time post-fix checks
 belong in the work-item draft and should not automatically become recurring `MC-###` scenarios.
 
 ## Required register fields
 
-Each index entry needs a stable area ID, feature or bug link, detail-document link, classification, release
-trigger, and short QA scope. Each detail document needs a stable scenario ID, work item or feature link,
-behavior and scope, classification, reason, release/recheck trigger, prerequisites and test data, manual
-steps, expected result, and recheck/automation triggers.
+Each index row needs a stable area ID, links, classification, release trigger, and short QA scope. Each
+detail document needs a stable scenario ID, links, behavior/scope, classification and reason,
+release/recheck trigger, prerequisites and test data, the page(s)/relative route(s) a tester navigates to,
+manual steps, expected result, and recheck/automation triggers. If the behavior has a UI entry point, record
+the actual relative path (for example `/admin/users/{id}/edit`), not just a page name.
 
-Execution tracking and run evidence belong in external QA systems according to the consuming project's
-security and privacy practices. Do not add execution evidence, screenshots, logs, payloads, or run dates to
-the repository's manual-QA Markdown.
+Execution evidence — results, screenshots, logs, payloads, run dates — belongs in the team's external QA
+system, per the consuming project's security and privacy practices, not in this repository's Markdown.
 
 Use `templates/manual-coverage-template.md` for the index shape and
 `templates/manual-scenario-template.md` for each detailed scenario document.

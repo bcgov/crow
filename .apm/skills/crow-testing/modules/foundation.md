@@ -31,6 +31,28 @@ inspect callers, contracts, configuration, and related tests. Record graph
 bounds and blind spots; dynamic dispatch, generated code, external consumers,
 and database or event behavior may require manual follow-up.
 
+## UI-only enforcement is a confirmed bug, not a design-smell finding
+
+Validation or authorization enforced only in UI/client code (a disabled or hidden control, a client-side
+check with no server-side equivalent) can only be exercised by UI-level test automation — which this skill
+already treats as a last resort, see "Use UI-level test automation sparingly" below — and leaves the actual
+API/service genuinely untested against any non-UI caller: a script, another client, or a request replayed
+directly against the API (for example via browser dev tools). The API is the contract; the UI is progressive
+enhancement on top of it, not the enforcement layer.
+
+Treat this as a **confirmed bug**, not a non-blocking `testability-notes.md` finding: it is directly
+reproducible by calling the API/service without going through the UI, the same way any other confirmed bug
+is reproduced at the lowest level that can catch it (see the regression-driven loop above). Route it through
+`reference/work-item-drafting.md` per `workflow.md` Step 3/Step 7. Pushing the rule server-side is also what
+makes it testable at the unit/integration level at all — the same seam-extraction logic this skill already
+applies to the anemic-domain-model smell.
+
+This skill does not catalog client-side bypass patterns itself; for detection detail, load
+`crow-security-review`'s
+[`frontend-spa-security.md`](../../crow-security-review/modules/frontend-spa-security.md) ("Client-Side
+Authorization (Bypass Risk)") and
+[`auth-and-access-control.md`](../../crow-security-review/modules/auth-and-access-control.md).
+
 ## Choosing the level: the canonical rule
 
 **This is the one authoritative statement of the rule. Other modules point here rather than restating it.**
