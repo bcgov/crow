@@ -48,6 +48,40 @@ Complete this before opening the discussion:
    Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
    customized. Never regenerate `testing-plan.md` wholesale or discard its managed-template registry.
 
+### Document-maintenance checkpoint
+
+Testing documents are living indexes, not an append-only activity log. Evaluate maintenance when any active
+testing document reaches one of these conservative thresholds:
+
+- more than 400 lines;
+- more than 25% of its rows are resolved, retired, declined, or otherwise inactive; or
+- an inactive item has had no meaningful update for 90 days.
+
+Use repository history or an explicitly recorded authoritative update date to establish the 90-day age.
+Do not infer age from QA execution dates, which belong outside repository Markdown.
+
+Use the narrowest affected document as the unit of review. Do not wait for a threshold to remove an item
+that is plainly obsolete when the document is already being edited, but do not perform a repository-wide
+cleanup pass.
+
+Classify content before pruning:
+
+- **Keep:** current scenario definitions and coverage, authoritative rules, open decisions, active manual or
+  deferred coverage, unresolved candidates, and concise context required to understand current behavior.
+- **Delete from active documents:** completed or closed work-item draft detail (remove the corresponding
+  `testing-plan.md` index row entirely, not just its `Draft path`), resolved or obsolete testability notes,
+  retired manual/deferred scenario detail, and completed scenario activity notes that no longer explain
+  current coverage. Completed scenario definitions remain when they describe behavior the system still
+  supports.
+- **Declined candidates:** delete the full draft, but retain one compact `testing-plan.md` index row using
+  the exact `Declined / Won't track` status, the subject, `Draft path` set to `None`, and a short reason in
+  the row's `Notes` column. This tombstone prevents rediscovery without retaining a large rejected proposal.
+
+Before deleting, verify that the item is not linked from an active scenario, current decision, manual-QA
+register, or unresolved work item. If status or ownership is ambiguous, stop and present the affected paths
+for user resolution. Record a short maintenance note only when pruning changes how a future agent should
+interpret the remaining index; otherwise avoid adding a new history log.
+
 ## Step 2: Open the discussion
 
 1. Present discovered facts and concrete assumptions for correction or confirmation.
@@ -71,9 +105,11 @@ Complete this before opening the discussion:
 5. Ask which candidate batch to start with.
 6. When behavior is unknown and there is no coverage, present a time-boxed characterization plan before code.
    If a seam is required, describe the dependency-breaking technique and its production-code footprint.
-7. If discovery surfaces a **confirmed bug**, or a design smell that directly blocks test authoring or
-   requires an explicitly approved seam/refactor, load `reference/work-item-drafting.md` and create a
-   draft candidate. Check the local `testing-plan.md` Work-item candidates table first. Do not search an
+7. If discovery surfaces a **confirmed bug** — for example, validation or authorization enforced only in
+   UI/client code with no server-side equivalent, per `foundation.md` — or a design smell that directly
+   blocks test authoring or requires an explicitly approved seam/refactor, load
+   `reference/work-item-drafting.md` and create a draft candidate. Check the local `testing-plan.md`
+   Work-item candidates table first. Do not search an
    external tracker. Keep the draft durable until the user confirms manual filing and supplies an ID/link,
    or until a future authorized provider confirms creation. Suspected/unknown behavior stays on the
    characterization path above; ordinary testability/design-smell findings stay in `testability-notes.md` or
