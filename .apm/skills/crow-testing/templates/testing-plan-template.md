@@ -52,7 +52,7 @@ a new candidate. Full plain-language drafts live under `docs/testing/drafts/`.
 
 | Draft key | Type | Tracking | Subject | Source | Draft path | Notes |
 |---|---|---|---|---|---|---|
-| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Created - <provider>:<ID> / Declined / Won't track | | | | |
+| | Bug / Design smell | Draft — not filed / Existing — <ID/link> / Created — <provider>:<ID> / Declined / Won't track | | | | |
 
 <!-- Remove a completed/closed candidate's row entirely once its draft is deleted; do not leave a blanked
 row. Keep declined rows as compact anti-rediscovery tombstones: delete the full draft file, set Draft path

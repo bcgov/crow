@@ -63,8 +63,9 @@ belong in the work-item draft and should not automatically become recurring `MC-
 ## Required register fields
 
 Each index row needs a stable area ID, links, classification, release trigger, and short QA scope. Each
-detail document needs a stable scenario ID, links, behavior/scope, classification and reason,
-release/recheck trigger, prerequisites and test data, the page(s)/relative route(s) a tester navigates to,
+detail document needs a stable scenario ID, links, behavior/scope, classification and reason, and, for
+shared UI changes, the representative sample and reason, release/recheck trigger, prerequisites and test
+data, the page(s)/relative route(s) a tester navigates to,
 manual steps, expected result, and recheck/automation triggers. If the behavior has a UI entry point, record
 the actual relative path (for example `/admin/users/{id}/edit`), not just a page name.
 

@@ -44,8 +44,8 @@ for:
 
 Assert that the system does not over-fetch or silently widen disclosure, does
 not produce a false success, does not duplicate side effects, and does not
-weaken authorization or identity assurance during fallback. Mark scenarios
-`N/A` when the dependency or proof property is not present.
+weaken authorization or identity assurance during fallback. Omit scenarios when
+the dependency or proof property is not present.
 
 ## Scenario-doc-first workflow (hard gate)
 

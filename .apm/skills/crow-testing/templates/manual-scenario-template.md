@@ -14,7 +14,7 @@ Omit any field below that doesn't apply to this document instead of writing N/A.
 | Classification | Manual-only / Deferred automation |
 | Status | Draft / Current / Needs decision |
 | Default release trigger | Every release / When <component> changes / Smoke only |
-| Related work item | `None`, `DRAFT-*`, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
+| Related work item | `None`, `DRAFT-*`, `Existing — <ID/link>`, or `Created — <provider>:<ID>` |
 | Open decisions | Short list or `None` |
 
 ## Scope and automation rationale

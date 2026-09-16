@@ -116,7 +116,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.7.6 --global --target copilot
+apm install bcgov/crow#v0.7.7 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -130,15 +130,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.7.6 --global --target copilot
+apm install bcgov/crow#v0.7.7 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.7.6 --global --target claude
-apm install bcgov/crow#v0.7.6 --global --target codex
-apm install bcgov/crow#v0.7.6 --global --target cursor
+apm install bcgov/crow#v0.7.7 --global --target claude
+apm install bcgov/crow#v0.7.7 --global --target codex
+apm install bcgov/crow#v0.7.7 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -182,21 +182,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.7.6.zip
+build/bcgov-crow-0.7.7.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.7.6.zip --global --target claude
-apm install .\build\bcgov-crow-0.7.6.zip --global --target codex
-apm install .\build\bcgov-crow-0.7.6.zip --global --target copilot
-apm install .\build\bcgov-crow-0.7.6.zip --global --target cursor
+apm install .\build\bcgov-crow-0.7.7.zip --global --target claude
+apm install .\build\bcgov-crow-0.7.7.zip --global --target codex
+apm install .\build\bcgov-crow-0.7.7.zip --global --target copilot
+apm install .\build\bcgov-crow-0.7.7.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.7.6.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.7.6
+Expand-Archive .\build\bcgov-crow-0.7.7.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.7.7
 ```
