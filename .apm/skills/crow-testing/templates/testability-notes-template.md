@@ -55,3 +55,9 @@ not to be fixed as part of a testing engagement itself unless explicitly request
 | Area | Why it matters | Test level |
 |---|---|---|
 | | | |
+
+<!--
+Maintenance: resolved or obsolete notes are transient planning detail. Remove them when the document
+maintenance threshold is reached or when the surrounding area is next updated. Keep accepted constraints
+only while they explain a current decision; remove stale constraints rather than accumulating history.
+-->

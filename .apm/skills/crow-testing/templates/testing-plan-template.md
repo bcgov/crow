@@ -16,6 +16,8 @@ Status-vocabulary schema: v2.
 | Open decisions | Short list or `None` |
 | Work-item candidates | Count and/or `DRAFT-*` keys; full drafts are linked below |
 
+<!-- Apply the threshold-triggered document-maintenance checkpoint in modules/workflow.md. -->
+
 <!--
 Rollup only. Reconcile these values with the detailed tables below whenever the plan changes. Existing
 documents may be backfilled lazily when next touched; do not mass-rewrite older plans.
@@ -48,9 +50,13 @@ One row per confirmed bug or explicitly approved actionable design smell. Check 
 a new candidate. Full plain-language drafts live under `docs/testing/drafts/`.
 -->
 
-| Draft key | Type | Tracking | Subject | Source | Draft path |
-|---|---|---|---|---|---|
-| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Created - <provider>:<ID> / Declined / Won't track | | | |
+| Draft key | Type | Tracking | Subject | Source | Draft path | Notes |
+|---|---|---|---|---|---|---|
+| | Bug / Design smell | Draft - not filed / Existing - <ID/link> / Created - <provider>:<ID> / Declined / Won't track | | | | |
+
+<!-- Remove a completed/closed candidate's row entirely once its draft is deleted; do not leave a blanked
+row. Keep declined rows as compact anti-rediscovery tombstones: delete the full draft file, set Draft path
+to `None`, and record the short decline reason in Notes. -->
 
 ## Feature scenarios
 

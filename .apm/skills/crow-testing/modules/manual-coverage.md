@@ -39,6 +39,11 @@ Do not record whether QA has executed a scenario in this repository.
 7. Revisit entries after refactors, shared-component changes, test-infrastructure changes, or related
    work-item completion.
 
+When an area is retired or equivalent automated coverage is established and passes, remove its detailed
+manual scenario document and index row from the active register. Do not retain one-time execution history
+in repository Markdown; preserve only a current scenario reference when it is still needed to explain a
+coverage decision.
+
 ## Selecting a representative sample for a shared UI change
 
 For a UI change to something shared/reused across pages (a layout, design-system control, shared component,

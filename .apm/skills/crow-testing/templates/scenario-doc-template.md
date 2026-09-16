@@ -22,6 +22,10 @@ Fill in following a plain-language, table-first pattern:
 Rollup only: do not duplicate scenario steps or expected results here. Reconcile these values with the
 tables below at every verification pass. Existing documents may be backfilled lazily when this feature is
 next touched; do not mass-rewrite older documents.
+
+Maintenance: scenario definitions and current coverage are durable documentation even after their tests
+pass. Prune only obsolete scenarios, stale activity notes, or supporting detail that no longer explains
+current behavior; never remove a completed scenario merely because implementation is complete.
 -->
 
 ## Test matrix

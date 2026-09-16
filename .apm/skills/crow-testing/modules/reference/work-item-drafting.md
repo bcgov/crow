@@ -134,6 +134,22 @@ section is not applicable and explain why in one sentence. Never invent user-fac
 4. Verify the returned ID/link, persist `Created — <provider>:<ID>`, then delete the draft.
 5. On any failure or uncertainty, retain the draft and report the unresolved state.
 
+### Maintenance and declined candidates
+
+The local candidate index is an anti-rediscovery guard as well as an active backlog view. When the document
+maintenance checkpoint in `modules/workflow.md` is triggered:
+
+- keep drafts that are unfiled, filing is unconfirmed, or linked to unresolved work;
+- remove full drafts after confirmed completion/closure when no current scenario or decision depends on their
+  detail; remove the corresponding index row entirely — do not leave a row with `Draft path` cleared to
+  `None`;
+- remove full declined drafts, but retain one compact index row with `Declined / Won't track`, the subject,
+  `Draft path` set to `None`, and the short reason recorded in the index row's `Notes` column;
+- never delete a candidate merely because it is old when its status or resolution is unclear.
+
+The tombstone is intentionally minimal. It is not a second draft and must not accumulate reproduction,
+implementation, or historical detail.
+
 ## Future boundary
 
 Direct creation is not available in the current phase. No search, simulation, or claim of external creation is
