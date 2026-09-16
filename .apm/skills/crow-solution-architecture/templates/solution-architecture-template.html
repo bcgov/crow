@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="crow-source-sha256" content="{{MARKDOWN_SHA256}}">
+  <title>{{DOCUMENT_TITLE}}</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #242424;
+      --muted: #595959;
+      --surface: #fff;
+      --surface-alt: #f1f8ff;
+      --border: #d8d8d8;
+      --brand: #013366;
+      --accent: #fcba19;
+      --focus: #3b99fc;
+      --good: #2e8540;
+      --risk: #d8292f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #f5f5f5;
+      font: 1rem/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    a { color: #1a5a96; }
+    a:focus-visible, summary:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+    .skip-link {
+      position: absolute;
+      left: 1rem;
+      top: -5rem;
+      padding: .75rem 1rem;
+      color: var(--ink);
+      background: var(--accent);
+      z-index: 10;
+    }
+    .skip-link:focus { top: 1rem; }
+    header {
+      border-bottom: .35rem solid var(--accent);
+      color: #fff;
+      background: var(--brand);
+      padding: 2rem max(1rem, calc((100% - 76rem) / 2));
+    }
+    header p { margin-bottom: 0; }
+    nav, main, footer {
+      width: min(76rem, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+    nav {
+      padding: 1rem 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem 1rem;
+    }
+    main {
+      display: grid;
+      gap: 1rem;
+      padding-bottom: 3rem;
+    }
+    section {
+      padding: 1.25rem;
+      border: 1px solid var(--border);
+      border-radius: .35rem;
+      background: var(--surface);
+    }
+    .summary {
+      border-left: .4rem solid var(--brand);
+      background: var(--surface-alt);
+    }
+    .metadata {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .status {
+      display: inline-block;
+      padding: .15rem .55rem;
+      border: 2px solid currentColor;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: .65rem;
+      border: 1px solid var(--border);
+      text-align: left;
+      vertical-align: top;
+    }
+    th { color: #fff; background: var(--brand); }
+    tbody tr:nth-child(even) { background: var(--surface-alt); }
+    details {
+      border: 1px solid var(--border);
+      border-left: .35rem solid var(--brand);
+      padding: .75rem 1rem;
+      background: var(--surface);
+    }
+    summary { cursor: pointer; font-weight: 700; }
+    pre {
+      overflow-x: auto;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      background: #f7f7f7;
+    }
+    .flow-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+      gap: .75rem;
+      padding: 0;
+      list-style-position: inside;
+    }
+    .flow-list li {
+      padding: .75rem;
+      border-top: .3rem solid var(--accent);
+      background: var(--surface-alt);
+    }
+    footer { padding: 1rem 0 2rem; color: var(--muted); }
+    @media print {
+      body { background: #fff; }
+      nav, .skip-link { display: none; }
+      section, details { break-inside: avoid; }
+      details > * { display: block; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header>
+    <h1>{{DOCUMENT_TITLE}}</h1>
+    <p class="metadata">{{DOCUMENT_METADATA}}</p>
+  </header>
+  <nav aria-label="Document sections">{{DOCUMENT_NAVIGATION}}</nav>
+  <main id="main">{{DOCUMENT_SECTIONS}}</main>
+  <footer>
+    <p>Canonical source: <code>docs/solution-architecture.md</code>. This review is valid only when its source hash matches that file.</p>
+  </footer>
+</body>
+</html>

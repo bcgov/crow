@@ -47,6 +47,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
 
+      - name: Test solution architecture output validation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
+
       - name: Test business rule validation and rendering
         shell: pwsh
         run: |

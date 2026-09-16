@@ -23,6 +23,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 ## Available Agents
 
 - **Crow B.C. Government UX Agent** — Designs and implements new interfaces, or reviews and remediates existing applications, using the current B.C. Design System and WCAG 2.2 AA. Supports the frontend technologies covered by Crow while keeping user-journey design out of scope.
+- **Crow Solution Architecture Agent** — Designs a proposed B.C.-aligned solution, interviews stakeholders one question at a time to resolve material assumptions, and creates canonical Markdown plus an accessible, self-contained HTML review with rich workflow, data-flow, UX, implementation-choice, identity, payment, and common-component views.
 - **Crow Architecture Review Agent** — Inspects a repository and creates or updates verified architecture documentation under `docs/`, with conditional platform-role, reuse, custodianship, contract, degradation, and Zero Trust resource-protection assessment plus service-scoped documents and an index for monorepos.
 - **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, the approved Critical through Informational severity scheme, conditional data/proof checks, and cross-file data flow tracing via codebase-memory-mcp.
 - **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
@@ -36,6 +37,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 ## Available Skills
 
 - **crow-bcgov-ux** — Technology-routed B.C. Design System and accessibility guidance for creating UX or reviewing and updating an existing application, including point-of-use decision explanations and clear degraded/async/offline/assisted states without journey design. Includes HTML/CSS/Razor, React-family, Vue-family, Angular, Svelte, and Blazor modules.
+- **crow-solution-architecture** — Evidence-first solution design with an interview workflow, preferred architecture and technology defaults, constraint-driven fallbacks, B.C. identity guidance, common-component reuse, canonical Markdown, rich self-contained HTML, optional derived JSON, and deterministic consistency validation.
 - **crow-architecture-review** — Routes repository classification, inspection, document generation or update, and deterministic output validation.
 - **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules plus conditional, technology-neutral platform alignment, reuse, and Zero Trust resource-protection guidance.
 - **crow-application-development** — Technology-routed implementation guidance for .NET, ASP.NET Core, secure persistence, testing, CI, and containers.
@@ -55,6 +57,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 Resources are owned by the skills that consume them:
 
 - `.apm/skills/crow-bcgov-ux/` — B.C. government UX foundations, WCAG 2.2 AA acceptance criteria, existing-app review/remediation workflow, technology modules, and an optional `DESIGN.md` specification template
+- `.apm/skills/crow-solution-architecture/` — Evidence-first interview workflow, preferred defaults and fallbacks, B.C. identity and platform-service guidance, canonical Markdown and accessible HTML templates, optional derived JSON, and deterministic output validation
 - `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
 - `.apm/skills/crow-application-architecture/` — Context-routed architecture principles, conditional platform-alignment/reuse and Zero Trust resource-protection guidance, and .NET modules
 - `.apm/skills/crow-application-development/` — Context-routed .NET implementation modules
@@ -116,7 +119,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.7.7 --global --target copilot
+apm install bcgov/crow#v0.8.0 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -130,15 +133,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.7.7 --global --target copilot
+apm install bcgov/crow#v0.8.0 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.7.7 --global --target claude
-apm install bcgov/crow#v0.7.7 --global --target codex
-apm install bcgov/crow#v0.7.7 --global --target cursor
+apm install bcgov/crow#v0.8.0 --global --target claude
+apm install bcgov/crow#v0.8.0 --global --target codex
+apm install bcgov/crow#v0.8.0 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -182,21 +185,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.7.7.zip
+build/bcgov-crow-0.8.0.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.7.7.zip --global --target claude
-apm install .\build\bcgov-crow-0.7.7.zip --global --target codex
-apm install .\build\bcgov-crow-0.7.7.zip --global --target copilot
-apm install .\build\bcgov-crow-0.7.7.zip --global --target cursor
+apm install .\build\bcgov-crow-0.8.0.zip --global --target claude
+apm install .\build\bcgov-crow-0.8.0.zip --global --target codex
+apm install .\build\bcgov-crow-0.8.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.8.0.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.7.7.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.7.7
+Expand-Archive .\build\bcgov-crow-0.8.0.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.8.0
 ```
