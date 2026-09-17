@@ -33,11 +33,32 @@ deferred capabilities are available in the current Phase 1 agent.
 | Direct live SQL/SSAS discovery | Deferred | Future Raven/provider boundary in `modules/contracts.md` | Define provider-neutral inventory/result contracts after Raven exposes a reviewed capability. |
 | Future database providers | Deferred | Agent boundary and `modules/contracts.md` | Specify adapter contract and normalized inventory shape before implementation. |
 | Raven authentication, query, and tool names | Deferred | `modules/contracts.md` | Do not invent an API; adopt the reviewed Raven contract when available. |
-| Report-design and DW/SSAS-architect handoffs | Adapted | `modules/contracts.md` | Validate handoff payloads when the source agents are migrated. |
+| Report-design and DW/SSAS-architect handoffs | Adapted | `modules/contracts.md`, `crow-report-designer`, `crow-ssas-tabular-dw-architect` | Validate versioned payloads with representative fixtures before declaring parity. |
 | Optional business-rule context/output handoff | Adapted | `modules/contracts.md` | Add compatibility tests only if both capabilities expose versioned artifacts. |
 | Deterministic inventory, audit, script, and schema validation | Deferred | No Phase 1 scripts | Decide execution authority, then add narrowly scoped scripts with non-zero failure behavior. |
 | DW architecture, DAX, ELT, pipeline, report design, and deployment generation | Owned elsewhere | Dimensional-review/report-design capabilities | Keep out of DB Documenter; use handoffs where documentation context is needed. |
 | Source-specific organization values, private paths, and live evidence | Rejected | Public-release hygiene | Keep project-local and never package or commit as reusable guidance. |
+
+## Phase 2 parity register
+
+Phase 1 remains the DB Documenter's documentation boundary. Phase 2 adds
+report requirements and DW/SSAS architecture orchestration around it; it does
+not transfer DB metadata policy, live-provider authority, or build execution
+into the DB Documenter. Phase 2 handoffs consume the Phase 1 documentation
+contract only after explicit sign-off or user-selected documentation scope.
+
+| Source capability | Status | Current Crow location | Remaining work |
+|---|---|---|---|
+| Report-design interview and signed-off artifact contract | Adapted | `crow-report-designer` | Add representative fixture validation for write gates, phase resume, and signed-off handoff. |
+| Source profiling and entity-map handoff | Adapted | `crow-report-designer/modules/source-profile.md` | Validate normalized payloads and live-provider limitation reporting with fixtures. |
+| Architect Modes A–G and P review routing | Adapted | `crow-ssas-tabular-dw-architect/modules/modes.md` | Add focused mode fixtures and complete topic-specific review modules. |
+| Architect Modes H–N scaffold/build planning | Deferred | `crow-ssas-tabular-dw-architect/modules/modes.md` | Migrate detailed artifact contracts, validation gates, and deterministic generators without claiming execution. |
+| Architect Mode O physical design review | Deferred | `crow-ssas-tabular-dw-architect/modules/modes.md` | Add index/partition/statistics guidance and local validation. |
+| Architect Mode C extended-property generation | Owned elsewhere | `crow-db-documentation/modules/extended-properties.md` | Define the explicit request/response boundary and compatibility fixture. |
+| Refresh/performance architect notes | Adapted | `crow-report-designer/modules/interview.md`, `modules/handoff.md` | Validate capture and consumption by the architect. |
+| Report-designer session operations and deferral protocol | Adapted | `crow-report-designer/modules/interview-operations.md` | Add fixture-backed resume and blocking/advisory gate validation. |
+| Architect provider and execution boundary | Adapted | `crow-ssas-tabular-dw-architect/modules/provider-boundaries.md` | Replace deferred placeholders only after Raven/execution contracts are reviewed. |
+| Architect technical reference catalogue | Adapted | `crow-dw-ssas-references/reference-index.md`, `crow-ssas-tabular-dw-architect/modules/reference-map.md` | Validate selected references against representative fixtures and keep provider/execution claims deferred. |
 
 ## Recommended delivery order
 

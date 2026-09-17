@@ -1,0 +1,36 @@
+producer: crow-report-designer
+consumer: crow-ssas-tabular-dw-architect
+producer_version: 0.10.0
+status: signed-off
+requested_mode: scaffold
+signed_off_artifacts:
+  - design/spec.md
+  - design/decisions.md
+  - design/bus-matrix.md
+  - design/glossary.md
+  - design/entity-map.md
+artifact_paths:
+  - design/spec.md
+  - design/decisions.md
+  - design/bus-matrix.md
+  - design/glossary.md
+  - design/entity-map.md
+evidence_scope:
+  - local synthetic SQL definitions
+confirmed_grain:
+  - one row per order line
+confirmed_bus_matrix: true
+confirmed_security_assumptions: true
+decisions:
+  - key: refresh_frequency
+    value: daily
+open_questions: []
+deferred_execution:
+  - live SQL/SSAS provider
+architect_notes:
+  - refresh cadence: daily
+  - expected volume: synthetic
+  - batch sizing: confirm from live row counts
+  - partitioning: not required for fixture
+  - upstream-first decisions: none
+sign_off_timestamp: 2026-09-17T00:00:00Z

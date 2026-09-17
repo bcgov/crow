@@ -4,6 +4,10 @@ Load this module for D1 source-database or D2 warehouse documentation. It
 defines the reusable SQL Server metadata contract; the agent still owns scope,
 inference, interview questions, confirmation, and write decisions.
 
+The architect's Mode C extended-property request is owned here. The
+`crow-ssas-tabular-dw-architect` capability may identify documentation needs,
+but this module remains the policy and script-generation authority.
+
 ## Property contract
 
 `MS_Description` is the primary human-readable description. Set it first and
