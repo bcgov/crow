@@ -68,9 +68,11 @@ architecture that source code currently implements.
    protected resources, and operations rather than from provider names alone.
 7. Run the validator in `PreWrite`, write or update canonical
    `docs/solution-architecture.md`, and then run
-   `scripts/Render-SolutionArchitecture.ps1 -RepoRoot <repository-root>` to create
-   `docs/solution-architecture.html`. The deterministic renderer HTML-encodes
-   source content and records the Markdown SHA-256.
+   `scripts/Render-SolutionArchitecture.ps1 -RepoRoot <repository-root>
+   -MarkdownPath <repository-root>/docs/solution-architecture.md -OutputPath
+   <repository-root>/docs/solution-architecture.html` to create the HTML review.
+   The deterministic renderer HTML-encodes source content and records the
+   Markdown SHA-256.
 8. Use native HTML features, responsive cards and tables, `<details>` sections,
    and accessible inline SVG where they clarify UX examples, workflows, data
    flows, implementation choices, risks, or decision status. Do not depend on

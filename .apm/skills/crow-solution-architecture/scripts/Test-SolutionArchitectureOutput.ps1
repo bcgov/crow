@@ -166,7 +166,8 @@ if ($Phase -eq 'PostWrite') {
         }
         if (
             $validationContent -match 'Draft / Decision-ready / Approved / Superseded' -or
-            $validationContent -match 'Confirmed / Provisional / Rejected / Blocked'
+            $validationContent -match 'Confirmed / Provisional / Rejected / Blocked' -or
+            $validationContent -match 'Decision / Risk / Question'
         ) {
             Add-ValidationError 'Solution architecture document contains unresolved template choices.'
         }

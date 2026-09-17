@@ -8,6 +8,8 @@ $powerShellPath = (Get-Process -Id $PID).Path
 $utf8 = [System.Text.UTF8Encoding]::new($false)
 $fixtureRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
     'crow-solution-architecture-' + [guid]::NewGuid().ToString('N'))
+$linkedHtmlTarget = "$fixtureRoot-linked-html.txt"
+$linkedJsonTarget = "$fixtureRoot-linked-json.txt"
 
 function Invoke-ValidatorTest {
     param(
@@ -31,6 +33,49 @@ function Invoke-ValidatorTest {
         throw "$Name expected pass=$ShouldPass but pass=$passed.`n$($result -join [Environment]::NewLine)"
     }
     Write-Host "Passed: $Name"
+}
+
+function New-TestOutputLink {
+    param(
+        [string]$LinkPath,
+        [string]$TargetPath
+    )
+
+    if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+        New-Item -ItemType Directory -Path $TargetPath | Out-Null
+        [System.IO.File]::WriteAllText(
+            (Join-Path $TargetPath 'sentinel.txt'),
+            'unchanged',
+            $utf8)
+        New-Item -ItemType Junction -Path $LinkPath -Target $TargetPath | Out-Null
+        return
+    }
+
+    [System.IO.File]::WriteAllText($TargetPath, 'unchanged', $utf8)
+    New-Item -ItemType SymbolicLink -Path $LinkPath -Target $TargetPath | Out-Null
+}
+
+function Remove-TestOutputLink {
+    param([string]$LinkPath)
+
+    if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+        [System.IO.Directory]::Delete($LinkPath)
+        return
+    }
+
+    Remove-Item -LiteralPath $LinkPath -Force
+}
+
+function Test-OutputLinkTargetUnchanged {
+    param([string]$TargetPath)
+
+    $sentinelPath = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
+        Join-Path $TargetPath 'sentinel.txt'
+    }
+    else {
+        $TargetPath
+    }
+    return [System.IO.File]::ReadAllText($sentinelPath) -ceq 'unchanged'
 }
 
 $validDocument = @'
@@ -167,6 +212,14 @@ try {
         -OutputPath $htmlPath
     Invoke-ValidatorTest 'unresolved status rejected' $fixtureRoot 'PostWrite' $false
 
+    $unresolvedDecisionTypeDocument = $validDocument.Replace(
+        '| SA-001 | Decision | Use one deployable application | Owner | 2026-09-15 | Confirmed |',
+        '| SA-001 | Decision / Risk / Question | Use one deployable application | Owner | 2026-09-15 | Confirmed |')
+    [System.IO.File]::WriteAllText($markdownPath, $unresolvedDecisionTypeDocument, $utf8)
+    & $rendererPath -RepoRoot $fixtureRoot -MarkdownPath $markdownPath `
+        -OutputPath $htmlPath
+    Invoke-ValidatorTest 'unresolved decision type rejected' $fixtureRoot 'PostWrite' $false
+
     $blankIdentityDocument = $validDocument.Replace(
         '| Workforce | Government SSO | Resource policy | Offboarding revokes access | Fail closed | Confirmed |',
         '| | | | | | |')
@@ -204,10 +257,48 @@ try {
         throw 'Renderer accepted an output path outside docs.'
     }
     Write-Host 'Passed: renderer output path guarded'
+
+    Remove-Item -LiteralPath $htmlPath -Force
+    New-TestOutputLink -LinkPath $htmlPath -TargetPath $linkedHtmlTarget
+    $htmlLinkGuarded = $false
+    try {
+        & $rendererPath -RepoRoot $fixtureRoot -MarkdownPath $markdownPath `
+            -OutputPath $htmlPath
+    }
+    catch {
+        $htmlLinkGuarded = $_.Exception.Message -match (
+            'output traverses a symbolic link or junction')
+    }
+    if (-not $htmlLinkGuarded -or -not (Test-OutputLinkTargetUnchanged $linkedHtmlTarget)) {
+        throw 'Renderer followed an existing HTML output symbolic link.'
+    }
+    Remove-TestOutputLink $htmlPath
+    Write-Host 'Passed: renderer HTML symbolic-link target guarded'
+
+    New-TestOutputLink -LinkPath $jsonPath -TargetPath $linkedJsonTarget
+    $jsonLinkGuarded = $false
+    try {
+        & $rendererPath -RepoRoot $fixtureRoot -MarkdownPath $markdownPath `
+            -OutputPath $htmlPath -JsonOutputPath $jsonPath
+    }
+    catch {
+        $jsonLinkGuarded = $_.Exception.Message -match (
+            'output traverses a symbolic link or junction')
+    }
+    if (-not $jsonLinkGuarded -or -not (Test-OutputLinkTargetUnchanged $linkedJsonTarget)) {
+        throw 'Renderer followed an existing JSON output symbolic link.'
+    }
+    Remove-TestOutputLink $jsonPath
+    Write-Host 'Passed: renderer JSON symbolic-link target guarded'
 }
 finally {
     if (Test-Path -LiteralPath $fixtureRoot) {
         Remove-Item -LiteralPath $fixtureRoot -Recurse -Force
+    }
+    foreach ($linkedTarget in @($linkedHtmlTarget, $linkedJsonTarget)) {
+        if (Test-Path -LiteralPath $linkedTarget) {
+            Remove-Item -LiteralPath $linkedTarget -Recurse -Force
+        }
     }
 }
 

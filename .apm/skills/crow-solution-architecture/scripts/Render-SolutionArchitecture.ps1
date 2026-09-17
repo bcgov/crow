@@ -43,18 +43,24 @@ if (
     throw "JsonOutputPath must resolve to $expectedJsonPath."
 }
 
-$candidate = Split-Path -Parent $expectedOutputPath
-while ($candidate.StartsWith($root, $comparison)) {
-    if (Test-Path -LiteralPath $candidate) {
-        $item = Get-Item -LiteralPath $candidate -Force
-        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
-            throw "Solution architecture output traverses a symbolic link or junction: $($item.FullName)"
+$writePaths = @($expectedOutputPath)
+if ($JsonOutputPath) {
+    $writePaths += $expectedJsonPath
+}
+foreach ($writePath in $writePaths) {
+    $candidate = $writePath
+    while ($candidate.StartsWith($root, $comparison)) {
+        if (Test-Path -LiteralPath $candidate) {
+            $item = Get-Item -LiteralPath $candidate -Force
+            if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -ne 0) {
+                throw "Solution architecture output traverses a symbolic link or junction: $($item.FullName)"
+            }
         }
+        if ($candidate -eq $root) {
+            break
+        }
+        $candidate = Split-Path -Parent $candidate
     }
-    if ($candidate -eq $root) {
-        break
-    }
-    $candidate = Split-Path -Parent $candidate
 }
 
 $templatePath = Join-Path $PSScriptRoot '..\templates\solution-architecture-template.html'
