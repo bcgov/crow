@@ -2227,7 +2227,6 @@ try {
     $passed++
 
     Write-Host "Crow business-rule tests passed: $passed case(s)."
-    exit 0
 }
 catch {
     Write-Error $_.Exception.Message -ErrorAction Continue
@@ -2238,3 +2237,5 @@ finally {
         Remove-Item -LiteralPath $fixtureRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
+
+exit 0

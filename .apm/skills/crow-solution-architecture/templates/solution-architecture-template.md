@@ -36,7 +36,12 @@ flowchart LR
 
 | Driver | Target or constraint | Priority | Evidence | Verification |
 | :--- | :--- | :--- | :--- | :--- |
-| | | `Must / Should / Could` | | |
+| Business criticality | | `Must / Should / Could` | | |
+| Uptime | | `Must / Should / Could` | | |
+| Recovery time objective (RTO) | | `Must / Should / Could` | | |
+| Recovery point objective (RPO) | | `Must / Should / Could` | | |
+| Data classification | | `Must / Should / Could` | | |
+| Data retention and destruction | | `Must / Should / Could` | | |
 
 ## 5. Proposed Architecture
 
@@ -60,7 +65,7 @@ flowchart LR
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | | | | | | `Confirmed / Provisional / Rejected / Blocked / N/A` |
 
-## 8. Data, Integration, Common Components, and Payments
+## 8. Data, Integration, and Common Components
 
 | Capability or flow | Owner and system of record | Contract and data purpose | Reuse decision | Failure, reconciliation, and recovery | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |

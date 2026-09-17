@@ -77,6 +77,37 @@ function Test-HasTableDataRow {
     return $false
 }
 
+function Test-RequiredDriverRow {
+    param(
+        [string]$Section,
+        [string]$Driver
+    )
+
+    $match = [regex]::Match(
+        $Section,
+        '(?im)^\|\s*' + [regex]::Escape($Driver) + '\s*\|(.+)\|\s*$')
+    if (-not $match.Success) {
+        return $false
+    }
+
+    $cells = @(
+        $match.Groups[1].Value.Split('|') |
+            ForEach-Object { $_.Trim().Trim('`') }
+    )
+    if ($cells.Count -lt 4) {
+        return $false
+    }
+    foreach ($cell in $cells[0..3]) {
+        if (
+            [string]::IsNullOrWhiteSpace($cell) -or
+            $cell -match '^(TBD|TODO|Unknown|Placeholder|Must / Should / Could|-|N/A|None|Not provided|\u2014|\u2026)$'
+        ) {
+            return $false
+        }
+    }
+    return $true
+}
+
 foreach ($outputPath in @($markdownPath, $htmlPath, $jsonPath)) {
     if (-not $outputPath.StartsWith($rootPrefix, $comparison)) {
         Add-ValidationError "Solution architecture output resolves outside the repository: $outputPath"
@@ -118,7 +149,7 @@ if ($Phase -eq 'PostWrite') {
             '5. Proposed Architecture',
             '6. Technology Decisions, Defaults, and Fallbacks',
             '7. Identity and Access',
-            '8. Data, Integration, Common Components, and Payments',
+            '8. Data, Integration, and Common Components',
             '9. Deployment and Operations',
             '10. Security, Privacy, Accessibility, and Language',
             '11. Delivery and Evolution',
@@ -162,16 +193,30 @@ if ($Phase -eq 'PostWrite') {
         $requiredTableSections = @(
             @{ Number = 2; Title = 'Scope and Context'; Name = 'representative UX example' },
             @{ Number = 3; Title = 'Evidence, Assumptions, and Interview Record'; Name = 'evidence or interview record' },
+            @{ Number = 4; Title = 'Quality Attributes and Constraints'; Name = 'quality attribute or constraint' },
             @{ Number = 5; Title = 'Proposed Architecture'; Name = 'workflow or data flow' },
             @{ Number = 6; Title = 'Technology Decisions, Defaults, and Fallbacks'; Name = 'technology decision and fallback' },
             @{ Number = 7; Title = 'Identity and Access'; Name = 'identity and authorization decision' },
-            @{ Number = 8; Title = 'Data, Integration, Common Components, and Payments'; Name = 'reuse, integration, or payment decision' },
+            @{ Number = 8; Title = 'Data, Integration, and Common Components'; Name = 'reuse, integration, or common-component decision' },
             @{ Number = 12; Title = 'Decisions, Risks, and Open Questions'; Name = 'decision, risk, or open question' }
         )
         foreach ($sectionRule in $requiredTableSections) {
             $section = Get-SectionContent $validationContent $sectionRule.Number $sectionRule.Title
             if (-not (Test-HasTableDataRow $section)) {
                 Add-ValidationError "Solution architecture document requires at least one populated $($sectionRule.Name) row."
+            }
+        }
+        $qualitySection = Get-SectionContent $validationContent 4 'Quality Attributes and Constraints'
+        foreach ($requiredDriver in @(
+            'Business criticality',
+            'Uptime',
+            'Recovery time objective (RTO)',
+            'Recovery point objective (RPO)',
+            'Data classification',
+            'Data retention and destruction'
+        )) {
+            if (-not (Test-RequiredDriverRow $qualitySection $requiredDriver)) {
+                Add-ValidationError "Solution architecture quality attributes require a populated '$requiredDriver' row."
             }
         }
         $sourceSection = [regex]::Match(

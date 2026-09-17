@@ -5,23 +5,29 @@
 Before asking questions:
 
 1. Identify the business capability, users, existing systems, delivery stage,
-   repository shape, runtime manifests, deployment definitions, and current
-   architecture records.
+   repository shape, runtime manifests, deployment definitions, current
+   architecture records, business criticality, required uptime, RTO, RPO, data
+   classification, and data retention and destruction requirements.
 2. Read `crow.config` when present. Treat its public references as discovery
    hints, not proof.
 3. Use codebase intelligence when available and disclose coverage gaps. Read
    source directly where coverage is partial.
-4. Review relevant current public B.C. guidance and common-component
-   information. Use private catalogues only as read-only evidence and never
-   copy their identifiers or source content into reusable Crow assets.
-5. When ADO access is available, review a bounded sample of actively maintained
-   or modernizing applications selected by recent activity and relevant
-   solution type. Record the date, selection criteria, technologies observed,
-   and limitations as safe aggregate evidence. Do not copy private project or
-   repository identifiers into public Crow assets or generated public
-   documents. If ADO is unavailable, mark this evidence `Unknown` rather than
-   presenting the preferred stack as an organizational standard.
-6. Separate facts, constraints, assumptions, preferences, and decisions.
+4. Search the relevant available requirements and documentation sources,
+   including repository documents, `crow.config` references, Jira, Confluence,
+   GitHub, SharePoint, ADO, asset catalogues, and authoritative web guidance.
+   No provider has priority by default. Rank evidence by authority, directness,
+   freshness, scope, and corroboration.
+5. Review relevant current public B.C. guidance and common-component
+   information. Use private sources only as read-only evidence and never copy
+   their identifiers or source content into reusable Crow assets.
+6. When comparing technology preferences, review a bounded sample from any
+   relevant available repository or application-inventory providers. Record
+   the date, selection criteria, aggregate technologies observed, and
+   limitations. Do not copy private identifiers or source content into public
+   Crow assets or generated public documents. If representative evidence is
+   unavailable, mark it `Unknown` rather than presenting a preference as an
+   organizational standard.
+7. Separate facts, constraints, assumptions, preferences, and decisions.
 
 ## Step 2: Open the interview
 
@@ -35,10 +41,11 @@ the solution. Cover these decision areas, skipping those already resolved:
 1. business outcome, service boundary, success measure, and accountable owner;
 2. user populations, delegated or organizational access, and identity
    assurance;
-3. information classification, residency, retention, records, and privacy;
-4. volume, latency, availability, recovery, seasonality, and growth;
-5. integrations, system-of-record responsibilities, common components, and
-   payment needs;
+3. information classification, residency, retention, destruction, records, and
+   privacy;
+4. business criticality, volume, latency, uptime, RTO, RPO, seasonality, and
+   growth;
+5. integrations, system-of-record responsibilities, and common components;
 6. delivery date, funding, team skills, operational ownership, and support
    hours;
 7. hosting, network, licensing, procurement, and migration constraints;

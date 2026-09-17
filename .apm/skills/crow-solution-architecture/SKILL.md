@@ -1,6 +1,6 @@
 ---
 name: crow-solution-architecture
-description: Design a B.C.-aligned solution architecture through evidence-first discovery and a focused stakeholder interview, producing canonical Markdown and an accessible rich HTML review with explicit defaults, fallbacks, identity, payment, and common-component decisions.
+description: Design a B.C.-aligned solution architecture through evidence-first discovery and a focused stakeholder interview, producing canonical Markdown and an accessible rich HTML review with explicit defaults, fallbacks, identity, hosting, and common-component decisions.
 ---
 
 # Solution Architecture
@@ -28,17 +28,22 @@ architecture that source code currently implements.
    organizations, administrators, APIs, or workloads cross a trust boundary.
    Also load
    [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
-5. Load [`modules/bc-platform-services.md`](modules/bc-platform-services.md)
-   when the solution accepts payments or could reuse a B.C. government common
-   component.
-6. Load technology modules from `crow-application-architecture` only for
+5. Load [`modules/bc-common-components.md`](modules/bc-common-components.md)
+   when the solution could reuse a B.C. government common component.
+6. Load [`modules/payments.md`](modules/payments.md) only when the business
+   requirements include accepting, refunding, reconciling, or reporting a
+   payment.
+7. Load technology modules from `crow-application-architecture` only for
    technologies selected or already constrained by the solution. Add future
    stacks as sibling modules there; do not embed framework detail here.
    Add business-area guidance as a conditionally loaded
    `modules/domain-<name>.md` module with observable routing triggers, an
    accountable source owner, evidence freshness requirements, and explicit
    non-goals. Never load all domain modules by default.
-7. Use
+8. Load [`templates/hosting-choices-template.md`](templates/hosting-choices-template.md)
+   whenever hosting or delivery options must be compared. Use its rows inside
+   the canonical architecture document; do not create a separate output.
+9. Use
    [`templates/solution-architecture-template.md`](templates/solution-architecture-template.md)
    as the canonical source and
    [`templates/solution-architecture-template.html`](templates/solution-architecture-template.html)
@@ -87,7 +92,7 @@ architecture that source code currently implements.
 - Record unavailable optional evidence as `Unknown` and identify who must
   resolve it.
 - Do not silently choose among materially different identity, hosting, data,
-  payment, or availability options.
+  or availability options.
 - Do not turn a dependency outage or unknown authorization decision into a
   successful business outcome.
 - Do not write a final design while any decision marked `Blocked` changes a

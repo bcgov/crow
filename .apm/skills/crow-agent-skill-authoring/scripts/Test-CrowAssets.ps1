@@ -302,6 +302,46 @@ if ($errors.Count -eq 0) {
         }
     }
 
+    $powerShellTestFiles = @(
+        Get-ChildItem $skillsPath -File -Filter '*.Tests.ps1' -Recurse
+    )
+    foreach ($testFile in $powerShellTestFiles) {
+        $tokens = $null
+        $parseErrors = $null
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile(
+            $testFile.FullName,
+            [ref]$tokens,
+            [ref]$parseErrors)
+        if ($parseErrors.Count -gt 0) {
+            Add-ValidationError "$($testFile.FullName): PowerShell test suite has parse errors."
+            continue
+        }
+
+        $successExits = @(
+            $ast.FindAll({
+                param($node)
+                $node -is [System.Management.Automation.Language.ExitStatementAst] -and
+                $node.ToString() -match '^exit\s+0$'
+            }, $true)
+        )
+        $topLevelStatements = @($ast.EndBlock.Statements)
+        $lastTopLevelStatement = if ($topLevelStatements.Count -gt 0) {
+            $topLevelStatements[-1]
+        }
+        else {
+            $null
+        }
+        if (
+            $successExits.Count -ne 1 -or
+            $null -eq $lastTopLevelStatement -or
+            $lastTopLevelStatement -isnot [System.Management.Automation.Language.ExitStatementAst] -or
+            $lastTopLevelStatement.ToString() -notmatch '^exit\s+0$' -or
+            $successExits[0].Extent.StartOffset -ne $lastTopLevelStatement.Extent.StartOffset
+        ) {
+            Add-ValidationError "$($testFile.FullName): PowerShell test suites must have exactly one exit 0 as the final executable top-level statement."
+        }
+    }
+
     $trackedFiles = @(& git -C $root ls-files)
     if ($LASTEXITCODE -ne 0) {
         Add-ValidationError 'Unable to enumerate tracked files with git.'

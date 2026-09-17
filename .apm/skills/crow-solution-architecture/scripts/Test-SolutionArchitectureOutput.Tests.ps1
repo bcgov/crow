@@ -56,7 +56,14 @@ flowchart LR
 | :--- | :--- | :--- | :--- | :--- |
 | Scope | Confirmed with owner | Confirmed | Owner | 2026-09-15 |
 ## 4. Quality Attributes and Constraints
-Availability is defined.
+| Driver | Target or constraint | Priority | Evidence | Verification |
+| :--- | :--- | :--- | :--- | :--- |
+| Business criticality | Important service | Must | Owner | Review |
+| Uptime | 99.9 percent | Must | Service requirement | Monitor |
+| Recovery time objective (RTO) | Four hours | Must | Service requirement | Exercise |
+| Recovery point objective (RPO) | One hour | Must | Service requirement | Restore test |
+| Data classification | Protected B | Must | Classification review | Security review |
+| Data retention and destruction | Seven years then destroy | Must | Records schedule | Audit |
 ## 5. Proposed Architecture
 One deployable application.
 | From | Interaction | To | Data or decision | Failure or recovery |
@@ -70,10 +77,10 @@ One deployable application.
 | Population or workload | Authentication and assurance | Authorization and protected resources | Lifecycle and revocation | Outage or assisted path | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | Workforce | Government SSO | Resource policy | Offboarding revokes access | Fail closed | Confirmed |
-## 8. Data, Integration, Common Components, and Payments
+## 8. Data, Integration, and Common Components
 | Capability or flow | Owner and system of record | Contract and data purpose | Reuse decision | Failure, reconciliation, and recovery | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| Payments | N/A | No payment data | N/A because the service has no payment | N/A | N/A |
+| Notifications | Product owner | Status updates | Evaluate current common components | Queue and retry | Provisional |
 ## 9. Deployment and Operations
 Health, observability, backup, recovery, support, and rollback are defined.
 ## 10. Security, Privacy, Accessibility, and Language
@@ -168,6 +175,22 @@ try {
         -OutputPath $htmlPath
     Invoke-ValidatorTest 'blank required row rejected' $fixtureRoot 'PostWrite' $false
 
+    $blankHomeworkDocument = $validDocument.Replace(
+        '| Recovery point objective (RPO) | One hour | Must | Service requirement | Restore test |',
+        '| Recovery point objective (RPO) | | | | |')
+    [System.IO.File]::WriteAllText($markdownPath, $blankHomeworkDocument, $utf8)
+    & $rendererPath -RepoRoot $fixtureRoot -MarkdownPath $markdownPath `
+        -OutputPath $htmlPath
+    Invoke-ValidatorTest 'blank homework value rejected' $fixtureRoot 'PostWrite' $false
+
+    $placeholderHomeworkDocument = $validDocument.Replace(
+        '| Recovery point objective (RPO) | One hour | Must | Service requirement | Restore test |',
+        '| Recovery point objective (RPO) | - | Must | Service requirement | Restore test |')
+    [System.IO.File]::WriteAllText($markdownPath, $placeholderHomeworkDocument, $utf8)
+    & $rendererPath -RepoRoot $fixtureRoot -MarkdownPath $markdownPath `
+        -OutputPath $htmlPath
+    Invoke-ValidatorTest 'placeholder homework value rejected' $fixtureRoot 'PostWrite' $false
+
     $outsidePath = Join-Path $fixtureRoot 'outside.html'
     $pathGuarded = $false
     try {
@@ -187,3 +210,7 @@ finally {
         Remove-Item -LiteralPath $fixtureRoot -Recurse -Force
     }
 }
+
+# Expected failing child validations leave a non-zero native process status.
+# Set the suite result explicitly after every assertion and cleanup succeeds.
+exit 0

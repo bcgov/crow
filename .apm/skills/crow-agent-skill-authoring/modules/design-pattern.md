@@ -58,4 +58,10 @@ Prefer scripts for:
 - packaging archives and calculating checksums;
 - calling release APIs or CLIs with explicit parameters.
 
-Scripts must validate prerequisites, use non-zero exit codes for failures, and avoid broad cleanup or unrelated file changes.
+Scripts must validate prerequisites, use non-zero exit codes for failures, and
+avoid broad cleanup or unrelated file changes. PowerShell test suites that
+intentionally run failing native processes or child PowerShell processes must
+have exactly one `exit 0` as the final executable top-level statement after
+successful assertions and cleanup;
+`$LASTEXITCODE` otherwise survives an expected negative test and can make CI
+report failure after every test appears to pass.

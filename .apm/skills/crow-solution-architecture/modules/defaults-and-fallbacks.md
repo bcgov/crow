@@ -17,15 +17,6 @@ and total cost can justify a fallback. Record the evidence and consequence.
 
 ## Preferred application stack
 
-An initial bounded review on 2026-09-15 of private, actively modernizing
-web-application repositories informed the .NET starting hypothesis below. The
-private sample and identifiers are intentionally not distributed with Crow, so
-this statement is not independently verifiable evidence or an
-organization-wide standard. Treat it as provisional until each engagement
-checks a current, relevant sample and records safe aggregate observations,
-selection criteria, date, and limitations in the generated architecture
-document. If that evidence cannot be collected, record it as `Unknown`.
-
 Current public B.C. developer guidance lists C# and .NET alongside Python,
 JavaScript or TypeScript, Java, R, and PHP and requires teams to select
 technology for their own context.
@@ -36,14 +27,18 @@ technology for their own context.
 | Web UI | ASP.NET Core Razor Pages or MVC for workflow-heavy forms; Blazor when a .NET client model is an intentional fit | React or Vue with TypeScript for complex client interaction and an established frontend team; standards-based Web Components for small embeddable surfaces |
 | Transactional data | The ministry-supported relational platform; prefer PostgreSQL for portable cloud-native workloads and SQL Server when Microsoft integration, existing operations, or migration constraints dominate | A specialized document, graph, time-series, search, or analytical store only for a demonstrated access pattern |
 | API | REST/JSON over HTTPS with OpenAPI and additive versioning | gRPC for controlled high-throughput service calls; GraphQL for demonstrated multi-client query needs; asynchronous contracts for durable decoupling |
-| Hosting | Private-cloud OpenShift for containerized workloads when its service limits and team operating model fit | Supported AWS or Azure landing zones for justified managed-service or elasticity needs; approved SaaS for commodity capabilities; data-centre hosting for compatibility or Protected C constraints, with an owned modernization path |
-| Delivery | Immutable container or platform-native artifact, automated build, test, and security checks, declarative configuration, and progressive promotion | Platform-approved managed deployment for simpler services; virtual machines only for compatibility constraints with an owned modernization path |
+| Hosting | Select among supported data-centre, private-cloud, public-cloud, and SaaS options from workload, data, resilience, integration, cost, and operational evidence | Revisit when classification, capacity, latency, CPU, bandwidth, I/O, support, managed-service, or procurement requirements change |
+| Delivery | Select among virtual machines, containers, platform-native, serverless, and managed delivery based on runtime, performance, compatibility, scaling, recovery, and ownership requirements | Revisit when the selected delivery unit no longer satisfies release, scaling, isolation, support, or recovery needs |
 
 Never select a runtime version solely because this module names a technology.
 At design time verify support status, hosting compatibility, data
 classification limits, security update policy, team supportability, and
 migration path. Pin versions in the consuming solution, not in this reusable
 guidance.
+
+Use the bundled hosting-choices template to compare benefits and drawbacks.
+Data-centre hosting and virtual machines are first-class choices and do not
+require a modernization path solely because they are selected.
 
 ## Selection record
 
