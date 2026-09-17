@@ -78,6 +78,7 @@ try {
             throw "Scanner output did not contain '$expected'. Output: $output"
         }
     }
+
     foreach ($unexpected in @(
         'fenced example',
         'ignored evidence',
@@ -96,3 +97,5 @@ finally {
         Remove-Item -LiteralPath $tempRoot -Recurse -Force
     }
 }
+
+exit 0

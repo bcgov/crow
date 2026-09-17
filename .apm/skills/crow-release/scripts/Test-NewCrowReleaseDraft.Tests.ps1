@@ -175,12 +175,16 @@ try {
     }
     Invoke-Git $tempRoot @('checkout', '-b', 'main')
 
-    $trackedFiles = @(& git -C $sourceRoot ls-files)
-    if ($LASTEXITCODE -ne 0 -or $trackedFiles.Count -eq 0) {
-        throw 'Unable to enumerate tracked files for the release test checkout.'
+    $sourceFiles = @(& git -C $sourceRoot ls-files --cached --others --exclude-standard)
+    if ($LASTEXITCODE -ne 0 -or $sourceFiles.Count -eq 0) {
+        throw 'Unable to enumerate source files for the release test checkout.'
     }
-    foreach ($relativePath in $trackedFiles) {
+    foreach ($relativePath in $sourceFiles) {
         $sourcePath = Join-Path $sourceRoot $relativePath
+        if (-not (Test-Path -LiteralPath $sourcePath)) {
+            continue
+        }
+
         $targetPath = Join-Path $tempRoot $relativePath
         $targetParent = Split-Path -Parent $targetPath
         if (-not (Test-Path -LiteralPath $targetParent)) {
@@ -342,3 +346,5 @@ finally {
     Remove-Item Function:\apm -ErrorAction SilentlyContinue
     Remove-Item Function:\gh -ErrorAction SilentlyContinue
 }
+
+exit 0
