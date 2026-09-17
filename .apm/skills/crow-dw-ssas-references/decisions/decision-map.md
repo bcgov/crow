@@ -13,3 +13,7 @@
 
 Historical model prices, model IDs, and source-specific absolute paths are not
 runtime instructions for the Crow package.
+
+The source project owner approved migration and future archival of the source
+project. No separate provenance or redistribution gate is required for this
+corpus.

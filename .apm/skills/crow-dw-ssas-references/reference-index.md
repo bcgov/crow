@@ -2,8 +2,6 @@
 
 The files in `references/` are the complete 28-file reference corpus migrated
 from the source project. Load them selectively by observable mode or concern.
-Provenance and the public-release gate are recorded in
-[`PROVENANCE.md`](PROVENANCE.md).
 Source decision handling is recorded in
 [`decisions/decision-map.md`](decisions/decision-map.md); load
 [`decisions/org-design-constraints.md`](decisions/org-design-constraints.md)
