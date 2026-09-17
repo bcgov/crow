@@ -23,6 +23,10 @@ the detailed source-backed pattern files. Route A/E/H/O to
 `source-system-analysis.md`; report-facing concerns to
 `pbirs-constraints.md`, `pbix-report-standards.md`, and
 `performance-end-to-end.md`. Load only the selected files.
+When the source organization standard is confirmed, load
+`../crow-dw-ssas-references/decisions/org-design-constraints.md` before the
+topic reference. It governs SCD defaults, Tabular-only scope, ELT/upstream-first
+design, idempotency, Classic ADO/TE2 conventions, and portability constraints.
 Use [`crow-db-documentation`](../crow-db-documentation/SKILL.md) for the
 DB-documenter handoff; use [`crow-report-designer`](../crow-report-designer/SKILL.md)
 for a report design handoff. Other Crow skills are opt-in, not automatic.

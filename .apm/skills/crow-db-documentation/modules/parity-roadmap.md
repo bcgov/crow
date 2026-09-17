@@ -59,6 +59,7 @@ contract only after explicit sign-off or user-selected documentation scope.
 | Report-designer session operations and deferral protocol | Adapted | `crow-report-designer/modules/interview-operations.md` | Add fixture-backed resume and blocking/advisory gate validation. |
 | Architect provider and execution boundary | Adapted | `crow-ssas-tabular-dw-architect/modules/provider-boundaries.md` | Replace deferred placeholders only after Raven/execution contracts are reviewed. |
 | Architect technical reference catalogue | Adapted | `crow-dw-ssas-references/reference-index.md`, `crow-ssas-tabular-dw-architect/modules/reference-map.md` | Validate selected references against representative fixtures and keep provider/execution claims deferred. |
+| Source decision register and organization constraints | Adapted | `crow-dw-ssas-references/decisions/` | Confirm which source-organization conventions apply to each consuming project; keep historical model pins and rollout metrics non-operative. |
 
 ## Recommended delivery order
 

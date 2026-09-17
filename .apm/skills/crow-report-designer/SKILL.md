@@ -22,6 +22,9 @@ Activate for SQL Server DW, SSAS Tabular, Power BI Report Server, or dimensional
   security/performance -> `security-implementation.md`,
   `performance-end-to-end.md`; handoff/build assumptions ->
   `ssdt-project-structure.md`. Load only the selected files.
+  When the source organization standard is confirmed, load
+  `../crow-dw-ssas-references/decisions/org-design-constraints.md` before
+  applying Kimball or build guidance.
 
 Use [`crow-project-context`](../crow-project-context/SKILL.md) only when public
 project memory is relevant; use [`crow-business-rules`](../crow-business-rules/SKILL.md),

@@ -7,6 +7,7 @@ param(
 $ErrorActionPreference = 'Stop'
 $errors = [System.Collections.Generic.List[string]]::new()
 $referenceRoot = Join-Path $SkillRoot 'references'
+$decisionRoot = Join-Path $SkillRoot 'decisions'
 
 $expectedReferences = @(
     'cloud-migration-portability.md',
@@ -55,6 +56,11 @@ if ($missing.Count -gt 0) {
 }
 if ($unexpected.Count -gt 0) {
     $errors.Add("Unexpected Markdown references in directory: $($unexpected -join ', ')")
+}
+foreach ($decision in @('org-design-constraints.md', 'decision-map.md')) {
+    if (-not (Test-Path -LiteralPath (Join-Path $decisionRoot $decision) -PathType Leaf)) {
+        $errors.Add("Missing decision file: $decision")
+    }
 }
 
 $consumerSkills = @(
