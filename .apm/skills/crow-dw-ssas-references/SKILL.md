@@ -21,6 +21,9 @@ instructions; validate project-specific assumptions against local evidence.
 Review [`PROVENANCE.md`](PROVENANCE.md) before publishing a package containing
 the corpus.
 
+Run [`scripts/Test-DwSsasReferences.ps1`](scripts/Test-DwSsasReferences.ps1)
+when changing the corpus, routing, or public-release sanitization.
+
 ## Consumers
 
 - [`Crow DW Report Designer`](../../agents/crow-report-designer.agent.md):
