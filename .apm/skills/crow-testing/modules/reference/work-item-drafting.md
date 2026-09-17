@@ -25,13 +25,13 @@ index; do not reuse a key or fabricate an external work-item ID.
 
 Use exactly one tracking value:
 
-- `Draft — not filed` — this repository contains a proposed item; no external item was created.
-- `Existing — <ID/link>` — the user supplied an existing work-item ID or link.
-- `Created — <provider>:<ID>` — a declared write-capable provider created the item and returned an ID/link.
+- `Draft - not filed` — this repository contains a proposed item; no external item was created.
+- `Existing - <ID/link>` — the user supplied an existing work-item ID or link.
+- `Created - <provider>:<ID>` — a declared write-capable provider created the item and returned an ID/link.
 - `Declined / Won't track` — the user explicitly rejected the candidate.
 
-When the user files a draft manually, keep `Draft — not filed` until the user confirms filing succeeded and
-supplies the resulting ID/link. Then update the index to `Existing — <ID/link>` and delete the local draft only
+When the user files a draft manually, keep `Draft - not filed` until the user confirms filing succeeded and
+supplies the resulting ID/link. Then update the index to `Existing - <ID/link>` and delete the local draft only
 after the reference is persisted. If filing is uncertain, leave the draft and status unchanged.
 
 The agent may reference a user-supplied ID or link, but must not validate or search for it. Automated creation
@@ -55,7 +55,7 @@ storage when more detail is needed.
 
 - **Draft key:** DRAFT-BUG-XX
 - **Type:** Bug
-- **Tracking:** Draft — not filed | Existing — <ID/link> | Created — <provider>:<ID> | Declined / Won't track
+- **Tracking:** Draft - not filed | Existing - <ID/link> | Created - <provider>:<ID> | Declined / Won't track
 
 ## Summary
 
@@ -85,7 +85,7 @@ storage when more detail is needed.
 
 - **Draft key:** DRAFT-SMELL-XX
 - **Type:** Design smell
-- **Tracking:** Draft — not filed | Existing — <ID/link> | Created — <provider>:<ID> | Declined / Won't track
+- **Tracking:** Draft - not filed | Existing - <ID/link> | Created - <provider>:<ID> | Declined / Won't track
 - **Behavior change:** None expected | Approved change: <plain-language description>
 
 ## Summary
@@ -123,7 +123,7 @@ section is not applicable and explain why in one sentence. Never invent user-fac
 
 1. Present the draft and tell the user to copy it into Azure DevOps Server.
 2. Keep the draft and `testing-plan.md` row unchanged while the user files it.
-3. After the user confirms success and provides the ID/link, update the row to `Existing — <ID/link>`.
+3. After the user confirms success and provides the ID/link, update the row to `Existing - <ID/link>`.
 4. Delete the local draft only after the updated index is saved successfully.
 
 ### Automated creation
@@ -131,7 +131,7 @@ section is not applicable and explain why in one sentence. Never invent user-fac
 1. Show the final subject/body and target project.
 2. Obtain explicit authorization for this specific item.
 3. Create the item through the declared write-capable provider.
-4. Verify the returned ID/link, persist `Created — <provider>:<ID>`, then delete the draft.
+4. Verify the returned ID/link, persist `Created - <provider>:<ID>`, then delete the draft.
 5. On any failure or uncertainty, retain the draft and report the unresolved state.
 
 ### Maintenance and declined candidates

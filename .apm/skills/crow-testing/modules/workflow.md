@@ -42,7 +42,7 @@ Complete this before opening the discussion:
 10. When `docs/testing/testing-plan.md` or existing scenario docs predate the shared Status vocabulary and
    scenario `Coverage` field (no schema marker present), do not rewrite the whole project. Backfill only the
    feature(s) actually being worked on in this engagement; leave other pre-existing rows marked
-   `Legacy — pending backfill` rather than assuming their free-text status is current.
+   `Legacy - pending backfill` rather than assuming their free-text status is current.
 11. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
    `reference/managed-template-lifecycle.md` only when installing one or when the audit reports drift.
    Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
@@ -157,8 +157,8 @@ approval-gated complex/critical scenario; the work does not introduce or change 
 item; there is no shared-validator exhaustive-matrix obligation; and no meaningful trust/external boundary
 is crossed. If any of these don't hold, route to Step 5 instead.
 
-Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None — simple unit
-work`, `Status` = `Automated — <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
+Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None - simple unit
+work`, `Status` = `Automated - <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
 
 ## Step 7: Bug regressions
 

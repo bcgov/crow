@@ -16,7 +16,7 @@ Fill in following a plain-language, table-first pattern:
 | Automated coverage | Test paths, classes, or methods; use `None` when not automated |
 | Manual QA required | Scenario IDs or `None`; describe recurring QA scope below |
 | Open decisions | Short list or `None` |
-| Work-item candidates | `None`, `DRAFT-*` key/path, `Existing — <ID/link>`, or `Created — <provider>:<ID>` |
+| Work-item candidates | `None`, `DRAFT-*` key/path, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
 
 <!--
 Rollup only: do not duplicate scenario steps or expected results here. Reconcile these values with the
@@ -76,7 +76,8 @@ scenario is added, removed, or materially changed.
 ## Conditional external dependency scenarios
 
 Use this table only when the feature has a shared/canonical service, external decision source, event
-contract, or digital proof. Omit rows that don't apply to this feature rather than marking them `N/A`.
+contract, or digital proof. Omit the table when none applies, and omit individual rows that don't apply
+rather than marking them `N/A`.
 
 | Scenario | Required assertion |
 |---|---|
@@ -102,7 +103,7 @@ outside the repository. One-time post-fix checks belong in the related work-item
 
 <!-- Point to the testing-plan.md Work-item candidates row and durable draft path; do not duplicate the body. -->
 
-- `None` | `DRAFT-*` | `Existing — <ID/link>` | `Created — <provider>:<ID>`
+- `None` | `DRAFT-*` | `Existing - <ID/link>` | `Created - <provider>:<ID>`
 
 **Remaining work:** <!-- what's left, in plain language -->
 

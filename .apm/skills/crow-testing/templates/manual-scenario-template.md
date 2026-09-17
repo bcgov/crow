@@ -10,11 +10,12 @@ Omit any field below that doesn't apply to this document instead of writing N/A.
 
 | Field | Value |
 |---|---|
-| Area ID | `MC-XXX` — index: `docs/testing/manual-coverage.md` |
+| Area ID | `MC-XXX` - index: `docs/testing/manual-coverage.md` |
 | Classification | Manual-only / Deferred automation |
 | Status | Draft / Current / Needs decision |
-| Default release trigger | Every release / When <component> changes / Smoke only |
-| Related work item | `None`, `DRAFT-*`, `Existing — <ID/link>`, or `Created — <provider>:<ID>` |
+| Release trigger | Every release / When <component> changes / Smoke only |
+| Related work item | `None`, `DRAFT-*`, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
+| Source component(s) | `<path, route, service, or other owning component>` |
 | Open decisions | Short list or `None` |
 
 ## Scope and automation rationale
@@ -22,13 +23,13 @@ Omit any field below that doesn't apply to this document instead of writing N/A.
 - **In scope:** ...
 - **Out of scope:** ...
 - **Why manual:** ...
-- **Representative sample (omit if not a shared UI element):** <page/component> @ <relative route> —
+- **Representative sample (omit if not a shared UI element):** <page/component> @ <relative route> -
   reason chosen
 
 ## Prerequisites and test setup
 
 - **Environment:** ...
-- **Page(s)/route(s) to test:** <relative path(s), e.g. `/settings/profile`> — start point (omit only when
+- **Page(s)/route(s) to test:** <relative path(s), e.g. `/settings/profile`> - start point (omit only when
   the behavior has no navigable page).
 - **Role/permissions (omit if the outcome doesn't vary by role):** ...
 - **Pre-seeded data/state (omit if no special setup is required):** ...
@@ -45,7 +46,7 @@ shared "Prerequisites" field.
 
 ## Detailed scenarios
 
-### MC-XXX-01 — Short scenario name
+### MC-XXX-01 - Short scenario name
 
 1. ...
 2. ...
