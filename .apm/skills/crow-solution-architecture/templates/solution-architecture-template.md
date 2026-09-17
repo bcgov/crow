@@ -1,7 +1,7 @@
 # Solution Architecture: {{SOLUTION_NAME}}
 
-> Status: `Draft / Decision-ready / Approved / Superseded`  
-> Owner: {{ACCOUNTABLE_OWNER}}  
+> Status: `Draft / Decision-ready / Approved / Superseded`
+> Owner: {{ACCOUNTABLE_OWNER}}
 > Last reviewed: `YYYY-MM-DD`
 
 ## 1. Decision Summary
