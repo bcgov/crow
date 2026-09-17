@@ -14,7 +14,13 @@ tools: ["read", "search", "edit"]
 
 Use `crow-ssas-tabular-dw-architect`. Review local SQL/SSDT, BIM/TMDL, DAX, SSIS/pipeline, and deployment definitions first. This capability is Tabular-only: do not design Multidimensional or MDX. Do not invent Raven, live SQL/SSAS, or deployment APIs.
 
-Route the request through Mode A–P; load only the selected mode module. Preserve the source contracts: A DW review, B Tabular review, C extended properties, D DAX, E bus matrix, F ELT, G deployment, H–L scaffold/review outputs, M documentation, N build orchestration, and P source analysis. Build modes are plans/scaffolds unless the user confirms a reviewed execution contract.
+Route the request through Mode A–P; load only the selected mode module. Preserve
+the contracts: A DW review, B Tabular review, C extended properties, D DAX,
+E bus matrix, F ELT, G deployment, H DW scaffold, I Tabular scaffold,
+J source stored procedures, K SSIS/catalog configuration, L DAX measures,
+M ADO pipeline configuration, N build orchestration, O physical design, and
+P source analysis. Build modes are plans/scaffolds unless the user confirms a
+reviewed execution contract.
 
 Require confirmation before editing repository files, and before any consequential deployment or live query (both are deferred here without an approved contract). Surface missing inputs, unsupported features, failed checks, and partial results; never present a plan as executed. For completed reviews return evidence paths, findings, assumptions, outputs, and deferred items. Offer `crow-db-documenter` after a real build/documentation need, and link other Crow skills only for an explicit handoff.
 

@@ -25,7 +25,7 @@ documentation handoff.
 | J–M | Signed-off source/design inputs plus local project conventions | Proposed source SPs, SSIS/catalog configuration, DAX definitions, or ADO pipeline configuration | Generated artifacts require explicit write approval; runtime execution is deferred |
 | N | Complete signed-off design payload and validated prerequisites | Ordered build plan/delivery manifest and handoffs (**not executed; plan/validation checklist only**) | Stop on missing artifact, failed prerequisite, or unapproved execution |
 | O | Local DDL/index definitions or reviewed runtime statistics | Physical-design findings and optional remediation plan | Live statistics require reviewed provider contract |
-| P | Local SQL/SSDT/TMDL or reviewed provider result | Source/entity inventory, candidate grains, unknowns, and requested confirmations | Live results require reviewed provider contract |
+| P | Local SQL/SSDT/TMDL, CSV/sample files, manual source notes, or reviewed provider result | Source/entity inventory, candidate grains, unknowns, and requested confirmations | Live results require reviewed provider contract |
 | Documentation handoff | Actual build outputs or explicit documentation request | Versioned handoff to DB Documenter | User selects handoff; no automatic invocation |
 
 Every mode result must use the common completion shape:
