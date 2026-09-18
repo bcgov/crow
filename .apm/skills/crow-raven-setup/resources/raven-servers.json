@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "source": "https://github.com/bcgov/raven",
+  "protocolCompatibility": "MCP over stdio",
+  "dependencySemantics": "Launchers use shared workspace packages but do not require another MCP server process to be selected.",
+  "servers": [
+    { "id": "jira", "group": "atlassian", "description": "Jira work items and sprint operations", "entrypoint": "packages/jira-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "confluence", "group": "atlassian", "description": "Confluence search and content operations", "entrypoint": "packages/confluence-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "bitbucket", "group": "atlassian", "description": "Bitbucket repositories and pull requests", "entrypoint": "packages/bitbucket-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "overview", "group": "atlassian", "description": "Cross-system project overview", "entrypoint": "packages/overview-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "health", "group": "atlassian", "description": "Project and portfolio health metrics", "entrypoint": "packages/health-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "assets", "group": "atlassian", "description": "Jira Assets CMDB queries", "entrypoint": "packages/assets-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "bug-classifier", "group": "atlassian", "description": "Jira bug clustering", "entrypoint": "packages/bug-classifier-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
+    { "id": "server-monitor", "group": "operations", "description": "Read-only deployed server and log inspection", "entrypoint": "packages/server-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "dedicated-ssh", "securityStatus": "pre-stable" },
+    { "id": "imis", "group": "operations", "description": "Read-only server inventory inspection", "entrypoint": "packages/imis-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "dedicated-imis", "securityStatus": "pre-stable" },
+    { "id": "ado", "group": "delivery", "description": "Azure DevOps work items, repositories, pull requests, and pipelines", "entrypoint": "packages/ado-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "dedicated-ado", "securityStatus": "pre-stable" },
+    { "id": "sonar", "group": "delivery", "description": "Sonar issues, hotspots, metrics, quality gates, and scans", "entrypoint": "packages/sonar-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "mixed", "authentication": "dedicated-sonar", "securityStatus": "pre-stable" },
+    { "id": "jenkins", "group": "delivery", "description": "Jenkins jobs, builds, artifacts, and configuration", "entrypoint": "packages/jenkins-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "dedicated-jenkins", "securityStatus": "pre-stable" },
+    { "id": "artifactory", "group": "delivery", "description": "Artifactory repositories, artifacts, builds, and guarded changes", "entrypoint": "packages/artifactory-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "dedicated-artifactory", "securityStatus": "pre-stable" },
+    { "id": "github", "group": "delivery", "description": "GitHub security, issues, pull requests, and repository posture", "entrypoint": "packages/github-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-write", "authentication": "dedicated-github", "securityStatus": "pre-stable" },
+    { "id": "sharepoint", "group": "knowledge", "description": "Read-only SharePoint search and document access", "entrypoint": "packages/sharepoint-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "dedicated-sharepoint", "securityStatus": "pre-stable" },
+    { "id": "jarvis", "group": "portfolio", "description": "Jarvis application inventory", "entrypoint": "packages/jarvis-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "read-only", "authentication": "dedicated-jarvis", "securityStatus": "pre-stable" },
+    { "id": "rfcbuddy", "group": "portfolio", "description": "RFC schedule search and baseline tracking", "entrypoint": "packages/rfcbuddy-mcp/dist/index.js", "packageVersion": "0.1.0", "access": "mixed", "authentication": "dedicated-rfcbuddy", "securityStatus": "pre-stable" }
+  ]
+}
