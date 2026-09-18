@@ -16,9 +16,10 @@ Hashes normalize BOM and line endings before comparison. A checkout, formatter, 
 LF is not a project customization. A later automatic replacement writes the bundled template as UTF-8
 without a BOM, even when a registered file previously used a BOM.
 
-For example, Crow's `GenCharExtensions.cs` uses `YourProject.Tests.Generators`. Installation changes that to
-the project's namespace and hashes the resulting file. A later source-hash change means Crow updated the
-template. The installed hash then answers whether the project changed its adapted copy afterward.
+For example, Crow's `GenCharExtensions.cs` and `PropertyTestSampling.cs` use
+`YourProject.Tests.Generators`. Installation changes that to the project's namespace and hashes the
+resulting file. A later source-hash change means Crow updated the template. The installed hash then answers
+whether the project changed its adapted copy afterward.
 
 ## Use the deterministic script
 

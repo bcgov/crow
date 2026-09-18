@@ -97,6 +97,12 @@ generic suite instead of copying files — see
   themselves produce a valid object, and that contract deserves its own test — see
   [`reference/test-data-builders.md`](../reference/test-data-builders.md) for the full pattern (generated
   defaults with pinned domain constraints, semantic composite methods, nested composition, thread safety).
+- For CsCheck properties, install the managed `PropertyTestSampling` helper and call
+  `SampleProperty(..., seed: "DescriptiveName")`. Keep normal runs deterministic. Set
+  `CsCheck_Randomize=true` at the process/run level for larger exploratory runs rather than adding
+  per-test branches. Capture CsCheck's reproduction seed from exploratory failures, replay it
+  deterministically, and promote the minimized input to a regression test when it represents a durable
+  defect.
 - Group long test classes with `#region` blocks and give each class a short XML doc comment stating its
   purpose — these files are read far more often than they're written.
 
