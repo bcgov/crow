@@ -123,8 +123,14 @@ Before a repository's first testing implementation, create or refresh:
 - `docs/testing/guides/Integration Test Organization Guide.md`
 
 Adapt them to detected conventions. Cover the selected framework/libraries, project and class naming/layout,
-builder/test-data patterns, and integration environment and cleanup strategy. Do not regenerate a guide that
-is already current.
+builder/test-data patterns, and integration environment and cleanup strategy. When the project uses CsCheck
+property-based tests through the managed `PropertyTestSampling` helper, document the `CsCheck_Randomize`
+run-level switch in the Unit Test Organization Guide: normal local/CI runs stay deterministic by default;
+setting `CsCheck_Randomize=true` for a single run (for example, a scheduled/nightly CI job or an ad hoc local
+invocation) opts into CsCheck's broader random seeding for that run only. Include one local example (for
+example, `$env:CsCheck_Randomize = "true"; dotnet test`) and note that a failure found this way should be
+replayed deterministically with CsCheck's reported seed and promoted to a regression test — see
+`reference/property-based-testing.md`. Do not regenerate a guide that is already current.
 
 ## Step 5: Integration and complex or critical unit tests
 
