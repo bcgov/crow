@@ -1,5 +1,21 @@
 # Nine-phase interview contract
 
+## Model guidance
+
+Crow agents have no per-agent model pin. Model changes are recommendations, never automatic settings:
+
+- **Lightweight:** record confirmed phase answers, populate `spec.md`/`decisions.md`/`glossary.md` from
+  already-agreed content, and re-ask only due staleness checks.
+- **Mid-tier:** run the phase-by-phase interview, reconcile grain/source evidence, resolve the PBIX/RDL
+  deliverable classification, and facilitate contradiction/decision resolution.
+- **Premium:** use only when the bus matrix or security model has conflicting stakeholder requirements that a
+  mid-tier pass cannot reconcile, or when external-documentation intake surfaces a hard contradiction with
+  repository evidence.
+
+When practical, use a different model family to review a signed-off handoff payload against the interview
+record before scaffolding or build generation begins. If the environment cannot switch models easily, record
+the recommendation and proceed.
+
 Inspect existing design artifacts read-only, then ask for explicit write
 authorization before creating or updating any `design/` file. Run phases in
 order and do not build before confirmation:

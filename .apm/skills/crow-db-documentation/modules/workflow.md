@@ -1,5 +1,20 @@
 # Documentation workflow
 
+## Model guidance
+
+Crow agents have no per-agent model pin. Model changes are recommendations, never automatic settings:
+
+- **Lightweight:** apply already-confirmed conventions in batch (extended-property scripts, classification
+  tagging) once a pattern is approved and repeated.
+- **Mid-tier:** run discovery, convention detection, Convention-versus-Surprise judgment calls, and the
+  interview/confirmation loop.
+- **Premium:** use only when business meaning is genuinely ambiguous, conflicting descriptions must be
+  reconciled, or a large D2/D3 model's convention set needs synthesis across many objects at once.
+
+When practical, use a different model family to spot-check a documentation pass against `design/decisions.md`
+conventions and the coverage/findings artifacts before treating a large batch as final. If the environment
+cannot switch models easily, record the recommendation and proceed.
+
 ## Modes and discovery
 
 Start every session with D0 database/schema context, then record the requested

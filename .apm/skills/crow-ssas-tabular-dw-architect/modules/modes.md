@@ -1,5 +1,21 @@
 # Mode routing and contracts
 
+## Model guidance
+
+Crow agents have no per-agent model pin. Model changes are recommendations, never automatic settings:
+
+- **Lightweight:** apply an already-approved scaffold/plan template (Modes H–M) once inputs are signed off
+  and the shape is routine.
+- **Mid-tier:** run review Modes A–G, O, and Mode P source analysis, weigh evidence against references, and
+  draft findings/assumptions/deferred items.
+- **Premium:** use only when Mode N build orchestration must reconcile conflicting prerequisites across many
+  modes, or a review surfaces a cross-cutting Kimball/security/physical-design conflict a mid-tier pass
+  cannot resolve.
+
+When practical, use a different model family to spot-check review findings or a generated scaffold against
+the `crow-dw-ssas-references` corpus before treating a review as final. If the environment cannot switch
+models easily, record the recommendation and proceed.
+
 Route: A DW schema review; B SSAS Tabular review; C extended-property
 generation boundary; D DAX review; E bus matrix; F ELT review; G deployment
 review; H DW schema scaffold; I Tabular scaffold; J source stored-procedure
