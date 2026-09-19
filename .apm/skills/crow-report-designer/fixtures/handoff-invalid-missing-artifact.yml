@@ -1,0 +1,21 @@
+producer: crow-report-designer
+consumer: crow-ssas-tabular-dw-architect
+producer_version: 0.10.0
+status: signed-off
+requested_mode: scaffold
+signed_off_artifacts:
+  - design/spec.md
+artifact_paths:
+  - design/spec.md
+evidence_scope:
+  - local synthetic SQL definitions
+confirmed_grain:
+  - one row per order line
+confirmed_bus_matrix: false
+confirmed_security_assumptions: false
+decisions: []
+open_questions:
+  - bus matrix not confirmed
+deferred_execution: []
+architect_notes: []
+sign_off_timestamp: null

@@ -42,7 +42,7 @@ Complete this before opening the discussion:
 10. When `docs/testing/testing-plan.md` or existing scenario docs predate the shared Status vocabulary and
    scenario `Coverage` field (no schema marker present), do not rewrite the whole project. Backfill only the
    feature(s) actually being worked on in this engagement; leave other pre-existing rows marked
-   `Legacy — pending backfill` rather than assuming their free-text status is current.
+   `Legacy - pending backfill` rather than assuming their free-text status is current.
 11. If `docs/testing/testing-plan.md` contains managed Crow templates, run the managed-template audit. Load
    `reference/managed-template-lifecycle.md` only when installing one or when the audit reports drift.
    Auto-update an unchanged installed copy; stop for a merge/replace/retain decision if the project copy was
@@ -123,8 +123,14 @@ Before a repository's first testing implementation, create or refresh:
 - `docs/testing/guides/Integration Test Organization Guide.md`
 
 Adapt them to detected conventions. Cover the selected framework/libraries, project and class naming/layout,
-builder/test-data patterns, and integration environment and cleanup strategy. Do not regenerate a guide that
-is already current.
+builder/test-data patterns, and integration environment and cleanup strategy. When the project uses CsCheck
+property-based tests through the managed `PropertyTestSampling` helper, document the `CsCheck_Randomize`
+run-level switch in the Unit Test Organization Guide: normal local/CI runs stay deterministic by default;
+setting `CsCheck_Randomize=true` for a single run (for example, a scheduled/nightly CI job or an ad hoc local
+invocation) opts into CsCheck's broader random seeding for that run only. Include one local example (for
+example, `$env:CsCheck_Randomize = "true"; dotnet test`) and note that a failure found this way should be
+replayed deterministically with CsCheck's reported seed and promoted to a regression test — see
+`reference/property-based-testing.md`. Do not regenerate a guide that is already current.
 
 ## Step 5: Integration and complex or critical unit tests
 
@@ -157,8 +163,8 @@ approval-gated complex/critical scenario; the work does not introduce or change 
 item; there is no shared-validator exhaustive-matrix obligation; and no meaningful trust/external boundary
 is crossed. If any of these don't hold, route to Step 5 instead.
 
-Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None — simple unit
-work`, `Status` = `Automated — <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
+Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None - simple unit
+work`, `Status` = `Automated - <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
 
 ## Step 7: Bug regressions
 

@@ -44,8 +44,11 @@ for:
 
 Assert that the system does not over-fetch or silently widen disclosure, does
 not produce a false success, does not duplicate side effects, and does not
-weaken authorization or identity assurance during fallback. Omit scenarios when
-the dependency or proof property is not present.
+weaken authorization or identity assurance during fallback. Mark scenarios
+Omit the entire table when no external dependency, event contract, canonical
+decision source, or digital proof applies. When the table applies but an
+individual dependency or proof property does not, omit that row rather than
+adding an `N/A` row.
 
 ## Scenario-doc-first workflow (hard gate)
 

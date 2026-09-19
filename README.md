@@ -33,6 +33,9 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
 - **Crow Simplification Review Agent** — Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.
 - **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Shared validators use one exhaustive direct suite plus thin consumer wiring/context smoke tests. Behaviors that cannot be automated are classified and recorded in a durable `docs/testing/manual-coverage.md` QA-scope register. Confirmed bugs and explicitly approved actionable design smells can produce local, unfiled work-item draft candidates; external tracker search and creation are out of scope. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance, safe hash-based updates for copied Crow test-utility templates, and no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
+- **Crow DW Report Designer** — Interview-first DW/report design with signed-off artifacts and conditional architect handoff. Live providers and build execution are deferred.
+- **Crow SSAS Tabular DW Architect** — Local-first Kimball, SSAS Tabular/TMDL, DAX, ELT, deployment, and build-mode review. Tabular-only; live providers and execution are deferred.
+- **Crow DB Documenter** — Performs local-first, interview-driven D0/D1/D2/D3 documentation of SQL Server and SSAS artifacts, with coverage, findings, session outputs, explicit confirmation gates, and deferred provider-neutral live access.
 
 ## Available Skills
 
@@ -51,6 +54,10 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions, including an approval-gated draft-release workflow.
 - **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, shared-validator test layering, manual-coverage classification and registers, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
 - **crow-project-context** — Reads and safely maintains public-reference project memory in `crow.config`, including Sonar settings and provider-neutral CI/CD, work-tracking, repository, and documentation references.
+- **crow-report-designer** — Routes the nine-phase report design interview and signed-off DW artifacts.
+- **crow-ssas-tabular-dw-architect** — Routes local-first Kimball, SSAS Tabular/TMDL, DAX, source, ELT, deployment, and conditional build review.
+- **crow-db-documentation** — Routes local-first D0/D1/D2/D3 database documentation, interview confirmation, coverage/findings/session contracts, and future provider boundaries.
+- **crow-dw-ssas-references** — Selectively routes the migrated SQL Server DW, SSAS Tabular, DAX, ELT, deployment, report, classification, and documentation reference corpus to the three related capabilities.
 
 ## Bundled Resources
 
@@ -67,6 +74,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-business-rules/` — Business rule extraction, reconciliation, and diagramming modules, the `business-rules-data.json` schema and synthetic example, Markdown and HTML report templates, B.C.-aligned stylesheet and facet-filtering script, pinned Mermaid configuration, deterministic renderer and validator, and their tests
 - `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, shared-validator layering, manual-coverage classification and register template, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 - `.apm/skills/crow-project-context/` — Public-safe `crow.config` reading, provider resolution, Raven-aligned secret boundaries, sanitized project-memory update rules, and deterministic config validation
+- `.apm/skills/crow-dw-ssas-references/` — Shared, selectively loaded reference corpus migrated from the source DW/SSAS project, with routing index, scoped organization decisions, reusable placeholders for environment-specific tool paths, and deterministic corpus validation
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
@@ -119,7 +127,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.8.0 --global --target copilot
+apm install bcgov/crow#v0.11.0 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -133,15 +141,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.8.0 --global --target copilot
+apm install bcgov/crow#v0.11.0 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.8.0 --global --target claude
-apm install bcgov/crow#v0.8.0 --global --target codex
-apm install bcgov/crow#v0.8.0 --global --target cursor
+apm install bcgov/crow#v0.11.0 --global --target claude
+apm install bcgov/crow#v0.11.0 --global --target codex
+apm install bcgov/crow#v0.11.0 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -185,21 +193,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.8.0.zip
+build/bcgov-crow-0.11.0.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.8.0.zip --global --target claude
-apm install .\build\bcgov-crow-0.8.0.zip --global --target codex
-apm install .\build\bcgov-crow-0.8.0.zip --global --target copilot
-apm install .\build\bcgov-crow-0.8.0.zip --global --target cursor
+apm install .\build\bcgov-crow-0.11.0.zip --global --target claude
+apm install .\build\bcgov-crow-0.11.0.zip --global --target codex
+apm install .\build\bcgov-crow-0.11.0.zip --global --target copilot
+apm install .\build\bcgov-crow-0.11.0.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.8.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.8.0
+Expand-Archive .\build\bcgov-crow-0.11.0.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.11.0
 ```
