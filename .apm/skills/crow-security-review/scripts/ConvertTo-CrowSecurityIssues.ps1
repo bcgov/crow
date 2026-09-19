@@ -71,10 +71,14 @@ function ConvertTo-RelativeUri {
         [string]$Context
     )
 
-    if ([System.IO.Path]::IsPathRooted($Path) -or $Path -match '(^|[\\/])\.\.([\\/]|$)') {
+    $normalizedPath = $Path.Replace('\', '/')
+    if ($normalizedPath -match '^/' -or
+        $normalizedPath -match '^[A-Za-z]:(?:/|$)' -or
+        $normalizedPath -match '^[A-Za-z][A-Za-z0-9+.-]*:' -or
+        $normalizedPath -match '(^|/)\.\.(/|$)') {
         throw "$Context must use a repository-relative file path."
     }
-    return $Path.Replace('\', '/')
+    return $normalizedPath
 }
 
 $resolvedInput = (Resolve-Path -LiteralPath $InputPath).Path
@@ -175,8 +179,6 @@ foreach ($service in $services) {
         $body = @(
             '## Crow security finding'
             ''
-            $message
-            ''
             '<!-- crow-sarif-result:start -->'
             '```json'
             $resultJson
@@ -222,8 +224,9 @@ $sarif = [ordered]@{
 [System.IO.Directory]::CreateDirectory($OutputDirectory) | Out-Null
 $sarifPath = Join-Path $OutputDirectory 'crow-security.sarif'
 $ticketsPath = Join-Path $OutputDirectory 'crow-security-tickets.json'
+$ticketPayloads = $tickets.ToArray()
 [System.IO.File]::WriteAllText($sarifPath, ($sarif | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
-[System.IO.File]::WriteAllText($ticketsPath, (@($tickets) | ConvertTo-Json -Depth 20), [System.Text.UTF8Encoding]::new($false))
+[System.IO.File]::WriteAllText($ticketsPath, (ConvertTo-Json -InputObject $ticketPayloads -Depth 20), [System.Text.UTF8Encoding]::new($false))
 
 Write-Output "Created SARIF: $sarifPath"
 Write-Output "Created ticket payloads: $ticketsPath"
