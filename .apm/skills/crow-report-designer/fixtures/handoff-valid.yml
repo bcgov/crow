@@ -3,6 +3,7 @@ consumer: crow-ssas-tabular-dw-architect
 producer_version: 0.10.0
 status: signed-off
 requested_mode: scaffold
+deliverable_type: pbix
 signed_off_artifacts:
   - design/spec.md
   - design/decisions.md

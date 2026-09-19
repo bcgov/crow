@@ -3,9 +3,10 @@
 The files in `references/` are the complete 28-file reference corpus migrated
 from the source project. Load them selectively by observable mode or concern.
 Source decision handling is recorded in
-[`decisions/decision-map.md`](decisions/decision-map.md); load
-[`decisions/org-design-constraints.md`](decisions/org-design-constraints.md)
-before technical references when that standard is confirmed.
+[`decisions/org-design-constraints.md`](decisions/org-design-constraints.md);
+load it before technical references when that standard is confirmed. That
+file is the active decision surface and may be overridden by explicit user
+direction or stronger project evidence.
 
 | Reference | Load for | Consumers |
 |---|---|---|
@@ -24,7 +25,7 @@ before technical references when that standard is confirmed.
 | `dw-physical-design.md` | indexes, statistics, partitioning, staging | architect Mode O |
 | `performance-end-to-end.md` | DW-to-model-to-report performance | report designer, architect |
 | `dw-calendar-build.md` | calendar dimension design | report designer, architect |
-| `source-system-analysis.md` | source entity profiling and candidate classification | report designer, architect |
+| `source-system-analysis.md` | source entity profiling, candidate classification, CSV/manual discovery, inferred relationships | report designer, architect |
 | `elt-patterns.md` | staging, load SPs, ELT controls, SSIS structure | architect |
 | `ssisdb-catalog-config.md` | SSIS catalog/environment configuration | architect |
 | `ssdt-project-structure.md` | SSDT layout, DACPAC, publish profiles | report designer, architect, DB Documenter |

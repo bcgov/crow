@@ -10,6 +10,7 @@ consumer: crow-ssas-tabular-dw-architect
 producer_version: <package-version>
 status: draft | signed-off
 requested_mode: review | scaffold | build-plan
+deliverable_type: pbix | rdl | both
 signed_off_artifacts: []
 artifact_paths: []
 evidence_scope: []

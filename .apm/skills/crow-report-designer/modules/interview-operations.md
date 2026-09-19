@@ -17,6 +17,15 @@ Interview sign-off and repository-write authorization are separate decisions.
 If either is missing, keep the result as a draft and do not hand off for
 scaffolding or build generation.
 
+## Staleness re-confirmation
+
+On a resumed or long-running session, track `business_requirements` and
+`pbirs_version` (not model preferences — Crow does not pin models) as rows
+with a user-adjustable cadence in `design/decisions.md` (defaults: 90 and 120
+days). When a row is due, ask a brief check-in question before continuing;
+update only the stale row's date, or its value and date if it changed. Do not
+prompt rows that are not yet due.
+
 ## Deferrals and phase gates
 
 Classify each unanswered item as:

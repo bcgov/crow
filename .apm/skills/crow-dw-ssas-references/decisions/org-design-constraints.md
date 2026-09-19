@@ -6,6 +6,10 @@ standard is in scope. They do not override explicit user decisions, stronger
 platform policy, or evidence that the reviewed project follows a different
 standard. Record any exception in the project's decisions artifact.
 
+This file is the active decision surface for the Crow corpus. Treat its
+constraints as defaults that can be overridden by explicit user direction or
+stronger project evidence.
+
 ## Binding constraints
 
 1. **SCD Type 1 is the default.** Do not add SCD Type 2 columns, history

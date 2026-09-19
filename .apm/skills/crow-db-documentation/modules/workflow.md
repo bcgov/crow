@@ -20,6 +20,12 @@ triggers, measures, complex views, non-obvious relationships, and ambiguous
 business meaning; skip self-evident fields and system metadata with reasons.
 Do not replace existing descriptions without explicit approval.
 
+On a resumed or long-running session, track `business_requirements` staleness
+as a row with a user-adjustable cadence (default 90 days) in the target
+project's `design/decisions.md`. When due, ask a brief check-in question
+before continuing (scope, source systems, or ownership changed?); update only
+that row's date, or its value and date if it changed.
+
 ## Interview and writes
 
 Present table/model batches with evidence, draft, confidence, and question.

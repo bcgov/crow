@@ -14,7 +14,11 @@
 Before using a deferred capability, require a reviewed provider or execution
 contract that identifies the tool/API, authentication boundary, allowed
 operations, error behavior, freshness semantics, and confirmation gate. No
-such contract is currently packaged for this skill.
+such contract is currently packaged for this skill. See
+`modules/provider-contract-plan.md` for the planned scope and acceptance
+criteria for live SQL/SSAS discovery specifically; this replaces the source
+project's live-access paths and is a tracked pre-retirement item, not an
+accepted permanent loss.
 
 If live access is unavailable, continue with local evidence when the selected
 mode supports it and label row counts, samples, statistics, runtime metadata,
