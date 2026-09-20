@@ -45,6 +45,36 @@ locations, or must record a resource supplied during the current task.
    independently verified. Surface the failure instead of silently falling
    back to an unscoped endpoint.
 
+## Security issue routing
+
+Security workflows resolve the app's ticketing system from `work_tracking`.
+An entry whose provider is `discover`, whose reference cannot be resolved, or
+which conflicts with another candidate is unknown. Ask the user for the
+provider and a safe project/board descriptor, then separately ask whether to
+remember it. Do not treat a GitHub repository as the app's ticketing system
+unless a GitHub `work_tracking` entry says so.
+
+After a user selects security issue destinations, offer to remember the choice
+with an optional public-safe section:
+
+```yaml
+security_issue_routing:
+  destinations: [ghas, work_tracking]
+  work_tracking_id: "primary"
+  routes:
+    - application_id: "api"
+      service_path: "src/api"
+      destinations: [ghas, work_tracking]
+      work_tracking_id: "api-board"
+```
+
+`ghas` is valid only when `project.repository.provider` is `github`.
+`work_tracking_id` must match an existing, verified `work_tracking` entry.
+The top-level values are the single-app/default route. A multi-app repository
+requires one route per inventoried app unless the user explicitly keeps an
+app local-only. Store no issue payloads, internal URLs, credentials, or
+provider responses.
+
 ## Raven-aligned secret boundary
 
 Raven stores credentials outside the repository in protected, user-scoped

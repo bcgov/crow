@@ -25,10 +25,10 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **Crow B.C. Government UX Agent** — Designs and implements new interfaces, or reviews and remediates existing applications, using the current B.C. Design System and WCAG 2.2 AA. Supports the frontend technologies covered by Crow while keeping user-journey design out of scope.
 - **Crow Solution Architecture Agent** — Designs a proposed B.C.-aligned solution, interviews stakeholders one question at a time to resolve material assumptions, and creates canonical Markdown plus an accessible, self-contained HTML review with rich workflow, data-flow, UX, implementation-choice, identity, hosting, and common-component views.
 - **Crow Architecture Review Agent** — Inspects a repository and creates or updates verified architecture documentation under `docs/`, with conditional platform-role, reuse, custodianship, contract, degradation, and Zero Trust resource-protection assessment plus service-scoped documents and an index for monorepos.
-- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, the approved Critical through Informational severity scheme, conditional data/proof checks, and cross-file data flow tracing via codebase-memory-mcp.
+- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, the approved Critical through Informational severity scheme, conditional data/proof checks, cross-file data flow tracing via codebase-memory-mcp, and optional SARIF publication to GHAS, the configured ticketing system, or both.
 - **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
 - **Crow Business Rule Documentation Agent** — Documents the business rules one application or service actually enforces, reconciles them with available guides and training material, and generates `docs/business-rules.md` plus a self-contained accessible HTML report with pre-rendered Mermaid diagrams, facet filtering, and stable rule identifiers.
-- **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md`, then verifies and re-runs the security review.
+- **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md` or selected/all open `crow-security` tickets, then verifies and re-runs the security review.
 - **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
 - **Crow Simplification Review Agent** — Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.
@@ -119,7 +119,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.8.0 --global --target copilot
+apm install bcgov/crow#v0.8.1 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -133,15 +133,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.8.0 --global --target copilot
+apm install bcgov/crow#v0.8.1 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.8.0 --global --target claude
-apm install bcgov/crow#v0.8.0 --global --target codex
-apm install bcgov/crow#v0.8.0 --global --target cursor
+apm install bcgov/crow#v0.8.1 --global --target claude
+apm install bcgov/crow#v0.8.1 --global --target codex
+apm install bcgov/crow#v0.8.1 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -185,21 +185,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.8.0.zip
+build/bcgov-crow-0.8.1.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.8.0.zip --global --target claude
-apm install .\build\bcgov-crow-0.8.0.zip --global --target codex
-apm install .\build\bcgov-crow-0.8.0.zip --global --target copilot
-apm install .\build\bcgov-crow-0.8.0.zip --global --target cursor
+apm install .\build\bcgov-crow-0.8.1.zip --global --target claude
+apm install .\build\bcgov-crow-0.8.1.zip --global --target codex
+apm install .\build\bcgov-crow-0.8.1.zip --global --target copilot
+apm install .\build\bcgov-crow-0.8.1.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.8.0.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.8.0
+Expand-Archive .\build\bcgov-crow-0.8.1.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.8.1
 ```

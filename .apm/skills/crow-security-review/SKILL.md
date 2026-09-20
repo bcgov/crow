@@ -14,6 +14,12 @@ pipelines, work items, related repositories, and documentation. When a user
 supplies a resource URL, update the manifest only with a verified public
 descriptor or symbolic reference; never write an internal URL or secret.
 
+Load [`modules/security-issue-publishing.md`](modules/security-issue-publishing.md)
+when offering to publish validated findings to GHAS or a ticketing system, or
+when the remediation agent is sourcing work from security tickets. It owns the
+canonical SARIF format, destination/config discovery, consent, deduplication,
+labeling, and ticket lifecycle contract.
+
 ## When to use this skill
 
 Load the relevant module(s) below when performing a manual security review or remediating a finding, based on the target repository's tech stack and the vulnerability class in question. Each module documents concrete per-framework patterns (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI, React, Vue, Angular, Svelte, etc.).
@@ -32,6 +38,11 @@ Located in `modules/`:
 - **`modules/api-and-session-security.md`** — Rate limiting, CORS, cookie flags, JWT implementation flaws, anti-forgery enforcement, HTTP verb constraints.
 - **`modules/frontend-spa-security.md`** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security.
 - **`modules/llm-prompt-and-markdown-security.md`** — Direct and stored/second-order prompt injection, RAG and tool-calling trust boundaries, insecure model-output handling, excessive agency, and Markdown/frontmatter/rendering risks.
+- **`modules/security-issue-publishing.md`** — SARIF-based GHAS and ticket publishing, `crow-security` labeling, destination memory, deduplication, and ticket-driven remediation.
+
+The deterministic publisher input/output converter is
+`scripts/ConvertTo-CrowSecurityIssues.ps1`; its tests are
+`scripts/ConvertTo-CrowSecurityIssues.Tests.ps1`.
 - **`modules/platform-data-and-proofs.md`** — Conditional checks for data minimization, scoped questions, pairwise correlation, digital proofs, assurance-level fallback, and privacy-preserving audit context.
 - **`../crow-application-architecture/modules/zero-trust.md`** — Conditional checks for protected resources, explicit access decisions, least privilege, revocation, degradation, exceptions, and evidence-backed outcomes.
 
