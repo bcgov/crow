@@ -27,30 +27,44 @@ to read. Property-based testing earns its keep for things like:
 [Fact]
 public void SanitizedName_NeverEndsWithDash()
 {
-    Gen.String[1, 200].Sample(input =>
+    Gen.String[1, 200].SampleProperty(input =>
     {
         var result = Sanitize.DownloadFileName(input);
         if (!string.IsNullOrEmpty(result))
             Assert.NotEqual('-', result[^1]);
-    }, iter: 50, seed: "ValidWithinLimits");
+    }, seed: "ValidWithinLimits");
 }
 
 [Fact]
 public void SanitizedName_OnlyContainsValidSlugCharacters()
 {
-    Gen.String[1, 200].Sample(input =>
+    Gen.String[1, 200].SampleProperty(input =>
     {
         var result = Sanitize.DownloadFileName(input);
         Assert.Matches(@"^[a-z0-9-]*$", result);
-    }, iter: 50, seed: "ValidWithinLimits");
+    }, seed: "ValidWithinLimits");
 }
 ```
 
 - Compose generators (`Gen.Int`, `Gen.String`, `Gen.OneOf`, `Gen.Select`, `Gen.Frequency`) to build realistic
   domain objects instead of hand-rolling random values.
-- Use a fixed seed for reproducibility in CI; CsCheck reports the failing seed and shrinks to a minimal
-  failing case automatically — always include the reported seed when documenting a discovered failure so it
-  can be reproduced exactly.
+- Use the shared `PropertyTestSampling` helper from the managed Crow template (install it the same way as
+  the generator files below — see "Don't just adapt this" further down this page). Normal CI/CD and local
+  runs use reproducible per-iteration seeds derived from the supplied descriptive seed, so failures reproduce
+  exactly even though CsCheck applies its `seed` argument only to the first iteration of a multi-iteration
+  sample. Set `CsCheck_Randomize=true` for an exploratory run that uses CsCheck's default random seeding
+  without changing every test.
+- For example, opt into exploration for one PowerShell run with
+  `$env:CsCheck_Randomize = "true"; dotnet test`. Keep the test process's standard output and error in the
+  run log so CsCheck's reproduction seed is not lost.
+- A fixed seed gives repeatability, not broad exploration. Make each iteration valuable by shaping generators
+  toward the domain's real partitions and known hazards: valid and invalid forms, duplicate values,
+  cross-field dependencies, Unicode/normalization hazards, and boundary-adjacent values. Add explicit
+  examples for named edge cases; do not expect more iterations from an unshaped generator to compensate for
+  poor input coverage.
+- When random mode finds a failure, capture CsCheck's reported reproduction seed and minimized input, then
+  rerun deterministically with that seed. Fix the defect and promote the minimized input to a permanent
+  regression example or property seed when it represents a durable defect class.
 - Keep the property itself simple and obviously correct — a complicated property is as hard to trust as the
   code it's testing.
 - Pair a small number of property-based tests (covering the general rule) with a handful of example-based
@@ -77,25 +91,27 @@ public void Email_At_Exact_200_Chars_Should_Pass()   // boundary example, exact 
 [Fact]
 public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space beyond it
 {
-    Gen.String[Gen.Char.AlphaNumeric, 210, 260].Sample(local =>
+    Gen.String[Gen.Char.AlphaNumeric, 210, 260].SampleProperty(local =>
     {
         var model = BuildModelWithEmail(local + "@test.com");
         Validator.TestValidate(model).ShouldHaveValidationErrorFor(EmailExpression);
-    }, iter: 10, seed: "EmailTooLong");
+    }, iter: 20, seed: "EmailTooLong");
 }
 ```
 
 ## Iteration counts and seed naming
 
-- **Iterations:** 10-20 is usually right for validation rules. The generator's *bias* matters far more than
-  raw volume — a well-shaped generator finds the bug in 10 iterations, while a uniform one may not find it in
-  10,000. Raise the count only for genuinely large state spaces, and watch the effect on suite runtime; slow
-  tests get skipped, which costs more coverage than the extra iterations bought.
-- **Seeds:** give every `Sample` call an explicit, descriptive seed naming what's being generated
+- **Iterations:** use **100** for cross-field and property exploration where combinations matter, such as
+  duplicate names, contact interdependencies, and Unicode/normalization rules. Keep explicit boundary
+  properties at **20** when the generator already targets a narrow condition, such as values just beyond a
+  known maximum. The generator's bias and partition coverage matter more than raw volume; raise counts only
+  when the state space and runtime justify it.
+- **Seeds:** give every `SampleProperty` call an explicit, descriptive seed naming what's being generated
   (`seed: "EmailTooLong"`, `seed: "ValidWithinLimits"`). This keeps runs reproducible, makes a failing test's
   intent readable without parsing the generator, and avoids two unrelated tests sharing an accidental seed.
-  When a property discovers a real bug, record the reported failing seed in the fix's test so the exact case
-  stays covered.
+  The shared helper lets an exploratory run ignore those seeds without changing test code. When a property
+  discovers a real bug, record the reported failing seed during replay and promote the minimized input into
+  the fix's test so the exact case stays covered.
 
 ## Biased character generators (for string/format validation)
 
@@ -113,9 +129,9 @@ public static Gen<char> SmartLetter() =>
         (5,  Gen.OneOfConst('א', 'ا')));                          // RTL scripts (bidi handling)
 ```
 
-**Don't just adapt this — copy the real, already-tested files.** `templates/dotnet/generators/` has three
-ready-to-use generator utilities, tried and proven, that save you from regenerating (and re-introducing
-mistakes into) this kind of code from scratch:
+**Don't just adapt this — copy the real, already-tested files.** `templates/dotnet/generators/` has four
+ready-to-use generator/helper utilities, tried and proven, that save you from regenerating (and
+re-introducing mistakes into) this kind of code from scratch:
 
 - `GenCharExtensions.cs` — the full biased Unicode/ASCII character generator set (homoglyphs, RTL,
   normalization hazards, wide/fullwidth chars, smart whitespace).
@@ -123,6 +139,8 @@ mistakes into) this kind of code from scratch:
   whitespace while still allowing it in the middle).
 - `GenDateExtensions.cs` — date/time/period generators (future/past dates, same-day and multi-day periods,
   nullable variants).
+- `PropertyTestSampling.cs` — the `SampleProperty` execution helper described above (deterministic-by-default
+  sampling, the `CsCheck_Randomize` exploratory-run switch).
 
 Install the file(s) through `scripts/Sync-CrowTestingTemplate.ps1` so the namespace adaptation and both
 content fingerprints are recorded in `docs/testing/testing-plan.md`. Load
