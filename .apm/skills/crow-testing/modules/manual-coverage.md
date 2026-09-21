@@ -62,12 +62,23 @@ belong in the work-item draft and should not automatically become recurring `MC-
 
 ## Required register fields
 
-Each index row needs a stable area ID, links, classification, release trigger, and short QA scope. Each
-detail document needs a stable scenario ID, links, behavior/scope, classification and reason, and, for
-shared UI changes, the representative sample and reason, release/recheck trigger, prerequisites and test
-data, the page(s)/relative route(s) a tester navigates to,
-manual steps, expected result, and recheck/automation triggers. If the behavior has a UI entry point, record
-the actual relative path (for example `/admin/users/{id}/edit`), not just a page name.
+Only `Manual-only` and `Deferred automation` behaviors belong in this recurring register.
+
+- **Automated candidate:** record it in `docs/testing/testability-notes.md` during discovery. Once the
+  user selects it for implementation, add or update the corresponding `testing-plan.md` test-matrix or
+  feature row and implement it at the appropriate test level.
+- **Coverage gap:** record it in the relevant scenario document's `Coverage` field as
+  `Uncovered, automatable - <backlog ref>` and in `testing-plan.md` until the test is added and passes.
+  Do not create an `MC-###` manual-QA entry.
+- **Not implemented:** do not make a coverage claim or create a manual-QA entry until the behavior exists.
+
+Each index row needs a stable area ID (`MC-XXX`), a feature/bug link, a detail-document link,
+classification, release trigger, and short QA scope. Each detail document needs that stable area ID plus
+stable scenario IDs (`MC-XXX-01`, `MC-XXX-02`, ...), related work-item and source-component links,
+behavior/scope, classification and reason, status, release/recheck trigger, prerequisites and test data
+(including external dependencies), the page(s)/relative route(s) a tester navigates to, manual steps, and
+expected result. If the behavior has a UI entry point, record the actual relative path (for example
+`/admin/users/{id}/edit`), not just a page name.
 
 Execution evidence — results, screenshots, logs, payloads, run dates — belongs in the team's external QA
 system, per the consuming project's security and privacy practices, not in this repository's Markdown.

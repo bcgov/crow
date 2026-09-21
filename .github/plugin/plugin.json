@@ -1,7 +1,7 @@
 {
   "name": "bcgov-crow",
   "version": "0.9.0",
-  "description": "CROW agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, security, remediation, reporting, Crow authoring, review, and releases.",
+  "description": "CROW agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, security, remediation, business rule documentation, reporting, Crow authoring, review, and releases.",
   "author": {
     "name": "bcgov"
   },
