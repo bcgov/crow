@@ -22,7 +22,8 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 1. Inspect prerequisites and existing state with
    `node scripts/crow-raven-setup.mjs status`.
 2. Resolve server selection through focused user questions and validate IDs
-   against the bundled catalog.
+   against the bundled catalog. Record an explicit `--no-raven` choice when
+   the user wants only codebase-memory-mcp.
 3. Generate the exact setup plan, present its SHA-256 digest and effects, and
    obtain confirmation bound to that unchanged plan.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version

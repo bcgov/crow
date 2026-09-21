@@ -20,7 +20,8 @@ collection.
 Use the **Crow Raven Setup Agent** to:
 
 - check Node.js, npm, and Git prerequisites;
-- choose only the Raven capability groups and individual servers you need;
+- choose only the Raven capability groups and individual servers you need, or
+  explicitly install codebase-memory-mcp without Raven;
 - pin codebase-memory-mcp to an exact version;
 - install Raven at an immutable source revision while Raven's verified runtime
   release format is being established;

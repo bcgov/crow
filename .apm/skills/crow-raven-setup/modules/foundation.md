@@ -15,7 +15,9 @@ approve a prerequisite installation as a separate action.
 
 Present capability groups first to avoid a long undifferentiated checklist,
 then show the exact individual servers implied by those groups. The individual
-server list is authoritative and must be confirmed before installation.
+server list is authoritative and must be confirmed before installation. A user
+who needs only codebase-memory-mcp must explicitly choose the no-Raven option;
+the deterministic CLI represents that choice as `--no-raven`.
 
 Some servers share authentication or depend on another Raven server. Use the
 bundled catalog to disclose those relationships. Do not infer new servers or
