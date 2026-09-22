@@ -9,30 +9,44 @@
 Model cost limits are mandatory, not optimization guidance. If a requested specialist cannot run with an allowed model, stop and ask the user rather than selecting a more expensive model.
 {
   "default": "gpt-5.6-luna",
-  "low": [
+  "0 - low": [
     "claude-haiku-4.5",
+    "gemini-3.6-flash",
     "gemini-3.7-flash",
     "gemini-3.8-flash",
     "gpt-5-mini",
     "gpt-5.4-mini",
+    "gpt-5.4-nano",
     "gpt-5.6-luna",
-    "mai-code-1.1-flash"
+    "gpt-6-luna",
+    "mai-code-1.1-flash",
+    "kimi-k2.7"
   ],
-  "medium": [
+  "1 - medium": [
+    "claude-sonnet-4.6",
     "claude-sonnet-5",
+    "gemini-3.5-flash",
     "gpt-5.3-codex",
     "gpt-5.4",
-    "gpt-5.6-terra"
+    "gpt-5.6-terra",
+    "gpt-6-sol",
+    "grok-4.5",
+    "grok-4.6",
+    "grok-4.7",
+    "kimi-k3"
   ],
-  "high": [
+  "2 - high": [
     "claude-opus-4.7",
     "claude-opus-4.8",
     "claude-opus-5",
-    "claude-fable-5",
-    "claude-fable-5.1",
+    "claude-opus-5.5",
+    "gpt-5.6-sol"
+  ],
+  "3 - premium": [
     "gpt-5.5",
-    "gpt-5.6-sol",
-    "gpt-6-astra"
+    "gpt-6-astra",
+    "claude-fable-5",
+    "claude-fable-5.1"
   ]
 }
 
