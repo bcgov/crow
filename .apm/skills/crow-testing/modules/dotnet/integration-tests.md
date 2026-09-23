@@ -3,6 +3,21 @@
 Applies to .NET projects using Entity Framework Core against SQL Server. Detect first, default second — same
 rule as `dotnet/unit-tests.md`.
 
+## Test framework version
+
+Crow's default is **xUnit.v3** (`xunit.v3` NuGet package, .NET 8.0+ / .NET Framework 4.7.2+, executable
+test projects on Microsoft.Testing.Platform). Integration test projects follow the same rule as the unit
+side: detect what already exists (`xunit` vs `xunit.v3` in `PackageReference` entries), follow a v3 suite
+as-is, and for a standard v2 suite offer to migrate using the seven-step assessment in
+[`unit-tests.md`](unit-tests.md) § "Detect first, default second." The `IAsyncLifetime` return-type change
+(v2 `Task` → v3 `ValueTask`) is the one API-shape edit that ripples into integration fixtures — see
+[`../reference/integration/fixtures.md`](../reference/integration/fixtures.md).
+
+Integration test projects need the same optional `Microsoft.Testing.Extensions.TrxReport` package +
+`dotnet test -- --report-trx` invocation when CI needs a TRX file — see
+[`unit-tests.md`](unit-tests.md) § "CI test-result publishing (MTP)" for the mechanism and the Azure
+DevOps `.NET Core v2` publish-checkbox consequence.
+
 ## Study the existing suite before generating anything
 
 If an integration test project already exists with real tests in it, **read a representative test class, its

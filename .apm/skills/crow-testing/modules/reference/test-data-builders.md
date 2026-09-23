@@ -33,41 +33,32 @@ Generate realistic values rather than hand-writing them, then pin the fields the
 
 ```csharp
 private Faker<EditWorkerModel> CreateFaker(string locale) =>
-    new AutoFaker<EditWorkerModel>(locale).UseSeed(_seed)
+    new Faker<EditWorkerModel>(locale).UseSeed(_seed)
         .RuleFor(m => m.WorkerId,   f => f.Random.Int(1, 10000))
+        .RuleFor(m => m.FirstName,  f => f.Name.FirstName())
         .RuleFor(m => m.LastName,   f => f.Name.LastName())
         .RuleFor(m => m.MononymFlg, f => false)
         .RuleFor(m => m.BirthDt,    f => f.Date.Between(
             ValidationConstants.MinDate.AddYears(10),
             ValidationConstants.MaxBirthDate.AddDays(-1)))
         .RuleFor(m => m.PreferredName, f => f.Internet.UserName().OrNull(f, 0.3f))
+        .RuleFor(m => m.Email,       f => f.Internet.ExampleEmail())
+        .RuleFor(m => m.PrimaryPhone,f => f.Phone.PhoneNumber())
+        .RuleFor(m => m.OtherPhone,  f => f.Phone.PhoneNumber().OrNull(f, 0.5f))
         .RuleFor(m => m.Address,    f => new AddressModelBuilder().WithLocale(locale).Build());
 ```
 
+- **Give every field an explicit `.RuleFor(...)`.** After confirming that no required validity field was
+  supplied only by AutoBogus's reflection-based defaults, choose Bogus categories deliberately
+  (`f.Name.LastName()`, `f.Phone.PhoneNumber()`, `f.Random.Int(1, 10000)`) keeps domain constraints
+  visible in the builder rather than delegated to reflection-based auto-population. Do not introduce
+  AutoBogus in new builders — see the "New tests must never introduce AutoBogus" rule in
+  [`../dotnet/unit-tests.md`](../dotnet/unit-tests.md).
 - Derive date/number bounds from the **same constants the production validator uses**, not from copied
   literals — otherwise a changed rule leaves the builder generating invalid data.
 - `.OrNull(f, 0.3f)` exercises the nullable path some of the time without making defaults unpredictable.
 - Compose nested builders rather than hand-building child objects, so each type's validity rules live in one
   place.
-
-### Naming conventions for auto-generation
-
-Where an auto-faker infers data types from property names, configure the aliases once so domain-specific
-names still generate sensible data:
-
-```csharp
-static EditWorkerModelBuilder()
-{
-    AutoFaker.Configure(builder => builder.WithConventions(config =>
-    {
-        config.PhoneNumber.Aliases("PrimaryPhone", "OtherPhone");
-        config.ExampleEmail.Aliases("Email");
-        config.FirstName.Aliases("PreferredName");
-    }));
-}
-```
-
-Note this is **static, global, and runs once** — see thread safety below.
 
 ## Semantic composite methods, not one setter per property
 
@@ -122,8 +113,9 @@ The callback form keeps tests from importing and assembling child builders inlin
 - **Fix the seed** (`UseSeed(_seed)`) so a failure reproduces exactly. Randomized-per-run defaults produce
   tests that fail once and pass on retry, which trains everyone to ignore failures.
 - Keep the seed a named constant on the builder, not scattered literals.
-- Determinism here is separate from property-based testing's seeds — see
-  [`property-based-testing.md`](property-based-testing.md) for the named-seed convention used there.
+- Determinism here is *opposite* to CsCheck property-based testing — builders pin seeds so fixture
+  defaults reproduce; CsCheck properties omit seeds to explore. See
+  [`property-based-testing.md`](property-based-testing.md).
 
 ## Localization
 
@@ -146,9 +138,9 @@ locale tests don't accidentally vary unrelated data.
 
 Test runners execute test classes in parallel by default. Two consequences:
 
-- **Static/global configuration must be idempotent and set up once.** A static constructor is a reasonable
-  home for it (the runtime guarantees single execution), but a global registry mutated *per builder instance*
-  will race. Never let `Build()` mutate global state.
+- **Static/global configuration must be idempotent and set up once** if any is genuinely needed. A static
+  constructor is a reasonable home for it (the runtime guarantees single execution). Never let `Build()`
+  mutate global state.
 - **Never share a built model between tests.** Each test constructs its own via the builder. A builder
   instance holding a single `_model` it hands out (`Build() => _model`) is fine only because each test creates
   its own builder — if a builder instance is ever cached or shared in a fixture, `Build()` must return a fresh
