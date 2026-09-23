@@ -21,9 +21,62 @@ env:
   APM_INSTALLER_SHA256: fac1b4e1bd306b057e72af24608d1773afade2fbcd5e8466790c03e460d24ef5
 
 jobs:
+  check_release_changes:
+    name: Check release-relevant changes
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      has_release_changes: ${{ steps.changes.outputs.has_release_changes }}
+
+    steps:
+      - name: Check out exact validated commit
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Detect release-relevant changes
+        id: changes
+        shell: pwsh
+        env:
+          COMMIT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          $parentSha = git rev-parse "$env:COMMIT_SHA^" 2>$null
+          if ($LASTEXITCODE -eq 0) {
+            $changedFiles = @(git diff --name-only $parentSha $env:COMMIT_SHA)
+          }
+          else {
+            $changedFiles = @(git ls-tree --name-only -r $env:COMMIT_SHA)
+          }
+
+          $releaseFiles = @(
+            $changedFiles | Where-Object {
+              $_ -eq 'apm.yml' -or $_ -like '.apm/*'
+            }
+          )
+          $hasReleaseChanges = $releaseFiles.Count -gt 0
+
+          if ($hasReleaseChanges) {
+            Write-Host 'Release-relevant changes detected:'
+            $releaseFiles | ForEach-Object { Write-Host "- $_" }
+          }
+          else {
+            Write-Host 'No release-relevant changes detected.'
+          }
+
+          "has_release_changes=$($hasReleaseChanges.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
   prepare:
     name: Prepare release candidate
+    needs: check_release_changes
     if: >-
+      needs.check_release_changes.result == 'success' &&
+      needs.check_release_changes.outputs.has_release_changes == 'true' &&
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main' &&
       github.event.workflow_run.repository.full_name == github.repository
@@ -112,8 +165,12 @@ jobs:
 
   draft:
     name: Create approved draft release
-    needs: prepare
-    if: needs.prepare.result == 'success'
+    needs:
+      - check_release_changes
+      - prepare
+    if: >-
+      needs.check_release_changes.outputs.has_release_changes == 'true' &&
+      needs.prepare.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment:
