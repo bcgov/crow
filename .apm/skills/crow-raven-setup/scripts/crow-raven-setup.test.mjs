@@ -1,11 +1,18 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import {
+  createFragment,
+  releasedServers,
+  startupInvocation,
+  validateReleaseCatalog,
+  validateReleaseManifest
+} from "./crow-raven-setup.mjs";
 
 const script = fileURLToPath(new URL("./crow-raven-setup.mjs", import.meta.url));
 
@@ -134,6 +141,7 @@ test("plan stages Raven builds in a generation-specific directory", () => {
   const result = run([
     "plan",
     "--servers", "jira",
+    "--delivery", "source",
     "--raven-ref", revision,
     "--codebase-memory-version", "0.11.0",
     "--state-dir", stateDir
@@ -144,6 +152,78 @@ test("plan stages Raven builds in a generation-specific directory", () => {
   assert.equal(plan.commands.length, 5);
   assert.equal(plan.commands[0].args.at(-1), `${plan.raven.runtimePath}.staging-<pid>`);
   assert.equal(plan.commands[2].cwd, `${plan.raven.runtimePath}.staging-<pid>`);
+});
+
+test("Raven release metadata reconciles reviewed servers and native launchers", () => {
+  const version = "0.1.0";
+  const platform = `${process.platform}-${process.arch}`;
+  const manifest = {
+    schemaVersion: 1,
+    suiteVersion: version,
+    sourceRepository: "https://github.com/bcgov/raven",
+    sourceCommit: "a".repeat(40),
+    platform,
+    nodeVersion: "24.21.0",
+    protocolCompatibility: "MCP over stdio",
+    archive: `raven-${version}-${platform}.tar.gz`,
+    archiveSha256: "b".repeat(64),
+    catalog: "server-catalog.json",
+    catalogSha256: "c".repeat(64),
+    smokeTests: { status: "passed", startedServerCount: 17 }
+  };
+  const releasedCatalog = {
+    schemaVersion: 1,
+    suiteVersion: version,
+    nodeVersion: "24.21.0",
+    protocolCompatibility: "MCP over stdio",
+    supportedPlatforms: [platform],
+    servers: Array.from({ length: 17 }, (_, index) => ({
+      id: index === 0 ? "jira" : `server-${index}`,
+      package: index === 0 ? "@bcgov/raven-jira" : `@bcgov/raven-server-${index}`,
+      launcher: index === 0 ? "raven-jira" : `raven-server-${index}`,
+      entrypoint: index === 0 ? "packages/jira/dist/index.js" : `packages/server-${index}/dist/index.js`,
+      packageVersion: "0.1.0",
+      access: "read-write"
+    }))
+  };
+  validateReleaseManifest(manifest, version, platform);
+  validateReleaseCatalog(releasedCatalog, manifest);
+  const reviewed = [{
+    id: "jira",
+    group: "atlassian",
+    description: "Jira",
+    entrypoint: "packages/jira/dist/index.js",
+    packageVersion: "0.1.0",
+    access: "read-write"
+  }];
+  const selected = releasedServers(reviewed, releasedCatalog);
+  assert.equal(selected[0].launcher, "raven-jira");
+
+  const root = mkdtempSync(join(tmpdir(), "crow-raven-release-"));
+  const codebase = join(root, "codebase");
+  const runtime = join(root, "raven");
+  const codebaseEntrypoint = join(codebase, "node_modules", "codebase-memory-mcp", "bin.js");
+  const launcher = join(runtime, "bin", process.platform === "win32" ? "raven-jira.cmd" : "raven-jira");
+  mkdirSync(join(codebase, "node_modules", "codebase-memory-mcp"), { recursive: true });
+  mkdirSync(join(runtime, "bin"), { recursive: true });
+  writeFileSync(codebaseEntrypoint, "");
+  writeFileSync(launcher, "");
+  const fragment = createFragment(runtime, selected, codebase, "bundled-release");
+  assert.deepEqual(fragment.mcpServers.jira, { command: launcher, args: [] });
+  const invocation = startupInvocation(launcher, []);
+  if (process.platform === "win32") {
+    assert.equal(invocation.command, process.env.ComSpec);
+    assert.deepEqual(invocation.args, ["/d", "/s", "/c", "call", launcher]);
+    const spacedDirectory = join(root, "path with spaces");
+    const smokeLauncher = join(spacedDirectory, "raven-smoke.cmd");
+    mkdirSync(spacedDirectory);
+    writeFileSync(smokeLauncher, "@exit /b 0\r\n");
+    const smokeInvocation = startupInvocation(smokeLauncher, []);
+    const smoke = spawnSync(smokeInvocation.command, smokeInvocation.args);
+    assert.equal(smoke.status, 0, smoke.error?.message);
+  } else {
+    assert.deepEqual(invocation, { command: launcher, args: [] });
+  }
 });
 
 test("setup rejects a future-dated plan", () => {

@@ -2,8 +2,12 @@
 
 ## Prerequisites
 
-- Git.
-- Node.js supported by Raven (`22.12.x`, `24.x`, or `26+`) and npm.
+- Node.js 18 or later and npm for the setup CLI and codebase-memory-mcp.
+- Git and a Raven-supported build Node.js (`22.12.x`, `24.x`, or `26+`) only
+  for the explicit source fallback.
+- GitHub CLI (`gh`) and `tar` for Raven release attestation verification and
+  extraction.
+- A supported x64 Raven bundle platform: macOS, Linux, or Windows.
 - Network access to the explicitly reported GitHub and npm endpoints during
   installation or freshness checks.
 - An MCP client selected by the user.
@@ -34,7 +38,8 @@ The deterministic script writes user-local state under `~/.crow/raven-setup`
 unless the user chooses another location. State may contain:
 
 - selected server IDs;
-- immutable Raven revision and source ref;
+- Raven suite version, platform, release provenance, or immutable source
+  revision and ref when the fallback is selected;
 - exact codebase-memory-mcp version;
 - setup and freshness-check timestamps;
 - current and previous runtime paths.

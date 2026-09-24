@@ -24,8 +24,10 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 2. Resolve server selection through focused user questions and validate IDs
    against the bundled catalog. Record an explicit `--no-raven` choice when
    the user wants only codebase-memory-mcp.
-3. Generate the exact setup plan, present its SHA-256 digest and effects, and
-   obtain confirmation bound to that unchanged plan.
+3. Use Raven's attested bundled release by default. Use `--delivery source`
+   only as an explicit fallback. Generate the exact setup plan, present its
+   SHA-256 digest and effects, and obtain confirmation bound to that unchanged
+   plan.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version
    resolution, state, or fragment-generation logic in model-authored commands.
 5. Configure credentials only through Raven's official user-local mechanism.
@@ -39,7 +41,8 @@ Run `node scripts/crow-raven-setup.mjs help` for the command contract.
 ## Completion gate
 
 - Selection is explicit and catalog-valid.
-- Versions are immutable or exact.
+- Raven release provenance is verified (or source fallback is immutable), and
+  package versions are exact.
 - State and generated configuration contain no credentials.
 - Existing client configuration is preserved.
 - Setup or maintenance verification succeeds without hidden fallback.

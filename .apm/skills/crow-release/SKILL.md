@@ -88,7 +88,12 @@ tag push receives a scoped token only for the release step.
 ## Approval-gated draft release
 
 The implemented workflow uses `workflow_run` to identify
-the exact validated `main` commit, builds and validates the archive, and stores
+the exact validated `main` commit. Before preparing a candidate, it compares
+that commit with its first parent and continues only when `apm.yml` or a file
+under `.apm/` changed, including packaged skill and agent documentation.
+Changes limited to files outside those paths, such as the top-level README,
+`crow.config`, or GitHub workflow files, do not start release preparation. For
+release-relevant changes, it builds and validates the archive, and stores
 the rendered notes, checksum, version, and source commit SHA as workflow
 artifacts. A protected `release` environment then requires an explicit
 maintainer approval before a second job:

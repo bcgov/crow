@@ -2,13 +2,13 @@
 
 ## Current delivery choices
 
-### 1. Signed bundled runtime release (recommended target)
+### 1. Attested bundled runtime release (default)
 
-Raven should publish one SemVer release of the tested suite from protected CI.
-The release should contain a self-contained runtime, launchers, production
-dependencies and assets, a versioned server catalog, an SBOM, source commit,
-supported platforms and Node versions, and signed provenance. Clean-machine
-smoke tests must exercise every launcher.
+Raven publishes a SemVer release of the tested suite with platform archives,
+native launchers, a bundled Node runtime, production dependencies, a versioned
+server catalog, SPDX SBOMs, source commit metadata, clean-runner smoke results,
+and GitHub build attestations. Crow verifies the archive digest, GitHub
+attestation, and embedded metadata before promoting the staged runtime.
 
 SHA-256 files provide corruption detection but are not publisher
 authentication. Crow should trust a release only after verifying its signed
@@ -18,21 +18,22 @@ A suite version is the simplest near-term compatibility contract. The catalog
 should still carry per-server versions so Raven can split lifecycles later
 without changing Crow's selection model.
 
-### 2. Pinned source revision (transitional)
+### 2. Pinned source revision (explicit fallback)
 
-Until Raven publishes the verified runtime above, Crow may clone an immutable
-commit into a versioned user-local directory, run `npm ci`, build it, and
-generate launch entries for selected servers. This requires a local toolchain
-and executes dependency lifecycle scripts, so disclose its lower assurance and
-obtain confirmation.
+When a Raven release does not support the current platform, or the user
+explicitly requests source delivery, Crow may clone an immutable commit into a
+versioned user-local directory, run `npm ci`, build it, and generate launch
+entries for selected servers. This requires a local toolchain and executes
+dependency lifecycle scripts, so disclose its lower assurance and obtain
+confirmation. Never fall back silently.
 
 Pin the commit, lockfile, and supported Node version. Build a new directory
 before switching state; never update the active checkout in place.
 
-## Recommended Raven release contract
+## Raven release contract
 
-- Start Raven at `0.1.0` while its public runtime and catalog contracts remain
-  pre-stable; do not infer stability from repository age.
+- Raven's current public runtime and catalog contract starts at `0.1.0` and
+  remains pre-stable; do not infer stability from repository age.
 - Tag releases as `v<version>` and publish immutable assets from that tag.
 - Version the suite, every server, and the catalog schema explicitly.
 - Produce a signed manifest containing artifact digest, source commit, server

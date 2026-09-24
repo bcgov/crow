@@ -47,5 +47,9 @@ includes:
   - .apm/skills/crow-release
   - .apm/skills/crow-testing
   - .apm/skills/crow-project-context
-  - .apm/skills/crow-raven-setup
+  - .apm/skills/crow-raven-setup/SKILL.md
+  - .apm/skills/crow-raven-setup/modules
+  - .apm/skills/crow-raven-setup/resources
+  - .apm/skills/crow-raven-setup/scripts/crow-raven-setup.mjs
+  - .apm/skills/crow-raven-setup/scripts/crow-raven-setup.test.mjs
 dependencies: {}

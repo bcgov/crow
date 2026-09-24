@@ -2,15 +2,28 @@
 
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
+import {
+  createReadStream,
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync
+} from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(scriptDir, "..");
 const catalogPath = join(skillDir, "resources", "raven-servers.json");
 const ravenUrl = "https://github.com/bcgov/raven.git";
+const ravenRepository = "bcgov/raven";
+const ravenApi = "https://api.github.com/repos/bcgov/raven";
 const npmRegistryUrl = "https://registry.npmjs.org/codebase-memory-mcp/latest";
 const defaultStateDir = join(homedir(), ".crow", "raven-setup");
 const npmCli = process.platform === "win32"
@@ -20,6 +33,7 @@ const planLifetimeMs = 24 * 60 * 60 * 1000;
 const startupGraceMs = 5000;
 const startupStopMs = 2000;
 const networkTimeoutMs = 10000;
+const ravenPlatform = `${process.platform}-${process.arch}`;
 
 function fail(message, code = 1) {
   console.error(`ERROR: ${message}`);
@@ -111,12 +125,21 @@ function isTimestamp(value) {
 function isRavenState(value) {
   return value === null ||
     (isRecord(value) &&
-      typeof value.ref === "string" &&
-      /^[0-9a-f]{40}$/.test(value.revision || "") &&
-      isRecord(value.freshnessTrack) &&
-      ["branch", "pinned"].includes(value.freshnessTrack.type) &&
-      typeof value.freshnessTrack.value === "string" &&
-      typeof value.runtimePath === "string");
+      typeof value.runtimePath === "string" &&
+      (
+        (value.delivery === "pinned-source" &&
+          typeof value.ref === "string" &&
+          /^[0-9a-f]{40}$/.test(value.revision || "") &&
+          isRecord(value.freshnessTrack) &&
+          ["branch", "pinned"].includes(value.freshnessTrack.type) &&
+          typeof value.freshnessTrack.value === "string") ||
+        (value.delivery === "bundled-release" &&
+          /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.suiteVersion || "") &&
+          value.platform === ravenPlatform &&
+          /^[0-9a-f]{40}$/.test(value.sourceCommit || "") &&
+          /^[0-9a-f]{64}$/.test(value.archiveSha256 || "") &&
+          typeof value.releaseTag === "string")
+      ));
 }
 
 function isCodebaseState(value) {
@@ -155,6 +178,7 @@ function isManagedFragment(value, selectedServers) {
 
 function isStateSnapshot(value) {
   if (!isRecord(value) ||
+      !["bundled-release", "pinned-source", "codebase-memory-only"].includes(value.delivery) ||
       !isRavenState(value.raven) ||
       !isCodebaseState(value.codebaseMemory) ||
       !Array.isArray(value.selectedServers) ||
@@ -162,6 +186,9 @@ function isStateSnapshot(value) {
       new Set(value.selectedServers).size !== value.selectedServers.length ||
       !((value.selectedServers.length === 0 && value.raven === null) ||
         (value.selectedServers.length > 0 && value.raven !== null)) ||
+      (value.raven === null
+        ? value.delivery !== "codebase-memory-only"
+        : value.raven.delivery !== value.delivery) ||
       !isServerCatalogSnapshot(value.serverCatalog) ||
       !isManagedFragment(value.managedFragment, value.selectedServers)) {
     return false;
@@ -173,7 +200,7 @@ function isStateSnapshot(value) {
 function readState(target) {
   const state = readJson(target.state, "Crow Raven setup state");
   if (state.schemaVersion !== 1 ||
-      !["pinned-source", "codebase-memory-only"].includes(state.delivery) ||
+      !["bundled-release", "pinned-source", "codebase-memory-only"].includes(state.delivery) ||
       !isStateSnapshot(state) ||
       ((state.raven === null) !== (state.delivery === "codebase-memory-only")) ||
       !isTimestamp(state.configuredAt) ||
@@ -233,14 +260,25 @@ function selectedServers(args, serverCatalog) {
   return requested.map((id) => known.get(id));
 }
 
-function assertPrerequisites({ requiresGit = true } = {}) {
+function assertPrerequisites({
+  requiresGit = false,
+  requiresReleaseTools = false,
+  requiresSourceNode = false
+} = {}) {
   const [major, minor] = process.versions.node.split(".").map(Number);
-  const supported = (major === 22 && minor >= 12) || major === 24 || major >= 26;
-  if (!supported) {
+  if (major < 18) {
+    fail(`codebase-memory-mcp requires Node.js 18 or later; found ${process.versions.node}.`);
+  }
+  const sourceSupported = (major === 22 && minor >= 12) || major === 24 || major >= 26;
+  if (requiresSourceNode && !sourceSupported) {
     fail(`Raven requires Node.js 22.12.x, 24.x, or 26+; found ${process.versions.node}.`);
   }
   if (npmCli && !existsSync(npmCli)) fail(`npm CLI was not found beside Node.js: ${npmCli}`);
   if (requiresGit) run("git", ["--version"], { capture: true });
+  if (requiresReleaseTools) {
+    run("gh", ["--version"], { capture: true });
+    run("tar", ["--version"], { capture: true });
+  }
   runNpm(["--version"], { capture: true });
 }
 
@@ -282,6 +320,113 @@ async function latestCodebaseVersion() {
   return metadata.version;
 }
 
+async function fetchJson(url, label) {
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { "User-Agent": "bcgov-crow-raven-setup" },
+      signal: AbortSignal.timeout(networkTimeoutMs)
+    });
+  } catch (error) {
+    fail(`Could not query ${label}: ${error.message}`);
+  }
+  if (!response.ok) fail(`${label} returned HTTP ${response.status}.`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  try {
+    return { bytes, value: JSON.parse(bytes.toString("utf8")) };
+  } catch (error) {
+    fail(`${label} returned invalid JSON: ${error.message}`);
+  }
+}
+
+function validateReleaseManifest(manifest, version, platform) {
+  const bundleName = `raven-${version}-${platform}`;
+  if (manifest.schemaVersion !== 1 ||
+      manifest.suiteVersion !== version ||
+      manifest.sourceRepository !== "https://github.com/bcgov/raven" ||
+      !/^[0-9a-f]{40}$/.test(manifest.sourceCommit || "") ||
+      manifest.platform !== platform ||
+      manifest.protocolCompatibility !== "MCP over stdio" ||
+      manifest.archive !== `${bundleName}.tar.gz` ||
+      !/^[0-9a-f]{64}$/.test(manifest.archiveSha256 || "") ||
+      manifest.catalog !== "server-catalog.json" ||
+      !/^[0-9a-f]{64}$/.test(manifest.catalogSha256 || "") ||
+      manifest.smokeTests?.status !== "passed" ||
+      !Number.isInteger(manifest.smokeTests?.startedServerCount) ||
+      manifest.smokeTests.startedServerCount < 1) {
+    fail(`Raven ${version} returned an unsupported ${platform} release manifest.`);
+  }
+}
+
+function validateReleaseCatalog(releaseCatalog, manifest) {
+  if (releaseCatalog.schemaVersion !== 1 ||
+      releaseCatalog.suiteVersion !== manifest.suiteVersion ||
+      releaseCatalog.nodeVersion !== manifest.nodeVersion ||
+      releaseCatalog.protocolCompatibility !== manifest.protocolCompatibility ||
+      !releaseCatalog.supportedPlatforms?.includes(manifest.platform) ||
+      !Array.isArray(releaseCatalog.servers) ||
+      releaseCatalog.servers.length !== manifest.smokeTests.startedServerCount) {
+    fail(`Raven ${manifest.suiteVersion} returned an unsupported server catalog.`);
+  }
+}
+
+async function resolveRavenRelease(version) {
+  if (!["darwin-x64", "linux-x64", "win32-x64"].includes(ravenPlatform)) {
+    fail(`Raven bundled releases do not support '${ravenPlatform}'. Use --delivery source.`);
+  }
+  const releaseUrl = version
+    ? `${ravenApi}/releases/tags/v${version}`
+    : `${ravenApi}/releases/latest`;
+  const { value: release } = await fetchJson(releaseUrl, "Raven release metadata");
+  if (release.draft || release.prerelease || !/^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(release.tag_name || "")) {
+    fail("Raven release metadata does not identify a stable published SemVer release.");
+  }
+  const suiteVersion = release.tag_name.slice(1);
+  if (version && suiteVersion !== version) {
+    fail(`Raven release resolved to ${suiteVersion}, expected ${version}.`);
+  }
+  const bundleName = `raven-${suiteVersion}-${ravenPlatform}`;
+  const asset = (name) => release.assets?.find((candidate) => candidate.name === name);
+  const manifestAsset = asset(`${bundleName}.manifest.json`);
+  const archiveAsset = asset(`${bundleName}.tar.gz`);
+  if (!manifestAsset?.browser_download_url || !archiveAsset?.browser_download_url) {
+    fail(`Raven ${suiteVersion} does not publish the required ${ravenPlatform} assets.`);
+  }
+  const { value: manifest } = await fetchJson(
+    manifestAsset.browser_download_url,
+    "Raven release manifest"
+  );
+  validateReleaseManifest(manifest, suiteVersion, ravenPlatform);
+  if (archiveAsset.digest &&
+      archiveAsset.digest !== `sha256:${manifest.archiveSha256}`) {
+    fail("Raven release archive digest differs from the signed release manifest.");
+  }
+  const catalogUrl =
+    `https://raw.githubusercontent.com/bcgov/raven/${release.tag_name}/release/server-catalog.json`;
+  const { bytes: catalogBytes, value: releaseCatalog } = await fetchJson(
+    catalogUrl,
+    "Raven release catalog"
+  );
+  if (createHash("sha256").update(catalogBytes).digest("hex") !== manifest.catalogSha256) {
+    fail("Raven release catalog digest differs from the release manifest.");
+  }
+  validateReleaseCatalog(releaseCatalog, manifest);
+  return {
+    delivery: "bundled-release",
+    suiteVersion,
+    releaseTag: release.tag_name,
+    platform: ravenPlatform,
+    sourceCommit: manifest.sourceCommit,
+    archive: manifest.archive,
+    archiveSha256: manifest.archiveSha256,
+    archiveUrl: archiveAsset.browser_download_url,
+    catalogSha256: manifest.catalogSha256,
+    provenanceVerification: manifest.provenanceVerification,
+    runtimeNodeVersion: manifest.nodeVersion,
+    releasedCatalog: releaseCatalog
+  };
+}
+
 function validateExactVersion(version) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version || "")) {
     fail("--codebase-memory-version must be an exact semantic version.");
@@ -301,7 +446,7 @@ function validateUpstreamConfig(runtimePath, servers) {
   }
 }
 
-function createFragment(runtimePath, servers, codebaseInstallPath) {
+function createFragment(runtimePath, servers, codebaseInstallPath, ravenDelivery) {
   const codebaseEntrypoint = join(
     codebaseInstallPath,
     "node_modules",
@@ -318,17 +463,42 @@ function createFragment(runtimePath, servers, codebaseInstallPath) {
     }
   };
   for (const server of servers) {
-    const entrypoint = join(runtimePath, ...server.entrypoint.split("/"));
-    if (!existsSync(entrypoint)) fail(`Built entrypoint is missing: ${entrypoint}`);
-    mcpServers[server.id] = { command: process.execPath, args: [entrypoint] };
+    if (ravenDelivery === "bundled-release") {
+      const launcher = join(
+        runtimePath,
+        "bin",
+        process.platform === "win32" ? `${server.launcher}.cmd` : server.launcher
+      );
+      if (!existsSync(launcher)) fail(`Raven launcher is missing: ${launcher}`);
+      mcpServers[server.id] = { command: launcher, args: [] };
+    } else {
+      const entrypoint = join(runtimePath, ...server.entrypoint.split("/"));
+      if (!existsSync(entrypoint)) fail(`Built entrypoint is missing: ${entrypoint}`);
+      mcpServers[server.id] = { command: process.execPath, args: [entrypoint] };
+    }
   }
   return { mcpServers };
+}
+
+function startupInvocation(command, args) {
+  if (process.platform !== "win32" || !command.toLowerCase().endsWith(".cmd")) {
+    return { command, args };
+  }
+  if (args.length > 0) {
+    fail("Windows Raven launchers do not accept Crow-managed command arguments.");
+  }
+  const commandProcessor = process.env.ComSpec;
+  if (!commandProcessor) fail("ComSpec is required to verify Windows Raven launchers.");
+  return {
+    command: commandProcessor,
+    args: ["/d", "/s", "/c", "call", command]
+  };
 }
 
 function validatePlan(plan, planPath) {
   if (plan.schemaVersion !== 1 ||
       plan.action !== "setup" ||
-      !["pinned-source", "codebase-memory-only"].includes(plan.delivery) ||
+      !["bundled-release", "pinned-source", "codebase-memory-only"].includes(plan.delivery) ||
       !Array.isArray(plan.selectedServers) ||
       !isServerCatalogSnapshot(plan.serverCatalog) ||
       !isRecord(plan.codebaseMemory) ||
@@ -338,8 +508,20 @@ function validatePlan(plan, planPath) {
       (plan.selectedServers.length === 0
         ? plan.raven !== null || plan.delivery !== "codebase-memory-only"
         : !isRecord(plan.raven) ||
-          !/^[0-9a-f]{40}$/.test(plan.raven.revision || "") ||
-          plan.delivery !== "pinned-source")) {
+          plan.raven.delivery !== plan.delivery ||
+          (plan.delivery === "pinned-source"
+            ? !/^[0-9a-f]{40}$/.test(plan.raven.revision || "")
+            : plan.delivery !== "bundled-release" ||
+              !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(plan.raven.suiteVersion || "") ||
+              plan.raven.releaseTag !== `v${plan.raven.suiteVersion}` ||
+              plan.raven.platform !== ravenPlatform ||
+              !/^[0-9a-f]{40}$/.test(plan.raven.sourceCommit || "") ||
+              plan.raven.archive !==
+                `raven-${plan.raven.suiteVersion}-${plan.raven.platform}.tar.gz` ||
+              plan.raven.archiveUrl !==
+                `https://github.com/bcgov/raven/releases/download/${plan.raven.releaseTag}/${plan.raven.archive}` ||
+              !/^[0-9a-f]{64}$/.test(plan.raven.archiveSha256 || "") ||
+              !/^[0-9a-f]{64}$/.test(plan.raven.catalogSha256 || "")))) {
     fail(`Setup plan is malformed: ${planPath}`);
   }
   validateExactVersion(plan.codebaseMemory?.version);
@@ -354,7 +536,9 @@ function validatePlan(plan, planPath) {
   }
   if (plan.raven) {
     const runtimeName = basename(plan.raven.runtimePath);
-    const runtimePrefix = `${plan.raven.revision}-`;
+    const runtimePrefix = plan.delivery === "bundled-release"
+      ? `${plan.raven.suiteVersion}-${plan.raven.platform}-`
+      : `${plan.raven.revision}-`;
     if (resolve(dirname(plan.raven.runtimePath)) !== resolve(target.versions) ||
         !runtimeName.startsWith(runtimePrefix) ||
         !generationPattern.test(runtimeName.slice(runtimePrefix.length))) {
@@ -425,9 +609,96 @@ function stageCodebaseMemory(installPath, version) {
   return { stagingPath, ...validateCodebaseInstall(stagingPath, version) };
 }
 
+async function downloadFile(url, path, label) {
+  let response;
+  try {
+    response = await fetch(url, {
+      headers: { "User-Agent": "bcgov-crow-raven-setup" },
+      redirect: "follow",
+      signal: AbortSignal.timeout(5 * 60 * 1000)
+    });
+  } catch (error) {
+    fail(`Could not download ${label}: ${error.message}`);
+  }
+  if (!response.ok || !response.body) {
+    fail(`${label} download returned HTTP ${response.status}.`);
+  }
+  await pipeline(Readable.fromWeb(response.body), createWriteStream(path, { mode: 0o600 }));
+}
+
+async function sha256File(path) {
+  const hash = createHash("sha256");
+  for await (const chunk of createReadStream(path)) hash.update(chunk);
+  return hash.digest("hex");
+}
+
+function releasedServers(selected, releasedCatalog) {
+  const released = new Map(releasedCatalog.servers.map((server) => [server.id, server]));
+  return selected.map((server) => {
+    const contract = released.get(server.id);
+    if (!contract ||
+        contract.entrypoint !== server.entrypoint ||
+        contract.packageVersion !== server.packageVersion ||
+        contract.access !== server.access ||
+        typeof contract.package !== "string" ||
+        !/^raven-[a-z0-9-]+$/.test(contract.launcher || "")) {
+      fail(`Raven release contract for '${server.id}' differs from Crow's reviewed catalog.`);
+    }
+    return { ...server, package: contract.package, launcher: contract.launcher };
+  });
+}
+
+async function stageRavenBundle(raven) {
+  const stagingRoot = `${raven.runtimePath}.staging-${process.pid}`;
+  const extractionRoot = `${raven.runtimePath}.extract-${process.pid}`;
+  const archivePath = `${raven.runtimePath}.download-${process.pid}.tar.gz`;
+  for (const path of [stagingRoot, extractionRoot, archivePath]) {
+    if (existsSync(path)) rmSync(path, { recursive: true, force: true });
+  }
+  mkdirSync(dirname(raven.runtimePath), { recursive: true });
+  await downloadFile(raven.archiveUrl, archivePath, `Raven ${raven.suiteVersion} archive`);
+  if (await sha256File(archivePath) !== raven.archiveSha256) {
+    rmSync(archivePath, { force: true });
+    fail("Downloaded Raven archive digest differs from the reviewed manifest.");
+  }
+  run("gh", ["attestation", "verify", archivePath, "--repo", ravenRepository], {
+    capture: true,
+    timeout: 2 * 60 * 1000
+  });
+  mkdirSync(extractionRoot);
+  run("tar", ["-xzf", archivePath, "-C", extractionRoot], {
+    capture: true,
+    timeout: 2 * 60 * 1000
+  });
+  rmSync(archivePath, { force: true });
+  const extracted = join(
+    extractionRoot,
+    `raven-${raven.suiteVersion}-${raven.platform}`
+  );
+  if (!existsSync(extracted)) {
+    rmSync(extractionRoot, { recursive: true, force: true });
+    fail("Raven archive does not contain its canonical bundle directory.");
+  }
+  renameSync(extracted, stagingRoot);
+  rmSync(extractionRoot, { recursive: true, force: true });
+  const metadata = readJson(join(stagingRoot, "bundle-metadata.json"), "Raven bundle metadata");
+  const embeddedCatalogPath = join(stagingRoot, "server-catalog.json");
+  if (metadata.schemaVersion !== 1 ||
+      metadata.suiteVersion !== raven.suiteVersion ||
+      metadata.sourceCommit !== raven.sourceCommit ||
+      metadata.platform !== raven.platform ||
+      metadata.smokeTests?.status !== "passed" ||
+      await sha256File(embeddedCatalogPath) !== raven.catalogSha256) {
+    rmSync(stagingRoot, { recursive: true, force: true });
+    fail("Extracted Raven bundle metadata differs from the reviewed release.");
+  }
+  return stagingRoot;
+}
+
 async function verifyStartup(name, command, args, cwd) {
+  const invocation = startupInvocation(command, args);
   await new Promise((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, {
+    const child = spawn(invocation.command, invocation.args, {
       cwd,
       env: process.env,
       shell: false,
@@ -474,6 +745,52 @@ async function verifyStartup(name, command, args, cwd) {
   });
 }
 
+async function validateInstalledSnapshot(snapshot) {
+  const codebase = validateCodebaseInstall(
+    snapshot.codebaseMemory.installPath,
+    snapshot.codebaseMemory.version
+  );
+  if (codebase.integrity !== snapshot.codebaseMemory.integrity ||
+      codebase.entrypointSha256 !== snapshot.codebaseMemory.entrypointSha256) {
+    fail("Installed codebase-memory-mcp integrity differs from Crow's recorded state.");
+  }
+  const servers = snapshot.serverCatalog.servers;
+  if (snapshot.raven?.delivery === "bundled-release") {
+    const metadata = readJson(
+      join(snapshot.raven.runtimePath, "bundle-metadata.json"),
+      "Installed Raven bundle metadata"
+    );
+    if (metadata.schemaVersion !== 1 ||
+        metadata.suiteVersion !== snapshot.raven.suiteVersion ||
+        metadata.sourceCommit !== snapshot.raven.sourceCommit ||
+        metadata.platform !== snapshot.raven.platform ||
+        metadata.smokeTests?.status !== "passed" ||
+        await sha256File(join(snapshot.raven.runtimePath, "server-catalog.json")) !==
+          snapshot.raven.catalogSha256) {
+      fail("Installed Raven bundle integrity differs from Crow's recorded state.");
+    }
+  } else if (snapshot.raven) {
+    const revision = run(
+      "git",
+      ["rev-parse", "HEAD"],
+      { cwd: snapshot.raven.runtimePath, capture: true }
+    ).toLowerCase();
+    if (revision !== snapshot.raven.revision) {
+      fail("Installed Raven source revision differs from Crow's recorded state.");
+    }
+    validateUpstreamConfig(snapshot.raven.runtimePath, servers);
+  }
+  const fragment = createFragment(
+    snapshot.raven?.runtimePath || null,
+    servers,
+    snapshot.codebaseMemory.installPath,
+    snapshot.delivery
+  );
+  if (JSON.stringify(fragment) !== JSON.stringify(snapshot.managedFragment)) {
+    fail("Crow's managed fragment differs from its recorded installed paths.");
+  }
+}
+
 async function verifyFragment(fragment, runtimePath, servers) {
   const codebase = fragment.mcpServers["codebase-memory-mcp"];
   await verifyStartup("codebase-memory-mcp", codebase.command, codebase.args);
@@ -489,15 +806,18 @@ function printHelp() {
 Commands:
   list [--group <id>]
   status [--state-dir <path>]
-  plan (--servers <id,...> | --no-raven) [--raven-ref main|vX.Y.Z|sha]
+  plan (--servers <id,...> | --no-raven)
+       [--delivery release|source] [--raven-version X.Y.Z]
+       [--raven-ref main|vX.Y.Z|sha]
        [--codebase-memory-version X.Y.Z] [--state-dir <path>]
   setup --plan <path> --plan-sha256 <digest> --confirm
   check [--state-dir <path>] [--force]
   rollback [--state-dir <path>] --confirm
 
 Plan resolves every mutable version and writes a reviewable pending-plan.json.
-Setup uses only that plan and Raven's transitional pinned-source delivery. It
-does not merge client configuration or collect credentials.`);
+Raven uses verified bundled releases by default. Source builds require the
+explicit --delivery source fallback. Setup does not merge client configuration
+or collect credentials.`);
 }
 
 function listCommand(args) {
@@ -523,22 +843,57 @@ function statusCommand(args) {
 
 async function planCommand(args) {
   const serverCatalog = catalog();
-  const servers = selectedServers(args, serverCatalog);
+  let servers = selectedServers(args, serverCatalog);
   const includesRaven = servers.length > 0;
-  if (!includesRaven && args["raven-ref"]) {
-    fail("--raven-ref cannot be combined with --no-raven.");
+  const requestedDelivery = args.delivery || "release";
+  if (!["release", "source"].includes(requestedDelivery)) {
+    fail("--delivery must be 'release' or 'source'.");
   }
-  assertPrerequisites({ requiresGit: includesRaven });
-  const ravenRef = includesRaven ? args["raven-ref"] || "main" : null;
-  const revision = includesRaven ? resolveRavenRevision(ravenRef) : null;
+  if (!includesRaven && (args["raven-ref"] || args["raven-version"] || args.delivery)) {
+    fail("Raven delivery, ref, and version options cannot be combined with --no-raven.");
+  }
+  if (includesRaven && requestedDelivery === "release" && args["raven-ref"]) {
+    fail("--raven-ref requires --delivery source.");
+  }
+  if (includesRaven && requestedDelivery === "source" && args["raven-version"]) {
+    fail("--raven-version cannot be combined with --delivery source.");
+  }
+  assertPrerequisites({
+    requiresGit: includesRaven && requestedDelivery === "source",
+    requiresSourceNode: includesRaven && requestedDelivery === "source"
+  });
+  let raven = null;
+  if (includesRaven && requestedDelivery === "release") {
+    const release = await resolveRavenRelease(args["raven-version"]);
+    servers = releasedServers(servers, release.releasedCatalog);
+    const generationId = randomUUID();
+    raven = {
+      ...release,
+      runtimePath: join(
+        paths(args).versions,
+        `${release.suiteVersion}-${release.platform}-${generationId}`
+      )
+    };
+    delete raven.releasedCatalog;
+  } else if (includesRaven) {
+    const ref = args["raven-ref"] || "main";
+    const revision = resolveRavenRevision(ref);
+    raven = {
+      delivery: "pinned-source",
+      source: ravenUrl,
+      ref,
+      revision,
+      freshnessTrack: ref === "main"
+        ? { type: "branch", value: "main" }
+        : { type: "pinned", value: ref },
+      runtimePath: join(paths(args).versions, `${revision}-${randomUUID()}`)
+    };
+  }
   const codebaseVersion = args["codebase-memory-version"] || await latestCodebaseVersion();
   validateExactVersion(codebaseVersion);
   const target = paths(args);
   const priorState = existsSync(target.state) ? readState(target) : null;
   const generationId = randomUUID();
-  const runtimePath = includesRaven
-    ? join(target.versions, `${revision}-${generationId}`)
-    : null;
   const codebaseInstallPath = join(
     target.codebaseMemory,
     `${codebaseVersion}-${generationId}`
@@ -554,18 +909,14 @@ async function planCommand(args) {
     schemaVersion: 1,
     action: "setup",
     createdAt: new Date().toISOString(),
-    delivery: includesRaven ? "pinned-source" : "codebase-memory-only",
-    assurance: includesRaven ? "transitional-source-build" : "registry-package",
+    delivery: raven?.delivery || "codebase-memory-only",
+    assurance: raven?.delivery === "bundled-release"
+      ? "publisher-attestation-required-at-setup"
+      : raven
+        ? "transitional-source-build"
+        : "registry-package",
     stateDir: target.stateDir,
-    raven: includesRaven ? {
-      source: ravenUrl,
-      ref: ravenRef,
-      revision,
-      freshnessTrack: ravenRef === "main"
-        ? { type: "branch", value: "main" }
-        : { type: "pinned", value: ravenRef },
-      runtimePath
-    } : null,
+    raven,
     codebaseMemory: {
       source: npmRegistryUrl,
       version: codebaseVersion,
@@ -580,7 +931,11 @@ async function planCommand(args) {
       serverCatalog: priorState.serverCatalog
     } : null,
     effects: [
-      ...(includesRaven ? [
+      ...(raven?.delivery === "bundled-release" ? [
+        "download the platform-specific Raven release archive",
+        "verify its SHA-256 digest and GitHub build attestation before extraction",
+        "validate embedded release metadata and the server catalog"
+      ] : raven ? [
         "clone and build the immutable Raven revision in a new staging directory",
         "publish the Raven runtime only after all startup checks pass"
       ] : []),
@@ -589,11 +944,16 @@ async function planCommand(args) {
       "replace only Crow's state.json and mcp-fragment.json after verification"
     ],
     commands: [
-      ...(includesRaven ? [
-        { command: "git", args: ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, `${runtimePath}.staging-<pid>`] },
-        { command: "git", args: ["checkout", "--detach", revision], cwd: `${runtimePath}.staging-<pid>` },
-        { ...npmCi, cwd: `${runtimePath}.staging-<pid>` },
-        { ...npmBuild, cwd: `${runtimePath}.staging-<pid>` }
+      ...(raven?.delivery === "bundled-release" ? [
+        { command: "download", args: [raven.archiveUrl, raven.archive] },
+        { command: "sha256", args: [raven.archiveSha256] },
+        { command: "gh", args: ["attestation", "verify", raven.archive, "--repo", ravenRepository] },
+        { command: "tar", args: ["-xzf", raven.archive] }
+      ] : raven ? [
+        { command: "git", args: ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, `${raven.runtimePath}.staging-<pid>`] },
+        { command: "git", args: ["checkout", "--detach", raven.revision], cwd: `${raven.runtimePath}.staging-<pid>` },
+        { ...npmCi, cwd: `${raven.runtimePath}.staging-<pid>` },
+        { ...npmBuild, cwd: `${raven.runtimePath}.staging-<pid>` }
       ] : []),
       {
         ...npmInstallCodebase
@@ -613,7 +973,11 @@ async function setupCommand(args) {
   const planPath = resolve(args.plan);
   const plan = readJson(planPath, "Crow Raven setup plan");
   validatePlan(plan, planPath);
-  assertPrerequisites({ requiresGit: plan.raven !== null });
+  assertPrerequisites({
+    requiresGit: plan.delivery === "pinned-source",
+    requiresReleaseTools: plan.delivery === "bundled-release",
+    requiresSourceNode: plan.delivery === "pinned-source"
+  });
   if (planDigest(plan) !== args["plan-sha256"].toLowerCase()) {
     fail("Setup plan content changed after review; generate and review a new plan.");
   }
@@ -630,8 +994,15 @@ async function setupCommand(args) {
   );
   for (const server of servers) {
     const planned = plan.selectedServers.find((candidate) => candidate.id === server.id);
-    if (JSON.stringify(planned) !== JSON.stringify(server)) {
+    const reviewedFields = Object.fromEntries(
+      Object.entries(planned || {}).filter(([key]) => !["package", "launcher"].includes(key))
+    );
+    if (JSON.stringify(reviewedFields) !== JSON.stringify(server)) {
       fail(`Planned metadata for '${server.id}' differs from Crow's reviewed catalog.`);
+    }
+    if (plan.delivery === "bundled-release" &&
+        (typeof planned.package !== "string" || typeof planned.launcher !== "string")) {
+      fail(`Released metadata for '${server.id}' is incomplete.`);
     }
   }
   const codebaseVersion = plan.codebaseMemory.version;
@@ -665,26 +1036,31 @@ async function setupCommand(args) {
 
   if (runtimeStagingPath) {
     mkdirSync(target.versions, { recursive: true });
-    run("git", ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, runtimeStagingPath]);
-    run("git", ["checkout", "--detach", plan.raven.revision], { cwd: runtimeStagingPath });
-    runNpm(["ci"], { cwd: runtimeStagingPath });
-    runNpm(["run", "build"], { cwd: runtimeStagingPath });
-    const actualRevision = run(
-      "git",
-      ["rev-parse", "HEAD"],
-      { cwd: runtimeStagingPath, capture: true }
-    ).toLowerCase();
-    if (actualRevision !== plan.raven.revision) {
-      fail(`Raven checkout resolved to ${actualRevision}, expected ${plan.raven.revision}.`);
+    if (plan.delivery === "bundled-release") {
+      await stageRavenBundle(plan.raven);
+    } else {
+      run("git", ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, runtimeStagingPath]);
+      run("git", ["checkout", "--detach", plan.raven.revision], { cwd: runtimeStagingPath });
+      runNpm(["ci"], { cwd: runtimeStagingPath });
+      runNpm(["run", "build"], { cwd: runtimeStagingPath });
+      const actualRevision = run(
+        "git",
+        ["rev-parse", "HEAD"],
+        { cwd: runtimeStagingPath, capture: true }
+      ).toLowerCase();
+      if (actualRevision !== plan.raven.revision) {
+        fail(`Raven checkout resolved to ${actualRevision}, expected ${plan.raven.revision}.`);
+      }
+      validateUpstreamConfig(runtimeStagingPath, servers);
     }
-    validateUpstreamConfig(runtimeStagingPath, servers);
   }
 
   const codebaseInstall = stageCodebaseMemory(codebaseInstallPath, codebaseVersion);
   const stagingFragment = createFragment(
     runtimeStagingPath,
     servers,
-    codebaseInstall.stagingPath
+    codebaseInstall.stagingPath,
+    plan.delivery
   );
   try {
     await verifyFragment(stagingFragment, runtimeStagingPath, servers);
@@ -694,17 +1070,12 @@ async function setupCommand(args) {
 
   renameSync(codebaseInstall.stagingPath, codebaseInstallPath);
   if (runtimeStagingPath) renameSync(runtimeStagingPath, runtimePath);
-  const fragment = createFragment(runtimePath, servers, codebaseInstallPath);
+  const fragment = createFragment(runtimePath, servers, codebaseInstallPath, plan.delivery);
   const now = new Date().toISOString();
   const state = {
     schemaVersion: 1,
     delivery: plan.delivery,
-    raven: plan.raven ? {
-      ref: plan.raven.ref,
-      revision: plan.raven.revision,
-      freshnessTrack: plan.raven.freshnessTrack,
-      runtimePath
-    } : null,
+    raven: plan.raven ? { ...plan.raven, runtimePath } : null,
     codebaseMemory: {
       version: codebaseVersion,
       installPath: codebaseInstallPath,
@@ -717,6 +1088,7 @@ async function setupCommand(args) {
     configuredAt: now,
     lastCheckedAt: now,
     previous: priorState ? {
+      delivery: priorState.delivery,
       raven: priorState.raven,
       codebaseMemory: priorState.codebaseMemory,
       selectedServers: priorState.selectedServers,
@@ -733,6 +1105,7 @@ async function checkCommand(args) {
   const target = paths(args);
   if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
   const state = readState(target);
+  await validateInstalledSnapshot(state);
   const lastChecked = Date.parse(state.lastCheckedAt || "");
   const age = Date.now() - lastChecked;
   if (!Number.isFinite(lastChecked) || age < 0) {
@@ -742,8 +1115,14 @@ async function checkCommand(args) {
     console.log(JSON.stringify({ checked: false, reason: "fresh", lastCheckedAt: state.lastCheckedAt }, null, 2));
     return;
   }
-  assertPrerequisites({ requiresGit: state.raven !== null });
+  assertPrerequisites({
+    requiresGit: state.delivery === "pinned-source",
+    requiresSourceNode: state.delivery === "pinned-source"
+  });
   const freshnessTrack = state.raven?.freshnessTrack || null;
+  const latestRelease = state.delivery === "bundled-release"
+    ? await resolveRavenRelease()
+    : null;
   const latestRevision = freshnessTrack?.type === "branch"
     ? resolveRavenRevision(freshnessTrack.value)
     : state.raven?.revision || null;
@@ -752,13 +1131,23 @@ async function checkCommand(args) {
   writeJsonAtomic(target.state, state);
   const result = {
     checked: true,
-    raven: state.raven ? {
-      current: state.raven.revision,
-      latest: latestRevision,
-      track: freshnessTrack,
-      updateAvailable: state.raven.revision !== latestRevision,
-      note: freshnessTrack.type === "pinned" ? "Pinned refs have no automatic Raven update track." : null
-    } : null,
+    raven: state.raven
+      ? state.delivery === "bundled-release"
+        ? {
+            current: state.raven.suiteVersion,
+            latest: latestRelease.suiteVersion,
+            track: { type: "release", value: "latest" },
+            updateAvailable: state.raven.suiteVersion !== latestRelease.suiteVersion,
+            note: null
+          }
+        : {
+            current: state.raven.revision,
+            latest: latestRevision,
+            track: freshnessTrack,
+            updateAvailable: state.raven.revision !== latestRevision,
+            note: freshnessTrack.type === "pinned" ? "Pinned refs have no automatic Raven update track." : null
+          }
+      : null,
     codebaseMemory: { current: state.codebaseMemory.version, latest: latestCodebase, updateAvailable: state.codebaseMemory.version !== latestCodebase }
   };
   console.log(JSON.stringify(result, null, 2));
@@ -790,18 +1179,21 @@ async function rollbackCommand(args) {
   for (const server of servers) {
     if (!fragment.mcpServers[server.id]) fail(`Previous fragment is missing '${server.id}'.`);
   }
+  await validateInstalledSnapshot(state.previous);
   try {
     await verifyFragment(fragment, state.previous.raven?.runtimePath, servers);
   } catch (error) {
     fail(error.message);
   }
   const current = {
+    delivery: state.delivery,
     raven: state.raven,
     codebaseMemory: state.codebaseMemory,
     selectedServers: state.selectedServers,
     serverCatalog: state.serverCatalog,
     managedFragment: state.managedFragment
   };
+  state.delivery = state.previous.delivery;
   state.raven = state.previous.raven;
   state.codebaseMemory = state.previous.codebaseMemory;
   state.selectedServers = state.previous.selectedServers;
@@ -814,15 +1206,25 @@ async function rollbackCommand(args) {
   console.log(JSON.stringify({ rolledBack: true, fragmentPath: target.fragment, ...state }, null, 2));
 }
 
-const args = parseArgs(process.argv.slice(2));
-const command = args._[0] || "help";
-switch (command) {
-  case "help": printHelp(); break;
-  case "list": listCommand(args); break;
-  case "status": statusCommand(args); break;
-  case "plan": await planCommand(args); break;
-  case "setup": await setupCommand(args); break;
-  case "check": await checkCommand(args); break;
-  case "rollback": await rollbackCommand(args); break;
-  default: fail(`Unknown command '${command}'. Run 'help' for usage.`);
+export {
+  createFragment,
+  releasedServers,
+  startupInvocation,
+  validateReleaseCatalog,
+  validateReleaseManifest
+};
+
+if (import.meta.url === pathToFileURL(resolve(process.argv[1] || "")).href) {
+  const args = parseArgs(process.argv.slice(2));
+  const command = args._[0] || "help";
+  switch (command) {
+    case "help": printHelp(); break;
+    case "list": listCommand(args); break;
+    case "status": statusCommand(args); break;
+    case "plan": await planCommand(args); break;
+    case "setup": await setupCommand(args); break;
+    case "check": await checkCommand(args); break;
+    case "rollback": await rollbackCommand(args); break;
+    default: fail(`Unknown command '${command}'. Run 'help' for usage.`);
+  }
 }

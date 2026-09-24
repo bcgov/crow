@@ -19,12 +19,12 @@ collection.
 
 Use the **Crow Raven Setup Agent** to:
 
-- check Node.js, npm, and Git prerequisites;
+- check Node.js, npm, GitHub CLI, `tar`, and source-fallback prerequisites;
 - choose only the Raven capability groups and individual servers you need, or
   explicitly install codebase-memory-mcp without Raven;
 - pin codebase-memory-mcp to an exact version;
-- install Raven at an immutable source revision while Raven's verified runtime
-  release format is being established;
+- install the selected servers from an attested Raven release bundle, with an
+  immutable source build available only as an explicit fallback;
 - generate a Crow-owned MCP configuration fragment without overwriting existing
   client configuration or collecting credentials;
 - check for changes at most once every 24 hours during use, notify without
@@ -53,7 +53,7 @@ Each reviewed repository commits `docs/business-rules-data.json` next to the two
 - **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
 - **Crow Simplification Review Agent** — Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.
 - **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Shared validators use one exhaustive direct suite plus thin consumer wiring/context smoke tests. Behaviors that cannot be automated are classified and recorded in a durable `docs/testing/manual-coverage.md` QA-scope register. Confirmed bugs and explicitly approved actionable design smells can produce local, unfiled work-item draft candidates; external tracker search and creation are out of scope. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance, safe hash-based updates for copied Crow test-utility templates, and no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
-- **Crow Raven Setup Agent** — Walks users through prerequisites and selective Raven MCP setup, pins codebase-memory-mcp and Raven revisions, generates a managed configuration fragment, performs rate-limited freshness checks, and requires confirmation for updates and rollback.
+- **Crow Raven Setup Agent** — Walks users through prerequisites and selective Raven MCP setup, verifies attested Raven release bundles, pins codebase-memory-mcp, generates a managed configuration fragment, performs rate-limited freshness checks, and requires confirmation for updates and rollback.
 
 ## Available Skills
 
@@ -89,7 +89,7 @@ Resources are owned by the skills that consume them:
 - `.apm/skills/crow-business-rules/` — Business rule extraction, reconciliation, and diagramming modules, the `business-rules-data.json` schema and synthetic example, Markdown and HTML report templates, B.C.-aligned stylesheet and facet-filtering script, pinned Mermaid configuration, deterministic renderer and validator, and their tests
 - `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, shared-validator layering, manual-coverage classification and register template, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
 - `.apm/skills/crow-project-context/` — Public-safe `crow.config` reading, provider resolution, Raven-aligned secret boundaries, sanitized project-memory update rules, and deterministic config validation
-- `.apm/skills/crow-raven-setup/` — Guided Raven server selection, delivery and update policy, reviewed server catalog, and deterministic pinned-source setup, status, freshness-check, and rollback tooling
+- `.apm/skills/crow-raven-setup/` — Guided Raven server selection, release-first delivery and update policy, reviewed server catalog, and deterministic setup, status, freshness-check, and rollback tooling
 - `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
 - `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
 - `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
