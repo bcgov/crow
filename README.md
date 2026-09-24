@@ -2,7 +2,9 @@
 
 CROW is a collection of agents, skills, and detection modules for agentic software development. The intention is to set up this repo so that the agents and skills are available globally in VS Code or your favourite tool, so that they're available in any project you work on.
 
-This repo is supposed to be used together with the RAVEN MCP server collection: [RAVEN](https://github.com/bcgov/raven)
+This repo is supposed to be used together with the RAVEN MCP server collection: [RAVEN][Raven]
+
+[Raven]: https://github.com/bcgov/raven
 
 Each reviewed repository may keep public project memory in a root `crow.config`
 file. The manifest records Sonar settings and safe references to CI/CD,
@@ -14,7 +16,7 @@ must never be committed.
 
 CROW's architecture and security agents use **codebase-memory-mcp** for fast
 code intelligence, indexing, and cross-file analysis. Crow capabilities also
-integrate with the optional [Raven](https://github.com/bcgov/raven) MCP server
+integrate with the optional [Raven] MCP server
 collection.
 
 Use the **Crow Raven Setup Agent** to:

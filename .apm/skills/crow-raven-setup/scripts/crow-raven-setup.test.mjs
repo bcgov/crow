@@ -1,13 +1,20 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   createFragment,
+  ravenRepositoryUrl,
   releasedServers,
   startupInvocation,
   validateReleaseCatalog,
@@ -107,6 +114,34 @@ test("status rejects partial state with a documented schema error", () => {
   assert.doesNotMatch(result.stderr, /TypeError/);
 });
 
+test("status recovers an interrupted uncommitted promotion", () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
+  const managedFragment = {
+    mcpServers: {
+      "codebase-memory-mcp": { command: process.execPath, args: ["verified-bin.js"] }
+    }
+  };
+  writeFileSync(
+    join(stateDir, "state.json"),
+    JSON.stringify(codebaseOnlyState(managedFragment))
+  );
+  const installPath = join(stateDir, "codebase-memory", "0.11.0-new-generation");
+  const stagingPath = `${installPath}.staging-1234`;
+  mkdirSync(installPath, { recursive: true });
+  mkdirSync(stagingPath);
+  writeFileSync(join(stateDir, "pending-promotion.json"), JSON.stringify({
+    schemaVersion: 1,
+    codebaseMemory: { stagingPath, installPath },
+    raven: null
+  }));
+
+  const result = run(["status", "--state-dir", stateDir]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(existsSync(installPath), false);
+  assert.equal(existsSync(stagingPath), false);
+  assert.equal(existsSync(join(stateDir, "pending-promotion.json")), false);
+});
+
 test("plan supports an explicit codebase-memory-only selection", () => {
   const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
   const result = run([
@@ -160,7 +195,7 @@ test("Raven release metadata reconciles reviewed servers and native launchers", 
   const manifest = {
     schemaVersion: 1,
     suiteVersion: version,
-    sourceRepository: "https://github.com/bcgov/raven",
+    sourceRepository: ravenRepositoryUrl,
     sourceCommit: "a".repeat(40),
     platform,
     nodeVersion: "24.21.0",

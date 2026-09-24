@@ -21,9 +21,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(scriptDir, "..");
 const catalogPath = join(skillDir, "resources", "raven-servers.json");
-const ravenUrl = "https://github.com/bcgov/raven.git";
 const ravenRepository = "bcgov/raven";
-const ravenApi = "https://api.github.com/repos/bcgov/raven";
+const ravenRepositoryUrl = `https://github.com/${ravenRepository}`;
+const ravenUrl = `${ravenRepositoryUrl}.git`;
+const ravenApi = `https://api.github.com/repos/${ravenRepository}`;
+const ravenRawUrl = `https://raw.githubusercontent.com/${ravenRepository}`;
 const npmRegistryUrl = "https://registry.npmjs.org/codebase-memory-mcp/latest";
 const defaultStateDir = join(homedir(), ".crow", "raven-setup");
 const npmCli = process.platform === "win32"
@@ -42,8 +44,13 @@ function fail(message, code = 1) {
 
 function parseArgs(values) {
   const parsed = { _: [] };
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
+  let pendingKey = null;
+  for (const value of values) {
+    if (pendingKey) {
+      parsed[pendingKey] = value;
+      pendingKey = null;
+      continue;
+    }
     if (!value.startsWith("--")) {
       parsed._.push(value);
       continue;
@@ -53,10 +60,9 @@ function parseArgs(values) {
       parsed[key] = true;
       continue;
     }
-    if (index + 1 >= values.length) fail(`Missing value for --${key}.`);
-    parsed[key] = values[index + 1];
-    index += 1;
+    pendingKey = key;
   }
+  if (pendingKey) fail(`Missing value for --${pendingKey}.`);
   return parsed;
 }
 
@@ -90,7 +96,7 @@ function runNpm(args, options = {}) {
   return run(invocation.command, invocation.args, options);
 }
 
-function writeJsonAtomic(path, value) {
+function writeJsonAtomic(path, value, options = {}) {
   mkdirSync(dirname(path), { recursive: true });
   const temporary = `${path}.${process.pid}.tmp`;
   const backup = `${path}.${process.pid}.bak`;
@@ -102,6 +108,9 @@ function writeJsonAtomic(path, value) {
   } catch (error) {
     if (!existsSync(path) && existsSync(backup)) renameSync(backup, path);
     if (existsSync(temporary)) rmSync(temporary);
+    if (options.throwOnError) {
+      throw new Error(`Could not replace ${path}: ${error.message}`);
+    }
     fail(`Could not replace ${path}: ${error.message}`);
   }
 }
@@ -228,9 +237,55 @@ function paths(args) {
     state: join(stateDir, "state.json"),
     fragment: join(stateDir, "mcp-fragment.json"),
     plan: join(stateDir, "pending-plan.json"),
+    promotion: join(stateDir, "pending-promotion.json"),
     versions: join(stateDir, "versions"),
     codebaseMemory: join(stateDir, "codebase-memory")
   };
+}
+
+function reconcilePromotion(target) {
+  if (!existsSync(target.promotion)) return;
+  const promotion = readJson(target.promotion, "Crow Raven promotion journal");
+  const validPair = (stagingPath, finalPath, parent) => {
+    if (typeof stagingPath !== "string" || typeof finalPath !== "string") return false;
+    const resolvedFinal = resolve(finalPath);
+    const stagingPrefix = `${resolvedFinal}.staging-`;
+    const resolvedStaging = resolve(stagingPath);
+    return resolve(dirname(finalPath)) === resolve(parent) &&
+      resolvedStaging.startsWith(stagingPrefix) &&
+      /^\d+$/.test(resolvedStaging.slice(stagingPrefix.length));
+  };
+  const ravenPromotionIsValid = promotion.raven === null ||
+    (isRecord(promotion.raven) &&
+      validPair(promotion.raven.stagingPath, promotion.raven.runtimePath, target.versions));
+  if (promotion.schemaVersion !== 1 ||
+      !isRecord(promotion.codebaseMemory) ||
+      !validPair(
+        promotion.codebaseMemory.stagingPath,
+        promotion.codebaseMemory.installPath,
+        target.codebaseMemory
+      ) ||
+      !ravenPromotionIsValid) {
+    fail("Crow Raven promotion journal is malformed or contains unmanaged paths.");
+  }
+  const state = existsSync(target.state)
+    ? readJson(target.state, "Crow Raven setup state during promotion recovery")
+    : null;
+  const promotionIsActive =
+    state?.codebaseMemory?.installPath === promotion.codebaseMemory.installPath &&
+    state?.raven?.runtimePath === promotion.raven?.runtimePath;
+  const cleanup = promotionIsActive
+    ? [promotion.codebaseMemory.stagingPath, promotion.raven?.stagingPath]
+    : [
+        promotion.codebaseMemory.stagingPath,
+        promotion.codebaseMemory.installPath,
+        promotion.raven?.stagingPath,
+        promotion.raven?.runtimePath
+      ];
+  for (const path of cleanup.filter(Boolean)) {
+    if (existsSync(path)) rmSync(path, { recursive: true, force: true });
+  }
+  rmSync(target.promotion, { force: true });
 }
 
 function catalog() {
@@ -343,7 +398,7 @@ function validateReleaseManifest(manifest, version, platform) {
   const bundleName = `raven-${version}-${platform}`;
   if (manifest.schemaVersion !== 1 ||
       manifest.suiteVersion !== version ||
-      manifest.sourceRepository !== "https://github.com/bcgov/raven" ||
+      manifest.sourceRepository !== ravenRepositoryUrl ||
       !/^[0-9a-f]{40}$/.test(manifest.sourceCommit || "") ||
       manifest.platform !== platform ||
       manifest.protocolCompatibility !== "MCP over stdio" ||
@@ -402,7 +457,7 @@ async function resolveRavenRelease(version) {
     fail("Raven release archive digest differs from the signed release manifest.");
   }
   const catalogUrl =
-    `https://raw.githubusercontent.com/bcgov/raven/${release.tag_name}/release/server-catalog.json`;
+    `${ravenRawUrl}/${release.tag_name}/release/server-catalog.json`;
   const { bytes: catalogBytes, value: releaseCatalog } = await fetchJson(
     catalogUrl,
     "Raven release catalog"
@@ -446,14 +501,20 @@ function validateUpstreamConfig(runtimePath, servers) {
   }
 }
 
-function createFragment(runtimePath, servers, codebaseInstallPath, ravenDelivery) {
+function createFragment(
+  runtimePath,
+  servers,
+  codebaseInstallPath,
+  ravenDelivery,
+  validatePaths = true
+) {
   const codebaseEntrypoint = join(
     codebaseInstallPath,
     "node_modules",
     "codebase-memory-mcp",
     "bin.js"
   );
-  if (!existsSync(codebaseEntrypoint)) {
+  if (validatePaths && !existsSync(codebaseEntrypoint)) {
     fail(`codebase-memory-mcp entrypoint is missing: ${codebaseEntrypoint}`);
   }
   const mcpServers = {
@@ -469,11 +530,11 @@ function createFragment(runtimePath, servers, codebaseInstallPath, ravenDelivery
         "bin",
         process.platform === "win32" ? `${server.launcher}.cmd` : server.launcher
       );
-      if (!existsSync(launcher)) fail(`Raven launcher is missing: ${launcher}`);
+      if (validatePaths && !existsSync(launcher)) fail(`Raven launcher is missing: ${launcher}`);
       mcpServers[server.id] = { command: launcher, args: [] };
     } else {
       const entrypoint = join(runtimePath, ...server.entrypoint.split("/"));
-      if (!existsSync(entrypoint)) fail(`Built entrypoint is missing: ${entrypoint}`);
+      if (validatePaths && !existsSync(entrypoint)) fail(`Built entrypoint is missing: ${entrypoint}`);
       mcpServers[server.id] = { command: process.execPath, args: [entrypoint] };
     }
   }
@@ -495,6 +556,27 @@ function startupInvocation(command, args) {
   };
 }
 
+function isValidRavenPlan(plan) {
+  if (plan.selectedServers.length === 0) {
+    return plan.raven === null && plan.delivery === "codebase-memory-only";
+  }
+  if (!isRecord(plan.raven) || plan.raven.delivery !== plan.delivery) return false;
+  if (plan.delivery === "pinned-source") {
+    return /^[0-9a-f]{40}$/.test(plan.raven.revision || "");
+  }
+  if (plan.delivery !== "bundled-release") return false;
+  return /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(plan.raven.suiteVersion || "") &&
+    plan.raven.releaseTag === `v${plan.raven.suiteVersion}` &&
+    plan.raven.platform === ravenPlatform &&
+    /^[0-9a-f]{40}$/.test(plan.raven.sourceCommit || "") &&
+    plan.raven.archive ===
+      `raven-${plan.raven.suiteVersion}-${plan.raven.platform}.tar.gz` &&
+    plan.raven.archiveUrl ===
+      `${ravenRepositoryUrl}/releases/download/${plan.raven.releaseTag}/${plan.raven.archive}` &&
+    /^[0-9a-f]{64}$/.test(plan.raven.archiveSha256 || "") &&
+    /^[0-9a-f]{64}$/.test(plan.raven.catalogSha256 || "");
+}
+
 function validatePlan(plan, planPath) {
   if (plan.schemaVersion !== 1 ||
       plan.action !== "setup" ||
@@ -505,23 +587,7 @@ function validatePlan(plan, planPath) {
       typeof plan.codebaseMemory.installPath !== "string" ||
       JSON.stringify(plan.serverCatalog.servers) !==
         JSON.stringify(plan.selectedServers) ||
-      (plan.selectedServers.length === 0
-        ? plan.raven !== null || plan.delivery !== "codebase-memory-only"
-        : !isRecord(plan.raven) ||
-          plan.raven.delivery !== plan.delivery ||
-          (plan.delivery === "pinned-source"
-            ? !/^[0-9a-f]{40}$/.test(plan.raven.revision || "")
-            : plan.delivery !== "bundled-release" ||
-              !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(plan.raven.suiteVersion || "") ||
-              plan.raven.releaseTag !== `v${plan.raven.suiteVersion}` ||
-              plan.raven.platform !== ravenPlatform ||
-              !/^[0-9a-f]{40}$/.test(plan.raven.sourceCommit || "") ||
-              plan.raven.archive !==
-                `raven-${plan.raven.suiteVersion}-${plan.raven.platform}.tar.gz` ||
-              plan.raven.archiveUrl !==
-                `https://github.com/bcgov/raven/releases/download/${plan.raven.releaseTag}/${plan.raven.archive}` ||
-              !/^[0-9a-f]{64}$/.test(plan.raven.archiveSha256 || "") ||
-              !/^[0-9a-f]{64}$/.test(plan.raven.catalogSha256 || "")))) {
+      !isValidRavenPlan(plan)) {
     fail(`Setup plan is malformed: ${planPath}`);
   }
   validateExactVersion(plan.codebaseMemory?.version);
@@ -833,12 +899,54 @@ function listCommand(args) {
 
 function statusCommand(args) {
   const target = paths(args);
+  reconcilePromotion(target);
   if (!existsSync(target.state)) {
     console.log(JSON.stringify({ configured: false, stateDir: target.stateDir }, null, 2));
     return;
   }
   const state = readState(target);
   console.log(JSON.stringify({ configured: true, ...state, stateDir: target.stateDir }, null, 2));
+}
+
+function planAssurance(raven) {
+  if (!raven) return "registry-package";
+  return raven.delivery === "bundled-release"
+    ? "publisher-attestation-required-at-setup"
+    : "transitional-source-build";
+}
+
+function ravenPlanEffects(raven) {
+  if (!raven) return [];
+  if (raven.delivery === "bundled-release") {
+    return [
+      "download the platform-specific Raven release archive",
+      "verify its SHA-256 digest and GitHub build attestation before extraction",
+      "validate embedded release metadata and the server catalog"
+    ];
+  }
+  return [
+    "clone and build the immutable Raven revision in a new staging directory",
+    "publish the Raven runtime only after all startup checks pass"
+  ];
+}
+
+function ravenPlanCommands(raven, npmCi, npmBuild) {
+  if (!raven) return [];
+  if (raven.delivery === "bundled-release") {
+    return [
+      { command: "download", args: [raven.archiveUrl, raven.archive] },
+      { command: "sha256", args: [raven.archiveSha256] },
+      { command: "gh", args: ["attestation", "verify", raven.archive, "--repo", ravenRepository] },
+      { command: "tar", args: ["-xzf", raven.archive] }
+    ];
+  }
+  const stagingPath = `${raven.runtimePath}.staging-<pid>`;
+  return [
+    { command: "git", args: ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, stagingPath] },
+    { command: "git", args: ["checkout", "--detach", raven.revision], cwd: stagingPath },
+    { ...npmCi, cwd: stagingPath },
+    { ...npmBuild, cwd: stagingPath }
+  ];
 }
 
 async function planCommand(args) {
@@ -892,6 +1000,7 @@ async function planCommand(args) {
   const codebaseVersion = args["codebase-memory-version"] || await latestCodebaseVersion();
   validateExactVersion(codebaseVersion);
   const target = paths(args);
+  reconcilePromotion(target);
   const priorState = existsSync(target.state) ? readState(target) : null;
   const generationId = randomUUID();
   const codebaseInstallPath = join(
@@ -910,11 +1019,7 @@ async function planCommand(args) {
     action: "setup",
     createdAt: new Date().toISOString(),
     delivery: raven?.delivery || "codebase-memory-only",
-    assurance: raven?.delivery === "bundled-release"
-      ? "publisher-attestation-required-at-setup"
-      : raven
-        ? "transitional-source-build"
-        : "registry-package",
+    assurance: planAssurance(raven),
     stateDir: target.stateDir,
     raven,
     codebaseMemory: {
@@ -931,30 +1036,13 @@ async function planCommand(args) {
       serverCatalog: priorState.serverCatalog
     } : null,
     effects: [
-      ...(raven?.delivery === "bundled-release" ? [
-        "download the platform-specific Raven release archive",
-        "verify its SHA-256 digest and GitHub build attestation before extraction",
-        "validate embedded release metadata and the server catalog"
-      ] : raven ? [
-        "clone and build the immutable Raven revision in a new staging directory",
-        "publish the Raven runtime only after all startup checks pass"
-      ] : []),
+      ...ravenPlanEffects(raven),
       "install the exact codebase-memory-mcp package in an isolated user-local directory",
       "startup-smoke-test codebase-memory-mcp and every selected Raven server",
       "replace only Crow's state.json and mcp-fragment.json after verification"
     ],
     commands: [
-      ...(raven?.delivery === "bundled-release" ? [
-        { command: "download", args: [raven.archiveUrl, raven.archive] },
-        { command: "sha256", args: [raven.archiveSha256] },
-        { command: "gh", args: ["attestation", "verify", raven.archive, "--repo", ravenRepository] },
-        { command: "tar", args: ["-xzf", raven.archive] }
-      ] : raven ? [
-        { command: "git", args: ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, `${raven.runtimePath}.staging-<pid>`] },
-        { command: "git", args: ["checkout", "--detach", raven.revision], cwd: `${raven.runtimePath}.staging-<pid>` },
-        { ...npmCi, cwd: `${raven.runtimePath}.staging-<pid>` },
-        { ...npmBuild, cwd: `${raven.runtimePath}.staging-<pid>` }
-      ] : []),
+      ...ravenPlanCommands(raven, npmCi, npmBuild),
       {
         ...npmInstallCodebase
       }
@@ -962,6 +1050,68 @@ async function planCommand(args) {
   };
   writeJsonAtomic(target.plan, plan);
   console.log(JSON.stringify({ planPath: target.plan, planSha256: planDigest(plan), ...plan }, null, 2));
+}
+
+function validatePlannedServers(plan) {
+  const serverCatalog = catalog();
+  const servers = selectedServers(
+    plan.selectedServers.length > 0
+      ? { servers: plan.selectedServers.map((server) => server.id).join(",") }
+      : { "no-raven": true },
+    serverCatalog
+  );
+  for (const server of servers) {
+    const planned = plan.selectedServers.find((candidate) => candidate.id === server.id);
+    const reviewedFields = Object.fromEntries(
+      Object.entries(planned || {}).filter(([key]) => !["package", "launcher"].includes(key))
+    );
+    if (JSON.stringify(reviewedFields) !== JSON.stringify(server)) {
+      fail(`Planned metadata for '${server.id}' differs from Crow's reviewed catalog.`);
+    }
+    if (plan.delivery === "bundled-release" &&
+        (typeof planned.package !== "string" || typeof planned.launcher !== "string")) {
+      fail(`Released metadata for '${server.id}' is incomplete.`);
+    }
+  }
+  return servers;
+}
+
+function ensureGenerationAvailable(plan, priorState) {
+  const protectedRuntimePaths = [
+    priorState?.raven?.runtimePath,
+    priorState?.previous?.raven?.runtimePath
+  ].filter(Boolean);
+  const protectedCodebasePaths = [
+    priorState?.codebaseMemory?.installPath,
+    priorState?.previous?.codebaseMemory?.installPath
+  ].filter(Boolean);
+  if ((plan.raven?.runtimePath &&
+       protectedRuntimePaths.includes(plan.raven.runtimePath)) ||
+      protectedCodebasePaths.includes(plan.codebaseMemory.installPath)) {
+    fail("This setup plan is already active or retained as a rollback target.");
+  }
+}
+
+async function stageRavenRuntime(plan, target, servers, runtimeStagingPath) {
+  if (!runtimeStagingPath) return;
+  mkdirSync(target.versions, { recursive: true });
+  if (plan.delivery === "bundled-release") {
+    await stageRavenBundle(plan.raven);
+    return;
+  }
+  run("git", ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, runtimeStagingPath]);
+  run("git", ["checkout", "--detach", plan.raven.revision], { cwd: runtimeStagingPath });
+  runNpm(["ci"], { cwd: runtimeStagingPath });
+  runNpm(["run", "build"], { cwd: runtimeStagingPath });
+  const actualRevision = run(
+    "git",
+    ["rev-parse", "HEAD"],
+    { cwd: runtimeStagingPath, capture: true }
+  ).toLowerCase();
+  if (actualRevision !== plan.raven.revision) {
+    fail(`Raven checkout resolved to ${actualRevision}, expected ${plan.raven.revision}.`);
+  }
+  validateUpstreamConfig(runtimeStagingPath, servers);
 }
 
 async function setupCommand(args) {
@@ -985,41 +1135,11 @@ async function setupCommand(args) {
   if (resolve(target.plan) !== planPath) {
     fail(`Plan must be the managed pending plan at ${target.plan}.`);
   }
-  const serverCatalog = catalog();
-  const servers = selectedServers(
-    plan.selectedServers.length > 0
-      ? { servers: plan.selectedServers.map((server) => server.id).join(",") }
-      : { "no-raven": true },
-    serverCatalog
-  );
-  for (const server of servers) {
-    const planned = plan.selectedServers.find((candidate) => candidate.id === server.id);
-    const reviewedFields = Object.fromEntries(
-      Object.entries(planned || {}).filter(([key]) => !["package", "launcher"].includes(key))
-    );
-    if (JSON.stringify(reviewedFields) !== JSON.stringify(server)) {
-      fail(`Planned metadata for '${server.id}' differs from Crow's reviewed catalog.`);
-    }
-    if (plan.delivery === "bundled-release" &&
-        (typeof planned.package !== "string" || typeof planned.launcher !== "string")) {
-      fail(`Released metadata for '${server.id}' is incomplete.`);
-    }
-  }
+  reconcilePromotion(target);
+  const servers = validatePlannedServers(plan);
   const codebaseVersion = plan.codebaseMemory.version;
   const priorState = existsSync(target.state) ? readState(target) : null;
-  const protectedRuntimePaths = [
-    priorState?.raven?.runtimePath,
-    priorState?.previous?.raven?.runtimePath
-  ].filter(Boolean);
-  const protectedCodebasePaths = [
-    priorState?.codebaseMemory?.installPath,
-    priorState?.previous?.codebaseMemory?.installPath
-  ].filter(Boolean);
-  if ((plan.raven?.runtimePath &&
-       protectedRuntimePaths.includes(plan.raven.runtimePath)) ||
-      protectedCodebasePaths.includes(plan.codebaseMemory.installPath)) {
-    fail("This setup plan is already active or retained as a rollback target.");
-  }
+  ensureGenerationAvailable(plan, priorState);
 
   const runtimePath = plan.raven?.runtimePath || null;
   const runtimeStagingPath = runtimePath ? `${runtimePath}.staging-${process.pid}` : null;
@@ -1034,26 +1154,7 @@ async function setupCommand(args) {
     rmSync(codebaseInstallPath, { recursive: true, force: true });
   }
 
-  if (runtimeStagingPath) {
-    mkdirSync(target.versions, { recursive: true });
-    if (plan.delivery === "bundled-release") {
-      await stageRavenBundle(plan.raven);
-    } else {
-      run("git", ["clone", "--no-checkout", "--filter=blob:none", ravenUrl, runtimeStagingPath]);
-      run("git", ["checkout", "--detach", plan.raven.revision], { cwd: runtimeStagingPath });
-      runNpm(["ci"], { cwd: runtimeStagingPath });
-      runNpm(["run", "build"], { cwd: runtimeStagingPath });
-      const actualRevision = run(
-        "git",
-        ["rev-parse", "HEAD"],
-        { cwd: runtimeStagingPath, capture: true }
-      ).toLowerCase();
-      if (actualRevision !== plan.raven.revision) {
-        fail(`Raven checkout resolved to ${actualRevision}, expected ${plan.raven.revision}.`);
-      }
-      validateUpstreamConfig(runtimeStagingPath, servers);
-    }
-  }
+  await stageRavenRuntime(plan, target, servers, runtimeStagingPath);
 
   const codebaseInstall = stageCodebaseMemory(codebaseInstallPath, codebaseVersion);
   const stagingFragment = createFragment(
@@ -1068,9 +1169,13 @@ async function setupCommand(args) {
     fail(error.message);
   }
 
-  renameSync(codebaseInstall.stagingPath, codebaseInstallPath);
-  if (runtimeStagingPath) renameSync(runtimeStagingPath, runtimePath);
-  const fragment = createFragment(runtimePath, servers, codebaseInstallPath, plan.delivery);
+  const fragment = createFragment(
+    runtimePath,
+    servers,
+    codebaseInstallPath,
+    plan.delivery,
+    false
+  );
   const now = new Date().toISOString();
   const state = {
     schemaVersion: 1,
@@ -1096,13 +1201,33 @@ async function setupCommand(args) {
       managedFragment: priorState.managedFragment
     } : null
   };
-  writeJsonAtomic(target.state, state);
-  writeJsonAtomic(target.fragment, fragment);
+  writeJsonAtomic(target.promotion, {
+    schemaVersion: 1,
+    codebaseMemory: {
+      stagingPath: codebaseInstall.stagingPath,
+      installPath: codebaseInstallPath
+    },
+    raven: runtimePath ? {
+      stagingPath: runtimeStagingPath,
+      runtimePath
+    } : null
+  });
+  try {
+    renameSync(codebaseInstall.stagingPath, codebaseInstallPath);
+    if (runtimeStagingPath) renameSync(runtimeStagingPath, runtimePath);
+    writeJsonAtomic(target.state, state, { throwOnError: true });
+    writeJsonAtomic(target.fragment, fragment, { throwOnError: true });
+    rmSync(target.promotion, { force: true });
+  } catch (error) {
+    reconcilePromotion(target);
+    fail(`Could not promote the verified setup: ${error.message}`);
+  }
   console.log(JSON.stringify({ statePath: target.state, fragmentPath: target.fragment, ...state }, null, 2));
 }
 
 async function checkCommand(args) {
   const target = paths(args);
+  reconcilePromotion(target);
   if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
   const state = readState(target);
   await validateInstalledSnapshot(state);
@@ -1129,25 +1254,29 @@ async function checkCommand(args) {
   const latestCodebase = await latestCodebaseVersion();
   state.lastCheckedAt = new Date().toISOString();
   writeJsonAtomic(target.state, state);
+  let ravenResult = null;
+  if (state.raven && state.delivery === "bundled-release") {
+    ravenResult = {
+      current: state.raven.suiteVersion,
+      latest: latestRelease.suiteVersion,
+      track: { type: "release", value: "latest" },
+      updateAvailable: state.raven.suiteVersion !== latestRelease.suiteVersion,
+      note: null
+    };
+  } else if (state.raven) {
+    ravenResult = {
+      current: state.raven.revision,
+      latest: latestRevision,
+      track: freshnessTrack,
+      updateAvailable: state.raven.revision !== latestRevision,
+      note: freshnessTrack.type === "pinned"
+        ? "Pinned refs have no automatic Raven update track."
+        : null
+    };
+  }
   const result = {
     checked: true,
-    raven: state.raven
-      ? state.delivery === "bundled-release"
-        ? {
-            current: state.raven.suiteVersion,
-            latest: latestRelease.suiteVersion,
-            track: { type: "release", value: "latest" },
-            updateAvailable: state.raven.suiteVersion !== latestRelease.suiteVersion,
-            note: null
-          }
-        : {
-            current: state.raven.revision,
-            latest: latestRevision,
-            track: freshnessTrack,
-            updateAvailable: state.raven.revision !== latestRevision,
-            note: freshnessTrack.type === "pinned" ? "Pinned refs have no automatic Raven update track." : null
-          }
-      : null,
+    raven: ravenResult,
     codebaseMemory: { current: state.codebaseMemory.version, latest: latestCodebase, updateAvailable: state.codebaseMemory.version !== latestCodebase }
   };
   console.log(JSON.stringify(result, null, 2));
@@ -1157,6 +1286,7 @@ async function checkCommand(args) {
 async function rollbackCommand(args) {
   if (!args.confirm) fail("Rollback requires --confirm after the user reviews the target.");
   const target = paths(args);
+  reconcilePromotion(target);
   if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
   const state = readState(target);
   if (!state.previous) {
@@ -1208,6 +1338,7 @@ async function rollbackCommand(args) {
 
 export {
   createFragment,
+  ravenRepositoryUrl,
   releasedServers,
   startupInvocation,
   validateReleaseCatalog,
