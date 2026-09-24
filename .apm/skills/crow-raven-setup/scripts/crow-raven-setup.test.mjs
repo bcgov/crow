@@ -16,9 +16,11 @@ import {
   createFragment,
   ravenRepositoryUrl,
   releasedServers,
+  sha256Tree,
   startupInvocation,
   validateReleaseCatalog,
-  validateReleaseManifest
+  validateReleaseManifest,
+  verifyStartup
 } from "./crow-raven-setup.mjs";
 
 const script = fileURLToPath(new URL("./crow-raven-setup.mjs", import.meta.url));
@@ -30,20 +32,25 @@ function run(args) {
   });
 }
 
-function codebaseOnlyState(managedFragment) {
+function codebaseOnlyState(stateDir) {
   const serverCatalog = {
     schemaVersion: 1,
     protocolCompatibility: "MCP over stdio",
     dependencySemantics: "none",
     servers: []
   };
+  const installPath = join(
+    stateDir,
+    "codebase-memory",
+    "0.11.0-00000000-0000-0000-0000-000000000000"
+  );
   return {
     schemaVersion: 1,
     delivery: "codebase-memory-only",
     raven: null,
     codebaseMemory: {
       version: "0.11.0",
-      installPath: join(tmpdir(), "codebase-memory-mcp"),
+      installPath,
       integrity: `sha512-${Buffer.from("integrity").toString("base64")}`,
       entrypointSha256: "a".repeat(64)
     },
@@ -52,7 +59,13 @@ function codebaseOnlyState(managedFragment) {
       sha256: createHash("sha256").update(JSON.stringify(serverCatalog)).digest("hex"),
       ...serverCatalog
     },
-    managedFragment,
+    managedFragment: createFragment(
+      null,
+      [],
+      installPath,
+      "codebase-memory-only",
+      false
+    ),
     configuredAt: "2026-09-21T12:00:00.000Z",
     lastCheckedAt: new Date().toISOString(),
     previous: null
@@ -83,22 +96,31 @@ test("setup requires explicit confirmation before prerequisite or network work",
 
 test("status reconciles the generated fragment from authoritative state", () => {
   const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
-  const managedFragment = {
-    mcpServers: {
-      "codebase-memory-mcp": { command: process.execPath, args: ["verified-bin.js"] }
-    }
-  };
+  const state = codebaseOnlyState(stateDir);
   writeFileSync(
     join(stateDir, "state.json"),
-    JSON.stringify(codebaseOnlyState(managedFragment))
+    JSON.stringify(state)
   );
   writeFileSync(join(stateDir, "mcp-fragment.json"), JSON.stringify({ mcpServers: {} }));
   const result = run(["status", "--state-dir", stateDir]);
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(
     JSON.parse(readFileSync(join(stateDir, "mcp-fragment.json"), "utf8")),
-    managedFragment
+    state.managedFragment
   );
+});
+
+test("status rejects injected managed fragment commands", () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
+  const state = codebaseOnlyState(stateDir);
+  state.managedFragment.mcpServers.injected = {
+    command: process.execPath,
+    args: ["malicious.js"]
+  };
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify(state));
+  const result = run(["status", "--state-dir", stateDir]);
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /state is malformed|unmanaged paths or fragment commands/);
 });
 
 test("status rejects partial state with a documented schema error", () => {
@@ -116,29 +138,37 @@ test("status rejects partial state with a documented schema error", () => {
 
 test("status recovers an interrupted uncommitted promotion", () => {
   const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
-  const managedFragment = {
-    mcpServers: {
-      "codebase-memory-mcp": { command: process.execPath, args: ["verified-bin.js"] }
-    }
-  };
   writeFileSync(
     join(stateDir, "state.json"),
-    JSON.stringify(codebaseOnlyState(managedFragment))
+    JSON.stringify(codebaseOnlyState(stateDir))
   );
   const installPath = join(stateDir, "codebase-memory", "0.11.0-new-generation");
   const stagingPath = `${installPath}.staging-1234`;
+  const runtimePath = join(stateDir, "versions", "0.1.0-win32-x64-new-generation");
+  const runtimeStagingPath = `${runtimePath}.staging-1234`;
+  const extractionPath = `${runtimePath}.extract-1234`;
+  const archivePath = `${runtimePath}.download-1234.tar.gz`;
   mkdirSync(installPath, { recursive: true });
   mkdirSync(stagingPath);
+  mkdirSync(runtimePath, { recursive: true });
+  mkdirSync(runtimeStagingPath);
+  mkdirSync(extractionPath);
+  writeFileSync(archivePath, "partial archive");
   writeFileSync(join(stateDir, "pending-promotion.json"), JSON.stringify({
     schemaVersion: 1,
     codebaseMemory: { stagingPath, installPath },
-    raven: null
+    raven: { stagingPath: runtimeStagingPath, runtimePath },
+    temporaryPaths: [extractionPath, archivePath]
   }));
 
   const result = run(["status", "--state-dir", stateDir]);
   assert.equal(result.status, 0, result.stderr);
   assert.equal(existsSync(installPath), false);
   assert.equal(existsSync(stagingPath), false);
+  assert.equal(existsSync(runtimePath), false);
+  assert.equal(existsSync(runtimeStagingPath), false);
+  assert.equal(existsSync(extractionPath), false);
+  assert.equal(existsSync(archivePath), false);
   assert.equal(existsSync(join(stateDir, "pending-promotion.json")), false);
 });
 
@@ -259,6 +289,32 @@ test("Raven release metadata reconciles reviewed servers and native launchers", 
   } else {
     assert.deepEqual(invocation, { command: launcher, args: [] });
   }
+});
+
+test("runtime tree digest detects generated and launcher changes", async () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-raven-tree-"));
+  mkdirSync(join(root, "bin"));
+  writeFileSync(join(root, "bin", "raven-test"), "launcher");
+  mkdirSync(join(root, "packages"));
+  writeFileSync(join(root, "packages", "server.js"), "compiled");
+  const original = await sha256Tree(root);
+  writeFileSync(join(root, "packages", "server.js"), "modified");
+  assert.notEqual(await sha256Tree(root), original);
+});
+
+test("Windows startup verification terminates the launcher process tree", {
+  skip: process.platform !== "win32"
+}, async () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-raven-process-tree-"));
+  const pidPath = join(root, "child.pid");
+  const launcher = join(root, "raven-tree.cmd");
+  writeFileSync(
+    launcher,
+    `@"${process.execPath}" -e "require('fs').writeFileSync(process.argv[1],String(process.pid));setInterval(()=>{},1000)" "${pidPath}"\r\n`
+  );
+  await verifyStartup("Windows process-tree fixture", launcher, [], root);
+  const childPid = Number(readFileSync(pidPath, "utf8"));
+  assert.throws(() => process.kill(childPid, 0));
 });
 
 test("setup rejects a future-dated plan", () => {

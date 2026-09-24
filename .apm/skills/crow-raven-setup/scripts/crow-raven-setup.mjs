@@ -6,8 +6,11 @@ import {
   createReadStream,
   createWriteStream,
   existsSync,
+  lstatSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
+  readlinkSync,
   renameSync,
   rmSync,
   writeFileSync
@@ -135,6 +138,7 @@ function isRavenState(value) {
   return value === null ||
     (isRecord(value) &&
       typeof value.runtimePath === "string" &&
+      /^[0-9a-f]{64}$/.test(value.runtimeTreeSha256 || "") &&
       (
         (value.delivery === "pinned-source" &&
           typeof value.ref === "string" &&
@@ -182,7 +186,12 @@ function isManagedFragment(value, selectedServers) {
       !isCommand(value.mcpServers["codebase-memory-mcp"])) {
     return false;
   }
-  return selectedServers.every((id) => isCommand(value.mcpServers[id]));
+  const expectedKeys = ["codebase-memory-mcp", ...selectedServers]
+    .sort((left, right) => left.localeCompare(right));
+  const actualKeys = Object.keys(value.mcpServers)
+    .sort((left, right) => left.localeCompare(right));
+  return JSON.stringify(actualKeys) === JSON.stringify(expectedKeys) &&
+    selectedServers.every((id) => isCommand(value.mcpServers[id]));
 }
 
 function isStateSnapshot(value) {
@@ -208,6 +217,7 @@ function isStateSnapshot(value) {
 
 function readState(target) {
   const state = readJson(target.state, "Crow Raven setup state");
+  const snapshots = [state, state.previous].filter(Boolean);
   if (state.schemaVersion !== 1 ||
       !["bundled-release", "pinned-source", "codebase-memory-only"].includes(state.delivery) ||
       !isStateSnapshot(state) ||
@@ -216,6 +226,25 @@ function readState(target) {
       !isTimestamp(state.lastCheckedAt) ||
       (state.previous !== null && !isStateSnapshot(state.previous))) {
     fail("Crow Raven setup state is malformed or has an unsupported schema.");
+  }
+  for (const snapshot of snapshots) {
+    const codebaseName = basename(snapshot.codebaseMemory.installPath);
+    const codebasePrefix = `${snapshot.codebaseMemory.version}-`;
+    const runtimePathIsManaged = !snapshot.raven ||
+      resolve(dirname(snapshot.raven.runtimePath)) === resolve(target.versions);
+    const expectedFragment = createFragment(
+      snapshot.raven?.runtimePath || null,
+      snapshot.serverCatalog.servers,
+      snapshot.codebaseMemory.installPath,
+      snapshot.delivery,
+      false
+    );
+    if (resolve(dirname(snapshot.codebaseMemory.installPath)) !== resolve(target.codebaseMemory) ||
+        !codebaseName.startsWith(codebasePrefix) ||
+        !runtimePathIsManaged ||
+        JSON.stringify(snapshot.managedFragment) !== JSON.stringify(expectedFragment)) {
+      fail("Crow Raven setup state contains unmanaged paths or fragment commands.");
+    }
   }
   let fragmentMatches = false;
   if (existsSync(target.fragment)) {
@@ -258,6 +287,15 @@ function reconcilePromotion(target) {
   const ravenPromotionIsValid = promotion.raven === null ||
     (isRecord(promotion.raven) &&
       validPair(promotion.raven.stagingPath, promotion.raven.runtimePath, target.versions));
+  let expectedTemporaryPaths = [];
+  if (promotion.raven && ravenPromotionIsValid) {
+    const stagingPrefix = `${resolve(promotion.raven.runtimePath)}.staging-`;
+    const processId = resolve(promotion.raven.stagingPath).slice(stagingPrefix.length);
+    expectedTemporaryPaths = [
+      `${promotion.raven.runtimePath}.extract-${processId}`,
+      `${promotion.raven.runtimePath}.download-${processId}.tar.gz`
+    ];
+  }
   if (promotion.schemaVersion !== 1 ||
       !isRecord(promotion.codebaseMemory) ||
       !validPair(
@@ -265,7 +303,9 @@ function reconcilePromotion(target) {
         promotion.codebaseMemory.installPath,
         target.codebaseMemory
       ) ||
-      !ravenPromotionIsValid) {
+      !ravenPromotionIsValid ||
+      !Array.isArray(promotion.temporaryPaths) ||
+      JSON.stringify(promotion.temporaryPaths) !== JSON.stringify(expectedTemporaryPaths)) {
     fail("Crow Raven promotion journal is malformed or contains unmanaged paths.");
   }
   const state = existsSync(target.state)
@@ -275,12 +315,17 @@ function reconcilePromotion(target) {
     state?.codebaseMemory?.installPath === promotion.codebaseMemory.installPath &&
     state?.raven?.runtimePath === promotion.raven?.runtimePath;
   const cleanup = promotionIsActive
-    ? [promotion.codebaseMemory.stagingPath, promotion.raven?.stagingPath]
+    ? [
+        promotion.codebaseMemory.stagingPath,
+        promotion.raven?.stagingPath,
+        ...promotion.temporaryPaths
+      ]
     : [
         promotion.codebaseMemory.stagingPath,
         promotion.codebaseMemory.installPath,
         promotion.raven?.stagingPath,
-        promotion.raven?.runtimePath
+        promotion.raven?.runtimePath,
+        ...promotion.temporaryPaths
       ];
   for (const path of cleanup.filter(Boolean)) {
     if (existsSync(path)) rmSync(path, { recursive: true, force: true });
@@ -343,18 +388,12 @@ function resolveRavenRevision(ref) {
     ? [`refs/heads/${ref}`]
     : [`refs/tags/${ref}^{}`, `refs/tags/${ref}`];
   for (const candidate of candidates) {
-    const output = spawnSync("git", ["ls-remote", ravenUrl, candidate], {
-      encoding: "utf8",
-      stdio: "pipe",
-      shell: false,
-      timeout: networkTimeoutMs
-    });
-    if (output.error?.code === "ETIMEDOUT") {
-      fail(`Raven ref lookup timed out after ${networkTimeoutMs}ms.`);
-    }
-    if (output.error) fail(`Could not query Raven: ${output.error.message}`);
-    if (output.status !== 0) fail(`Could not query Raven ref ${ref}: ${output.stderr.trim()}`);
-    const revision = output.stdout.trim().split(/\s+/)[0];
+    const output = run(
+      "git",
+      ["ls-remote", ravenUrl, candidate],
+      { capture: true, timeout: networkTimeoutMs }
+    );
+    const revision = output.split(/\s+/)[0];
     if (/^[0-9a-f]{40}$/i.test(revision)) return revision.toLowerCase();
   }
   fail(`Raven ref '${ref}' was not found.`);
@@ -698,6 +737,38 @@ async function sha256File(path) {
   return hash.digest("hex");
 }
 
+async function sha256Tree(root, excludeGit = false) {
+  const hash = createHash("sha256");
+  const visit = async (directory, relativeDirectory = "") => {
+    const entries = readdirSync(directory, { withFileTypes: true })
+      .sort((left, right) => left.name.localeCompare(right.name));
+    for (const entry of entries) {
+      const relativePath = relativeDirectory
+        ? `${relativeDirectory}/${entry.name}`
+        : entry.name;
+      if (excludeGit && (relativePath === ".git" || relativePath.startsWith(".git/"))) {
+        continue;
+      }
+      const path = join(directory, entry.name);
+      const metadata = lstatSync(path);
+      if (metadata.isSymbolicLink()) {
+        hash.update(`L\0${relativePath}\0${readlinkSync(path)}\0`);
+      } else if (metadata.isDirectory()) {
+        hash.update(`D\0${relativePath}\0`);
+        await visit(path, relativePath);
+      } else if (metadata.isFile()) {
+        hash.update(`F\0${relativePath}\0${metadata.mode & 0o777}\0${metadata.size}\0`);
+        for await (const chunk of createReadStream(path)) hash.update(chunk);
+        hash.update("\0");
+      } else {
+        fail(`Raven runtime contains unsupported filesystem entry '${relativePath}'.`);
+      }
+    }
+  };
+  await visit(root);
+  return hash.digest("hex");
+}
+
 function releasedServers(selected, releasedCatalog) {
   const released = new Map(releasedCatalog.servers.map((server) => [server.id, server]));
   return selected.map((server) => {
@@ -761,6 +832,25 @@ async function stageRavenBundle(raven) {
   return stagingRoot;
 }
 
+function terminateProcessTree(child, force = false) {
+  if (process.platform === "win32") {
+    if (!Number.isInteger(child.pid)) return "child process ID is unavailable";
+    const windowsRoot = process.env.SystemRoot || process.env.windir;
+    if (!windowsRoot) return "the Windows system root is unavailable";
+    const taskkill = join(windowsRoot, "System32", "taskkill.exe");
+    const result = spawnSync(
+      taskkill,
+      ["/PID", String(child.pid), "/T", "/F"],
+      { encoding: "utf8", stdio: "pipe", shell: false }
+    );
+    if (result.status === 0) return null;
+    return (result.stderr || result.stdout || `taskkill exited with ${result.status}`).trim();
+  }
+  const signal = force ? "SIGKILL" : "SIGTERM";
+  if (child.kill(signal)) return null;
+  return "the process did not accept the termination signal";
+}
+
 async function verifyStartup(name, command, args, cwd) {
   const invocation = startupInvocation(command, args);
   await new Promise((resolvePromise, rejectPromise) => {
@@ -797,15 +887,22 @@ async function verifyStartup(name, command, args, cwd) {
       }
     });
     startupTimer = setTimeout(() => {
+      const stopError = terminateProcessTree(child);
+      if (stopError) {
+        rejectPromise(new Error(`${name} process tree could not be stopped: ${stopError}`));
+        return;
+      }
       expectedStop = true;
-      child.kill();
       forceStopTimer = setTimeout(() => {
-        child.kill("SIGKILL");
+        const forceStopError = terminateProcessTree(child, true);
         child.stdin.destroy();
         child.stdout.destroy();
         child.stderr.destroy();
         child.unref();
-        rejectPromise(new Error(`${name} did not stop within ${startupStopMs}ms; process ID ${child.pid}.`));
+        const detail = forceStopError ? ` ${forceStopError}` : "";
+        rejectPromise(new Error(
+          `${name} did not stop within ${startupStopMs}ms; process ID ${child.pid}.${detail}`
+        ));
       }, startupStopMs);
     }, startupGraceMs);
   });
@@ -821,6 +918,15 @@ async function validateInstalledSnapshot(snapshot) {
     fail("Installed codebase-memory-mcp integrity differs from Crow's recorded state.");
   }
   const servers = snapshot.serverCatalog.servers;
+  if (snapshot.raven) {
+    const runtimeTreeSha256 = await sha256Tree(
+      snapshot.raven.runtimePath,
+      snapshot.raven.delivery === "pinned-source"
+    );
+    if (runtimeTreeSha256 !== snapshot.raven.runtimeTreeSha256) {
+      fail("Installed Raven runtime files differ from Crow's recorded verified tree.");
+    }
+  }
   if (snapshot.raven?.delivery === "bundled-release") {
     const metadata = readJson(
       join(snapshot.raven.runtimePath, "bundle-metadata.json"),
@@ -1154,9 +1260,35 @@ async function setupCommand(args) {
     rmSync(codebaseInstallPath, { recursive: true, force: true });
   }
 
+  const codebaseStagingPath = `${codebaseInstallPath}.staging-${process.pid}`;
+  const temporaryPaths = runtimePath ? [
+    `${runtimePath}.extract-${process.pid}`,
+    `${runtimePath}.download-${process.pid}.tar.gz`
+  ] : [];
+  writeJsonAtomic(target.promotion, {
+    schemaVersion: 1,
+    codebaseMemory: {
+      stagingPath: codebaseStagingPath,
+      installPath: codebaseInstallPath
+    },
+    raven: runtimePath ? {
+      stagingPath: runtimeStagingPath,
+      runtimePath
+    } : null,
+    temporaryPaths
+  });
+  let cleanupArmed = true;
+  const cleanupUnpromotedGeneration = () => {
+    if (cleanupArmed && existsSync(target.promotion)) reconcilePromotion(target);
+  };
+  process.once("exit", cleanupUnpromotedGeneration);
+
   await stageRavenRuntime(plan, target, servers, runtimeStagingPath);
 
   const codebaseInstall = stageCodebaseMemory(codebaseInstallPath, codebaseVersion);
+  if (codebaseInstall.stagingPath !== codebaseStagingPath) {
+    fail("codebase-memory-mcp staging path differs from the promotion journal.");
+  }
   const stagingFragment = createFragment(
     runtimeStagingPath,
     servers,
@@ -1168,6 +1300,9 @@ async function setupCommand(args) {
   } catch (error) {
     fail(error.message);
   }
+  const runtimeTreeSha256 = runtimeStagingPath
+    ? await sha256Tree(runtimeStagingPath, plan.delivery === "pinned-source")
+    : null;
 
   const fragment = createFragment(
     runtimePath,
@@ -1180,7 +1315,7 @@ async function setupCommand(args) {
   const state = {
     schemaVersion: 1,
     delivery: plan.delivery,
-    raven: plan.raven ? { ...plan.raven, runtimePath } : null,
+    raven: plan.raven ? { ...plan.raven, runtimePath, runtimeTreeSha256 } : null,
     codebaseMemory: {
       version: codebaseVersion,
       installPath: codebaseInstallPath,
@@ -1201,23 +1336,14 @@ async function setupCommand(args) {
       managedFragment: priorState.managedFragment
     } : null
   };
-  writeJsonAtomic(target.promotion, {
-    schemaVersion: 1,
-    codebaseMemory: {
-      stagingPath: codebaseInstall.stagingPath,
-      installPath: codebaseInstallPath
-    },
-    raven: runtimePath ? {
-      stagingPath: runtimeStagingPath,
-      runtimePath
-    } : null
-  });
   try {
     renameSync(codebaseInstall.stagingPath, codebaseInstallPath);
     if (runtimeStagingPath) renameSync(runtimeStagingPath, runtimePath);
     writeJsonAtomic(target.state, state, { throwOnError: true });
     writeJsonAtomic(target.fragment, fragment, { throwOnError: true });
     rmSync(target.promotion, { force: true });
+    cleanupArmed = false;
+    process.removeListener("exit", cleanupUnpromotedGeneration);
   } catch (error) {
     reconcilePromotion(target);
     fail(`Could not promote the verified setup: ${error.message}`);
@@ -1340,9 +1466,11 @@ export {
   createFragment,
   ravenRepositoryUrl,
   releasedServers,
+  sha256Tree,
   startupInvocation,
   validateReleaseCatalog,
-  validateReleaseManifest
+  validateReleaseManifest,
+  verifyStartup
 };
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1] || "")).href) {

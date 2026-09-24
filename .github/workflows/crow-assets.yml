@@ -31,6 +31,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
 
+      - name: Test Raven setup CLI
+        shell: pwsh
+        run: |
+          node --test .\.apm\skills\crow-raven-setup\scripts\crow-raven-setup.test.mjs
+
       - name: Validate public Crow project memory
         shell: pwsh
         run: |
