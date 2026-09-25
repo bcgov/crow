@@ -185,7 +185,11 @@ test("plan supports an explicit codebase-memory-only selection", () => {
   assert.equal(plan.delivery, "codebase-memory-only");
   assert.equal(plan.raven, null);
   assert.deepEqual(plan.selectedServers, []);
-  assert.equal(plan.commands.length, 1);
+  assert.equal(plan.commands.length, process.platform === "win32" ? 2 : 1);
+  if (process.platform === "win32") {
+    assert.ok(plan.commands[0].args.includes("--ignore-scripts"));
+    assert.match(plan.commands[1].note, /120000ms candidate timeout/);
+  }
   assert.match(plan.codebaseMemory.installPath, /0\.11\.0-[0-9a-f-]{36}$/);
 });
 
@@ -214,7 +218,7 @@ test("plan stages Raven builds in a generation-specific directory", () => {
   assert.equal(result.status, 0, result.stderr);
   const plan = JSON.parse(result.stdout);
   assert.match(plan.raven.runtimePath, new RegExp(`${revision}-[0-9a-f-]{36}$`));
-  assert.equal(plan.commands.length, 5);
+  assert.equal(plan.commands.length, process.platform === "win32" ? 6 : 5);
   assert.equal(plan.commands[0].args.at(-1), `${plan.raven.runtimePath}.staging-<pid>`);
   assert.equal(plan.commands[2].cwd, `${plan.raven.runtimePath}.staging-<pid>`);
 });

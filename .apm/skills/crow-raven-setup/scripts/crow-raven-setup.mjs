@@ -3,6 +3,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
+  cpSync,
   createReadStream,
   createWriteStream,
   existsSync,
@@ -38,6 +39,7 @@ const planLifetimeMs = 24 * 60 * 60 * 1000;
 const startupGraceMs = 5000;
 const startupStopMs = 2000;
 const networkTimeoutMs = 10000;
+const codebaseWindowsCandidateTimeoutMs = 120000;
 const ravenPlatform = `${process.platform}-${process.arch}`;
 
 function fail(message, code = 1) {
@@ -697,20 +699,57 @@ function validateCodebaseInstall(installPath, version) {
   };
 }
 
-function stageCodebaseMemory(installPath, version) {
-  const stagingPath = `${installPath}.staging-${process.pid}`;
-  if (existsSync(stagingPath)) rmSync(stagingPath, { recursive: true, force: true });
-  mkdirSync(dirname(installPath), { recursive: true });
-  mkdirSync(stagingPath);
-  runNpm([
+function codebaseInstallArgs(stagingPath, version) {
+  return [
     "install",
     "--prefix", stagingPath,
     "--save-exact",
     "--omit=dev",
     "--no-audit",
     "--no-fund",
+    ...(process.platform === "win32" ? ["--ignore-scripts"] : []),
     `codebase-memory-mcp@${version}`
-  ]);
+  ];
+}
+
+function runCodebaseWindowsInstaller(stagingPath) {
+  const packagePath = join(stagingPath, "node_modules", "codebase-memory-mcp");
+  const installerPath = join(packagePath, "install.js");
+  const original = readFileSync(installerPath, "utf8");
+  const timeoutDeclaration = "const CANDIDATE_TIMEOUT_MS = 15_000;";
+  if (!original.includes(timeoutDeclaration)) {
+    fail("codebase-memory-mcp Windows installer has an unsupported candidate-timeout contract.");
+  }
+  const adjusted = original.replace(
+    timeoutDeclaration,
+    `const CANDIDATE_TIMEOUT_MS = ${codebaseWindowsCandidateTimeoutMs};`
+  );
+  writeFileSync(installerPath, adjusted, "utf8");
+  const result = spawnSync(process.execPath, [installerPath], {
+    cwd: packagePath,
+    encoding: "utf8",
+    stdio: "inherit",
+    shell: false,
+    timeout: 10 * 60 * 1000,
+    windowsHide: true
+  });
+  writeFileSync(installerPath, original, "utf8");
+  if (result.error?.code === "ETIMEDOUT") {
+    fail("codebase-memory-mcp Windows installer exceeded the 10-minute setup timeout.");
+  }
+  if (result.error) fail(`Could not run codebase-memory-mcp installer: ${result.error.message}`);
+  if (result.status !== 0) {
+    fail(`codebase-memory-mcp installer exited with code ${result.status}.`);
+  }
+}
+
+function stageCodebaseMemory(installPath, version) {
+  const stagingPath = `${installPath}.staging-${process.pid}`;
+  if (existsSync(stagingPath)) rmSync(stagingPath, { recursive: true, force: true });
+  mkdirSync(dirname(installPath), { recursive: true });
+  mkdirSync(stagingPath);
+  runNpm(codebaseInstallArgs(stagingPath, version));
+  if (process.platform === "win32") runCodebaseWindowsInstaller(stagingPath);
   return { stagingPath, ...validateCodebaseInstall(stagingPath, version) };
 }
 
@@ -816,7 +855,18 @@ async function stageRavenBundle(raven) {
     rmSync(extractionRoot, { recursive: true, force: true });
     fail("Raven archive does not contain its canonical bundle directory.");
   }
-  renameSync(extracted, stagingRoot);
+  try {
+    renameSync(extracted, stagingRoot);
+  } catch (error) {
+    if (process.platform !== "win32" || error.code !== "EPERM") throw error;
+    cpSync(extracted, stagingRoot, {
+      recursive: true,
+      errorOnExist: true,
+      force: false,
+      verbatimSymlinks: true
+    });
+    rmSync(extracted, { recursive: true, force: true });
+  }
   rmSync(extractionRoot, { recursive: true, force: true });
   const metadata = readJson(join(stagingRoot, "bundle-metadata.json"), "Raven bundle metadata");
   const embeddedCatalogPath = join(stagingRoot, "server-catalog.json");
@@ -1115,11 +1165,25 @@ async function planCommand(args) {
   );
   const npmCi = npmInvocation(["ci"]);
   const npmBuild = npmInvocation(["run", "build"]);
-  const npmInstallCodebase = npmInvocation([
-    "install", "--prefix", `${codebaseInstallPath}.staging-<pid>`,
-    "--save-exact", "--omit=dev", "--no-audit", "--no-fund",
-    `codebase-memory-mcp@${codebaseVersion}`
-  ]);
+  const plannedCodebaseStagingPath = `${codebaseInstallPath}.staging-<pid>`;
+  const npmInstallCodebase = npmInvocation(
+    codebaseInstallArgs(plannedCodebaseStagingPath, codebaseVersion)
+  );
+  const codebaseCommands = [{ ...npmInstallCodebase }];
+  if (process.platform === "win32") {
+    codebaseCommands.push({
+      command: process.execPath,
+      args: [
+        join(
+          plannedCodebaseStagingPath,
+          "node_modules",
+          "codebase-memory-mcp",
+          "install.js"
+        )
+      ],
+      note: `Run the integrity-verified upstream installer with a ${codebaseWindowsCandidateTimeoutMs}ms candidate timeout.`
+    });
+  }
   const plan = {
     schemaVersion: 1,
     action: "setup",
@@ -1149,9 +1213,7 @@ async function planCommand(args) {
     ],
     commands: [
       ...ravenPlanCommands(raven, npmCi, npmBuild),
-      {
-        ...npmInstallCodebase
-      }
+      ...codebaseCommands
     ]
   };
   writeJsonAtomic(target.plan, plan);
@@ -1179,7 +1241,7 @@ function validatePlannedServers(plan) {
       fail(`Released metadata for '${server.id}' is incomplete.`);
     }
   }
-  return servers;
+  return plan.selectedServers;
 }
 
 function ensureGenerationAvailable(plan, priorState) {
