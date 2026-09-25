@@ -124,13 +124,25 @@ Before a repository's first testing implementation, create or refresh:
 
 Adapt them to detected conventions. Cover the selected framework/libraries, project and class naming/layout,
 builder/test-data patterns, and integration environment and cleanup strategy. When the project uses CsCheck
-property-based tests through the managed `PropertyTestSampling` helper, document the `CsCheck_Randomize`
-run-level switch in the Unit Test Organization Guide: normal local/CI runs stay deterministic by default;
-setting `CsCheck_Randomize=true` for a single run (for example, a scheduled/nightly CI job or an ad hoc local
-invocation) opts into CsCheck's broader random seeding for that run only. Include one local example (for
-example, `$env:CsCheck_Randomize = "true"; dotnet test`) and note that a failure found this way should be
-replayed deterministically with CsCheck's reported seed and promoted to a regression test — see
-`reference/property-based-testing.md`. Do not regenerate a guide that is already current.
+property-based tests, the Unit Test Organization Guide must document:
+
+- **What `seed:` does.** It pins CsCheck iteration 1 only; iterations 2..N still vary across runs and thread
+  scheduling. `seed:` is a failure-replay handle, not a whole-run determinism switch. Reproducibility of a
+  failure comes from CsCheck's shrinker printing the minimal case's seed, which the developer then pins into
+  a regression test.
+- **The two-build strategy.** A PR/main pipeline runs with CsCheck's default `Check.Iter = 100`, and a
+  nightly pipeline sets `CsCheck_Iter=1000` (or an equivalent value) to scale general property tests.
+  Explicit `iter:` values on narrow boundary properties intentionally do not scale. Include one local
+  example for each supported shell (for example, `$env:CsCheck_Iter = "1000"; dotnet test` on Windows or
+  `CsCheck_Iter=1000 dotnet test` on Linux/macOS), and note the `dotnet test -e CsCheck_Iter=1000`
+  passthrough form.
+- **The failure-pin regression workflow.** When CsCheck reports a reproduction seed, prefer pinning the
+  shrunken minimized input as a hardcoded `[Fact]`; use a labelled `Sample(..., seed: "reported", iter: 1)`
+  replay only when the minimized input is generator-shaped. Keep an unseeded general property alongside so
+  exploration continues.
+
+See [`reference/property-based-testing.md`](reference/property-based-testing.md) for the canonical
+content each of these bullets references. Do not regenerate a guide that is already current.
 
 ## Step 5: Integration and complex or critical unit tests
 

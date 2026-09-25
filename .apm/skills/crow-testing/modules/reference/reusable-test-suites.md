@@ -101,7 +101,8 @@ Expressions also handle nested properties naturally (`x => x.Address.City`).
 - Constrain the validator generically (`where TValidator : IValidator<TModel>, new()`) so the suite can
   construct it itself and the concrete class doesn't repeat that boilerplate.
 - Pass `ITestOutputHelper` down through the base constructor — the suite's own diagnostics need it, and every
-  concrete class gets it for free.
+  concrete class gets it for free. On xUnit.v3, `ITestOutputHelper` lives in the `Xunit` namespace; when
+  migrating from v2 also delete the `using Xunit.Abstractions;` line.
 - The same pattern generalizes beyond validation: any contract that several types must satisfy (a repository
   interface, a serializer round-trip, an `IEquatable<T>` implementation) can be tested once in an abstract
   suite and wired per implementation.
