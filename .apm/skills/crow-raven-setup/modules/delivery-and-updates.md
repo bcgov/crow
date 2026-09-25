@@ -55,6 +55,13 @@ The default is an invocation-time check, not a resident process:
 - do not send telemetry;
 - notify about available changes but never apply them automatically.
 
+When Crow is installed globally through APM, the daily `check` also asks APM
+to inspect `bcgov/crow` with its read-only global freshness check. APM does
+not automatically update Crow: `apm update --global bcgov/crow` is an
+explicit, consent-gated update. `apm self-update` updates the APM CLI itself,
+not Crow. Installs managed outside APM, such as a direct Copilot plugin
+install, are not represented by the APM check.
+
 An OS-native daily scheduler is opt-in and separately confirmed. It may run
 only the notification check, must have a documented removal command, and must
 not hold credentials or perform upgrades.
