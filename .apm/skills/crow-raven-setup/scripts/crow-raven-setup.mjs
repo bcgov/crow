@@ -1576,9 +1576,15 @@ async function checkCommand(args) {
     crowPackage: checkCrowApmUpdate()
   };
   console.log(JSON.stringify(result, null, 2));
-  if (result.crowPackage.error) process.exitCode = 1;
-  if (result.raven?.updateAvailable || result.codebaseMemory.updateAvailable) process.exitCode = 10;
-  if (result.crowPackage.updateAvailable) process.exitCode = 10;
+  if (result.crowPackage.error) {
+    process.exitCode = 1;
+  } else if (
+    result.raven?.updateAvailable ||
+    result.codebaseMemory.updateAvailable ||
+    (result.crowPackage.checked && result.crowPackage.updateAvailable)
+  ) {
+    process.exitCode = 10;
+  }
 }
 
 async function rollbackCommand(args) {

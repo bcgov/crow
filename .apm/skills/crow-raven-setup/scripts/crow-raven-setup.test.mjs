@@ -124,6 +124,54 @@ test("checks the globally installed Crow package through APM", () => {
   });
 });
 
+test("reports an up-to-date globally installed Crow package", () => {
+  const result = checkCrowApmUpdate((args) => {
+    if (args[0] === "view") {
+      return { status: 0, stdout: "Version: 0.9.2", stderr: "", error: null };
+    }
+    return {
+      status: 0,
+      stdout: "bcgov/crow  v0.9.2  -  v0.9.2  up-to-date  git tags",
+      stderr: "",
+      error: null
+    };
+  });
+  assert.equal(result.checked, true);
+  assert.equal(result.updateAvailable, false);
+});
+
+test("reports an unavailable APM installation as an unknown Crow update state", () => {
+  const result = checkCrowApmUpdate(() => ({
+    status: null,
+    stdout: "",
+    stderr: "",
+    error: { code: "ENOENT", message: "apm was not found" }
+  }));
+  assert.equal(result.checked, false);
+  assert.equal(result.updateAvailable, null);
+  assert.equal(result.reason, "apm-not-installed");
+});
+
+test("reports an APM freshness failure as an unknown Crow update state", () => {
+  let callCount = 0;
+  const result = checkCrowApmUpdate((args) => {
+    callCount++;
+    if (args[0] === "view") {
+      return { status: 0, stdout: "Version: 0.9.2", stderr: "", error: null };
+    }
+    return {
+      status: 1,
+      stdout: "",
+      stderr: "network unavailable",
+      error: null
+    };
+  });
+  assert.equal(callCount, 2);
+  assert.equal(result.checked, false);
+  assert.equal(result.updateAvailable, null);
+  assert.match(result.error, /failed with exit code 1/);
+});
+
 test("status reports an unconfigured custom state directory", () => {
   const stateDir = mkdtempSync(join(tmpdir(), "crow-raven-test-"));
   const result = run(["status", "--state-dir", stateDir]);
