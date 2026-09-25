@@ -6,4 +6,5 @@
 *.html -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.css -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.js -text whitespace=trailing-space,space-before-tab,cr-at-eol
+*.mjs -text whitespace=trailing-space,space-before-tab,cr-at-eol
 *.yml -text whitespace=trailing-space,space-before-tab,cr-at-eol
