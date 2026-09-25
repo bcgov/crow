@@ -29,7 +29,8 @@ Use the **Crow Raven Setup Agent** to:
   immutable source build available only as an explicit fallback;
 - generate a Crow-owned MCP configuration fragment without overwriting existing
   client configuration or collecting credentials;
-- check for changes at most once every 24 hours during use, notify without
+- check Raven, codebase-memory-mcp, and any globally APM-managed Crow package
+  for changes at most once every 24 hours during use, notify without
   upgrading, and apply updates or rollback only after confirmation.
 
 Raven setup state is user-local under `~/.crow/raven-setup` by default and must
@@ -144,7 +145,7 @@ irm https://aka.ms/apm-windows | iex
 Install Crow globally:
 
 ```powershell
-apm install bcgov/crow#v0.9.1 --global --target copilot
+apm install bcgov/crow#v0.9.2 --global --target copilot
 ```
 
 ### On macOS / Linux
@@ -158,15 +159,15 @@ curl -sSL https://aka.ms/apm-unix | sh
 Install Crow globally:
 
 ```bash
-apm install bcgov/crow#v0.9.1 --global --target copilot
+apm install bcgov/crow#v0.9.2 --global --target copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
 
 ```text
-apm install bcgov/crow#v0.9.1 --global --target claude
-apm install bcgov/crow#v0.9.1 --global --target codex
-apm install bcgov/crow#v0.9.1 --global --target cursor
+apm install bcgov/crow#v0.9.2 --global --target claude
+apm install bcgov/crow#v0.9.2 --global --target codex
+apm install bcgov/crow#v0.9.2 --global --target cursor
 ```
 
 The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
@@ -187,6 +188,18 @@ apm install C:\path\to\crow --global --target codex
 apm install C:\path\to\crow --global --target copilot
 apm install C:\path\to\crow --global --target cursor
 ```
+
+APM does not silently auto-update an installed Crow package. To review and
+apply the latest matching Crow ref explicitly:
+
+```powershell
+apm update --global bcgov/crow
+```
+
+The Crow Raven setup check reports an outstanding global APM update without
+applying it. `apm self-update` updates the APM CLI, not Crow. A direct
+Copilot plugin installation is outside APM's global package state and is not
+reported by that APM check.
 
 ## Option 2: Copilot CLI plugin
 
@@ -210,21 +223,21 @@ apm pack --archive --output build
 The resulting archive is:
 
 ```text
-build/bcgov-crow-0.9.1.zip
+build/bcgov-crow-0.9.2.zip
 ```
 
 The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
 
 ```powershell
-apm install .\build\bcgov-crow-0.9.1.zip --global --target claude
-apm install .\build\bcgov-crow-0.9.1.zip --global --target codex
-apm install .\build\bcgov-crow-0.9.1.zip --global --target copilot
-apm install .\build\bcgov-crow-0.9.1.zip --global --target cursor
+apm install .\build\bcgov-crow-0.9.2.zip --global --target claude
+apm install .\build\bcgov-crow-0.9.2.zip --global --target codex
+apm install .\build\bcgov-crow-0.9.2.zip --global --target copilot
+apm install .\build\bcgov-crow-0.9.2.zip --global --target cursor
 ```
 
 For Copilot CLI, unpack and install the plugin directory:
 
 ```powershell
-Expand-Archive .\build\bcgov-crow-0.9.1.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.9.1
+Expand-Archive .\build\bcgov-crow-0.9.2.zip -DestinationPath .\build\copilot
+copilot plugin install .\build\copilot\bcgov-crow-0.9.2
 ```

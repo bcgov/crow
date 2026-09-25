@@ -1,5 +1,5 @@
 name: bcgov-crow
-version: 0.9.1
+version: 0.9.2
 description: Global agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, secure development, architecture and security review, remediation, business rule documentation, executive reporting, Crow authoring, and releases.
 type: hybrid
 author:

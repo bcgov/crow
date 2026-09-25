@@ -30,6 +30,8 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    plan.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version
    resolution, state, or fragment-generation logic in model-authored commands.
+   Its `check` command also reports an outstanding global APM update for Crow
+   when Crow is APM-managed; it never applies that update.
 5. Configure credentials only through Raven's official user-local mechanism.
 6. Merge generated entries into a client only with confirmation, preserving
    unrelated entries and stopping on collisions.

@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   createFragment,
+  parseCrowOutdatedOutput,
   ravenRepositoryUrl,
   releasedServers,
   sha256Tree,
@@ -77,6 +78,17 @@ test("list emits reviewed Raven servers", () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /^jira\tatlassian\t/m);
   assert.doesNotMatch(result.stdout, /^sonar\t/m);
+});
+
+test("parses an outstanding Crow APM update without treating current output as stale", () => {
+  assert.deepEqual(
+    parseCrowOutdatedOutput("bcgov/crow  v0.9.1  -  v0.9.2  outdated  git tags"),
+    { reported: true, status: "outdated", updateAvailable: true }
+  );
+  assert.deepEqual(
+    parseCrowOutdatedOutput("[+] All dependencies are up-to-date."),
+    { reported: false, status: null, updateAvailable: false }
+  );
 });
 
 test("status reports an unconfigured custom state directory", () => {

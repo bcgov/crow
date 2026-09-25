@@ -90,6 +90,113 @@ function run(command, args, options = {}) {
   return options.capture ? result.stdout.trim() : "";
 }
 
+function runApm(args) {
+  const command = process.platform === "win32" ? "apm.exe" : "apm";
+  const result = spawnSync(command, args, {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+    shell: false,
+    timeout: networkTimeoutMs,
+    windowsHide: true
+  });
+  return {
+    status: result.status,
+    stdout: result.stdout?.trim() || "",
+    stderr: result.stderr?.trim() || "",
+    error: result.error || null
+  };
+}
+
+function parseCrowOutdatedOutput(output) {
+  const normalized = output.replace(/\u001b\[[0-9;]*m/g, "");
+  const line = normalized
+    .split(/\r?\n/)
+    .find((candidate) => /\bbcgov\/crow\b/i.test(candidate));
+  const status = line?.match(/\b(up-to-date|outdated|unknown)\b/i)?.[1]?.toLowerCase() || null;
+  return {
+    reported: Boolean(line),
+    status,
+    updateAvailable: status === "outdated"
+  };
+}
+
+function checkCrowApmUpdate() {
+  const metadata = runApm(["view", "bcgov/crow", "--global"]);
+  const metadataOutput = `${metadata.stdout}\n${metadata.stderr}`.trim();
+  if (metadata.error?.code === "ENOENT") {
+    return {
+      checked: false,
+      configured: false,
+      updateAvailable: null,
+      reason: "apm-not-installed"
+    };
+  }
+  if (metadata.error) {
+    return {
+      checked: false,
+      configured: true,
+      updateAvailable: null,
+      error: `Could not run APM package lookup: ${metadata.error.message}`
+    };
+  }
+  if (metadata.status !== 0) {
+    if (/Package .* not found in apm_modules\//i.test(metadataOutput)) {
+      return {
+        checked: false,
+        configured: false,
+        updateAvailable: null,
+        reason: "crow-not-installed-with-apm"
+      };
+    }
+    return {
+      checked: false,
+      configured: true,
+      updateAvailable: null,
+      error: `APM package lookup failed with exit code ${metadata.status}.`
+    };
+  }
+
+  const current = metadata.stdout.match(/\bVersion:\s+([^\s]+)/i)?.[1] || null;
+  const outdated = runApm(["outdated", "--global"]);
+  const outdatedOutput = `${outdated.stdout}\n${outdated.stderr}`.trim();
+  if (outdated.error) {
+    return {
+      checked: false,
+      configured: true,
+      current,
+      updateAvailable: null,
+      error: `Could not check APM package freshness: ${outdated.error.message}`
+    };
+  }
+  if (outdated.status !== 0) {
+    return {
+      checked: false,
+      configured: true,
+      current,
+      updateAvailable: null,
+      error: `APM package freshness check failed with exit code ${outdated.status}.`
+    };
+  }
+
+  const parsed = parseCrowOutdatedOutput(outdatedOutput);
+  if (parsed.status === "unknown") {
+    return {
+      checked: false,
+      configured: true,
+      current,
+      updateAvailable: null,
+      error: "APM could not resolve the current Crow package version."
+    };
+  }
+  return {
+    checked: true,
+    configured: true,
+    current,
+    updateAvailable: parsed.updateAvailable,
+    source: "apm outdated --global"
+  };
+}
+
 function npmInvocation(args) {
   return npmCli
     ? { command: process.execPath, args: [npmCli, ...args] }
@@ -1465,10 +1572,13 @@ async function checkCommand(args) {
   const result = {
     checked: true,
     raven: ravenResult,
-    codebaseMemory: { current: state.codebaseMemory.version, latest: latestCodebase, updateAvailable: state.codebaseMemory.version !== latestCodebase }
+    codebaseMemory: { current: state.codebaseMemory.version, latest: latestCodebase, updateAvailable: state.codebaseMemory.version !== latestCodebase },
+    crowPackage: checkCrowApmUpdate()
   };
   console.log(JSON.stringify(result, null, 2));
+  if (result.crowPackage.error) process.exitCode = 1;
   if (result.raven?.updateAvailable || result.codebaseMemory.updateAvailable) process.exitCode = 10;
+  if (result.crowPackage.updateAvailable) process.exitCode = 10;
 }
 
 async function rollbackCommand(args) {
@@ -1526,6 +1636,7 @@ async function rollbackCommand(args) {
 
 export {
   createFragment,
+  parseCrowOutdatedOutput,
   ravenRepositoryUrl,
   releasedServers,
   sha256Tree,
