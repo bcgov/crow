@@ -79,9 +79,10 @@ writing that way. See
       `<PackageReference Include="xunit.v3" ...>`. Remove `xunit.runner.visualstudio` unless the project
       explicitly needs the classic VSTest bridge — v3 runs natively on Microsoft.Testing.Platform. If
       VSTest is required, keep it and add `xunit.v3.runner.visualstudio`.
-   3. Set the test project as an executable — either change `<OutputType>` to `Exe` or set
-      `<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>` per the v3 project
-      template.
+   3. Set the test project as an executable and enable the MTP entry point: set `<OutputType>` to `Exe`
+      and set `<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>` per the v3
+      project template. xUnit.v3 requires the executable output; the MTP property selects the Microsoft
+      Testing Platform entry point, so these settings are complementary rather than alternatives.
    4. Update every `IAsyncLifetime.InitializeAsync` / `IAsyncLifetime.DisposeAsync` return type from
       `Task` to `ValueTask`. This is the only `IAsyncLifetime` signature change in Crow's documented
       testing patterns.

@@ -50,8 +50,8 @@ private Faker<EditWorkerModel> CreateFaker(string locale) =>
 
 - **Give every field an explicit `.RuleFor(...)`.** After confirming that no required validity field was
   supplied only by AutoBogus's reflection-based defaults, choose Bogus categories deliberately
-  (`f.Name.LastName()`, `f.Phone.PhoneNumber()`, `f.Random.Int(1, 10000)`) keeps domain constraints
-  visible in the builder rather than delegated to reflection-based auto-population. Do not introduce
+  (`f.Name.LastName()`, `f.Phone.PhoneNumber()`, `f.Random.Int(1, 10000)`). This keeps domain constraints
+  visible in the builder rather than delegating them to reflection-based auto-population. Do not introduce
   AutoBogus in new builders — see the "New tests must never introduce AutoBogus" rule in
   [`../dotnet/unit-tests.md`](../dotnet/unit-tests.md).
 - Derive date/number bounds from the **same constants the production validator uses**, not from copied
