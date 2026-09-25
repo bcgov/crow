@@ -16,10 +16,35 @@ Hashes normalize BOM and line endings before comparison. A checkout, formatter, 
 LF is not a project customization. A later automatic replacement writes the bundled template as UTF-8
 without a BOM, even when a registered file previously used a BOM.
 
-For example, Crow's `GenCharExtensions.cs` and `PropertyTestSampling.cs` use
-`YourProject.Tests.Generators`. Installation changes that to the project's namespace and hashes the
-resulting file. A later source-hash change means Crow updated the template. The installed hash then answers
-whether the project changed its adapted copy afterward.
+For example, Crow's `GenCharExtensions.cs` uses `YourProject.Tests.Generators`. Installation changes that
+to the project's namespace and hashes the resulting file. A later source-hash change means Crow updated the
+template. The installed hash then answers whether the project changed its adapted copy afterward.
+
+## When Crow removes an upstream template
+
+If a bundled template is removed upstream (for example, an off-pattern helper Crow no longer recommends),
+the next audit reports `MissingSource` for that registry row. A three-way merge is unavailable because
+Crow no longer stores the old source. The migration path depends on whether the installed copy is `Auto`
+or `Manual`:
+
+- **`Auto` (unmodified) copy.** Replace call sites in the consumer project per the removal's guidance,
+  run the smallest tests that exercised the utility, then unregister and delete the installed file in that
+  order:
+
+  ```powershell
+  powershell -NoProfile -File $syncScript -Action Unregister `
+    -TargetRepo C:\Projects\Example `
+    -TemplateId example-tests-property-sampling
+  Remove-Item C:\Projects\Example\tests\Example.Tests\Generators\PropertyTestSampling.cs
+  ```
+
+- **`Manual` (customized) copy.** Preserve the customized file first, migrate its call sites manually, run
+  the affected tests, then unregister and delete. There is no upstream source to compare against, so any
+  local customization must be justified on its own merits before removal.
+
+Never leave a `MissingSource` registry row in place — a stale row makes a later audit misleading. Never
+delete the installed file before unregistering; the registry entry then points at a missing installed
+path as well, which is a second, unrelated failure to clean up.
 
 ## Use the deterministic script
 

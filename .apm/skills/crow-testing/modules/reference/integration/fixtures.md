@@ -22,7 +22,7 @@ public sealed class OrderAssignmentFixture : IntegrationTestBase, IAsyncLifetime
     public int CustomerId { get; private set; }
     public int OrderId { get; private set; }
 
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         Context    = CreateContext();
         CustomerId = TestDataConventions.NextNegativeId();
@@ -36,7 +36,7 @@ public sealed class OrderAssignmentFixture : IntegrationTestBase, IAsyncLifetime
             configure: o => o.AssignedToId = AgentId);        // per-scenario tweaks via callback
     }
 
-    public async Task DisposeAsync() => await Context.DisposeAsync();
+    public async ValueTask DisposeAsync() => await Context.DisposeAsync();
 
     public OrderService CreateService(Roles role = Roles.None) => new(
         new UnitOfWork(Context, LoggerFactory, new CurrentUser { Id = 1, Role = role }),
@@ -44,6 +44,11 @@ public sealed class OrderAssignmentFixture : IntegrationTestBase, IAsyncLifetime
         Mock.Of<INotificationService>());    // external system: mocked
 }
 ```
+
+`InitializeAsync` / `DisposeAsync` return `ValueTask` — that's the xUnit.v3 signature. On xUnit v2 the same
+methods return `Task`; the pattern is otherwise identical. Crow's default is v3 — see the v2→v3 assessment
+in [`../../dotnet/unit-tests.md`](../../dotnet/unit-tests.md) § "Detect first, default second" if the target
+project is still on v2.
 
 Give the fixture a `CreateService(...)` factory rather than exposing raw dependencies — tests that need a
 different role or user then differ by one argument instead of rebuilding the whole graph.
@@ -64,8 +69,8 @@ public class OrderStateTransitionTests : IAsyncLifetime      // NOT IClassFixtur
 {
     private readonly OrderAssignmentFixture _fixture = new();
 
-    public Task InitializeAsync() => _fixture.InitializeAsync();
-    public Task DisposeAsync()    => _fixture.DisposeAsync();
+    public ValueTask InitializeAsync() => _fixture.InitializeAsync();
+    public ValueTask DisposeAsync()    => _fixture.DisposeAsync();
 }
 ```
 
