@@ -120,8 +120,8 @@ function parseCrowOutdatedOutput(output) {
   };
 }
 
-function checkCrowApmUpdate() {
-  const metadata = runApm(["view", "bcgov/crow", "--global"]);
+function checkCrowApmUpdate(runCommand = runApm) {
+  const metadata = runCommand(["view", "bcgov/crow", "--global"]);
   const metadataOutput = `${metadata.stdout}\n${metadata.stderr}`.trim();
   if (metadata.error?.code === "ENOENT") {
     return {
@@ -157,7 +157,7 @@ function checkCrowApmUpdate() {
   }
 
   const current = metadata.stdout.match(/\bVersion:\s+([^\s]+)/i)?.[1] || null;
-  const outdated = runApm(["outdated", "--global"]);
+  const outdated = runCommand(["outdated", "--global"]);
   const outdatedOutput = `${outdated.stdout}\n${outdated.stderr}`.trim();
   if (outdated.error) {
     return {
@@ -1635,6 +1635,7 @@ async function rollbackCommand(args) {
 }
 
 export {
+  checkCrowApmUpdate,
   createFragment,
   parseCrowOutdatedOutput,
   ravenRepositoryUrl,

@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
+  checkCrowApmUpdate,
   createFragment,
   parseCrowOutdatedOutput,
   ravenRepositoryUrl,
@@ -89,6 +90,38 @@ test("parses an outstanding Crow APM update without treating current output as s
     parseCrowOutdatedOutput("[+] All dependencies are up-to-date."),
     { reported: false, status: null, updateAvailable: false }
   );
+});
+
+test("checks the globally installed Crow package through APM", () => {
+  const calls = [];
+  const result = checkCrowApmUpdate((args) => {
+    calls.push(args);
+    if (args[0] === "view") {
+      return {
+        status: 0,
+        stdout: "Version: 0.9.1",
+        stderr: "",
+        error: null
+      };
+    }
+    return {
+      status: 0,
+      stdout: "bcgov/crow  v0.9.1  -  v0.9.2  outdated  git tags",
+      stderr: "",
+      error: null
+    };
+  });
+  assert.deepEqual(calls, [
+    ["view", "bcgov/crow", "--global"],
+    ["outdated", "--global"]
+  ]);
+  assert.deepEqual(result, {
+    checked: true,
+    configured: true,
+    current: "0.9.1",
+    updateAvailable: true,
+    source: "apm outdated --global"
+  });
 });
 
 test("status reports an unconfigured custom state directory", () => {
