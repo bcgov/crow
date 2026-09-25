@@ -77,6 +77,32 @@ pairs with.
 
 Order of operations in a fixture: **purge -> seed -> test -> dispose**.
 
+## Shared-database parent retention
+
+On shared DEV/TEST databases, do not routinely delete negative-ID parent fixture accounts or other root
+entities such as test users in `security_user`. Deleting a root asks SQL Server to validate every
+foreign-key dependency in the shared database, not only rows created by the current fixture. That global
+dependency graph can cause lock contention, command timeouts, and failures unrelated to the test.
+
+Use a **negative-ID retention strategy** instead:
+
+- Create parent fixture accounts with reserved negative IDs and retain them across runs.
+- Allocate suite-specific negative-ID ranges using the collision-avoidance rules in
+  [`seeding-and-ids.md`](seeding-and-ids.md); do not let independent suites choose the same retained IDs.
+- Treat retained parents as immutable anchors, or reset their mutable fields to a known baseline before
+  seeding.
+- Before seeding, delete only child rows owned by the fixture, in reverse dependency order. Derive
+  indirect child IDs from fixture-owned roots when a dependent table has no direct ownership column.
+- Keep the ownership predicate narrow (for example, the fixture's reserved account IDs or a dedicated
+  fixture marker); never sweep all negative rows belonging to another suite.
+- Include trigger-, audit-, and service-created rows in the footprint; see the dependency-discovery steps
+  above rather than assuming every dependent row carries the parent ID directly.
+- Delete a parent only when the database is isolated for that suite or an operator has confirmed the
+  complete dependency graph and an explicit cleanup window.
+
+This is an intentional exception to root-first teardown: the retained parent is the isolation anchor,
+while fixture-owned children remain disposable and are purged before each run.
+
 ## Parallelization against a shared database
 
 **Default to running integration tests sequentially**, even when the isolation model is technically
