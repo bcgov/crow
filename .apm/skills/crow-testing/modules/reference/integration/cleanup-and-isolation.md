@@ -87,8 +87,10 @@ dependency graph can cause lock contention, command timeouts, and failures unrel
 Use a **negative-ID retention strategy** instead:
 
 - Create parent fixture accounts with reserved negative IDs and retain them across runs.
-- Allocate suite-specific negative-ID ranges using the collision-avoidance rules in
-  [`seeding-and-ids.md`](seeding-and-ids.md); do not let independent suites choose the same retained IDs.
+- Allocate retained IDs with `NextRetainedNegativeId()` and the bounded duplicate-key retry described in
+  [`seeding-and-ids.md`](seeding-and-ids.md). If a suite needs stable retained IDs, document a
+  suite-specific negative-ID range and verify each candidate is unused before inserting; do not let
+  independent suites share a range or replace collision checks with fixed IDs alone.
 - Treat retained parents as immutable anchors, or reset their mutable fields to a known baseline before
   seeding.
 - Before seeding, delete only child rows owned by the fixture, in reverse dependency order. Derive
