@@ -55,6 +55,8 @@ reference according to that skill.
      first isn't safe because there are no tests yet.
    - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
      re-platform, or a move between stored procedures and application code.
+   - `xunit-v2-to-v3-migration.md` — an existing .NET test project uses xUnit v2; load it to assess
+     migration cost, then require user confirmation before applying its migration steps.
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
      `discovery.md` isn't enough. Loads the triage table only; it links to `design-smell-entries.md` for
      any one entry's full detail.

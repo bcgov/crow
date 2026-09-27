@@ -66,6 +66,15 @@ public void SanitizedName_OnlyContainsValidSlugCharacters()
 CsCheck's `seed:` argument and `CsCheck_Seed` environment variable are commonly misread as a
 "deterministic CI/CD" switch. They are not.
 
+> **Common pitfalls**
+>
+> - A seeded **Bogus builder** fixes fixture defaults for the same builder, locale, seed, and generation
+>   sequence; it is not the same mechanism as CsCheck exploration.
+> - CsCheck properties are **unseeded by default**. Its `seed:` pins the first iteration only, not the
+>   whole test run.
+> - Replay a reported seed only for a pinned regression (normally with `iter: 1`); keep the general
+>   property unseeded so exploration continues. See the detailed seed policy below.
+
 **What `Sample(assertion, seed: X, iter: N)` actually does** (revalidate against the CsCheck version used
 by the target project when upgrading the dependency):
 

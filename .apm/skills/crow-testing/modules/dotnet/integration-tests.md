@@ -8,15 +8,28 @@ rule as `dotnet/unit-tests.md`.
 Crow's default is **xUnit.v3** (`xunit.v3` NuGet package, .NET 8.0+ / .NET Framework 4.7.2+, executable
 test projects on Microsoft.Testing.Platform). Integration test projects follow the same rule as the unit
 side: detect what already exists (`xunit` vs `xunit.v3` in `PackageReference` entries), follow a v3 suite
-as-is, and for a standard v2 suite offer to migrate using the seven-step assessment in
-[`unit-tests.md`](unit-tests.md) § "Detect first, default second." The `IAsyncLifetime` return-type change
-(v2 `Task` → v3 `ValueTask`) is the one API-shape edit that ripples into integration fixtures — see
+as-is, and for a v2 suite load the
+[`xUnit v2 to v3 migration`](../reference/xunit-v2-to-v3-migration.md) playbook to assess cost before
+asking the user to confirm migration. The `IAsyncLifetime` return-type change (v2 `Task` → v3 `ValueTask`)
+ripples into integration fixtures — see
 [`../reference/integration/fixtures.md`](../reference/integration/fixtures.md).
 
 Integration test projects need the same optional `Microsoft.Testing.Extensions.TrxReport` package +
 `dotnet test -- --report-trx` invocation when CI needs a TRX file — see
-[`unit-tests.md`](unit-tests.md) § "CI test-result publishing (MTP)" for the mechanism and the Azure
-DevOps `.NET Core v2` publish-checkbox consequence.
+[`unit-tests.md`](unit-tests.md) § "CI test-result publishing (MTP)".
+
+### Cancellation and xUnit1051
+
+Apply [`unit-tests.md`](unit-tests.md) § "xUnit v3 cancellation and xUnit1051" to integration tests and
+fixtures. At outer service, repository, validator, SQL, network, and workflow boundaries, pass the
+context token whenever the async API accepts one so blocked dependencies and SQL commands remain
+responsive to the test timeout.
+
+Assertion-only EF/LINQ terminals such as `SingleAsync(...)` and `CountAsync(...)` are usually fast,
+identifier-scoped verification queries; do not add tokens solely to silence xUnit1051. Pass the token when
+verification can scan or block materially, otherwise use the narrowest statement/member-level
+suppression. Never reference `TestContext.Current` from production repositories or services. For
+parameterless `IAsyncLifetime` methods, follow the lifecycle-token guidance in the linked section.
 
 ## Study the existing suite before generating anything
 
