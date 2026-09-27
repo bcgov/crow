@@ -38,8 +38,7 @@ writing that way. See
      rather than DLLs run by an external adapter. If the target project's TFM is below v3's floor and
      cannot be raised, fall back to the v2 line (`xunit` NuGet package) and record the reason.
    - **`Microsoft.Testing.Extensions.TrxReport`** on the same test project when CI needs a portable TRX
-     result file. MTP does not emit TRX out of the box. See "CI test-result publishing (MTP)" below for
-     the invocation and the CI-side consequence.
+     result file. MTP does not emit TRX out of the box. See "CI test-result publishing (MTP)" below.
    - **CsCheck** for property-based testing of validation rules and invariants with many input combinations
      (see [`reference/property-based-testing.md`](../reference/property-based-testing.md) for generator and
      shrinking patterns — load only when actually writing a property-based test).
@@ -58,87 +57,55 @@ writing that way. See
    large alias registry), leave the existing suite in place. **New tests must never introduce AutoBogus**
    regardless of what the surrounding suite uses.
 4. **When the existing suite is on xUnit v2 (`xunit` package):** offer to migrate to xUnit.v3 rather than
-   silently following v2. Assess cost first:
-   - **Standard v2 suite** — `[Fact]`/`[Theory]`, `IClassFixture<T>`, `ITestOutputHelper`, optional
-     `IAsyncLifetime`, `xunit` + `xunit.runner.visualstudio` package refs, TFM already at .NET 8.0+ or
-     .NET Framework 4.7.2+. Migration is mechanical; recommend it, present the seven steps below, and
-     offer to perform them as part of the current task once the user confirms.
-   - **High-cost v2 suite** — custom `ITestFramework` / `TestFrameworkAttribute` /
-     `IXunitTestCaseDiscoverer`, custom theory data-source infrastructure, heavy reliance on
-     `Xunit.Abstractions` types beyond `ITestOutputHelper`, non-standard runners (custom AppDomain
-     hosts, in-tree forks), or a TFM below v3's floor that cannot be raised. Follow the existing v2
-     suite and record the specific blocker in the follow-up recommendation.
+   silently following v2. Load the
+   [`xUnit v2 to v3 migration`](../reference/xunit-v2-to-v3-migration.md) playbook to assess cost, then
+   ask the user to confirm before applying its migration steps. New tests must not land on v3 alongside a
+   still-v2 suite unless the user explicitly chooses that mixed path.
 
-   Migration is never automatic — Crow always presents the steps and asks the user to confirm before
-   changing anything. New tests must not land on v3 alongside a still-v2 suite except when the user
-   explicitly chooses that mixed path.
-
-   **Standard v2 → v3 migration steps:**
-   1. Raise the test project's TFM to `net8.0`+ or `net472`+ if not already there.
-   2. Replace `<PackageReference Include="xunit" ...>` with
-      `<PackageReference Include="xunit.v3" ...>`. Remove `xunit.runner.visualstudio` unless the project
-      explicitly needs the classic VSTest bridge — v3 runs natively on Microsoft.Testing.Platform. If
-      VSTest is required, keep it and add `xunit.v3.runner.visualstudio`.
-   3. Set the test project as an executable and enable the MTP entry point: set `<OutputType>` to `Exe`
-      and set `<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>` per the v3
-      project template. xUnit.v3 requires the executable output; the MTP property selects the Microsoft
-      Testing Platform entry point, so these settings are complementary rather than alternatives.
-   4. Update every `IAsyncLifetime.InitializeAsync` / `IAsyncLifetime.DisposeAsync` return type from
-      `Task` to `ValueTask`. This is the only `IAsyncLifetime` signature change in Crow's documented
-      testing patterns.
-   5. Delete `using Xunit.Abstractions;` lines. v3 exposes the remaining abstractions under the `Xunit`
-      namespace.
-   6. Run the v3 analyzers (`xunit.analyzers` on the v3 line) and resolve any diagnostics they report.
-   7. **If the project runs in CI/CD:** add `Microsoft.Testing.Extensions.TrxReport` and invoke the runner
-      with `dotnet test -- --report-trx --report-trx-filename <name>.trx` (the `--` separator is
-      required — MTP flags come after it). CI configurations that relied on VSTest's implicit TRX
-      emission must be updated in tandem: publishing steps that wrapped `dotnet test` on the assumption
-      it would drop TRX files (Azure DevOps' `.NET Core v2` task with the "Publish test results" box
-      checked is the common case) no longer produce anything to publish. See "CI test-result publishing
-      (MTP)" below.
 5. **Do not default to FluentValidation, FluentValidation.TestHelper, or FluentAssertions.** These are only
    appropriate when the project already uses FluentValidation for its validation rules. If it doesn't,
    propose whatever validation/assertion approach fits what's already there — built-in xUnit asserts are a
    perfectly good fallback.
 
+### xUnit v3 cancellation and xUnit1051
+
+This guidance applies **only to xUnit v3 suites**. Do not use `TestContext.Current.CancellationToken` or
+apply xUnit1051 advice to a retained xUnit v2 suite; load the v2-to-v3 migration module when assessing a
+migration instead.
+
+At responsive async boundaries in test methods, pass `TestContext.Current.CancellationToken` when a
+service, repository, validator, database, network, or workflow API accepts a `CancellationToken`. This
+satisfies xUnit1051 and lets a hung dependency, SQL command, or workflow stop with the test timeout
+instead of blocking the runner. Never pass `TestContext.Current` into production code.
+
+Do not add token boilerplate solely to fast, deterministic assertion queries such as `SingleAsync(...)` or
+`CountAsync(...)` used to verify a row written by the test. If the query can scan, wait on locks, or block
+materially, pass the context token. Otherwise use the narrowest statement/member-level xUnit1051
+suppression available, with a local rationale; never suppress the rule at file, class, or project scope.
+
+`TestContext.Current` is `AsyncLocal`. Background work may outlive the test or may not inherit the
+execution context when flow is suppressed, so capture the token before starting that work and pass the
+captured token explicitly. The parameterless xUnit v3 `IAsyncLifetime.InitializeAsync` and
+`DisposeAsync` methods do not receive a per-test token: when `TestContext.Current` is available there, it
+represents the fixture lifetime, not an individual test; otherwise use a fixture-owned, bounded
+`CancellationTokenSource` for cancellable setup/teardown rather than inventing a test token.
+
 ## CI test-result publishing (MTP)
 
-Authoring CI/CD pipeline definitions is out of scope for this skill. The information below describes what
-`xunit.v3` + Microsoft.Testing.Platform requires to produce a test-result file your CI system can already
-consume — the pipeline itself is authored elsewhere.
+MTP does not emit TRX by default. Add `Microsoft.Testing.Extensions.TrxReport` when CI needs a TRX file,
+then invoke:
 
-MTP does not emit TRX by default. VSTest did, which is why `dotnet test` on a v2 project quietly dropped
-`TestResults\*.trx` files that pipeline tasks then picked up. On MTP that behavior is opt-in via an
-extension package:
+```sh
+dotnet test -- --report-trx --report-trx-filename Results.trx
+```
 
-- **Add `Microsoft.Testing.Extensions.TrxReport`** as a `PackageReference` when CI needs a TRX file. The
-  package is inert until asked; it does not affect local `dotnet test` runs that don't request the report.
-- **Invoke with the MTP separator:**
-  ```sh
-  dotnet test -- --report-trx --report-trx-filename Results.trx
-  ```
-  The `--` is required — MTP flags come after it because `dotnet test` itself does not recognize them.
-  The file lands under the project's `TestResults\` folder unless the filename argument specifies a
-  path.
+The `--` separator is required because MTP flags come after `dotnet test` arguments. The file lands under
+the project's `TestResults\` folder unless the filename specifies a path.
 
-### Azure DevOps consequence
-
-Pipelines that used to auto-publish test results via the `.NET Core v2` task's "Publish test results"
-checkbox will silently stop publishing after the v3/MTP switch, because there is nothing on disk to
-publish. The fix is to move test-result publishing out of the runner task:
-
-1. Uncheck "Publish test results" on the `.NET Core v2` (or `DotNetCoreCLI@2`) task.
-2. Add a `PublishTestResults@2` step (YAML) or a Classic "Publish Test Results" task after it, with
-   test-results format set to **VSTest** and the search pattern pointed at the TRX file the extension
-   wrote (for example `**/TestResults/*.trx`).
-
-The VSTest format setting is correct even though the producer is MTP — the on-disk TRX shape is
-identical.
-
-For consumers who want ADO Test-tab streaming without a separate publish step,
-`Microsoft.Testing.Extensions.AzureDevOpsReport` (`--report-azdo` / `--publish-azdo-test-results`) is an
-alternative, but it is ADO-specific; the TRX path above is universal across CI systems and remains Crow's
-default recommendation.
+Pipelines that relied on the Azure DevOps `.NET Core v2` task's **Publish test results** checkbox must
+move publishing to a separate step: uncheck that option and add `PublishTestResults@2` or the Classic
+**Publish Test Results** task using VSTest format and a pattern such as `**/TestResults/*.trx`. The
+VSTest format is correct even though MTP produced the file; the on-disk TRX shape is identical.
 
 ## Test project layout
 
