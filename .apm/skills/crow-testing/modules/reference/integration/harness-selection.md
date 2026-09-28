@@ -39,6 +39,13 @@ constraints, computed columns, triggers, and query translation all behave as in 
 Cost: you own seeding and cleanup explicitly. See [`fixtures.md`](fixtures.md),
 [`seeding-and-ids.md`](seeding-and-ids.md), and [`cleanup-and-isolation.md`](cleanup-and-isolation.md).
 
+If repeated setup is materially slow, `fixtures.md` defines a narrow exception for an expensive,
+unchanged baseline: seed it once per class, then use a fresh context and one rollback transaction per
+test. This remains an EF harness, not the raw-SQL-only pattern below. All builders and system mutations
+must use the same transaction. **Load and satisfy `fixtures.md` before selecting this exception**: it owns
+system-under-test enlistment, hosted-request disqualification, committed-baseline cleanup, rollback-failure
+recovery, sequential/cross-process isolation, and the rule against preserving failed shared-database data.
+
 **Disqualifier:** none for C#-path logic — this is the baseline.
 
 ## In-memory host + real database

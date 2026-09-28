@@ -64,6 +64,14 @@ when it was written, not a decision to keep writing it. See
   of speed and failure-message precision. See
   [`reference/integration/harness-selection.md`](../reference/integration/harness-selection.md).
 
+If test development reveals that repeated integration setup is materially slow, load
+[`reference/integration/fixtures.md`](../reference/integration/fixtures.md) **before choosing an isolation
+model** and evaluate its **expensive stable SQL Server baseline** exception. It is valid only when fresh
+per-test contexts, one rollback transaction, builder reuse, verified system-under-test enlistment,
+committed-baseline cleanup plus rollback-failure recovery, and sequential/cross-process shared-database
+isolation are all present. Follow its hosted-request disqualifier and no-preserved-failed-data rule. Do
+not use a test-count threshold to choose this pattern.
+
 ## What is real, and what is mocked
 
 **Fake only what you don't own.** Ownership is the test, not distance — the database is in another process

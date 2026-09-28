@@ -39,6 +39,21 @@ explicitly asks to remember new pipeline details.
   duplicate it.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
+- When developing integration tests and repeated setup is slow, automatically evaluate and apply the
+  expensive stable SQL Server baseline pattern when its checklist passes: seed the stable baseline once
+  per class, use a fresh `DbContext` and one rollback transaction per test, reuse that transaction in
+  builders, verify that the system under test enlists in that transaction, and reject ordinary
+  `WebApplicationFactory` request tests unless that propagation is deliberately configured and verified.
+  Roll back and dispose in `DisposeAsync`, clean up the committed baseline separately, and preserve
+  sequential execution plus cross-process isolation for a shared database. Automatically apply it only
+  when setup cost, baseline ownership/cleanup, transaction enlistment, the process-wide isolation
+  boundary, and a verified rollback-failure residue/lock recovery path are all confirmed during
+  implementation. Require rollback isolation in CI/CD and on developer
+  workstations; use breakpoints and the active test context for interactive inspection, and use test
+  output plus targeted logging for post-run diagnosis. Never preserve failed data in shared DEV/TEST.
+  When advising rather than editing, offer the pattern and its rollback/observability trade-off.
+  Never share a mutable context or choose this from test count alone. If setup or system mutations cannot
+  participate in one transaction, retain the default per-test fixture and explicit cleanup.
 - For bug fixes or shared behavior changes, perform bounded caller, contract, configuration, and test impact analysis using the routed module; disclose graph limits and dynamic or external blind spots.
 - For every confirmed bug or explicitly approved actionable design smell, check the local work-item candidate
   index before drafting a new item; present and persist draft prose for the user to review rather than

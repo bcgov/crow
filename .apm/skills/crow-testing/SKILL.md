@@ -30,6 +30,9 @@ reference according to that skill.
    that integration *might* be right (state machines, combinatorial rules, date math, multi-entity
    calculations, data merge/migration) are not sufficient on their own; the same logic is often a unit test,
    or should become one by extracting a seam.
+   If test development or an explicit user report identifies slow repeated integration setup, route to the
+   applicable fixture reference and evaluate the expensive stable-baseline exception; do not infer it from
+   test count.
 6. When the behavior crosses an identity, device, resource, transaction, privileged, workload, network, API,
    external-decision, or service trust boundary, also load
    [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md)
