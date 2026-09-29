@@ -35,20 +35,20 @@ Install the [Starter Package](collections/starter-package/README.md) for
 daily brownfield development:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.10.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.10.1 --global --target copilot
 ```
 
 Install the [Security Remediation collection](collections/security-remediation/README.md)
 for application security scanning and remediation:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.10.0 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.10.1 --global --target copilot
 ```
 
 Install the complete Crow package when all capabilities are needed:
 
 ```powershell
-apm install bcgov/crow#v0.10.0 --global --target copilot
+apm install bcgov/crow#v0.10.1 --global --target copilot
 ```
 
 Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
@@ -180,7 +180,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.10.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.10.1.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

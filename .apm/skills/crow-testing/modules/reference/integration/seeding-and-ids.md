@@ -90,6 +90,71 @@ public static async Task ExecuteInTransactionAsync(DbContext context, Func<Task>
 **2. Only one table at a time** may have `IDENTITY_INSERT ON` per session — turn it `OFF` before seeding the
 next table. A helper that wraps ON/action/OFF in a `try`/`finally` makes this automatic.
 
+When using the expensive stable-baseline fixture exception, builders must use the context's existing
+transaction. They must not call `BeginTransactionAsync` themselves or create nested transactions; a
+builder that cannot participate in the caller's transaction disqualifies that fixture pattern.
+
+**`IDENTITY_INSERT` builders need a caller-transaction variant of `ExecuteInTransactionAsync`.** The
+helper above begins its own transaction, which the no-nested-transaction rule forbids under the
+exception. Under the exception, use a variant that reuses the caller's already-open transaction instead
+of beginning a new one:
+
+```csharp
+public static async Task ExecuteInExistingTransactionAsync(
+    DbContext context,
+    Func<DbContext, Task> action)
+{
+    // No BeginTransactionAsync/CommitAsync/RollbackAsync here — the caller (the per-test fixture)
+    // owns the transaction and its rollback. This helper only brackets IDENTITY_INSERT ON/OFF.
+    if (context.Database.CurrentTransaction is null)
+    {
+        throw new InvalidOperationException(
+            "An active caller transaction is required for existing-transaction seeding.");
+    }
+
+    await action(context);                                  // ...across IDENTITY_INSERT ON + INSERT + OFF
+}
+```
+
+Passing `context` into the callback (rather than a parameterless `Func<Task>`) closes the gap the check
+alone wouldn't: it stops an action from silently using a different context outside the caller's
+transaction. Protect both guarantees with focused tests (adapt to the project's test framework):
+
+```csharp
+[Fact]
+public async Task ExistingTransactionHelper_requires_an_active_transaction()
+{
+    await using var context = CreateContext();
+
+    await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        ExecuteInExistingTransactionAsync(context, _ => Task.CompletedTask));
+}
+
+[Fact]
+public async Task ExistingTransactionHelper_passes_the_supplied_context()
+{
+    await using var context = CreateContext();
+    await using var transaction = await context.Database.BeginTransactionAsync();
+    DbContext? callbackContext = null;
+
+    await ExecuteInExistingTransactionAsync(context, supplied =>
+    {
+        callbackContext = supplied;
+        return Task.CompletedTask;
+    });
+
+    Assert.Same(context, callbackContext);
+    await transaction.RollbackAsync();
+}
+```
+
+The connection-pooling trap in trap 1 above still applies: the connection must already be open (the
+per-test fixture opened it when it began the shared transaction), so do not call
+`OpenConnectionAsync`/`CloseConnectionAsync` here either — closing the connection would end the caller's
+transaction early. If a table's seeding code cannot be adapted to this caller-transaction form, that
+table's `IDENTITY_INSERT` seeding disqualifies it from being seeded per-test under the exception; seed it
+once as part of the class-level baseline instead.
+
 ## Builder shape
 
 One builder per table, taking the context, accepting the explicit ID plus required foreign keys, defaulting

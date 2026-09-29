@@ -23,6 +23,15 @@ A signal alone is not sufficient — a state machine or combinatorial rule over 
 test. Do **not** default to an integration test for simple CRUD with no branching logic, or for validation
 already covered by a unit test.
 
+When an existing integration suite is slow because each test rebuilds the same expensive database graph,
+load the technology-specific fixture guidance **before selecting an isolation model**. The optimization is
+conditional: an unchanged baseline may be seeded once per class only if every test gets a fresh context,
+all setup and behavior can share one rollback transaction, builders reuse that transaction, the system
+under test is verified to enlist, committed baseline cleanup and rollback-failure recovery are owned, and
+shared-database sequential and cross-process isolation are configured. The fixture guidance also defines
+hosted-request disqualifiers and the rule against preserving failed shared-database data. Never select the
+pattern from test count alone.
+
 ## Shared-service contracts and resilience scenarios
 
 When a real independently versioned provider/consumer boundary exists,
