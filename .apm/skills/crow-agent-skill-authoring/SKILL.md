@@ -14,6 +14,7 @@ Use this skill when adding or changing Crow agents, skills, modules, templates, 
 3. Read [`modules/public-release.md`](modules/public-release.md) when content, examples, research, dependencies, tools, or packaging change.
 4. Read only the related existing agent, skill router, and modules. Do not load unrelated Crow capabilities.
 5. Use the templates in [`resources/`](resources/) as starting structures, not as content to copy blindly.
+6. Load [`modules/collection-management.md`](modules/collection-management.md) when a collection, package subset, or distribution manifest changes.
 
 ## Authoring loop
 
@@ -23,7 +24,7 @@ Use this skill when adding or changing Crow agents, skills, modules, templates, 
 4. Keep the agent and router concise. Link to one canonical policy instead of repeating it.
 5. Apply the [minimal-change decision ladder](../crow-application-architecture/modules/minimal-change.md) before creating a new asset, abstraction, dependency, or output contract. Preserve security, accessibility, correctness, and release gates when simplifying.
 6. Store research and review evidence only in a repository-root ignored `evidence/` path outside `.apm/`, or in session-local storage. Never package or commit it.
-7. Update `apm.yml`, `.github/plugin/plugin.json`, and README discovery lists when capabilities change.
+7. Update `apm.yml`, `.github/plugin/plugin.json`, collection manifests when relevant, and README discovery lists when capabilities change.
 8. Classify version impact and apply user-decision gates from the canonical versioning policy.
 9. Run [`scripts/Test-CrowAssets.ps1`](scripts/Test-CrowAssets.ps1), then the repository's package checks.
 10. Run the dedicated Crow review and a rubber-duck review. Resolve material findings before completion.
@@ -42,6 +43,7 @@ Use a script instead of model prose when the operation can be expressed as stabl
 - Agent and skill names and descriptions have clear invocation boundaries.
 - Only relevant modules are loaded.
 - Package manifests and documentation agree.
+- Collection manifests are version-aligned, resolve only repository-local source assets, and remain subsets of the full package.
 - Local references resolve.
 - No tracked evidence or sensitive material exists.
 - Validator and package checks pass.
