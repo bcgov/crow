@@ -180,29 +180,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is:
-
-```text
-build/bcgov-crow-0.10.1.zip
-```
-
-The archive contains a standard `plugin.json` and can be installed locally
-through APM for any supported client:
-
-```powershell
-apm install .\build\bcgov-crow-0.10.1.zip --global --target claude
-apm install .\build\bcgov-crow-0.10.1.zip --global --target codex
-apm install .\build\bcgov-crow-0.10.1.zip --global --target copilot
-apm install .\build\bcgov-crow-0.10.1.zip --global --target cursor
-```
-
-For Copilot CLI, unpack and install the plugin directory:
-
-```powershell
-Expand-Archive .\build\bcgov-crow-0.10.1.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.10.1
-```
-
-See [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
+The resulting archive is `build/bcgov-crow-0.10.1.zip`. See
+[crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
