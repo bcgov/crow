@@ -27,6 +27,7 @@ the architecture and testing workflows.
 
 - [crow-raven-setup](../../.apm/skills/crow-raven-setup/SKILL.md)
 - [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
+- [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)
 - [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)
 - [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
 - [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)

@@ -13,6 +13,7 @@ keywords:
   - crow-application-development
   - crow-bcgov-ux
   - crow-project-context
+  - crow-security-review
   - crow-testing
 dependencies:
   apm:
@@ -45,6 +46,9 @@ dependencies:
       ref: v0.10.0
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-raven-setup
+      ref: v0.10.0
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/skills/crow-security-review
       ref: v0.10.0
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-testing

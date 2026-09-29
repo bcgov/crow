@@ -55,6 +55,23 @@ Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
 The `--global` option installs into the selected client's user profile rather
 than copying Crow into every project.
 
+### Direct Copilot CLI plugin
+
+Copilot CLI users can install the complete Crow plugin directly instead of
+using APM:
+
+```bash
+copilot plugin install bcgov/crow
+```
+
+Verify the plugin and its assets with:
+
+```text
+copilot plugin list
+/agent
+/skills list
+```
+
 ### 3. Set up Raven and code intelligence
 
 After installation, invoke the **[Crow Raven Setup Agent](.apm/agents/crow-raven-setup.agent.md)**

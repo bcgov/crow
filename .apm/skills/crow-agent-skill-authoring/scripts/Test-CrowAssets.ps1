@@ -205,12 +205,24 @@ if ($errors.Count -eq 0) {
             Add-ValidationError "${collectionManifestPath}: version $($Matches[1]) must match root version $apmVersion."
         }
 
+        $dependencySources = @(
+            [regex]::Matches($collectionManifest, '(?m)^\s{4}-\s+git:\s+([^\s#]+)\s*$') |
+                ForEach-Object { $_.Groups[1].Value }
+        )
         $dependencyPaths = @(
             [regex]::Matches($collectionManifest, '(?m)^\s{6}path:\s+([^\s#]+)\s*$') |
                 ForEach-Object { $_.Groups[1].Value.Replace('\', '/') }
         )
         if ($dependencyPaths.Count -eq 0) {
             Add-ValidationError "${collectionManifestPath}: collection must declare APM dependencies with canonical source paths."
+        }
+        if ($dependencySources.Count -ne $dependencyPaths.Count) {
+            Add-ValidationError "${collectionManifestPath}: dependency git and path counts must match."
+        }
+        foreach ($dependencySource in $dependencySources) {
+            if ($dependencySource -ne 'https://github.com/bcgov/crow.git') {
+                Add-ValidationError "${collectionManifestPath}: dependency source '$dependencySource' must be https://github.com/bcgov/crow.git."
+            }
         }
         foreach ($dependencyPath in $dependencyPaths) {
             if (-not $dependencyPath.StartsWith('.apm/')) {
@@ -226,7 +238,10 @@ if ($errors.Count -eq 0) {
             [regex]::Matches($collectionManifest, '(?m)^\s{6}ref:\s+([^\s#]+)\s*$') |
                 ForEach-Object { $_.Groups[1].Value }
         )
-        if ($dependencyRefs.Count -eq 0 -or @($dependencyRefs | Where-Object { $_ -ne "v$apmVersion" }).Count -gt 0) {
+        if ($dependencyRefs.Count -ne $dependencyPaths.Count) {
+            Add-ValidationError "${collectionManifestPath}: dependency git, path, and ref counts must match."
+        }
+        elseif (@($dependencyRefs | Where-Object { $_ -ne "v$apmVersion" }).Count -gt 0) {
             Add-ValidationError "${collectionManifestPath}: every collection dependency must use ref v$apmVersion."
         }
         if (Test-Path $collectionReadmePath -PathType Leaf) {
