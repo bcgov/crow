@@ -56,7 +56,7 @@ jobs:
 
           $releaseFiles = @(
             $changedFiles | Where-Object {
-              $_ -eq 'apm.yml' -or $_ -like '.apm/*'
+              $_ -eq 'apm.yml' -or $_ -like '.apm/*' -or $_ -like 'collections/*'
             }
           )
           $hasReleaseChanges = $releaseFiles.Count -gt 0

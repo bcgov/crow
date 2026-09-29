@@ -1,243 +1,186 @@
 # CROW (Continuous Remediation & Optimization Workflows)
 
-CROW is a collection of agents, skills, and detection modules for agentic software development. The intention is to set up this repo so that the agents and skills are available globally in VS Code or your favourite tool, so that they're available in any project you work on.
+CROW is a public package of agents and skills for agentic software
+development. It supports brownfield architecture, application development,
+accessible B.C. government UX, testing, security review and remediation, and
+the project setup needed to use those capabilities across repositories.
 
-This repo is supposed to be used together with the RAVEN MCP server collection: [RAVEN][Raven]
+Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
+Copilot CLI plugin. The full package remains available, and curated
+collections are available when a project needs only part of Crow.
 
+[APM]: https://github.com/microsoft/apm
 [Raven]: https://github.com/bcgov/raven
+[codebase-memory-mcp]: https://github.com/bcgov/codebase-memory-mcp
 
-Each reviewed repository may keep public project memory in a root `crow.config`
-file. The manifest records Sonar settings and safe references to CI/CD,
-work-tracking, related repositories, and documentation. Internal URLs and
-credentials remain in Raven/provider connections or a user-local overlay and
-must never be committed.
+## Install Crow
 
-## Guided MCP setup
+### 1. Install APM
 
-CROW's architecture and security agents use **codebase-memory-mcp** for fast
-code intelligence, indexing, and cross-file analysis. Crow capabilities also
-integrate with the optional [Raven] MCP server
-collection.
-
-Use the **Crow Raven Setup Agent** to:
-
-- check Node.js, npm, GitHub CLI, `tar`, and source-fallback prerequisites;
-- choose only the Raven capability groups and individual servers you need, or
-  explicitly install codebase-memory-mcp without Raven;
-- pin codebase-memory-mcp to an exact version;
-- install the selected servers from an attested Raven release bundle, with an
-  immutable source build available only as an explicit fallback;
-- generate a Crow-owned MCP configuration fragment without overwriting existing
-  client configuration or collecting credentials;
-- check Raven, codebase-memory-mcp, and any globally APM-managed Crow package
-  for changes at most once every 24 hours during use, notify without
-  upgrading, and apply updates or rollback only after confirmation.
-
-Raven setup state is user-local under `~/.crow/raven-setup` by default and must
-not be committed. Raven credentials remain in Raven's supported OS-encrypted
-storage or user-local environment file.
-
-## Business rule reporting prerequisites
-
-The **Crow Business Rule Documentation Agent** pre-renders diagrams with a preinstalled Mermaid CLI (`mmdc`). Install it once with `npm install -g @mermaid-js/mermaid-cli`, or pass `-MermaidCliPath <path to mmdc>` to the renderer. The renderer never invokes `npx` and never downloads a package while running, so a run that needs diagrams fails with an actionable message until `mmdc` is available. Reports without diagrams need no Mermaid CLI.
-
-Each reviewed repository commits `docs/business-rules-data.json` next to the two generated documents. That file is canonical: it is the snippet-free input both documents are rendered from and the permanent identifier ledger. Regeneration compares the new data against the previously committed copy, so a rule identifier cannot disappear, silently reactivate, or be reused for a different rule. That comparison is mandatory: once `docs/business-rules.md` or `docs/business-rules.html` exists, the renderer refuses to run without the previously committed data file, which is extracted byte for byte by the bundled `Export-PreviousBusinessRuleData.ps1`. Do not hand-edit the generated Markdown or HTML; change the data and re-render.
-
-## Available Agents
-
-- **Crow B.C. Government UX Agent** — Designs and implements new interfaces, or reviews and remediates existing applications, using the current B.C. Design System and WCAG 2.2 AA. Supports the frontend technologies covered by Crow while keeping user-journey design out of scope.
-- **Crow Solution Architecture Agent** — Designs a proposed B.C.-aligned solution, interviews stakeholders one question at a time to resolve material assumptions, and creates canonical Markdown plus an accessible, self-contained HTML review with rich workflow, data-flow, UX, implementation-choice, identity, hosting, and common-component views.
-- **Crow Architecture Review Agent** — Inspects a repository and creates or updates verified architecture documentation under `docs/`, with conditional platform-role, reuse, custodianship, contract, degradation, and Zero Trust resource-protection assessment plus service-scoped documents and an index for monorepos.
-- **Crow Security & Dependency Review Agent** — Inspects repository frameworks, dependencies, known CVEs, security controls, and executes SonarQube scans to generate or update a `security-review.md` document in `/docs`. Includes formal evidence standards, false positive prevention rules, CVE provenance tagging, the approved Critical through Informational severity scheme, conditional data/proof checks, cross-file data flow tracing via codebase-memory-mcp, and optional SARIF publication to GHAS, the configured ticketing system, or both.
-- **Crow Executive Summary Report Agent** — Synthesizes `/docs/architecture.md` and `/docs/security-review.md` into a high-level executive report in Markdown, a visual HTML dashboard (with charts, gauges, and heatmaps), and PDF output.
-- **Crow Business Rule Documentation Agent** — Documents the business rules one application or service actually enforces, reconciles them with available guides and training material, and generates `docs/business-rules.md` plus a self-contained accessible HTML report with pre-rendered Mermaid diagrams, facet filtering, and stable rule identifiers.
-- **Crow Security Remediation Agent** — Remediates critical, high, and medium security vulnerabilities, framework/dependency technical debt, and test coverage gaps from `security-review.md` or selected/all open `crow-security` tickets, then verifies and re-runs the security review.
-- **Crow Agent & Skill Authoring Agent** — Creates and updates Crow agents and skills using consistent boundaries, progressive context loading, deterministic tooling, public-release hygiene, and semantic versioning.
-- **Crow Agent & Skill Review Agent** — Reviews Crow agents and skills for correctness, context and token efficiency, automation opportunities, knowledge/execution separation, semantic versioning, and public-release suitability.
-- **Crow Simplification Review Agent** — Performs an opt-in, read-only application review for unnecessary complexity, simpler standard-library or native alternatives, and tracked Crow debt.
-- **Crow Testing Agent** — Guides definition and implementation of automated unit and integration tests. Scans the codebase and docs first, then discusses interview-style surfacing concrete assumptions instead of asking blind questions; produces a reviewable `docs/testing/<feature>/<Feature>Scenarios.md` before writing code for integration tests and complex/critical unit tests, including conditional shared-service contracts and resilience scenarios. Shared validators use one exhaustive direct suite plus thin consumer wiring/context smoke tests. Behaviors that cannot be automated are classified and recorded in a durable `docs/testing/manual-coverage.md` QA-scope register. Confirmed bugs and explicitly approved actionable design smells can produce local, unfiled work-item draft candidates; external tracker search and creation are out of scope. Technology-routed, starting with .NET/C#/F# and SQL Server. Its skill workflow includes model-tier and cross-family review guidance, safe hash-based updates for copied Crow test-utility templates, and no per-agent model pin. End-to-end testing and CI/CD pipeline authoring are out of scope for now.
-- **Crow Raven Setup Agent** — Walks users through prerequisites and selective Raven MCP setup, verifies attested Raven release bundles, pins codebase-memory-mcp, generates a managed configuration fragment, performs rate-limited freshness checks, and requires confirmation for updates and rollback.
-
-## Available Skills
-
-- **crow-bcgov-ux** — Technology-routed B.C. Design System and accessibility guidance for creating UX or reviewing and updating an existing application, including point-of-use decision explanations and clear degraded/async/offline/assisted states without journey design. Includes HTML/CSS/Razor, React-family, Vue-family, Angular, Svelte, and Blazor modules.
-- **crow-solution-architecture** — Evidence-first solution design with an interview workflow, preferred architecture and technology defaults, constraint-driven fallbacks, B.C. identity guidance, common-component reuse, canonical Markdown, rich self-contained HTML, optional derived JSON, and deterministic consistency validation.
-- **crow-architecture-review** — Routes repository classification, inspection, document generation or update, and deterministic output validation.
-- **crow-application-architecture** — Technology-routed application architecture guidance with current .NET and ASP.NET Core modules plus conditional, technology-neutral platform alignment, reuse, and Zero Trust resource-protection guidance.
-- **crow-application-development** — Technology-routed implementation guidance for .NET, ASP.NET Core, secure persistence, testing, CI, and containers.
-- **crow-executive-report** — Bundles the executive report workflow, templates, schema, dashboard assets, and renderer.
-- **crow-business-rules** — Routes business rule extraction, documentation reconciliation, and diagramming, and bundles the snippet-free data schema, report templates, accessible HTML assets, deterministic renderer, and tests.
-- **crow-security-review** — Provides framework-specific detection modules and the security review document template.
-- **crow-sonar-scan** — Triggers when a code analysis, quality scan, or SonarQube / SonarCloud scan is requested using the `sonar-mcp` server.
-- **crow-agent-skill-authoring** — Guides consistent agent and skill creation or updates, with templates and deterministic package validation.
-- **crow-agent-skill-review** — Provides the review rubric for context/token optimization, deterministic automation, public release, and knowledge/execution separation.
-- **crow-simplification-review** — Reviews application changes or repositories for unnecessary complexity and reports `crow-debt:` markers without applying fixes.
-- **crow-release** — Prepares, packages, checksums, and publishes Crow versions through GitHub Releases with an explicit user decision for major versions, including an approval-gated draft-release workflow.
-- **crow-testing** — Technology-routed guidance for defining and implementing automated unit and integration tests: testing philosophy (band-pass filter model, automation-candidate criteria), no-tests-yet discovery, scenario-doc-first workflow, shared-validator test layering, manual-coverage classification and registers, .NET/SQL Server-specific patterns, and managed updates for copied Crow test-utility templates. E2E testing is out of scope for now.
-- **crow-project-context** — Reads and safely maintains public-reference project memory in `crow.config`, including Sonar settings and provider-neutral CI/CD, work-tracking, repository, and documentation references.
-- **crow-raven-setup** — Guides selective Raven and codebase-memory-mcp setup and maintenance with reviewed server choices, pinned versions, generated configuration, notification-only freshness checks, explicit updates, and rollback.
-
-## Bundled Resources
-
-Resources are owned by the skills that consume them:
-
-- `.apm/skills/crow-bcgov-ux/` — B.C. government UX foundations, WCAG 2.2 AA acceptance criteria, existing-app review/remediation workflow, technology modules, and an optional `DESIGN.md` specification template
-- `.apm/skills/crow-solution-architecture/` — Evidence-first interview workflow, preferred defaults and fallbacks, B.C. identity and platform-service guidance, canonical Markdown and accessible HTML templates, optional derived JSON, and deterministic output validation
-- `.apm/skills/crow-architecture-review/architecture-template.md` — Architecture document template
-- `.apm/skills/crow-application-architecture/` — Context-routed architecture principles, conditional platform-alignment/reuse and Zero Trust resource-protection guidance, and .NET modules
-- `.apm/skills/crow-application-development/` — Context-routed .NET implementation modules
-- `.apm/skills/crow-security-review/security-review-template.md` — Security review template with YAML frontmatter for machine-readable metadata
-- `.apm/skills/crow-security-review/modules/` — Language and framework-specific security detection modules
-- `.apm/skills/crow-executive-report/` — Executive report template, schema, dashboard assets, and deterministic renderer
-- `.apm/skills/crow-business-rules/` — Business rule extraction, reconciliation, and diagramming modules, the `business-rules-data.json` schema and synthetic example, Markdown and HTML report templates, B.C.-aligned stylesheet and facet-filtering script, pinned Mermaid configuration, deterministic renderer and validator, and their tests
-- `.apm/skills/crow-testing/` — Testing philosophy and discovery modules, generic and .NET-specific unit/integration test guidance, shared-validator layering, manual-coverage classification and register template, conditional shared-service contract/resilience scenarios, reference deep-dives (property-based testing, legacy T-SQL harness, design-smell catalog), `docs/testing/` templates (scenario doc, testing plan index, testability notes), deterministic hash-based synchronization for copied generator templates, and a maintainer-facing `MAINTENANCE.md` mapping ecosystem changes (new C#/.NET versions, analyzer coverage, test library upgrades) to the files that need updating
-- `.apm/skills/crow-project-context/` — Public-safe `crow.config` reading, provider resolution, Raven-aligned secret boundaries, sanitized project-memory update rules, and deterministic config validation
-- `.apm/skills/crow-raven-setup/` — Guided Raven server selection, release-first delivery and update policy, reviewed server catalog, and deterministic setup, status, freshness-check, and rollback tooling
-- `.apm/skills/crow-agent-skill-authoring/` — Authoring patterns, public-release guidance, templates, and deterministic validation
-- `.apm/skills/crow-agent-skill-review/` — Agent and skill review rubric and review template
-- `.apm/skills/crow-simplification-review/` — Application simplification review, Crow debt marker workflow, conventional debt-comment reporting, deterministic debt scanner, and the reusable `Crow-debt.md` ledger template
-- `.apm/skills/crow-release/` — Semantic-version policy, release-notes template, and deterministic version/package/draft-release scripts
-
-## Agent and skill authoring conventions
-
-Crow separates knowledge from execution so agents load less context and mechanical work remains reproducible:
-
-- agents own role, decisions, tool orchestration, failure behaviour, and completion gates;
-- `SKILL.md` files are concise routers that load only relevant knowledge;
-- modules own optional domain knowledge and acceptance criteria;
-- templates own stable output shapes;
-- scripts own deterministic validation, transformation, rendering, packaging, checksums, and release operations;
-- authoring evidence stays outside `.apm/`, Git tracking, and release archives.
-
-Existing routed application, UX, and security modules already follow the knowledge side of this pattern, while the executive-report renderer is an example of deterministic execution. When updating older large agents, prefer extracting reusable policy into routed modules and replacing repeated document checks or transformations with scripts rather than adding more unconditional prompt context.
-
-Use the **Crow Agent & Skill Authoring Agent** to make changes, the **Crow Agent & Skill Review Agent** for an independent review, and include a rubber-duck review before release. The reusable version classification and user-decision rules are defined in the [Crow versioning policy](.apm/skills/crow-release/modules/versioning.md).
-
-## Automated draft releases
-
-After successful Crow asset validation on `main`, the
-[Crow release draft workflow](.github/workflows/crow-release-draft.yml)
-prepares a candidate from the exact merged commit. A protected `release`
-environment must have required reviewers configured. Approval causes the
-workflow to rebuild and verify the archive, create the matching annotated tag,
-and create a GitHub draft release with the ZIP, SHA-256 file, and standardized
-release notes. It never publishes the release automatically. SonarQube runs
-on an internal server and is therefore not invoked by GitHub-hosted workflows;
-the local agent running the release skill must run Sonar through the Sonar MCP
-server and verify the quality gate before approving the draft.
-
-# Installation
-
-CROW is distributed as an APM package and a Copilot CLI plugin.
-
-## Option 1: APM package (recommended)
-
-APM installs Crow globally without requiring the Crow Git repository to occupy a client profile directory. APM manages the package cache and installs the agents and skills into the selected client's user-level locations.
-
-### On Windows
-
-Install APM if it is not already available:
+On Windows:
 
 ```powershell
 irm https://aka.ms/apm-windows | iex
 ```
 
-Install Crow globally:
-
-```powershell
-apm install bcgov/crow#v0.9.3 --global --target copilot
-```
-
-### On macOS / Linux
-
-Install APM if it is not already available:
+On macOS or Linux:
 
 ```bash
 curl -sSL https://aka.ms/apm-unix | sh
 ```
 
-Install Crow globally:
+### 2. Install a package
 
-```bash
-apm install bcgov/crow#v0.9.3 --global --target copilot
-```
-
-Choose `claude`, `codex`, `copilot`, or `cursor` as the `--target` value for the client where Crow should be installed. For example:
-
-```text
-apm install bcgov/crow#v0.9.3 --global --target claude
-apm install bcgov/crow#v0.9.3 --global --target codex
-apm install bcgov/crow#v0.9.3 --global --target cursor
-```
-
-The `--global` installation keeps Crow's source and package cache separate from the Crow repository:
-
-```text
-<normal checkout, optional>       C:\Users\<user>\src\crow
-APM package cache                 C:\Users\<user>\.apm
-Global client agents and skills   <client-specific user profile>
-```
-
-Verify the installation using the selected client's normal agent or skill discovery commands.
-
-To install a local development checkout without directly copying the repository into a client profile:
+Install the [Starter Package](collections/starter-package/README.md) for
+daily brownfield development:
 
 ```powershell
-apm install C:\path\to\crow --global --target claude
-apm install C:\path\to\crow --global --target codex
-apm install C:\path\to\crow --global --target copilot
-apm install C:\path\to\crow --global --target cursor
+apm install bcgov/crow/collections/starter-package#v0.10.0 --global --target copilot
 ```
 
-APM does not silently auto-update an installed Crow package. To review and
-apply the latest matching Crow ref explicitly:
+Install the [Security Remediation collection](collections/security-remediation/README.md)
+for application security scanning and remediation:
 
 ```powershell
-apm update --global bcgov/crow
+apm install bcgov/crow/collections/security-remediation#v0.10.0 --global --target copilot
 ```
 
-The Crow Raven setup check reports an outstanding global APM update without
-applying it. `apm self-update` updates the APM CLI, not Crow. A direct
-Copilot plugin installation is outside APM's global package state and is not
-reported by that APM check.
+Install the complete Crow package when all capabilities are needed:
 
-## Option 2: Copilot CLI plugin
+```powershell
+apm install bcgov/crow#v0.10.0 --global --target copilot
+```
 
-Install directly from the Crow repository:
+Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
+The `--global` option installs into the selected client's user profile rather
+than copying Crow into every project.
+
+### Direct Copilot CLI plugin
+
+Copilot CLI users can install the complete Crow plugin directly instead of
+using APM:
 
 ```bash
 copilot plugin install bcgov/crow
 ```
 
-The plugin manifest uses the same `.apm` source files as the APM package, including the `crow-` prefixes. Verify with `copilot plugin list`, `/agent`, and `/skills list`.
+Verify the plugin and its assets with:
 
-## Building an APM/plugin bundle
+```text
+copilot plugin list
+/agent
+/skills list
+```
 
-From a Crow checkout, generate a versioned, integrity-checked plugin bundle:
+### 3. Set up Raven and code intelligence
+
+After installation, invoke the **[Crow Raven Setup Agent](.apm/agents/crow-raven-setup.agent.md)**
+first:
+
+```text
+/agent Crow Raven Setup Agent
+```
+
+The guided setup checks prerequisites, lets you choose Raven capability
+groups or [codebase-memory-mcp], pins server versions, verifies attested
+release bundles, and writes a Crow-owned MCP configuration fragment without
+overwriting existing client configuration or collecting credentials. It also
+checks for available Crow package updates without applying them.
+
+Setup state is user-local under `~/.crow/raven-setup` by default. Do not
+commit it or put Raven credentials in a repository.
+
+### 4. Verify the installation
+
+Use the selected client's normal discovery commands:
+
+```text
+/agent
+/skills list
+```
+
+## Choose a collection
+
+- [Starter Package](collections/starter-package/README.md) — Raven setup,
+  architecture review, application architecture and development, B.C. UX,
+  project context, and testing for daily brownfield work.
+- [Security Remediation](collections/security-remediation/README.md) —
+  Raven setup, project context, security review, Sonar scanning, secure
+  architecture, application development, testing, and remediation.
+
+Collections use the same Crow release tag as the full package. Existing
+`apm install bcgov/crow#...` installations continue to receive the full
+package and are unaffected by the collections.
+
+## Agents
+
+- [Crow B.C. Government UX Agent](.apm/agents/crow-bcgov-ux.agent.md)
+- [Crow Solution Architecture Agent](.apm/agents/crow-solution-architecture.agent.md)
+- [Crow Architecture Review Agent](.apm/agents/crow-architecture-review.agent.md)
+- [Crow Security & Dependency Review Agent](.apm/agents/crow-security-review.agent.md)
+- [Crow Executive Summary Report Agent](.apm/agents/crow-executive-report.agent.md)
+- [Crow Business Rule Documentation Agent](.apm/agents/crow-business-rule-documentation.agent.md)
+- [Crow Security Remediation Agent](.apm/agents/crow-security-remediation.agent.md)
+- [Crow Agent & Skill Authoring Agent](.apm/agents/crow-agent-skill-authoring.agent.md)
+- [Crow Agent & Skill Review Agent](.apm/agents/crow-agent-skill-review.agent.md)
+- [Crow Simplification Review Agent](.apm/agents/crow-simplification-review.agent.md)
+- [Crow Testing Agent](.apm/agents/crow-testing.agent.md)
+- [Crow Raven Setup Agent](.apm/agents/crow-raven-setup.agent.md)
+
+## Skills
+
+- [**crow-bcgov-ux**](.apm/skills/crow-bcgov-ux/SKILL.md) — B.C. Design
+  System and WCAG 2.2 AA UX guidance.
+- [**crow-solution-architecture**](.apm/skills/crow-solution-architecture/SKILL.md) —
+  B.C.-aligned solution architecture and stakeholder decisions.
+- [**crow-application-architecture**](.apm/skills/crow-application-architecture/SKILL.md) —
+  Application boundaries, dependencies, platforms, and Zero Trust.
+- [**crow-application-development**](.apm/skills/crow-application-development/SKILL.md) —
+  Production application code, persistence, integrations, and CI.
+- [**crow-architecture-review**](.apm/skills/crow-architecture-review/SKILL.md) —
+  Evidence-based architecture documentation.
+- [**crow-business-rules**](.apm/skills/crow-business-rules/SKILL.md) —
+  Business-rule extraction, reconciliation, and reporting.
+- [**crow-executive-report**](.apm/skills/crow-executive-report/SKILL.md) —
+  Executive security and architecture reporting.
+- [**crow-project-context**](.apm/skills/crow-project-context/SKILL.md) —
+  Safe public project memory and provider references.
+- [**crow-raven-setup**](.apm/skills/crow-raven-setup/SKILL.md) — Selective
+  Raven and codebase-memory-mcp setup and maintenance.
+- [**crow-security-review**](.apm/skills/crow-security-review/SKILL.md) —
+  Manual security, dependency, data-flow, and issue-publication guidance.
+- [**crow-sonar-scan**](.apm/skills/crow-sonar-scan/README.md) — Sonar scan
+  execution through the Sonar MCP server.
+- [**crow-simplification-review**](.apm/skills/crow-simplification-review/SKILL.md) —
+  Opt-in review for unnecessary complexity and tracked Crow debt.
+- [**crow-agent-skill-authoring**](.apm/skills/crow-agent-skill-authoring/SKILL.md) —
+  Crow asset creation, packaging, and release hygiene.
+- [**crow-agent-skill-review**](.apm/skills/crow-agent-skill-review/SKILL.md) —
+  Read-only Crow asset quality and release review.
+- [**crow-release**](.apm/skills/crow-release/SKILL.md) — Versioned package
+  preparation, validation, and publication.
+- [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Unit and integration
+  testing strategy and implementation.
+
+## Optional reporting prerequisite
+
+The [Crow Business Rule Documentation Agent](.apm/agents/crow-business-rule-documentation.agent.md)
+requires a preinstalled Mermaid CLI (`mmdc`) only when diagrams are needed:
+
+```powershell
+npm install -g @mermaid-js/mermaid-cli
+```
+
+## Local development and release
+
+From a Crow checkout, install dependencies and build a versioned bundle:
 
 ```powershell
 apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is:
-
-```text
-build/bcgov-crow-0.9.3.zip
-```
-
-The archive contains a standard `plugin.json`, so it can be installed through APM or used as a Copilot CLI plugin bundle. Consumers can install it globally with APM:
-
-```powershell
-apm install .\build\bcgov-crow-0.9.3.zip --global --target claude
-apm install .\build\bcgov-crow-0.9.3.zip --global --target codex
-apm install .\build\bcgov-crow-0.9.3.zip --global --target copilot
-apm install .\build\bcgov-crow-0.9.3.zip --global --target cursor
-```
-
-For Copilot CLI, unpack and install the plugin directory:
-
-```powershell
-Expand-Archive .\build\bcgov-crow-0.9.3.zip -DestinationPath .\build\copilot
-copilot plugin install .\build\copilot\bcgov-crow-0.9.3
-```
+The resulting archive is `build/bcgov-crow-0.10.0.zip`. See
+[crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
+[crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
+for the asset authoring workflow.

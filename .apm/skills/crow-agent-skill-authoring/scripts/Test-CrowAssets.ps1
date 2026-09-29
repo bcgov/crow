@@ -93,8 +93,9 @@ $apmPath = Join-Path $root 'apm.yml'
 $pluginPath = Join-Path $root '.github\plugin\plugin.json'
 $agentsPath = Join-Path $root '.apm\agents'
 $skillsPath = Join-Path $root '.apm\skills'
+$collectionsPath = Join-Path $root 'collections'
 
-foreach ($requiredPath in @($apmPath, $pluginPath, $agentsPath, $skillsPath)) {
+foreach ($requiredPath in @($apmPath, $pluginPath, $agentsPath, $skillsPath, $collectionsPath)) {
     if (-not (Test-Path $requiredPath)) {
         Add-ValidationError "Required path is missing: $requiredPath"
     }
@@ -157,7 +158,7 @@ if ($errors.Count -eq 0) {
         $readmeVersionMatches = @(
             [regex]::Matches(
                 $readmeContent,
-                'bcgov/crow#v(?<version>[0-9]+\.[0-9]+\.[0-9]+)'),
+                'bcgov/crow(?:/collections/[a-z0-9-]+)?#v(?<version>[0-9]+\.[0-9]+\.[0-9]+)'),
             [regex]::Matches(
                 $readmeContent,
                 'bcgov-crow-(?<version>[0-9]+\.[0-9]+\.[0-9]+)')
@@ -171,6 +172,83 @@ if ($errors.Count -eq 0) {
         foreach ($readmeVersion in $readmeVersions) {
             if ($readmeVersion -ne $apmVersion) {
                 Add-ValidationError "Version mismatch: apm.yml is $apmVersion and README.md references $readmeVersion."
+            }
+        }
+    }
+
+    $collectionDirectories = @(Get-ChildItem $collectionsPath -Directory | Sort-Object Name)
+    if ($collectionDirectories.Count -eq 0) {
+        Add-ValidationError 'The collections directory must contain at least one collection.'
+    }
+    foreach ($collectionDirectory in $collectionDirectories) {
+        $collectionManifestPath = Join-Path $collectionDirectory.FullName 'apm.yml'
+        $collectionReadmePath = Join-Path $collectionDirectory.FullName 'README.md'
+        if (-not (Test-Path $collectionManifestPath -PathType Leaf)) {
+            Add-ValidationError "$($collectionDirectory.FullName): collection apm.yml is missing."
+            continue
+        }
+        if (-not (Test-Path $collectionReadmePath -PathType Leaf)) {
+            Add-ValidationError "$($collectionDirectory.FullName): collection README.md is missing."
+        }
+
+        $collectionManifest = [System.IO.File]::ReadAllText($collectionManifestPath)
+        if ($collectionManifest -notmatch '(?m)^name:\s*([a-z0-9-]+)\s*$') {
+            Add-ValidationError "${collectionManifestPath}: collection name is missing or invalid."
+        }
+        elseif ($Matches[1] -ne "bcgov-crow-$($collectionDirectory.Name)") {
+            Add-ValidationError "${collectionManifestPath}: collection name '$($Matches[1])' must be 'bcgov-crow-$($collectionDirectory.Name)'."
+        }
+        if ($collectionManifest -notmatch '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$') {
+            Add-ValidationError "${collectionManifestPath}: collection version is missing or invalid."
+        }
+        elseif ($Matches[1] -ne $apmVersion) {
+            Add-ValidationError "${collectionManifestPath}: version $($Matches[1]) must match root version $apmVersion."
+        }
+
+        $dependencySources = @(
+            [regex]::Matches($collectionManifest, '(?m)^\s{4}-\s+git:\s+([^\s#]+)\s*$') |
+                ForEach-Object { $_.Groups[1].Value }
+        )
+        $dependencyPaths = @(
+            [regex]::Matches($collectionManifest, '(?m)^\s{6}path:\s+([^\s#]+)\s*$') |
+                ForEach-Object { $_.Groups[1].Value.Replace('\', '/') }
+        )
+        if ($dependencyPaths.Count -eq 0) {
+            Add-ValidationError "${collectionManifestPath}: collection must declare APM dependencies with canonical source paths."
+        }
+        if ($dependencySources.Count -ne $dependencyPaths.Count) {
+            Add-ValidationError "${collectionManifestPath}: dependency git and path counts must match."
+        }
+        foreach ($dependencySource in $dependencySources) {
+            if ($dependencySource -ne 'https://github.com/bcgov/crow.git') {
+                Add-ValidationError "${collectionManifestPath}: dependency source '$dependencySource' must be https://github.com/bcgov/crow.git."
+            }
+        }
+        foreach ($dependencyPath in $dependencyPaths) {
+            if (-not $dependencyPath.StartsWith('.apm/')) {
+                Add-ValidationError "${collectionManifestPath}: dependency path '$dependencyPath' must resolve to .apm/."
+                continue
+            }
+            $sourcePath = Join-Path $root $dependencyPath
+            if (-not (Test-Path $sourcePath)) {
+                Add-ValidationError "${collectionManifestPath}: dependency path '$dependencyPath' does not exist."
+            }
+        }
+        $dependencyRefs = @(
+            [regex]::Matches($collectionManifest, '(?m)^\s{6}ref:\s+([^\s#]+)\s*$') |
+                ForEach-Object { $_.Groups[1].Value }
+        )
+        if ($dependencyRefs.Count -ne $dependencyPaths.Count) {
+            Add-ValidationError "${collectionManifestPath}: dependency git, path, and ref counts must match."
+        }
+        elseif (@($dependencyRefs | Where-Object { $_ -ne "v$apmVersion" }).Count -gt 0) {
+            Add-ValidationError "${collectionManifestPath}: every collection dependency must use ref v$apmVersion."
+        }
+        if (Test-Path $collectionReadmePath -PathType Leaf) {
+            $collectionReadme = [System.IO.File]::ReadAllText($collectionReadmePath)
+            $installReference = "bcgov/crow/collections/$($collectionDirectory.Name)#v$apmVersion"
+            if (-not $collectionReadme.Contains($installReference)) {
+                Add-ValidationError "${collectionReadmePath}: collection install example must reference $installReference."
             }
         }
     }
@@ -291,6 +369,7 @@ if ($errors.Count -eq 0) {
 
     $markdownFiles = @(
         Get-ChildItem $agentsPath, $skillsPath -File -Filter '*.md' -Recurse
+        Get-ChildItem $collectionsPath -File -Filter '*.md' -Recurse
         Get-Item (Join-Path $root 'README.md')
     )
     foreach ($markdownFile in $markdownFiles) {
