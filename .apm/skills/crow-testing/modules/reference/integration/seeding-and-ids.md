@@ -100,11 +100,51 @@ exception. Under the exception, use a variant that reuses the caller's already-o
 of beginning a new one:
 
 ```csharp
-public static async Task ExecuteInExistingTransactionAsync(DbContext context, Func<Task> action)
+public static async Task ExecuteInExistingTransactionAsync(
+    DbContext context,
+    Func<DbContext, Task> action)
 {
     // No BeginTransactionAsync/CommitAsync/RollbackAsync here — the caller (the per-test fixture)
     // owns the transaction and its rollback. This helper only brackets IDENTITY_INSERT ON/OFF.
-    await action();                                         // ...across IDENTITY_INSERT ON + INSERT + OFF
+    if (context.Database.CurrentTransaction is null)
+    {
+        throw new InvalidOperationException(
+            "An active caller transaction is required for existing-transaction seeding.");
+    }
+
+    await action(context);                                  // ...across IDENTITY_INSERT ON + INSERT + OFF
+}
+```
+
+Passing `context` into the callback (rather than a parameterless `Func<Task>`) closes the gap the check
+alone wouldn't: it stops an action from silently using a different context outside the caller's
+transaction. Protect both guarantees with focused tests (adapt to the project's test framework):
+
+```csharp
+[Fact]
+public async Task ExistingTransactionHelper_requires_an_active_transaction()
+{
+    await using var context = CreateContext();
+
+    await Assert.ThrowsAsync<InvalidOperationException>(() =>
+        ExecuteInExistingTransactionAsync(context, _ => Task.CompletedTask));
+}
+
+[Fact]
+public async Task ExistingTransactionHelper_passes_the_supplied_context()
+{
+    await using var context = CreateContext();
+    await using var transaction = await context.Database.BeginTransactionAsync();
+    DbContext? callbackContext = null;
+
+    await ExecuteInExistingTransactionAsync(context, supplied =>
+    {
+        callbackContext = supplied;
+        return Task.CompletedTask;
+    });
+
+    Assert.Same(context, callbackContext);
+    await transaction.RollbackAsync();
 }
 ```
 
