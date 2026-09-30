@@ -69,6 +69,72 @@
       },
       "additionalProperties": false
     },
+    "security_synthesis": {
+      "type": ["object", "null"],
+      "description": "Optional only when synthesis and security review counts match the assessed revision. Never treat chains or priority scores as additional findings or severity ratings.",
+      "properties": {
+        "source_revision": { "type": "string", "minLength": 1 },
+        "priority_model": { "const": "crow-v1" },
+        "themes": {
+          "type": "array", "maxItems": 3,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "pattern": "^THEME-" },
+              "implication": { "type": "string" },
+              "action": { "type": "string" }
+            },
+            "required": ["id", "implication", "action"],
+            "additionalProperties": false
+          }
+        },
+        "attack_paths": {
+          "type": "array", "maxItems": 3,
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string", "pattern": "^CHAIN-" },
+              "risk": { "type": "string" },
+              "confidence": { "type": "string", "enum": ["High", "Medium", "Low"] },
+              "condition": { "type": "string" },
+              "implication": { "type": "string" }
+            },
+            "required": ["id", "risk", "confidence", "condition", "implication"],
+            "additionalProperties": false
+          }
+        },
+        "component_priorities": {
+          "type": "array", "maxItems": 3,
+          "items": {
+            "type": "object",
+            "properties": {
+              "component": { "type": "string" },
+              "active_finding_count": { "type": "integer", "minimum": 0 },
+              "priority_score": { "type": "number", "minimum": 0 },
+              "action": { "type": "string" }
+            },
+            "required": ["component", "active_finding_count", "priority_score", "action"],
+            "additionalProperties": false
+          }
+        },
+        "assurance_gaps": {
+          "type": "array", "maxItems": 3,
+          "items": {
+            "type": "object",
+            "properties": {
+              "control": { "type": "string" },
+              "status": { "type": "string", "enum": ["Gap", "Unknown"] },
+              "missing_verification": { "type": "string" },
+              "action": { "type": "string" }
+            },
+            "required": ["control", "status", "missing_verification", "action"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["source_revision", "priority_model", "themes", "attack_paths", "component_priorities", "assurance_gaps"],
+      "additionalProperties": false
+    },
     "findings": {
       "type": ["array", "null"],
       "items": {

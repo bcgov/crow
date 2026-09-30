@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "YYYY-MM-DDTHH:mm:ssZ",
+  "sourceRevision": "GIT_COMMIT_SHA",
+  "architectureDocument": "docs/architecture.md",
+  "scope": {
+    "classification": "SingleApp",
+    "serviceName": "APPLICATION_OR_SERVICE_NAME",
+    "servicePath": "."
+  },
+  "facts": [
+    {
+      "id": "AF-001",
+      "type": "TrustBoundary",
+      "name": "Synthetic trust boundary",
+      "summary": "Short security-relevant architecture fact.",
+      "confidence": "Verified",
+      "components": [
+        "synthetic-component"
+      ],
+      "evidenceRefs": [
+        "EV-001"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "WF-001",
+      "name": "Synthetic protected workflow",
+      "actor": "Authenticated user",
+      "trigger": "A protected operation is requested.",
+      "steps": [
+        {
+          "order": 1,
+          "component": "synthetic-component",
+          "action": "Authorize and process the request.",
+          "boundary": "Application boundary"
+        }
+      ],
+      "controls": {
+        "authentication": [
+          "Synthetic authentication control"
+        ],
+        "authorization": [
+          "Synthetic authorization control"
+        ],
+        "validation": [],
+        "audit": [],
+        "tests": []
+      },
+      "failureMode": "Unknown",
+      "evidenceRefs": [
+        "EV-001"
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-001",
+      "path": "src/example.ext",
+      "startLine": 1,
+      "endLine": 1,
+      "summary": "Synthetic source evidence."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-001",
+      "question": "Synthetic unresolved deployment question.",
+      "securityImpact": "May affect confidence in a deployment-dependent conclusion.",
+      "owner": "Unknown"
+    }
+  ]
+}

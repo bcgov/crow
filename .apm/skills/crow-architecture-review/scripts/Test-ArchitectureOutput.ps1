@@ -10,7 +10,9 @@ param(
     [string]$ServiceInventoryPath,
 
     [ValidateSet('PreWrite', 'PostWrite')]
-    [string]$Phase = 'PostWrite'
+    [string]$Phase = 'PostWrite',
+
+    [switch]$RequireSecurityHandoff
 )
 
 $ErrorActionPreference = 'Stop'
@@ -115,6 +117,251 @@ function Test-DocumentContent {
     foreach ($requiredHeading in $requiredHeadings) {
         if ($content -notmatch ('(?m)^##\s+' + [regex]::Escape($requiredHeading) + '\s*$')) {
             Add-ValidationError "Architecture document is missing required section '$requiredHeading': $Path"
+        }
+    }
+
+    function Test-SecurityHandoffContent {
+        param([string]$ArchitecturePath)
+
+        $handoffPath = Join-Path (
+            Split-Path -Parent $ArchitecturePath) 'architecture-security-facts.json'
+        if (-not (Test-Path -LiteralPath $handoffPath -PathType Leaf)) {
+            if ($RequireSecurityHandoff) {
+                Add-ValidationError "Required security architecture handoff is missing: $handoffPath"
+            }
+            return
+        }
+        if (-not (Test-NoReparsePoint $handoffPath 'Security architecture handoff')) {
+            return
+        }
+
+        try {
+            $content = [System.IO.File]::ReadAllText($handoffPath)
+            $handoff = $content | ConvertFrom-Json
+        }
+        catch {
+            Add-ValidationError "Security architecture handoff is invalid JSON: $handoffPath ($($_.Exception.Message))"
+            return
+        }
+
+        function Test-StringArrayProperty {
+            param(
+                [object]$Object,
+                [string]$Name,
+                [string]$Context,
+                [switch]$AllowEmpty
+            )
+
+            if (-not ($Object.PSObject.Properties.Name -contains $Name)) {
+                Add-ValidationError "$Context is missing '$Name': $handoffPath"
+                return @()
+            }
+            $values = @($Object.$Name)
+            if (-not $AllowEmpty -and $values.Count -eq 0) {
+                Add-ValidationError "$Context '$Name' cannot be empty: $handoffPath"
+            }
+            foreach ($value in $values) {
+                if ($value -isnot [string] -or
+                    [string]::IsNullOrWhiteSpace([string]$value)) {
+                    Add-ValidationError "$Context '$Name' must contain only non-empty strings: $handoffPath"
+                }
+            }
+            return $values
+        }
+
+        if ($content -match '\{\{[^}]+\}\}|\bYYYY-MM-DD\b|\bGIT_COMMIT_SHA\b|\bAPPLICATION_OR_SERVICE_NAME\b') {
+            Add-ValidationError "Security architecture handoff contains unresolved placeholders: $handoffPath"
+        }
+        if ([string]$handoff.schemaVersion -ne '1.0') {
+            Add-ValidationError "Security architecture handoff must use schemaVersion 1.0: $handoffPath"
+        }
+
+        $generatedAt = [DateTimeOffset]::MinValue
+        if ([string]$handoff.generatedAt -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$' -or
+            -not [DateTimeOffset]::TryParse(
+            [string]$handoff.generatedAt,
+            [ref]$generatedAt)) {
+            Add-ValidationError "Security architecture handoff generatedAt must be an ISO-8601 UTC timestamp ending in Z: $handoffPath"
+        }
+        if ([string]::IsNullOrWhiteSpace([string]$handoff.sourceRevision)) {
+            Add-ValidationError "Security architecture handoff is missing sourceRevision: $handoffPath"
+        }
+
+        $expectedArchitecturePath = $ArchitecturePath.Substring(
+            $root.Length + 1).Replace('\', '/')
+        if ([string]$handoff.architectureDocument -cne $expectedArchitecturePath) {
+            Add-ValidationError "Security architecture handoff architectureDocument must be '$expectedArchitecturePath': $handoffPath"
+        }
+        if ($null -eq $handoff.scope) {
+            Add-ValidationError "Security architecture handoff is missing scope: $handoffPath"
+        }
+        else {
+            if ([string]$handoff.scope.classification -ne $Classification) {
+                Add-ValidationError "Security architecture handoff classification does not match '$Classification': $handoffPath"
+            }
+            foreach ($scopeProperty in @('serviceName', 'servicePath')) {
+                if ([string]::IsNullOrWhiteSpace([string]$handoff.scope.$scopeProperty)) {
+                    Add-ValidationError "Security architecture handoff scope is missing '$scopeProperty': $handoffPath"
+                }
+            }
+            $scopeServicePath = [string]$handoff.scope.servicePath
+            if ($Classification -eq 'SingleApp' -and $scopeServicePath -ne '.') {
+                Add-ValidationError "Single-app security architecture handoff servicePath must be '.': $handoffPath"
+            }
+            elseif ($Classification -eq 'Monorepo') {
+                $expectedServiceName = Split-Path (
+                    Split-Path -Parent $ArchitecturePath) -Leaf
+                if ([string]$handoff.scope.serviceName -cne $expectedServiceName) {
+                    Add-ValidationError "Security architecture handoff serviceName must be '$expectedServiceName': $handoffPath"
+                }
+                Resolve-RepositoryPath $scopeServicePath "Security handoff servicePath" | Out-Null
+            }
+        }
+
+        foreach ($collectionProperty in @('facts', 'workflows', 'evidence', 'unknowns')) {
+            if (-not ($handoff.PSObject.Properties.Name -contains $collectionProperty) -or
+                $null -eq $handoff.$collectionProperty) {
+                Add-ValidationError "Security architecture handoff is missing '$collectionProperty' array: $handoffPath"
+            }
+        }
+
+        $evidenceIds = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal)
+        foreach ($evidence in @($handoff.evidence)) {
+            $evidenceId = [string]$evidence.id
+            if ([string]::IsNullOrWhiteSpace($evidenceId)) {
+                Add-ValidationError "Security architecture handoff evidence has no id: $handoffPath"
+                continue
+            }
+            if (-not $evidenceIds.Add($evidenceId)) {
+                Add-ValidationError "Security architecture handoff has duplicate evidence id '$evidenceId': $handoffPath"
+            }
+            if ([string]::IsNullOrWhiteSpace([string]$evidence.summary)) {
+                Add-ValidationError "Security architecture handoff evidence '$evidenceId' has no summary: $handoffPath"
+            }
+            $evidencePath = [string]$evidence.path
+            Resolve-RepositoryPath $evidencePath "Security handoff evidence '$evidenceId'" -RequireFile | Out-Null
+            $startLine = 0
+            $endLine = 0
+            if (-not [int]::TryParse([string]$evidence.startLine, [ref]$startLine) -or
+                -not [int]::TryParse([string]$evidence.endLine, [ref]$endLine) -or
+                $startLine -lt 1 -or
+                $endLine -lt $startLine) {
+                Add-ValidationError "Security architecture handoff evidence '$evidenceId' has an invalid line range: $handoffPath"
+            }
+        }
+
+        $itemIds = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::Ordinal)
+        $allowedFactTypes = @(
+            'Identity',
+            'ProtectedResource',
+            'TrustBoundary',
+            'PrivilegedOperation',
+            'EnforcementPoint',
+            'CredentialFlow',
+            'ExternalInput',
+            'DataStore',
+            'BackgroundProcess')
+        foreach ($fact in @($handoff.facts)) {
+            $factId = [string]$fact.id
+            if ($factId -notmatch '^AF-[0-9]{3,}$' -or -not $itemIds.Add($factId)) {
+                Add-ValidationError "Security architecture handoff fact has an invalid or duplicate id '$factId': $handoffPath"
+            }
+            if ([string]$fact.type -notin $allowedFactTypes) {
+                Add-ValidationError "Security architecture handoff fact '$factId' has unsupported type '$($fact.type)': $handoffPath"
+            }
+            if ([string]$fact.confidence -notin @('Verified', 'Inferred', 'Unknown')) {
+                Add-ValidationError "Security architecture handoff fact '$factId' has unsupported confidence '$($fact.confidence)': $handoffPath"
+            }
+            foreach ($requiredProperty in @('name', 'summary')) {
+                if ([string]::IsNullOrWhiteSpace([string]$fact.$requiredProperty)) {
+                    Add-ValidationError "Security architecture handoff fact '$factId' is missing '$requiredProperty': $handoffPath"
+                }
+            }
+            Test-StringArrayProperty `
+                -Object $fact `
+                -Name 'components' `
+                -Context "Security architecture handoff fact '$factId'" | Out-Null
+            $factEvidenceRefs = @(
+                Test-StringArrayProperty `
+                    -Object $fact `
+                    -Name 'evidenceRefs' `
+                    -Context "Security architecture handoff fact '$factId'" `
+                    -AllowEmpty:([string]$fact.confidence -ne 'Verified')
+            )
+            foreach ($evidenceRef in $factEvidenceRefs) {
+                if (-not $evidenceIds.Contains([string]$evidenceRef)) {
+                    Add-ValidationError "Security architecture handoff fact '$factId' references unknown evidence '$evidenceRef': $handoffPath"
+                }
+            }
+        }
+
+        foreach ($workflow in @($handoff.workflows)) {
+            $workflowId = [string]$workflow.id
+            if ($workflowId -notmatch '^WF-[0-9]{3,}$' -or -not $itemIds.Add($workflowId)) {
+                Add-ValidationError "Security architecture handoff workflow has an invalid or duplicate id '$workflowId': $handoffPath"
+            }
+            foreach ($requiredProperty in @('name', 'actor', 'trigger', 'failureMode')) {
+                if ([string]::IsNullOrWhiteSpace([string]$workflow.$requiredProperty)) {
+                    Add-ValidationError "Security architecture handoff workflow '$workflowId' is missing '$requiredProperty': $handoffPath"
+                }
+            }
+            $steps = @($workflow.steps)
+            if ($steps.Count -eq 0) {
+                Add-ValidationError "Security architecture handoff workflow '$workflowId' requires at least one step: $handoffPath"
+            }
+            $expectedOrder = 1
+            foreach ($step in $steps) {
+                $order = 0
+                if (-not [int]::TryParse([string]$step.order, [ref]$order) -or
+                    $order -ne $expectedOrder -or
+                    [string]::IsNullOrWhiteSpace([string]$step.component) -or
+                    [string]::IsNullOrWhiteSpace([string]$step.action)) {
+                    Add-ValidationError "Security architecture handoff workflow '$workflowId' steps must be uniquely ordered from 1 and include component/action: $handoffPath"
+                }
+                $expectedOrder++
+            }
+            if ($null -eq $workflow.controls) {
+                Add-ValidationError "Security architecture handoff workflow '$workflowId' is missing controls: $handoffPath"
+            }
+            else {
+                foreach ($controlName in @(
+                    'authentication',
+                    'authorization',
+                    'validation',
+                    'audit',
+                    'tests')) {
+                    Test-StringArrayProperty `
+                        -Object $workflow.controls `
+                        -Name $controlName `
+                        -Context "Security architecture handoff workflow '$workflowId' controls" `
+                        -AllowEmpty | Out-Null
+                }
+            }
+            $workflowEvidenceRefs = @(
+                Test-StringArrayProperty `
+                    -Object $workflow `
+                    -Name 'evidenceRefs' `
+                    -Context "Security architecture handoff workflow '$workflowId'"
+            )
+            foreach ($evidenceRef in $workflowEvidenceRefs) {
+                if (-not $evidenceIds.Contains([string]$evidenceRef)) {
+                    Add-ValidationError "Security architecture handoff workflow '$workflowId' references unknown evidence '$evidenceRef': $handoffPath"
+                }
+            }
+        }
+
+        foreach ($unknown in @($handoff.unknowns)) {
+            $unknownId = [string]$unknown.id
+            if ($unknownId -notmatch '^U-[0-9]{3,}$' -or -not $itemIds.Add($unknownId)) {
+                Add-ValidationError "Security architecture handoff unknown has an invalid or duplicate id '$unknownId': $handoffPath"
+            }
+            foreach ($requiredProperty in @('question', 'securityImpact', 'owner')) {
+                if ([string]::IsNullOrWhiteSpace([string]$unknown.$requiredProperty)) {
+                    Add-ValidationError "Security architecture handoff unknown '$unknownId' is missing '$requiredProperty': $handoffPath"
+                }
+            }
         }
     }
 
@@ -225,6 +472,8 @@ function Test-DocumentContent {
             Add-ValidationError "Checklist entry '$label' must be checked if and only if confidence is Verified: $Path"
         }
     }
+
+    Test-SecurityHandoffContent $Path
 }
 
 if ($Classification -eq 'SingleApp') {

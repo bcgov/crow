@@ -143,6 +143,9 @@ These rules apply to every finding. Violating them invalidates the assessment.
 - **ALWAYS** trace stored/second-order prompt injection through both the write/import path and the later retrieval/model/tool path
 - **ALWAYS** verify the Markdown parser/renderer configuration and reachable output, fetch, or execution context before reporting active-content vulnerabilities
 - **NEVER** treat an undocumented policy, missing owner, or absent design record as a confirmed vulnerability without code or configuration evidence of harmful behavior
+- **NEVER** infer identity-provider, gateway, hosting, or organization-level
+  controls from their absence in application source; record the external scope
+  as `Unknown`
 - **ALWAYS** distinguish severity from evidence classification: use the approved severity scheme `Critical`, `High`, `Medium`, `Low`, `Informational`, and use `Confirmed`, `Probable`, or `Informational` for evidence status
 
 ---
@@ -188,6 +191,9 @@ Available modules:
 - `deserialization-and-integrity.md` — Type confusion, gadget chains, unsigned data
 - `crypto-and-transport.md` — Key management, protocol config, RNG misuse
 - `api-and-session-security.md` — Rate limiting, CORS, cookie flags, JWT flaws
+- `security-logging-and-audit.md` — Security-event lifecycles, authoritative audit points, attribution, and redaction
+- `security-control-assurance.md` — Security-control tests, negative cases, framework-boundary coverage, and CI enforcement
+- `finding-synthesis-and-validation.md` — Validation adjudication, cross-domain themes, attack paths, and component priority
 - `frontend-spa-security.md` — React, Vue, Angular, Svelte: client-side XSS, auth bypass, secret exposure, SSR leakage
 - `llm-prompt-and-markdown-security.md` — Direct and stored/second-order prompt injection, RAG/tool agency, insecure model output, and Markdown/document pipeline security
 - `platform-data-and-proofs.md` — Conditional data minimization, scoped questions, pairwise correlation, digital proof properties, assurance fallback, and privacy-preserving audit context
@@ -220,6 +226,14 @@ Determine whether the repository is a monorepo by inspecting workspace boundarie
 **If single-app repo:** Proceed normally with one `docs/security-review.md`.
 
 **Repository classification is authoritative for all later steps.** Never use the single-app output path after a repository has been classified as a monorepo.
+
+After classification, look beside the applicable architecture document for
+`architecture-security-facts.json`. When present, validate it with the
+architecture-review validator and compare `sourceRevision` with the reviewed
+commit. Load only its normalized facts, workflows, evidence, and unknowns.
+Fresh `Verified` facts can seed discovery; stale, inferred, or unknown facts are
+hints that require source verification. The handoff is optional and its
+absence does not block a security review.
 
 ### Step 3: Codebase Knowledge Graph — Index & Coverage Baseline
 
@@ -403,6 +417,19 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Trace direct and stored/second-order prompt injection from every untrusted source through storage/retrieval into the model and onward to privileged tools or active output sinks.
 - Review every tracked Markdown family file (`.md`, `.mdx`, `.markdown`) that can be rendered, published, ingested by a model, or consumed by automation. Inspect renderer/parser configuration rather than treating documentation as inert by default.
 
+#### Pass H: Control Assurance, Validation, and Synthesis
+- Load `security-logging-and-audit.md` for authentication, authorization,
+  credential, token, privileged, or sensitive-state lifecycles.
+- Load `security-control-assurance.md`; map each material security control to
+  unit, integration, negative-case, and CI evidence. Run the CI gate candidate
+  script and verify its observations.
+- Independently adjudicate every Critical/High finding and every proposed chain
+  source. Resolve changed severity, scope, preconditions, or causal language.
+- When two or more findings share an evidenced control, workflow, resource, or
+  attacker path, load `finding-synthesis-and-validation.md`. Record
+  cross-domain themes, eligible attack paths, and component priority without
+  changing source finding severity.
+
 #### Interpolate & Write
 - Ensure directory `/docs` exists. In a monorepo, also ensure one `docs/<service-name>/` directory exists for every inventoried service.
 - Emit a **YAML frontmatter block** at the very start of each service document (see Output Format section below). Include the service name and repository-relative service path so scope is mechanically identifiable.
@@ -413,48 +440,26 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
 - Verify outdated scans: confirm CLI outdated scan commands were executed in Step 5 before writing the dependency inventory table.
 - Verify coverage baseline: confirm all entry points from Step 3 were assessed; document any gaps.
+- Write the synthesis input and run `New-CrowSecuritySynthesis.ps1`. Use its
+  canonical counts, chain IDs, and `crow-v1` component priorities; never derive
+  vulnerability severity from the component score.
 - When the assessed and total entry-point counts are known from the coverage
   baseline, write both `coverage_assessed` and `coverage_total` to frontmatter.
   If either count is unavailable, write both as null; never infer the total
   from `coverage_baseline_gaps`.
 - **Monorepo finalization gate:** Before writing or updating any report, re-run the service inventory/output-path checks from Step 2. After writing, verify that every inventoried service has exactly one `docs/<service-name>/security-review.md`, every service document contains only its service-scoped findings and frontmatter, `docs/security-index.md` links all service documents, and no root `docs/security-review.md` exists. If any assertion fails, treat the review as failed and do not present it as complete.
+- Run `Test-CrowSecurityReviewOutput.ps1` against each report and synthesis
+  artifact. Count mismatches, unresolved adjudication, or missing synthesis
+  identifiers are failed reviews.
 - Set Revision History date to today's date and version to `1.0`.
 
 ---
 
 ### Output Format: YAML Frontmatter
 
-The security review document MUST begin with a YAML frontmatter block containing structured metadata. This enables machine-readable parsing of severity counts and risk posture without reading the full document.
-
-```yaml
----
-document_type: security-review
-assessment_date: YYYY-MM-DD
-application: "{{APPLICATION_NAME}}"
-application_acronym: "{{APPLICATION_ACRONYM}}"
-report_scope: service
-service_name: "{{SERVICE_NAME}}"
-service_path: "{{REPOSITORY_RELATIVE_SERVICE_PATH}}"
-overall_risk: CRITICAL | HIGH | MODERATE | LOW | SECURE
-total_findings: <integer>
-critical_count: <integer>
-high_count: <integer>
-medium_count: <integer>
-low_count: <integer>
-informational_count: <integer>
-confirmed_count: <integer>
-probable_count: <integer>
-owasp_categories: [A01, A05, ...]
-cwe_ids: [CWE-89, CWE-79, ...]
-asvs_requirements: [V2.1.1, ...]
-mitre_techniques: [T1190, ...]
-sonarqube_quality_gate: PASSED | FAILED | NOT_RUN
-coverage_baseline_gaps: <integer>
-coverage_assessed: <integer or null>
-coverage_total: <integer or null>
-tech_stack: [".NET 8", "PostgreSQL 16", ...]
----
-```
+The security review document MUST begin with the exact frontmatter fields in
+the bundled `security-review-template.md`. Populate all synthesis counts from
+the deterministic synthesis artifact rather than recomputing them in prose.
 
 ---
 
@@ -481,7 +486,7 @@ When an existing `security-review.md` is found:
 2. In a monorepo, only read or update `docs/<service-name>/security-review.md` files that map to the current service inventory. A root `docs/security-review.md` is invalid combined output; stop and request migration/splitting before continuing.
 3. In a single-app repository, read the root document and continue with the single-app update workflow below.
 4. Perform Steps 3–7 to gather updated framework versions, dependency diffs, latest Sonar scan metrics, and refreshed OWASP / scope analysis.
-5. Preserve manually entered remediation notes, owner assignments, and action items in Section 13.
+5. Preserve manually entered remediation notes, owner assignments, and action items in Section 14.
 6. Update changed metrics, version numbers, Quality Gate status, new CVEs, and OWASP check statuses.
 7. Add a revision history entry and bump the version number.
 

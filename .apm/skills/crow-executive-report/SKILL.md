@@ -13,6 +13,13 @@ Use the following bundled resources when creating an executive report:
 - `report-data.schema.json` — Schema for the model-generated report data.
 - `render-report.ps1` — Deterministic HTML renderer.
 
+Read source freshness and synthesis reconciliation instructions in the agent
+before populating the report. `security_synthesis` in `report-data.json` is
+optional; populate it only from a validated, current synthesis and the
+bounded security control-assurance section. The renderer displays a short
+conditional section and never computes or changes security severity or
+component-priority scores.
+
 Run `render-report.ps1` from this skill directory with the target repository's `report-data.json` path. Write generated reports to the target repository's `docs/` directory; do not modify the bundled resources.
 
 When a PDF is required on Windows, use Microsoft Edge's built-in headless

@@ -19,14 +19,16 @@ function Invoke-ValidatorTest {
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        & $powerShellPath -NoProfile -File $validatorPath @Arguments *> $null
+        $commandOutput = @(
+            & $powerShellPath -NoProfile -File $validatorPath @Arguments *>&1
+        )
         $passed = $LASTEXITCODE -eq 0
     }
     finally {
         $ErrorActionPreference = $previousErrorActionPreference
     }
     if ($passed -ne $ShouldPass) {
-        throw "$Name expected pass=$ShouldPass but pass=$passed."
+        throw "$Name expected pass=$ShouldPass but pass=$passed. Output: $($commandOutput -join ' | ')"
     }
     Write-Host "Passed: $Name"
 }
@@ -79,6 +81,73 @@ function New-ValidArchitectureDocument {
     return $lines -join [Environment]::NewLine
 }
 
+function New-ValidSecurityHandoff {
+    param(
+        [string]$ArchitectureDocument,
+        [string]$Classification,
+        [string]$ServiceName,
+        [string]$ServicePath
+    )
+
+    return [ordered]@{
+        schemaVersion = '1.0'
+        generatedAt = '2026-09-29T18:00:00Z'
+        sourceRevision = '0123456789abcdef'
+        architectureDocument = $ArchitectureDocument
+        scope = [ordered]@{
+            classification = $Classification
+            serviceName = $ServiceName
+            servicePath = $ServicePath
+        }
+        facts = @(
+            [ordered]@{
+                id = 'AF-001'
+                type = 'TrustBoundary'
+                name = 'Application boundary'
+                summary = 'Synthetic verified boundary.'
+                confidence = 'Verified'
+                components = @('application')
+                evidenceRefs = @('EV-001')
+            }
+        )
+        workflows = @(
+            [ordered]@{
+                id = 'WF-001'
+                name = 'Protected request'
+                actor = 'User'
+                trigger = 'Request'
+                steps = @(
+                    [ordered]@{
+                        order = 1
+                        component = 'application'
+                        action = 'Authorize request'
+                        boundary = 'Application boundary'
+                    }
+                )
+                controls = [ordered]@{
+                    authentication = @('Synthetic authentication')
+                    authorization = @('Synthetic authorization')
+                    validation = @()
+                    audit = @()
+                    tests = @()
+                }
+                failureMode = 'FailClosed'
+                evidenceRefs = @('EV-001')
+            }
+        )
+        evidence = @(
+            [ordered]@{
+                id = 'EV-001'
+                path = $ArchitectureDocument
+                startLine = 1
+                endLine = 1
+                summary = 'Synthetic architecture evidence.'
+            }
+        )
+        unknowns = @()
+    } | ConvertTo-Json -Depth 20
+}
+
 function New-MonorepoFixture {
     param([string]$Root)
 
@@ -115,6 +184,59 @@ try {
         '-RepoRoot', $singleRoot,
         '-Classification', 'SingleApp',
         '-Phase', 'PostWrite') $true
+    Invoke-ValidatorTest 'single-app required handoff missing' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $false
+    Write-TestFile (
+        Join-Path $singleRoot 'docs\architecture-security-facts.json') (
+        New-ValidSecurityHandoff `
+            -ArchitectureDocument 'docs/architecture.md' `
+            -Classification 'SingleApp' `
+            -ServiceName 'Test Application' `
+            -ServicePath '.')
+    Invoke-ValidatorTest 'single-app required handoff valid' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $true
+    $singleHandoffPath = Join-Path $singleRoot 'docs\architecture-security-facts.json'
+    $validSingleHandoff = New-ValidSecurityHandoff `
+        -ArchitectureDocument 'docs/architecture.md' `
+        -Classification 'SingleApp' `
+        -ServiceName 'Test Application' `
+        -ServicePath '.'
+    Write-TestFile $singleHandoffPath (
+        $validSingleHandoff.Replace(
+            '2026-09-29T18:00:00Z',
+            '2026-09-29T18:00:00+00:00'))
+    Invoke-ValidatorTest 'handoff requires UTC Z timestamp' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $false
+
+    $invalidControls = $validSingleHandoff | ConvertFrom-Json
+    $invalidControls.workflows[0].controls.PSObject.Properties.Remove('tests')
+    Write-TestFile $singleHandoffPath (
+        $invalidControls | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'handoff requires every control array' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $false
+
+    $invalidOrder = $validSingleHandoff | ConvertFrom-Json
+    $invalidOrder.workflows[0].steps[0].order = 2
+    Write-TestFile $singleHandoffPath (
+        $invalidOrder | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'handoff requires ordered workflow steps' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $false
+    Write-TestFile $singleHandoffPath $validSingleHandoff
 
     Write-TestFile (Join-Path $singleRoot 'docs\architecture.md') 'incomplete'
     Invoke-ValidatorTest 'incomplete document rejected' @(
@@ -154,6 +276,19 @@ No inter-service communication was found.
         '-Classification', 'Monorepo',
         '-ServiceInventoryPath', $inventoryPath,
         '-Phase', 'PostWrite') $true
+    Write-TestFile (
+        Join-Path $monorepoRoot 'docs\orders\architecture-security-facts.json') (
+        New-ValidSecurityHandoff `
+            -ArchitectureDocument 'docs/orders/architecture.md' `
+            -Classification 'Monorepo' `
+            -ServiceName 'orders' `
+            -ServicePath 'services/orders')
+    Invoke-ValidatorTest 'monorepo required handoff valid' @(
+        '-RepoRoot', $monorepoRoot,
+        '-Classification', 'Monorepo',
+        '-ServiceInventoryPath', $inventoryPath,
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $true
 
     $indexTemplate = [System.IO.File]::ReadAllText(
         (Resolve-Path (Join-Path $PSScriptRoot '..\resources\architecture-index-template.md')).Path)

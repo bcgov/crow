@@ -12,11 +12,14 @@ Use this skill with the Crow Architecture Review Agent when creating or updating
 1. Load [`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) and read `crow.config` when the repository has one.
 2. Always load [`modules/repository-classification.md`](modules/repository-classification.md).
 3. After classification, load [`modules/repository-inspection.md`](modules/repository-inspection.md) and [`architecture-template.md`](architecture-template.md).
-4. Load [`modules/update-mode.md`](modules/update-mode.md) only when an architecture document already exists.
-5. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
-6. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
-7. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
-8. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
+4. Load [`modules/security-handoff.md`](modules/security-handoff.md) and
+   [`resources/security-handoff-template.json`](resources/security-handoff-template.json)
+   when producing or updating architecture output.
+5. Load [`modules/update-mode.md`](modules/update-mode.md) only when an architecture document already exists.
+6. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
+7. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
+8. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
+9. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
 
 Do not load monorepo or update guidance when the observable repository state does not require it.
 
@@ -30,7 +33,12 @@ Before writing, resolve `scripts/Test-ArchitectureOutput.ps1` relative to this i
 & <crow-architecture-review-skill-directory>\scripts\Test-ArchitectureOutput.ps1 -RepoRoot <repository-root> -Classification SingleApp -Phase PreWrite
 ```
 
-After writing, rerun with `-Phase PostWrite`. For a monorepo, pass `-Classification Monorepo -ServiceInventoryPath <inventory.json>` in both phases. The inventory format and output contract are defined in the classification module. Treat a non-zero exit code as a failed architecture review.
+After writing the Markdown and its `architecture-security-facts.json` sidecar,
+rerun with `-Phase PostWrite -RequireSecurityHandoff`. For a monorepo, pass
+`-Classification Monorepo -ServiceInventoryPath <inventory.json>` in both
+phases. The inventory format and output contract are defined in the
+classification and security-handoff modules. Treat a non-zero exit code as a
+failed architecture review.
 
 During the bounded architecture inspection, apply the routed platform-alignment
 module conditionally. Preserve `Unknown` or `N/A` when role, reuse, ownership,
@@ -41,3 +49,8 @@ During the bounded inspection, when Zero Trust is routed, record protected
 resources and access paths, enforcement points, authorization separate from
 authentication, least-privilege duration, revocation, degradation, exceptions,
 telemetry, and evidence confidence. Do not infer enterprise-wide posture.
+
+Keep the handoff token-efficient: normalize source locations in its `evidence`
+array, reference them by ID, and include only security-relevant facts,
+workflows, and unknowns. The Markdown remains the complete human-facing
+architecture record.

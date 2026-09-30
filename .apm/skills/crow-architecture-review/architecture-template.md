@@ -86,6 +86,20 @@ This section documents the actual project structure and highlights the real arch
 | :--- | :--- | :--- |
 | | `REST API / gRPC / GraphQL / CLI / Worker / Event Consumer` | |
 
+### 3.3 Security-Relevant Workflows
+
+Document only workflows that establish identity, cross a trust boundary,
+change protected state, handle credentials, ingest externally controlled data,
+or perform sensitive background maintenance.
+
+| Workflow | Actor / Trigger | Ordered Components | Authentication / Authorization / Validation | Sensitive Data or Credential | Audit Event | Failure / Degradation | Test Evidence |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | | | |
+
+The normalized, machine-readable subset of these facts is stored beside this
+document in `architecture-security-facts.json`. Source locations are normalized
+there and referenced by evidence ID to avoid repeating prose or code excerpts.
+
 ---
 
 ## 4. API Surface & Contracts
@@ -299,6 +313,7 @@ Key architectural decisions are recorded to capture history and trade-offs.
 - [ ] **Observability:** Health endpoints, structured logging, and alerting are configured. `[Confidence: ]`
 - [ ] **Deployment Pipeline:** CI/CD includes automated tests and security scanning gates. `[Confidence: ]`
 - [ ] **Data Classification:** Sensitive data categories are identified with appropriate encryption and retention controls. `[Confidence: ]`
+- [ ] **Security Architecture Handoff:** Security-relevant facts, workflows, evidence, and unknowns are captured in the validated `architecture-security-facts.json` sidecar. `[Confidence: ]`
 - [ ] **Disaster Recovery:** Backup and recovery procedures are documented and tested. `[Confidence: ]`
 - [ ] **Platform Role (conditional):** Where shared, public, canonical, or adapter evidence exists, one role is classified and one-to-many impact and reuse decisions are recorded; otherwise the result is `N/A` or `Unknown` with a reason. `[Confidence: ]`
 - [ ] **Platform Data Responsibility (conditional):** Data custodian, permitted purpose/subject scope, narrow-question versus broad-data access, and the `Open / Shared / Closed` spectrum are evidenced. `[Confidence: ]`
