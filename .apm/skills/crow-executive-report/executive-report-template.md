@@ -76,6 +76,8 @@ Chains describe combined paths, not additional findings or automatic severity
 upgrades. Report up to three material control-assurance `Gap` or `Unknown`
 rows with the enforcement point and missing test/CI verification. An unknown
 control is not an established vulnerability.
+For each attack path, cite its resolved `EV-*` IDs with repository paths and
+line ranges in the Evidence cell; do not include source excerpts.
 
 | Component (top three) | Active findings | Relative `crow-v1` priority | Action |
 | :--- | ---: | ---: | :--- |

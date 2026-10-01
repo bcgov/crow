@@ -217,13 +217,14 @@ Determine whether the repository is a monorepo by inspecting workspace boundarie
 
 **If monorepo is detected:**
 - Build and retain a complete service inventory before continuing. For every independently deployable service, record a stable service name, repository-relative source subtree, manifest/build file, deployment entry point, and output path `docs/<service-name>/security-review.md`.
+- Monorepo metadata: `report_scope: Monorepo`; inventory `name`/exact `sourcePath` become `service_name`/`service_path`; set `synthesis_artifact: docs/<name>/security-review-synthesis.json`.
 - **Blocking monorepo output rule:** Generate exactly one security review document per service at `docs/<service-name>/security-review.md`. A monorepo MUST NOT have a combined `docs/security-review.md`; do not create, update, or use that root-level file as a substitute.
 - Generate or update `docs/security-index.md` at the repository root. The index MUST link every inventoried service document and MUST NOT contain findings that replace a service report.
 - Run Steps 3–7 independently for each inventoried service, scoped to that service's subtree and dependencies. Do not merge findings, metrics, frontmatter, or coverage counts across services.
 - **Hard failure gate (before analysis and before any write):** stop with a visible error if service discovery is incomplete or ambiguous, if any service lacks a unique output path, if a root `docs/security-review.md` exists at all, or if the expected service inventory cannot be reconciled with the generated/indexed documents. A root file is invalid regardless of its contents; do not proceed by falling back to a combined report.
 - **Mechanical pre-write check:** run a filesystem check (for example, `Test-Path docs/security-review.md` on Windows or `test -e docs/security-review.md` on Unix) and verify it is false; verify that the number of service output paths equals the number of inventoried services and that every path is under `docs/<service-name>/`. If any check fails, do not write a final report.
 
-**If single-app repo:** Proceed normally with one `docs/security-review.md`.
+**Single app:** `docs/security-review.md`; set `report_scope: SingleApp`, app `service_name` (same as synthesis `serviceName`), `service_path: .`, and `synthesis_artifact: docs/security-review-synthesis.json`.
 
 **Repository classification is authoritative for all later steps.** Never use the single-app output path after a repository has been classified as a monorepo.
 
@@ -440,26 +441,25 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
 - Verify outdated scans: confirm CLI outdated scan commands were executed in Step 5 before writing the dependency inventory table.
 - Verify coverage baseline: confirm all entry points from Step 3 were assessed; document any gaps.
-- Write the synthesis input and run `New-CrowSecuritySynthesis.ps1`. Use its
-  canonical counts, chain IDs, and `crow-v1` component priorities; never derive
-  vulnerability severity from the component score.
+- Write input; run `New-CrowSecuritySynthesis.ps1` with output at adjacent
+  `synthesis_artifact`; use its counts, chain IDs, and `crow-v1` priorities,
+  not score-derived severity.
 - When the assessed and total entry-point counts are known from the coverage
   baseline, write both `coverage_assessed` and `coverage_total` to frontmatter.
   If either count is unavailable, write both as null; never infer the total
   from `coverage_baseline_gaps`.
 - **Monorepo finalization gate:** Before writing or updating any report, re-run the service inventory/output-path checks from Step 2. After writing, verify that every inventoried service has exactly one `docs/<service-name>/security-review.md`, every service document contains only its service-scoped findings and frontmatter, `docs/security-index.md` links all service documents, and no root `docs/security-review.md` exists. If any assertion fails, treat the review as failed and do not present it as complete.
-- Run `Test-CrowSecurityReviewOutput.ps1` against each report and synthesis
-  artifact. Count mismatches, unresolved adjudication, or missing synthesis
-  identifiers are failed reviews.
+- Run `Test-CrowSecurityReviewOutput.ps1` for each report and its frontmatter
+  synthesis path; fail scope/path mismatches, count errors, unresolved
+  adjudication, or missing synthesis IDs.
 - Set Revision History date to today's date and version to `1.0`.
 
 ---
 
 ### Output Format: YAML Frontmatter
 
-The security review document MUST begin with the exact frontmatter fields in
-the bundled `security-review-template.md`. Populate all synthesis counts from
-the deterministic synthesis artifact rather than recomputing them in prose.
+Start with exact template frontmatter; populate synthesis counts from its
+deterministic artifact.
 
 ---
 

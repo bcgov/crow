@@ -28,19 +28,37 @@ locators, or credentials into executive reports.
 
 ### Step 1: Locate & Validate Source Documents (Freshness Check)
 
-1. Check for the existence of source documents in `/docs` (or `/docs/<service-name>` in monorepos):
-   - `/docs/architecture.md`
-   - `/docs/security-review.md`
+1. Select documents by repository scope: a single app uses
+   `/docs/architecture.md` and `/docs/security-review.md`; a monorepo uses
+   `/docs/<service-name>/architecture.md` and
+   `/docs/<service-name>/security-review.md`, one service at a time.
+   Require monorepo security frontmatter `report_scope: Monorepo`,
+   `service_name`, and `service_path`; confirm its report and synthesis are
+   under `docs/<service_name>/`. Match service name/path against the
+   architecture handoff when present. Never use root-level monorepo reports or
+   combine service metrics.
 2. **Freshness Verification:**
-   - Read the revision history / assessment date headers in both files.
+   - Read revision history / assessment dates in both scoped source files.
    - Calculate elapsed time between today's date and the document dates.
 3. **Missing or Stale Data Handling:**
-   - If **`/docs/architecture.md`** is missing OR last updated > 1 month ago:
-     - Flag to the user: `Warning: /docs/architecture.md is missing or older than 1 month. Recommendation: Rerun the Crow Architecture Review Agent first to ensure accurate architectural data.`
-   - If **`/docs/security-review.md`** is missing OR last updated > 1 month ago:
-     - Flag to the user: `Warning: /docs/security-review.md is missing or older than 1 month. Recommendation: Rerun the Crow Security & Dependency Review Agent first to ensure accurate security scan & dependency data.`
-   - If either file is missing, halt execution and prompt the user to run the required agent(s), OR proceed with partial data if explicitly instructed by the user.
-4. When the security frontmatter names `synthesis_artifact`, locate it alongside the security review. Before using it, confirm its `schemaVersion` is supported, its `serviceName` matches the assessed service, and its `sourceRevision` equals both the security review's `source_revision` and the current inspected Git HEAD. Compare its `summary` counts to the frontmatter and require `unresolvedValidationCount: 0`. If the artifact is missing, malformed, stale, or inconsistent, stop and request a fresh security review; do not fall back to unreconciled counts or present a verified synthesis.
+   - If either scoped source is missing or older than one month, warn with its
+     exact path and recommend rerunning the corresponding review agent. Halt if
+     a source is missing unless the user explicitly requests partial data.
+4. When the security frontmatter names `synthesis_artifact`, resolve that
+   repository-relative path exactly; do not assume a root-level default. Before
+   using it, confirm its `schemaVersion` is supported, its `serviceName`
+   matches the assessed service and frontmatter `service_name`, and its
+   `sourceRevision` equals both the security review's `source_revision` and the
+   current inspected Git HEAD. Compare its `summary` counts to the frontmatter
+   and require `unresolvedValidationCount: 0`. If the artifact is missing,
+   malformed, stale, or inconsistent, stop and request a fresh security
+   review; do not fall back to unreconciled counts or present a verified
+   synthesis.
+   Resolve every chain `evidenceRefs` ID against the synthesis `evidence`
+   records before using it. Treat missing, duplicate, or incomplete evidence
+   records and unresolved references as an invalid synthesis; cite only the
+   evidence ID, repository path, line range, and summary needed to support the
+   executive claim.
 5. If an `architecture-security-facts.json` handoff exists, compare its `sourceRevision` with the architecture review's assessed revision (when recorded) and current inspected HEAD before using any `Verified` fact. A stale, `Inferred`, or `Unknown` fact is a question to verify, not an executive security conclusion. The handoff never supersedes the architecture document or the adjudicated security review. If it is absent, use the architecture Markdown and label any unverified architecture-dependent claim as unknown.
 6. For legacy security reviews without a `synthesis_artifact`, use only the document's stated metrics and findings; explicitly label synthesis, chain, and component-priority information unavailable. A one-month-old assessment is not proof that its inspected commit is current.
 
@@ -79,6 +97,7 @@ Extract and synthesize data from both source documents into plain language:
 
 #### 1a. Conditional security synthesis and assurance
 - From a validated, current `security-review-synthesis.json`, select at most three evidenced cross-cutting themes and at most three attack paths. Retain chain ID, stated risk, confidence, and any `Unknown` or `Inferred` precondition. A chain is a possible combined path, not an additional finding or automatic severity upgrade.
+- For each selected chain, resolve all `evidenceRefs` against synthesis `evidence`; cite the `EV-*` IDs with repository paths and line ranges in the Evidence cell. Stop if a reference is unresolved or its record is incomplete.
 - Select at most three `componentPriorities` in source order, with active finding counts. Describe `crow-v1` scores as **relative remediation ordering within this assessment only**, never as a vulnerability severity, risk band, percentage, maturity rating, or comparable score across applications. Do not calculate or alter scores.
 - From the bounded security review control-assurance table, report at most three material `Gap` or `Unknown` rows with the affected control, enforcement point, and missing verification. Do not treat absent test or CI evidence as proof that the control is ineffective, or a CI candidate as an enforcing gate.
 - If synthesis or assurance evidence is absent, say so in the Markdown and executive brief rather than emitting zero or a reassuring status. Include only source-backed summaries in the optional `security_synthesis` data field; never expose raw code excerpts or sensitive details.

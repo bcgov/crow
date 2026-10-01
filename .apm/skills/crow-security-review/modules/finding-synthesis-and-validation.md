@@ -73,6 +73,13 @@ Create the synthesis input described by
 - calculates component remediation-priority scores;
 - emits the canonical counts used by report frontmatter.
 
+Each evidence record requires string `id`, `path`, and `summary` values plus a
+positive `startLine` and an `endLine` no earlier than it. Paths must be
+repository-relative and contain no root, empty, `.` or `..` segments; the
+script does not verify file existence. The output preserves validated records
+under `evidence`, so consumers resolve each chain `evidenceRefs` value against
+`evidence[].id`.
+
 Run `scripts/Test-CrowSecurityReviewOutput.ps1` after writing the report. A
 count mismatch, unresolved adjudication, missing finding/chain identifier, or
 missing synthesis section is a failed review.

@@ -10,8 +10,9 @@ $powerShellPath = (Get-Process -Id $PID).Path
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) (
     'crow-security-synthesis-' + [guid]::NewGuid().ToString('N'))
 $inputPath = Join-Path $tempRoot 'input.json'
-$outputPath = Join-Path $tempRoot 'synthesis.json'
-$reportPath = Join-Path $tempRoot 'security-review.md'
+$docsPath = Join-Path $tempRoot 'docs'
+$outputPath = Join-Path $docsPath 'security-review-synthesis.json'
+$reportPath = Join-Path $docsPath 'security-review.md'
 $utf8 = [System.Text.UTF8Encoding]::new($false)
 
 function Write-Json {
@@ -140,12 +141,27 @@ try {
     if ($result.chains[0].chainId -notmatch '^CHAIN-[A-F0-9]{8}$') {
         throw 'Deterministic chain ID was not generated.'
     }
+    if ($result.evidence.Count -ne 1 -or
+        $result.evidence[0].id -ne 'EV-001' -or
+        $result.evidence[0].path -ne 'src/auth.cs' -or
+        $result.evidence[0].startLine -ne 10 -or
+        $result.evidence[0].endLine -ne 12 -or
+        $result.evidence[0].summary -ne 'Synthetic evidence.') {
+        throw 'Validated evidence records were not preserved in the synthesis.'
+    }
+    if ($result.chains[0].edges[0].evidenceRefs[0] -notin @($result.evidence.id)) {
+        throw 'A chain evidence reference could not be resolved from synthesis evidence.'
+    }
 
     $summary = $result.summary
     $chainId = $result.chains[0].chainId
     $report = @"
 ---
 document_type: security-review
+report_scope: SingleApp
+service_name: sample
+service_path: .
+synthesis_artifact: docs/security-review-synthesis.json
 source_revision: $($result.sourceRevision)
 total_findings: $($summary.totalFindings)
 critical_count: $($summary.criticalCount)
@@ -189,6 +205,57 @@ SEC-002
     if ($LASTEXITCODE -ne 0) {
         throw 'Valid security report did not pass validation.'
     }
+    $monorepoReportDirectory = Join-Path $docsPath 'sample'
+    [System.IO.Directory]::CreateDirectory($monorepoReportDirectory) | Out-Null
+    $monorepoReportPath = Join-Path $monorepoReportDirectory 'security-review.md'
+    $monorepoSynthesisPath = Join-Path $monorepoReportDirectory 'security-review-synthesis.json'
+    $monorepoReport = $report.Replace(
+        'report_scope: SingleApp',
+        'report_scope: Monorepo').Replace(
+        'service_path: .',
+        'service_path: services/sample').Replace(
+        'synthesis_artifact: docs/security-review-synthesis.json',
+        'synthesis_artifact: docs/sample/security-review-synthesis.json')
+    [System.IO.File]::WriteAllText($monorepoReportPath, $monorepoReport, $utf8)
+    [System.IO.File]::Copy($outputPath, $monorepoSynthesisPath, $true)
+    & $reportValidator -ReportPath $monorepoReportPath -SynthesisPath $monorepoSynthesisPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'Valid monorepo security report did not pass validation.'
+    }
+    foreach ($requiredScopeField in @('report_scope', 'service_name', 'service_path')) {
+        $missingScopeFieldReport = [regex]::Replace(
+            $monorepoReport,
+            '(?m)^' + [regex]::Escape($requiredScopeField) + ':[^\r\n]*\r?\n',
+            '')
+        [System.IO.File]::WriteAllText(
+            $monorepoReportPath,
+            $missingScopeFieldReport,
+            $utf8)
+        Assert-CommandFails "monorepo report requires $requiredScopeField" $reportValidator @(
+            '-ReportPath', $monorepoReportPath,
+            '-SynthesisPath', $monorepoSynthesisPath)
+    }
+    [System.IO.File]::WriteAllText(
+        $monorepoReportPath,
+        $monorepoReport.Replace(
+            'service_path: services/sample',
+            'service_path: ../services/sample'),
+        $utf8)
+    Assert-CommandFails 'monorepo service path must be repository-relative' $reportValidator @(
+        '-ReportPath', $monorepoReportPath,
+        '-SynthesisPath', $monorepoSynthesisPath)
+    [System.IO.File]::WriteAllText($monorepoReportPath, $monorepoReport, $utf8)
+
+    [System.IO.File]::WriteAllText(
+        $reportPath,
+        $report.Replace(
+            'synthesis_artifact: docs/security-review-synthesis.json',
+            'synthesis_artifact: docs/incorrect-security-synthesis.json'),
+        $utf8)
+    Assert-CommandFails 'incorrect synthesis artifact path' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
     [System.IO.File]::WriteAllText(
         $reportPath,
         $report.Replace(
@@ -199,6 +266,35 @@ SEC-002
         '-ReportPath', $reportPath,
         '-SynthesisPath', $outputPath)
     [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
+    $savedEvidence = $input.evidence
+    $input.evidence = @([ordered]@{ id = 'EV-001' })
+    Write-Json $inputPath $input
+    Assert-CommandFails 'evidence requires complete source details' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.evidence = $savedEvidence
+
+    $input.evidence[0].path = '../outside.cs'
+    Write-Json $inputPath $input
+    Assert-CommandFails 'evidence path must remain repository-relative' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.evidence[0].path = 'src/auth.cs'
+
+    $input.evidence[0].endLine = 9
+    Write-Json $inputPath $input
+    Assert-CommandFails 'evidence line range must be ordered' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.evidence[0].endLine = 12
+
+    $input.evidence[0].summary = ''
+    Write-Json $inputPath $input
+    Assert-CommandFails 'evidence summary must be present' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.evidence[0].summary = 'Synthetic evidence.'
 
     $input.findings[0].validation.resolution = 'Pending'
     Write-Json $inputPath $input

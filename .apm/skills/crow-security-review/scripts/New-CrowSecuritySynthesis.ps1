@@ -124,11 +124,71 @@ $chains = @(Get-OptionalValue $inputData 'chains' @())
 
 $evidenceIds = [System.Collections.Generic.HashSet[string]]::new(
     [System.StringComparer]::Ordinal)
+$normalizedEvidence = [System.Collections.Generic.List[object]]::new()
 foreach ($item in $evidence) {
-    $evidenceId = [string](Get-RequiredValue $item 'id' 'Evidence')
+    $evidenceIdValue = Get-RequiredValue $item 'id' 'Evidence'
+    if ($evidenceIdValue -isnot [string]) {
+        throw 'Evidence property ''id'' must be a string.'
+    }
+    $evidenceId = $evidenceIdValue
     if (-not $evidenceIds.Add($evidenceId)) {
         throw "Duplicate evidence ID '$evidenceId'."
     }
+
+    $evidencePathValue = Get-RequiredValue $item 'path' "Evidence '$evidenceId'"
+    if ($evidencePathValue -isnot [string]) {
+        throw "Evidence '$evidenceId' property 'path' must be a string."
+    }
+    $evidencePath = $evidencePathValue
+    $pathSegments = @($evidencePath -split '[\\/]')
+    if ($evidencePath -match '^(?:[\\/]|[A-Za-z]:)' -or
+        $evidencePath -match '^[A-Za-z][A-Za-z0-9+.-]*://' -or
+        $pathSegments -contains '' -or
+        $pathSegments -contains '.' -or
+        $pathSegments -contains '..') {
+        throw "Evidence '$evidenceId' path must be a repository-relative file path."
+    }
+
+    $startLineValue = Get-RequiredValue $item 'startLine' "Evidence '$evidenceId'"
+    $endLineValue = Get-RequiredValue $item 'endLine' "Evidence '$evidenceId'"
+    $lineNumberStyle = [System.Globalization.NumberStyles]::Integer
+    $invariantCulture = [System.Globalization.CultureInfo]::InvariantCulture
+    [long]$startLine = 0
+    [long]$endLine = 0
+    if ($startLineValue -is [string] -or
+        $startLineValue -is [bool] -or
+        $startLineValue -isnot [System.ValueType] -or
+        -not [long]::TryParse(
+            [string]$startLineValue,
+            $lineNumberStyle,
+            $invariantCulture,
+            [ref]$startLine) -or
+        $startLine -lt 1) {
+        throw "Evidence '$evidenceId' property 'startLine' must be a positive integer."
+    }
+    if ($endLineValue -is [string] -or
+        $endLineValue -is [bool] -or
+        $endLineValue -isnot [System.ValueType] -or
+        -not [long]::TryParse(
+            [string]$endLineValue,
+            $lineNumberStyle,
+            $invariantCulture,
+            [ref]$endLine) -or
+        $endLine -lt $startLine) {
+        throw "Evidence '$evidenceId' property 'endLine' must be an integer greater than or equal to startLine."
+    }
+
+    $summaryValue = Get-RequiredValue $item 'summary' "Evidence '$evidenceId'"
+    if ($summaryValue -isnot [string]) {
+        throw "Evidence '$evidenceId' property 'summary' must be a string."
+    }
+    $normalizedEvidence.Add([ordered]@{
+        id = $evidenceId
+        path = $evidencePath
+        startLine = $startLine
+        endLine = $endLine
+        summary = $summaryValue
+    })
 }
 
 $componentMap = @{}
@@ -530,6 +590,7 @@ $output = [ordered]@{
         chainsIncludedInScore = $false
     }
     summary = $summary
+    evidence = @($normalizedEvidence)
     findings = @($normalizedFindings)
     themes = @($normalizedThemes)
     chains = @($normalizedChains)

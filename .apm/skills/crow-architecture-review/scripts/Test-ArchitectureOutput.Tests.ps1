@@ -207,6 +207,29 @@ try {
         -Classification 'SingleApp' `
         -ServiceName 'Test Application' `
         -ServicePath '.'
+    foreach ($collectionProperty in @('facts', 'workflows', 'evidence', 'unknowns')) {
+        $invalidCollection = $validSingleHandoff | ConvertFrom-Json
+        $invalidCollection.$collectionProperty = 'not-an-array'
+        Write-TestFile $singleHandoffPath (
+            $invalidCollection | ConvertTo-Json -Depth 20)
+        Invoke-ValidatorTest "handoff rejects scalar $collectionProperty" @(
+            '-RepoRoot', $singleRoot,
+            '-Classification', 'SingleApp',
+            '-Phase', 'PostWrite',
+            '-RequireSecurityHandoff') $false
+    }
+    Write-TestFile $singleHandoffPath $validSingleHandoff
+    $emptyCollections = $validSingleHandoff | ConvertFrom-Json
+    foreach ($collectionProperty in @('facts', 'workflows', 'evidence', 'unknowns')) {
+        $emptyCollections.$collectionProperty = @()
+    }
+    Write-TestFile $singleHandoffPath (
+        $emptyCollections | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'handoff accepts empty arrays' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $true
     Write-TestFile $singleHandoffPath (
         $validSingleHandoff.Replace(
             '2026-09-29T18:00:00Z',
@@ -289,6 +312,22 @@ No inter-service communication was found.
         '-ServiceInventoryPath', $inventoryPath,
         '-Phase', 'PostWrite',
         '-RequireSecurityHandoff') $true
+    New-Item -ItemType Directory -Path (
+        Join-Path $monorepoRoot 'services\payments') | Out-Null
+    $wrongServiceHandoff = New-ValidSecurityHandoff `
+        -ArchitectureDocument 'docs/orders/architecture.md' `
+        -Classification 'Monorepo' `
+        -ServiceName 'orders' `
+        -ServicePath 'services/payments' | ConvertFrom-Json
+    Write-TestFile (
+        Join-Path $monorepoRoot 'docs\orders\architecture-security-facts.json') (
+        $wrongServiceHandoff | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'monorepo handoff service path must match inventory' @(
+        '-RepoRoot', $monorepoRoot,
+        '-Classification', 'Monorepo',
+        '-ServiceInventoryPath', $inventoryPath,
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $false
 
     $indexTemplate = [System.IO.File]::ReadAllText(
         (Resolve-Path (Join-Path $PSScriptRoot '..\resources\architecture-index-template.md')).Path)

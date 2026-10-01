@@ -1,6 +1,9 @@
 ---
 document_type: security-review
 assessment_date: YYYY-MM-DD
+report_scope: "{{REPORT_SCOPE}}"
+service_name: "{{SERVICE_NAME}}"
+service_path: "{{SERVICE_PATH}}"
 application: "{{APPLICATION_NAME}}"
 application_acronym: "{{APPLICATION_ACRONYM}}"
 source_revision: "{{GIT_COMMIT_SHA}}"
@@ -18,7 +21,7 @@ unresolved_validation_count: 0
 component_priority_model: crow-v1
 architecture_handoff: "NOT_FOUND"
 architecture_handoff_status: NOT_FOUND | VALID_FRESH | VALID_STALE | INVALID
-synthesis_artifact: "docs/security-review-synthesis.json"
+synthesis_artifact: "{{SYNTHESIS_ARTIFACT_PATH}}"
 owasp_categories: []
 cwe_ids: []
 asvs_requirements: []

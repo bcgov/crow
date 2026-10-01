@@ -68,6 +68,74 @@ if ($errors.Count -eq 0) {
     }
     else {
         $frontmatter = $frontmatterMatch.Groups['content'].Value
+        $reportScope = Get-FrontmatterValue $frontmatter 'report_scope'
+        $serviceName = Get-FrontmatterValue $frontmatter 'service_name'
+        $servicePath = Get-FrontmatterValue $frontmatter 'service_path'
+        $synthesisArtifact = Get-FrontmatterValue $frontmatter 'synthesis_artifact'
+        if ($reportScope -cne 'SingleApp' -and $reportScope -cne 'Monorepo') {
+            Add-ValidationError "Security report frontmatter 'report_scope' must be 'SingleApp' or 'Monorepo'."
+        }
+        if ([string]::IsNullOrWhiteSpace($serviceName) -or
+            $serviceName -cne [string]$synthesis.serviceName) {
+            Add-ValidationError "Security report frontmatter 'service_name' must match the synthesis serviceName."
+        }
+        if ([string]::IsNullOrWhiteSpace($servicePath)) {
+            Add-ValidationError "Security report frontmatter 'service_path' cannot be empty."
+        }
+        elseif ($reportScope -ceq 'SingleApp' -and $servicePath -cne '.') {
+            Add-ValidationError "Single-app security report frontmatter 'service_path' must be '.'."
+        }
+        elseif ($reportScope -ceq 'Monorepo') {
+            $servicePathSegments = @($servicePath -split '[\\/]')
+            if ($servicePath -match '^(?:[\\/]|[A-Za-z]:)' -or
+                $servicePathSegments -contains '' -or
+                $servicePathSegments -contains '.' -or
+                $servicePathSegments -contains '..') {
+                Add-ValidationError "Monorepo security report frontmatter 'service_path' must be a repository-relative service path."
+            }
+        }
+
+        if ($reportScope -ceq 'SingleApp') {
+            $expectedArtifact = 'docs/security-review-synthesis.json'
+        }
+        elseif ($reportScope -ceq 'Monorepo') {
+            if ($serviceName -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+                Add-ValidationError "Monorepo security report frontmatter 'service_name' is not a safe service identifier."
+            }
+            $expectedArtifact = "docs/$serviceName/security-review-synthesis.json"
+        }
+        else {
+            $expectedArtifact = $null
+        }
+        if ($null -ne $expectedArtifact -and
+            $synthesisArtifact -cne $expectedArtifact) {
+            Add-ValidationError "Security report frontmatter 'synthesis_artifact' must be '$expectedArtifact'."
+        }
+
+        $reportDirectory = Split-Path -Parent $ReportPath
+        $reportDirectoryName = [System.IO.Path]::GetFileName($reportDirectory)
+        $reportParentDirectoryName = [System.IO.Path]::GetFileName(
+            (Split-Path -Parent $reportDirectory))
+        $reportLocationIsInvalid = [System.IO.Path]::GetFileName($ReportPath) -cne 'security-review.md'
+        if ($reportScope -ceq 'SingleApp' -and $reportDirectoryName -cne 'docs') {
+            $reportLocationIsInvalid = $true
+        }
+        elseif ($reportScope -ceq 'Monorepo' -and
+            ($reportDirectoryName -cne $serviceName -or
+                $reportParentDirectoryName -cne 'docs')) {
+            $reportLocationIsInvalid = $true
+        }
+        if ($reportLocationIsInvalid) {
+            Add-ValidationError "Security report path does not match its '$reportScope' service scope."
+        }
+
+        $expectedSynthesisPath = [System.IO.Path]::GetFullPath(
+            (Join-Path $reportDirectory 'security-review-synthesis.json'))
+        $actualSynthesisPath = [System.IO.Path]::GetFullPath($SynthesisPath)
+        if ($actualSynthesisPath -cne $expectedSynthesisPath) {
+            Add-ValidationError 'Security synthesis must be adjacent to its report.'
+        }
+
         $countMap = [ordered]@{
             total_findings = 'totalFindings'
             critical_count = 'criticalCount'

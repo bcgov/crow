@@ -67,9 +67,16 @@ its discovery, canonical SARIF, validation, and ticket lifecycle contract.
    `/docs/architecture.md`; if any are missing, stop and prompt the user to run
    the corresponding agent.
 4. **Parse Frontmatter & Findings:** For a single-app repository, read `/docs/security-review.md`; for a monorepo, read each matching `docs/<service-name>/security-review.md`. Parse each YAML frontmatter block to extract:
+   - `report_scope`, `service_name`, `service_path`, `synthesis_artifact`
    - `overall_risk`, `total_findings`, `critical_count`, `high_count`, `medium_count`
    - `confirmed_count`, `probable_count`
    - `tech_stack` and `sonarqube_quality_gate` status.
+   Require scope metadata to match the selected report and inventory: monorepo
+   names/paths must equal the inventory name/`sourcePath`; single apps require
+   `report_scope: SingleApp` and `service_path: .`. The synthesis artifact must
+   be `docs/<service-name>/security-review-synthesis.json` or
+   `docs/security-review-synthesis.json`, respectively, beside its report.
+   Stop on any mismatch before constructing remediation queues.
 5. **Architecture Alignment Review:** Prefer the matching validated, fresh
    `architecture-security-facts.json` for security-relevant facts and workflows,
    then read only the architecture sections needed for the planned change. If

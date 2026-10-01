@@ -21,6 +21,7 @@ $root = (Resolve-Path $RepoRoot).Path
 $docsPath = Join-Path $root 'docs'
 $rootArchitecturePath = Join-Path $docsPath 'architecture.md'
 $outputPaths = [System.Collections.Generic.List[string]]::new()
+$outputServicePaths = @{}
 $pathComparison = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
     [System.StringComparison]::OrdinalIgnoreCase
 }
@@ -97,7 +98,10 @@ function Resolve-RepositoryPath {
 }
 
 function Test-DocumentContent {
-    param([string]$Path)
+    param(
+        [string]$Path,
+        [string]$ExpectedServicePath
+    )
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
         Add-ValidationError "Expected architecture document is missing: $Path"
@@ -121,7 +125,10 @@ function Test-DocumentContent {
     }
 
     function Test-SecurityHandoffContent {
-        param([string]$ArchitecturePath)
+        param(
+            [string]$ArchitecturePath,
+            [string]$ArchitectureServicePath
+        )
 
         $handoffPath = Join-Path (
             Split-Path -Parent $ArchitecturePath) 'architecture-security-facts.json'
@@ -222,6 +229,11 @@ function Test-DocumentContent {
                 if ([string]$handoff.scope.serviceName -cne $expectedServiceName) {
                     Add-ValidationError "Security architecture handoff serviceName must be '$expectedServiceName': $handoffPath"
                 }
+                $normalizedScopeServicePath = $scopeServicePath.Replace('\', '/')
+                $normalizedExpectedServicePath = $ArchitectureServicePath.Replace('\', '/')
+                if ($normalizedScopeServicePath -cne $normalizedExpectedServicePath) {
+                    Add-ValidationError "Security architecture handoff servicePath must match inventory sourcePath '$normalizedExpectedServicePath': $handoffPath"
+                }
                 Resolve-RepositoryPath $scopeServicePath "Security handoff servicePath" | Out-Null
             }
         }
@@ -230,6 +242,9 @@ function Test-DocumentContent {
             if (-not ($handoff.PSObject.Properties.Name -contains $collectionProperty) -or
                 $null -eq $handoff.$collectionProperty) {
                 Add-ValidationError "Security architecture handoff is missing '$collectionProperty' array: $handoffPath"
+            }
+            elseif ($handoff.$collectionProperty -isnot [System.Array]) {
+                Add-ValidationError "Security architecture handoff '$collectionProperty' must be a JSON array: $handoffPath"
             }
         }
 
@@ -481,7 +496,7 @@ function Test-DocumentContent {
         }
     }
 
-    Test-SecurityHandoffContent $Path
+    Test-SecurityHandoffContent $Path $ExpectedServicePath
 }
 
 if ($Classification -eq 'SingleApp') {
@@ -490,6 +505,7 @@ if ($Classification -eq 'SingleApp') {
     }
     if (Test-NoReparsePoint $rootArchitecturePath 'Single-application output path') {
         $outputPaths.Add($rootArchitecturePath)
+        $outputServicePaths[$rootArchitecturePath] = '.'
     }
 }
 else {
@@ -545,6 +561,7 @@ else {
             $resolvedOutput = Resolve-RepositoryPath $normalizedOutput "Service '$name' output path" -RequireFile -AllowMissing:($Phase -eq 'PreWrite')
             if ($null -ne $resolvedOutput) {
                 $outputPaths.Add($resolvedOutput)
+                $outputServicePaths[$resolvedOutput] = ([string]$service.sourcePath).Replace('\', '/')
             }
 
             Resolve-RepositoryPath ([string]$service.sourcePath) "Service '$name' source path" | Out-Null
@@ -610,7 +627,7 @@ else {
 
 if ($Phase -eq 'PostWrite') {
     foreach ($outputPath in $outputPaths) {
-        Test-DocumentContent $outputPath
+        Test-DocumentContent $outputPath $outputServicePaths[$outputPath]
     }
 }
 
