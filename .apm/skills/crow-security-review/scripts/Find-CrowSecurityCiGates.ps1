@@ -12,13 +12,7 @@ $root = (Resolve-Path -LiteralPath $RepoRoot).Path
 $candidatePaths = [System.Collections.Generic.List[string]]::new()
 $scope = 'FilesystemCandidates'
 
-$gitPatterns = @(
-    '.github/workflows/*.yml',
-    '.github/workflows/*.yaml',
-    'azure-pipelines*.yml',
-    'azure-pipelines*.yaml',
-    '.gitlab-ci.yml',
-    'Jenkinsfile')
+$pipelinePathPattern = '^(?:\.github/workflows/[^/]+\.ya?ml|azure-pipelines[^/]*\.ya?ml|\.gitlab-ci\.yml|Jenkinsfile)$'
 $previousErrorActionPreference = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
 try {
@@ -30,12 +24,14 @@ finally {
 }
 
 if ($gitAvailable) {
-    $gitArguments = @('-C', $root, 'ls-files', '--') + $gitPatterns
-    $trackedPaths = @(& git @gitArguments)
+    $trackedPaths = @(& git -C $root ls-files --)
     if ($LASTEXITCODE -ne 0) {
         throw 'Unable to enumerate tracked pipeline files with Git.'
     }
     foreach ($trackedPath in $trackedPaths) {
+        if ([string]$trackedPath -cnotmatch $pipelinePathPattern) {
+            continue
+        }
         $resolvedPath = Join-Path $root ([string]$trackedPath)
         if (Test-Path -LiteralPath $resolvedPath -PathType Leaf) {
             $candidatePaths.Add((Resolve-Path -LiteralPath $resolvedPath).Path)
