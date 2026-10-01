@@ -2,7 +2,27 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$comment": "Schema for report-data.json consumed by render-report.ps1. The LLM emits ONLY this file; all chart math and HTML rendering is handled by the script.",
 
+  "type": "object",
   "properties": {
+    "stride": {
+      "type": "array",
+      "minItems": 1,
+      "description": "STRIDE ratings copied from a validated schema 1.1 synthesis or a complete legacy Section 11 table. Run the source-to-report validator before rendering. Unknown is not Low.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "component": { "type": "string", "minLength": 1 },
+          "S": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] },
+          "T": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] },
+          "R": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] },
+          "I": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] },
+          "D": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] },
+          "E": { "type": "string", "enum": ["High", "Medium", "Low", "Unknown", "N/A"] }
+        },
+        "required": ["component", "S", "T", "R", "I", "D", "E"],
+        "additionalProperties": false
+      }
+    },
     "coverage_gaps": {
       "type": "integer",
       "minimum": 0

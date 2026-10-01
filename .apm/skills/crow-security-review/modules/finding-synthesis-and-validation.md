@@ -80,9 +80,17 @@ script does not verify file existence. The output preserves validated records
 under `evidence`, so consumers resolve each chain `evidenceRefs` value against
 `evidence[].id`.
 
+New schema `1.1` synthesis inputs require the non-empty structured `stride`
+matrix defined by [`stride-threat-model.md`](stride-threat-model.md). Legacy
+schema `1.0` remains readable only without a `stride` property; its security
+review must use the complete seven-column table. The synthesis script rejects
+version/matrix mismatches, and the output validator requires complete evidence
+records plus the table shape and data appropriate to the declared version.
+
 Run `scripts/Test-CrowSecurityReviewOutput.ps1` after writing the report. A
-count mismatch, unresolved adjudication, missing finding/chain identifier, or
-missing synthesis section is a failed review.
+count mismatch, unresolved adjudication, missing finding/chain identifier,
+missing synthesis section, or missing/mismatched STRIDE matrix is a failed
+review.
 
 ## Component priority model
 

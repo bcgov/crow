@@ -110,7 +110,7 @@ function Assert-EvidenceReferences {
 $resolvedInput = (Resolve-Path -LiteralPath $InputPath).Path
 $inputData = [System.IO.File]::ReadAllText($resolvedInput) | ConvertFrom-Json
 $schemaVersion = [string](Get-RequiredValue $inputData 'schemaVersion' 'Input')
-if ($schemaVersion -ne '1.0') {
+if ($schemaVersion -notin @('1.0', '1.1')) {
     throw "Unsupported synthesis schemaVersion '$schemaVersion'."
 }
 
@@ -121,6 +121,20 @@ $components = @(Get-RequiredValue $inputData 'components' 'Input')
 $findings = @(Get-RequiredValue $inputData 'findings' 'Input')
 $themes = @(Get-OptionalValue $inputData 'themes' @())
 $chains = @(Get-OptionalValue $inputData 'chains' @())
+$strideProperty = $inputData.PSObject.Properties['stride']
+if ($schemaVersion -eq '1.1') {
+    if ($null -eq $strideProperty -or $strideProperty.Value -isnot [array] -or
+        $strideProperty.Value.Count -eq 0) {
+        throw "Input property 'stride' must be a non-empty array for schemaVersion 1.1."
+    }
+    $stride = $strideProperty.Value
+}
+else {
+    if ($null -ne $strideProperty) {
+        throw "Input property 'stride' is not supported for schemaVersion 1.0."
+    }
+    $stride = @()
+}
 
 $evidenceIds = [System.Collections.Generic.HashSet[string]]::new(
     [System.StringComparer]::Ordinal)
@@ -189,6 +203,63 @@ foreach ($item in $evidence) {
         endLine = $endLine
         summary = $summaryValue
     })
+}
+
+$normalizedStride = [System.Collections.Generic.List[object]]::new()
+$strideComponents = [System.Collections.Generic.HashSet[string]]::new(
+    [System.StringComparer]::OrdinalIgnoreCase)
+$strideDimensions = @('S', 'T', 'R', 'I', 'D', 'E')
+$strideRatings = @('High', 'Medium', 'Low', 'Unknown', 'N/A')
+foreach ($row in $stride) {
+    if ($null -eq $row -or $row -is [string]) {
+        throw 'Each STRIDE row must be an object.'
+    }
+    $componentValue = Get-RequiredValue $row 'component' 'STRIDE row'
+    if ($componentValue -isnot [string] -or $componentValue -match '[\r\n|]') {
+        throw 'STRIDE component must be text without Markdown pipes or line breaks.'
+    }
+    $componentName = $componentValue.Trim()
+    if (-not $strideComponents.Add($componentName)) {
+        throw "Duplicate STRIDE component '$componentName'."
+    }
+
+    $normalizedRow = [ordered]@{ component = $componentName }
+    foreach ($dimension in $strideDimensions) {
+        $ratingValue = Get-RequiredValue $row $dimension "STRIDE component '$componentName'"
+        if ($ratingValue -isnot [string] -or $ratingValue -cnotin $strideRatings) {
+            throw "STRIDE component '$componentName' has unsupported $dimension rating '$ratingValue'."
+        }
+        $normalizedRow[$dimension] = $ratingValue
+    }
+
+    $evidenceRefsProperty = $row.PSObject.Properties['evidenceRefs']
+    if ($null -eq $evidenceRefsProperty -or
+        $evidenceRefsProperty.Value -isnot [array] -or
+        $evidenceRefsProperty.Value.Count -eq 0) {
+        throw "STRIDE component '$componentName' must reference at least one evidence item."
+    }
+    $evidenceRefs = @($evidenceRefsProperty.Value)
+    foreach ($reference in $evidenceRefs) {
+        if ($reference -isnot [string] -or
+            $reference -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+            throw "STRIDE component '$componentName' evidence references must be table-safe string IDs."
+        }
+    }
+    if (@($evidenceRefs | Select-Object -Unique).Count -ne $evidenceRefs.Count) {
+        throw "STRIDE component '$componentName' contains duplicate evidence references."
+    }
+    Assert-EvidenceReferences `
+        -References $evidenceRefs `
+        -EvidenceIds $evidenceIds `
+        -Context "STRIDE component '$componentName'"
+    $normalizedRow.evidenceRefs = $evidenceRefs
+
+    $rationaleValue = Get-RequiredValue $row 'rationale' "STRIDE component '$componentName'"
+    if ($rationaleValue -isnot [string] -or $rationaleValue -match '[\r\n|]') {
+        throw "STRIDE component '$componentName' rationale must be text without Markdown pipes or line breaks."
+    }
+    $normalizedRow.rationale = $rationaleValue.Trim()
+    $normalizedStride.Add($normalizedRow)
 }
 
 $componentMap = @{}
@@ -562,7 +633,7 @@ $summary = [ordered]@{
 }
 
 $output = [ordered]@{
-    schemaVersion = '1.0'
+    schemaVersion = $schemaVersion
     serviceName = $serviceName
     sourceRevision = $sourceRevision
     generatedAt = [DateTimeOffset]::UtcNow.ToString('o')
@@ -604,6 +675,9 @@ $output = [ordered]@{
                 Descending = $false
             }
     )
+}
+if ($schemaVersion -eq '1.1') {
+    $output.stride = @($normalizedStride)
 }
 
 $outputDirectory = Split-Path -Parent $OutputPath

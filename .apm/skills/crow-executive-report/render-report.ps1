@@ -290,23 +290,48 @@ if ($data.PSObject.Properties['tech_debt']) {
 }
 
 # --- Build STRIDE heatmap rows ---
-# STRIDE cells use cell-high/cell-medium/cell-low (not cell-moderate like risk badges)
+# STRIDE cells use distinct classes; Unknown and N/A are not low-risk ratings.
 function Get-StrideCellClass([string]$level) {
-    switch ($level.ToUpper()) {
-        'HIGH'   { 'cell-high' }
-        'MEDIUM' { 'cell-medium' }
-        'LOW'    { 'cell-low' }
-        default  { 'cell-low' }
+    switch -CaseSensitive ($level) {
+        'High'    { 'cell-high' }
+        'Medium'  { 'cell-medium' }
+        'Low'     { 'cell-low' }
+        'Unknown' { 'cell-unknown' }
+        'N/A'     { 'cell-na' }
+        default   { throw "Unsupported STRIDE rating '$level'." }
     }
 }
 $strideHtml = ""
-if ($data.PSObject.Properties['stride']) {
-    foreach ($s in $data.stride) {
-        $strideHtml += "    <tr>`n      <td>$(ConvertTo-HtmlText $s.component)</td>`n"
+$strideProperty = $data.PSObject.Properties['stride']
+if ($null -eq $strideProperty -or
+    $strideProperty.Value -isnot [array] -or
+    $strideProperty.Value.Count -eq 0) {
+    $strideHtml = '    <tr><td colspan="7">STRIDE ratings unavailable; regenerate this report from a complete security-review matrix.</td></tr>'
+}
+else {
+    $strideComponents = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::OrdinalIgnoreCase)
+    foreach ($s in $strideProperty.Value) {
+        $component = Get-ReportProperty $s 'component'
+        if ($component -isnot [string] -or
+            [string]::IsNullOrWhiteSpace($component) -or
+            $component -match '[\r\n|]') {
+            throw 'Each STRIDE row requires a safe, non-empty component name.'
+        }
+        if (-not $strideComponents.Add($component)) {
+            throw "Duplicate STRIDE component '$component'."
+        }
+        $strideHtml += "    <tr>`n      <td>$(ConvertTo-HtmlText $component)</td>`n"
         foreach ($dim in @('S','T','R','I','D','E')) {
-            $val = $s.$dim
-            $cls = Get-StrideCellClass $val
-            $strideHtml += "      <td class=`"$cls`">$(ConvertTo-HtmlText $val)</td>`n"
+            $value = Get-ReportProperty $s $dim
+            if ($value -isnot [string]) {
+                throw "STRIDE component '$component' requires a $dim rating."
+            }
+            $cls = Get-StrideCellClass $value
+            if ($value -cnotin @('High', 'Medium', 'Low', 'Unknown', 'N/A')) {
+                throw "STRIDE component '$component' has unsupported $dim rating '$value'."
+            }
+            $strideHtml += "      <td class=`"$cls`">$(ConvertTo-HtmlText $value)</td>`n"
         }
         $strideHtml += "    </tr>`n"
     }

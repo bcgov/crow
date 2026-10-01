@@ -419,9 +419,15 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 | | e.g. `V2.1.1` | e.g. `CWE-89` | e.g. `T1190` | `Open / Mitigated` |
 
 ### STRIDE Threat Model Summary
-| Component | Spoofing | Tampering | Repudiation | Info Disclosure | DoS | Elevation of Privilege |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | | | | |
+Ratings are qualitative exposure assessments, not finding severity, CVSS, or
+likelihood. Use `Unknown` when evidence is insufficient; do not substitute
+`Low`. Use `N/A` only when a category does not apply and explain why. Each row
+must match the structured `stride` array in
+`security-review-synthesis.json`.
+
+| Component | Spoofing | Tampering | Repudiation | Information Disclosure | Denial of Service | Elevation of Privilege | Evidence IDs | Rationale |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | | | | |
 
 *Legend:* 🔴 High Risk | 🟡 Medium Risk | 🟢 Low Risk
 

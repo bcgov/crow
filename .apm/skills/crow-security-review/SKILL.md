@@ -39,6 +39,7 @@ Located in `modules/`:
 - **`modules/security-logging-and-audit.md`** — Security-event lifecycle coverage, authoritative audit points, attribution, correlation, redaction, retention, and alerting boundaries.
 - **`modules/security-control-assurance.md`** — Security-control test matrix, real framework-boundary coverage, negative cases, and tracked CI gate enforcement.
 - **`modules/finding-synthesis-and-validation.md`** — Independent adjudication, cross-domain themes, evidence-backed attack paths, and deterministic component remediation priority.
+- **`modules/stride-threat-model.md`** — Required evidence-backed STRIDE ratings and the machine-readable synthesis/report handoff.
 - **`modules/frontend-spa-security.md`** — React, Vue, Angular, Svelte: client-side XSS vectors, auth bypass, secret exposure via public env vars, SSR data leakage, state management security.
 - **`modules/llm-prompt-and-markdown-security.md`** — Direct and stored/second-order prompt injection, RAG and tool-calling trust boundaries, insecure model-output handling, excessive agency, and Markdown/frontmatter/rendering risks.
 - **`modules/security-issue-publishing.md`** — SARIF-based GHAS and ticket publishing, `crow-security` labeling, destination memory, deduplication, and ticket-driven remediation.
@@ -59,19 +60,23 @@ The deterministic synthesis and consistency tools are
 1. Identify the repository's tech stack, LLM/agent integrations, document ingestion/rendering pipelines, and infrastructure-as-code tooling.
 2. Read the module(s) that match the vulnerability class or framework under review.
 3. Apply the documented detection patterns during manual code inspection, cross-referencing findings with what automated scans already caught to avoid duplicate work.
-4. Load `security-logging-and-audit.md` when the application authenticates,
+4. For every security review, read `modules/stride-threat-model.md` and populate
+   both the security-review STRIDE table and the synthesis JSON `stride` array.
+   The executive report consumes this structured data; a prose-only summary is
+   not a substitute.
+5. Load `security-logging-and-audit.md` when the application authenticates,
    authorizes, manages credentials/tokens, performs privileged administration,
    or changes sensitive state.
-5. Load `security-control-assurance.md` when security controls, test projects,
+6. Load `security-control-assurance.md` when security controls, test projects,
    or tracked CI/CD pipelines exist.
-6. Load `finding-synthesis-and-validation.md` after the domain passes produce
+7. Load `finding-synthesis-and-validation.md` after the domain passes produce
    at least two findings that may share a root control, workflow, resource, or
    attacker path.
-7. When a fresh validated `architecture-security-facts.json` exists beside the
+8. When a fresh validated `architecture-security-facts.json` exists beside the
    applicable architecture document, consume its facts and workflows before
    rediscovering architecture. Treat stale, inferred, or unknown facts as
    discovery hints and re-verify material claims.
-8. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
+9. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
 
 Load `platform-data-and-proofs.md` only when the repository has a shared or
 canonical data flow, an external decision/register dependency, or a digital

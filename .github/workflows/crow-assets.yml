@@ -62,6 +62,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-executive-report\Test-ExecutiveReportOutput.Tests.ps1
 
+      - name: Test executive report STRIDE data contract
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-executive-report\Test-CrowExecutiveReportStride.Tests.ps1
+
       - name: Test solution architecture output validation
         shell: pwsh
         run: |

@@ -49,7 +49,7 @@ function Assert-CommandFails {
 try {
     [System.IO.Directory]::CreateDirectory($tempRoot) | Out-Null
     $input = [ordered]@{
-        schemaVersion = '1.0'
+        schemaVersion = '1.1'
         serviceName = 'sample'
         sourceRevision = '0123456789abcdef'
         evidence = @(
@@ -59,6 +59,19 @@ try {
                 startLine = 10
                 endLine = 12
                 summary = 'Synthetic evidence.'
+            }
+        )
+        stride = @(
+            [ordered]@{
+                component = 'API boundary'
+                S = 'High'
+                T = 'Medium'
+                R = 'Unknown'
+                I = 'Low'
+                D = 'Medium'
+                E = 'N/A'
+                evidenceRefs = @('EV-001')
+                rationale = 'Synthetic STRIDE rationale without Markdown separators.'
             }
         )
         components = @(
@@ -129,10 +142,11 @@ try {
     & $synthesisScript -InputPath $inputPath -OutputPath $outputPath | Out-Null
     $result = [System.IO.File]::ReadAllText($outputPath) | ConvertFrom-Json
 
-    if ($result.summary.totalFindings -ne 2 -or
+    if ($result.schemaVersion -cne '1.1' -or
+        $result.summary.totalFindings -ne 2 -or
         $result.summary.highCount -ne 1 -or
         $result.summary.lowCount -ne 1) {
-        throw 'Synthesis counts did not apply validation adjustments.'
+        throw 'Synthesis schema or counts did not apply the expected contract and validation adjustments.'
     }
     if ($result.componentPriorities[0].component -ne 'api' -or
         $result.componentPriorities[0].priorityScore -ne 11.7) {
@@ -152,9 +166,43 @@ try {
     if ($result.chains[0].edges[0].evidenceRefs[0] -notin @($result.evidence.id)) {
         throw 'A chain evidence reference could not be resolved from synthesis evidence.'
     }
+    if ($result.stride.Count -ne 1 -or
+        $result.stride[0].component -ne 'API boundary' -or
+        $result.stride[0].R -ne 'Unknown' -or
+        $result.stride[0].E -ne 'N/A' -or
+        $result.stride[0].evidenceRefs[0] -ne 'EV-001' -or
+        $result.stride[0].rationale -ne 'Synthetic STRIDE rationale without Markdown separators.') {
+        throw 'Validated STRIDE rows were not preserved in the synthesis.'
+    }
+
+    $input.schemaVersion = '1.0'
+    Write-Json $inputPath $input
+    Assert-CommandFails 'schemaVersion 1.0 must not include structured STRIDE input' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.schemaVersion = '1.1'
+
+    $legacyInput = [ordered]@{}
+    foreach ($property in $input.GetEnumerator()) {
+        if ($property.Key -cne 'stride') {
+            $legacyInput[$property.Key] = $property.Value
+        }
+    }
+    $legacyInput.schemaVersion = '1.0'
+    Write-Json $inputPath $legacyInput
+    & $synthesisScript -InputPath $inputPath -OutputPath $outputPath | Out-Null
+    $legacyResult = [System.IO.File]::ReadAllText($outputPath) | ConvertFrom-Json
+    if ($legacyResult.schemaVersion -cne '1.0' -or
+        $null -ne $legacyResult.PSObject.Properties['stride']) {
+        throw 'Legacy synthesis schemaVersion 1.0 did not retain its compatible output shape.'
+    }
+    Write-Json $inputPath $input
+    & $synthesisScript -InputPath $inputPath -OutputPath $outputPath | Out-Null
+    $result = [System.IO.File]::ReadAllText($outputPath) | ConvertFrom-Json
 
     $summary = $result.summary
     $chainId = $result.chains[0].chainId
+    $stride = $result.stride[0]
     $report = @"
 ---
 document_type: security-review
@@ -175,6 +223,12 @@ finding_chain_count: $($summary.chainCount)
 unresolved_validation_count: $($summary.unresolvedValidationCount)
 component_priority_model: crow-v1
 ---
+
+## 11. Advanced Security Frameworks
+### STRIDE Threat Model Summary
+| Component | Spoofing | Tampering | Repudiation | Information Disclosure | Denial of Service | Elevation of Privilege | Evidence IDs | Rationale |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| $($stride.component) | $($stride.S) | $($stride.T) | $($stride.R) | $($stride.I) | $($stride.D) | $($stride.E) | $($stride.evidenceRefs -join ', ') | $($stride.rationale) |
 
 ## 12. Security Finding Synthesis & Assurance
 ### Architecture handoff
@@ -205,6 +259,97 @@ SEC-002
     if ($LASTEXITCODE -ne 0) {
         throw 'Valid security report did not pass validation.'
     }
+    $incompleteEvidenceSynthesis = [ordered]@{}
+    foreach ($property in $result.PSObject.Properties) {
+        $incompleteEvidenceSynthesis[$property.Name] = $property.Value
+    }
+    $incompleteEvidenceSynthesis.evidence = @([ordered]@{
+        id = 'EV-001'
+        path = 'src/auth.cs'
+        startLine = 10
+        endLine = 12
+    })
+    Write-Json $outputPath $incompleteEvidenceSynthesis
+    Assert-CommandFails 'security review output requires complete evidence records' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+    Write-Json $outputPath $result
+
+    $legacySynthesis = [ordered]@{}
+    foreach ($property in $result.PSObject.Properties) {
+        if ($property.Name -cne 'stride') {
+            $legacySynthesis[$property.Name] = $property.Value
+        }
+    }
+    $legacySynthesis.schemaVersion = '1.0'
+    $legacyStrideSection = @'
+### STRIDE Threat Model Summary
+| Component | Spoofing | Tampering | Repudiation | Info Disclosure | DoS | Elevation of Privilege |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| API boundary | High | Medium | Unknown | Low | Medium | N/A |
+'@.Trim()
+    $legacyReport = [regex]::Replace(
+        $report,
+        '(?ms)^### STRIDE Threat Model Summary\s*\r?\n.*?(?=^## 12\. Security Finding Synthesis & Assurance\s*$)',
+        "$legacyStrideSection`n`n")
+    Write-Json $outputPath $legacySynthesis
+    [System.IO.File]::WriteAllText($reportPath, $legacyReport, $utf8)
+    & $reportValidator -ReportPath $reportPath -SynthesisPath $outputPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'A complete legacy v1.0 STRIDE table did not pass validation.'
+    }
+    Write-Json $outputPath $legacySynthesis
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+    Assert-CommandFails 'v1.0 security review must use the legacy seven-column table' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+
+    $legacySynthesisWithStride = [ordered]@{}
+    foreach ($property in $legacySynthesis.GetEnumerator()) {
+        $legacySynthesisWithStride[$property.Key] = $property.Value
+    }
+    $legacySynthesisWithStride.stride = @($result.stride)
+    Write-Json $outputPath $legacySynthesisWithStride
+    [System.IO.File]::WriteAllText($reportPath, $legacyReport, $utf8)
+    Assert-CommandFails 'schemaVersion 1.0 cannot contain structured STRIDE data' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+
+    Write-Json $outputPath $result
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
+    [System.IO.File]::WriteAllText(
+        $reportPath,
+        $report.Replace(
+            'Component | Spoofing | Tampering | Repudiation',
+            'Component | Tampering | Spoofing | Repudiation'),
+        $utf8)
+    Assert-CommandFails 'security review requires canonical STRIDE header order' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
+    $strideMarkdownRow = "| $($stride.component) | $($stride.S) | $($stride.T) | $($stride.R) | $($stride.I) | $($stride.D) | $($stride.E) | $($stride.evidenceRefs -join ', ') | $($stride.rationale) |"
+    [System.IO.File]::WriteAllText(
+        $reportPath,
+        $report.Replace($strideMarkdownRow, ''),
+        $utf8)
+    Assert-CommandFails 'security review requires every synthesized STRIDE row' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
+    [System.IO.File]::WriteAllText(
+        $reportPath,
+        $report.Replace(
+            $strideMarkdownRow,
+            $strideMarkdownRow.Replace('| High |', '| Low |')),
+        $utf8)
+    Assert-CommandFails 'security review STRIDE ratings must match synthesis' $reportValidator @(
+        '-ReportPath', $reportPath,
+        '-SynthesisPath', $outputPath)
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
     $monorepoReportDirectory = Join-Path $docsPath 'sample'
     [System.IO.Directory]::CreateDirectory($monorepoReportDirectory) | Out-Null
     $monorepoReportPath = Join-Path $monorepoReportDirectory 'security-review.md'
@@ -295,6 +440,49 @@ SEC-002
         '-InputPath', $inputPath,
         '-OutputPath', $outputPath)
     $input.evidence[0].summary = 'Synthetic evidence.'
+
+    $savedStride = $input.stride
+    $input.stride = @()
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE input must not be empty' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride = $savedStride
+
+    $input.stride[0].S = 'Moderate'
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE ratings must use supported values' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride[0].S = 'High'
+
+    $input.stride[0].evidenceRefs = @('EV-999')
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE evidence references must resolve' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride[0].evidenceRefs = @('EV-001')
+
+    $input.stride[0].evidenceRefs = @([int]1)
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE evidence references must be strings' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride[0].evidenceRefs = @('EV-001')
+
+    $input.stride[0].evidenceRefs = @('EV-001|EV-002')
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE evidence references must be table safe' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride[0].evidenceRefs = @('EV-001')
+
+    $input.stride[0].evidenceRefs = @('EV-001', 'EV-001')
+    Write-Json $inputPath $input
+    Assert-CommandFails 'STRIDE evidence references must not repeat' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.stride[0].evidenceRefs = @('EV-001')
 
     $input.findings[0].validation.resolution = 'Pending'
     Write-Json $inputPath $input

@@ -23,10 +23,52 @@ function Render-TestReport {
 try {
     [System.IO.Directory]::CreateDirectory($tempRoot) | Out-Null
     $legacy = Render-TestReport
+    foreach ($component in @($data.stride.component)) {
+        if (-not $legacy.Contains($component)) {
+            throw "Rendered report is missing STRIDE component '$component'."
+        }
+    }
     if ($legacy -match 'Systemic Security Risk &amp; Assurance' -or
         $legacy -match '\{\{SECURITY_SYNTHESIS_SECTION\}\}') {
         throw 'Legacy report rendered an unsupported synthesis section.'
     }
+
+    $savedStride = $data.stride
+    $data.stride = $null
+    $rendered = Render-TestReport
+    if (-not $rendered.Contains('STRIDE ratings unavailable; regenerate this report')) {
+        throw 'Missing STRIDE data was not made visible in the rendered report.'
+    }
+    $data.stride = @()
+    $rendered = Render-TestReport
+    if (-not $rendered.Contains('STRIDE ratings unavailable; regenerate this report')) {
+        throw 'Empty STRIDE data was not made visible in the rendered report.'
+    }
+    $data.stride = $savedStride
+
+    $firstStrideRow = $data.stride[0]
+    $savedSpoofingRating = $firstStrideRow.S
+    $firstStrideRow.S = 'Moderate'
+    $failed = $false
+    try { Render-TestReport | Out-Null }
+    catch { $failed = $true }
+    if (-not $failed) { throw 'Unsupported STRIDE rating expected failure.' }
+    $firstStrideRow.S = $savedSpoofingRating
+
+    $firstStrideRow.R = 'Unknown'
+    $savedElevationRating = $firstStrideRow.E
+    $firstStrideRow.E = 'N/A'
+    $rendered = Render-TestReport
+    if (-not $rendered.Contains('<td class="cell-unknown">Unknown</td>') -or
+        -not $rendered.Contains('<td class="cell-na">N/A</td>')) {
+        throw 'Unknown and N/A STRIDE ratings must use their neutral and informational classes.'
+    }
+    if (-not $rendered.Contains('.heatmap .cell-unknown{background:#e5e7eb;color:#4b5563;font-weight:600}') -or
+        -not $rendered.Contains('.heatmap .cell-na{background:var(--info-bg);color:var(--info);font-weight:600}')) {
+        throw 'Unknown and N/A STRIDE classes must have grey and blue heatmap styles.'
+    }
+    $firstStrideRow.R = 'Medium'
+    $firstStrideRow.E = $savedElevationRating
 
     $data | Add-Member -NotePropertyName security_synthesis -NotePropertyValue ([pscustomobject]@{
         source_revision = '0123456789abcdef'
@@ -105,7 +147,7 @@ try {
         -not $rendered.Contains('coverage cannot be calculated')) {
         throw 'Unknown coverage was represented as measured coverage.'
     }
-    Write-Host 'Executive report legacy, synthesis, encoding, and validation tests passed.'
+    Write-Host 'Executive report STRIDE, legacy, synthesis, encoding, and validation tests passed.'
 }
 finally {
     if (Test-Path -LiteralPath $tempRoot) {
