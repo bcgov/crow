@@ -176,10 +176,18 @@ function Test-DocumentContent {
             Add-ValidationError "Security architecture handoff must use schemaVersion 1.0: $handoffPath"
         }
 
+        # PowerShell 7 converts ISO JSON strings to DateTime; inspect the JSON
+        # literal so the required trailing Z is not lost in that conversion.
+        $timestampMatches = [regex]::Matches(
+            $content, '"generatedAt"\s*:\s*"([^"]*)"')
+        $timestamp = if ($timestampMatches.Count -eq 1) {
+            $timestampMatches[0].Groups[1].Value
+        }
+        else { '' }
         $generatedAt = [DateTimeOffset]::MinValue
-        if ([string]$handoff.generatedAt -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$' -or
+        if ($timestamp -notmatch '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$' -or
             -not [DateTimeOffset]::TryParse(
-            [string]$handoff.generatedAt,
+            $timestamp,
             [ref]$generatedAt)) {
             Add-ValidationError "Security architecture handoff generatedAt must be an ISO-8601 UTC timestamp ending in Z: $handoffPath"
         }
