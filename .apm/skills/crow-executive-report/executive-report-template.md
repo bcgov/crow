@@ -11,6 +11,7 @@
 **Source Documents:** 
 - Architecture Document: `{{ARCHITECTURE_DOC_PATH}}` (Last Updated: {{ARCHITECTURE_DATE}})
 - Security Review Document: `{{SECURITY_DOC_PATH}}` (Last Updated: {{SECURITY_DATE}})
+
 **Overall Security Risk:** {{OVERALL_RISK}}  
 **Quality Gate:** {{QUALITY_GATE_STATUS}}
 
@@ -36,6 +37,10 @@
 | **High Findings** | `[Count]` | |
 | **Coverage Baseline Gaps** | `[Count]` | Entry points not fully assessed |
 
+Counts describe active findings only when the security review's synthesis is
+validated. Do not add attack paths, themes, scanner candidates, or removed
+findings to the totals. Unknown assessment coverage is not 100% coverage.
+
 ---
 
 ## 3. High-Risk Security Issues (Plain Language)
@@ -55,6 +60,32 @@
 | Component / Technology | Category | Technical Debt Risk | Impact on Stability & Security | Action Required |
 | :--- | :--- | :--- | :--- | :--- |
 | | `EOL Runtime / Outdated Dep / Arch Risk` | | | |
+
+### Conditional systemic security risk and assurance
+
+Include only when `security-review-synthesis.json` is validated against the
+reviewed revision and the security report. Otherwise state that reconciled
+synthesis is unavailable; do not infer zero themes or attack paths.
+
+| Evidence | Business consequence / condition | Confidence or limitation | Action |
+| :--- | :--- | :--- | :--- |
+| `THEME-... / CHAIN-...` | | `High / Medium / Low; Unknown preconditions noted` | |
+
+Summarize no more than three source-backed themes and three attack paths.
+Chains describe combined paths, not additional findings or automatic severity
+upgrades. Report up to three material control-assurance `Gap` or `Unknown`
+rows with the enforcement point and missing test/CI verification. An unknown
+control is not an established vulnerability.
+For each attack path, cite its resolved `EV-*` IDs with repository paths and
+line ranges in the Evidence cell; do not include source excerpts.
+
+| Component (top three) | Active findings | Relative `crow-v1` priority | Action |
+| :--- | ---: | ---: | :--- |
+| | | | |
+
+This uncapped score is for remediation ordering **within this assessment
+only**; it is not a severity, percentage, maturity level, or cross-app rating.
+Omit this table when no validated component priorities exist.
 
 ---
 

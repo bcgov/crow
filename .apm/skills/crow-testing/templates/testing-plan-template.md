@@ -25,9 +25,9 @@ documents may be backfilled lazily when next touched; do not mass-rewrite older 
 
 ## Test matrix
 
-| Feature / area | Automated coverage | Manual QA scope | Detail reference | Status |
-|---|---|---|---|---|
-| | | | | |
+| Feature / area | Source control / finding | Automated coverage | Manual QA scope | Detail reference | Status |
+|---|---|---|---|---|---|
+| | | | | | |
 
 ## Start here: guides
 

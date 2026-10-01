@@ -7,6 +7,9 @@
 1. Use `search_graph` to enumerate all HTTP endpoints/routes
 2. For each endpoint, use `trace_path direction="inbound"` to check if an authorization middleware/annotation/decorator is in the call chain
 3. Flag endpoints handling sensitive data or state-changing operations without authorization
+4. Inventory principal derivation, tenant resolution, resource ownership, role
+   checks, and privilege decisions. Compare implementations across filters,
+   handlers, controllers, services, workers, and background jobs.
 
 ## Per-Framework Authorization Patterns
 
@@ -45,6 +48,27 @@ For each endpoint accepting an entity ID parameter:
 - User-modifiable role fields in request bodies (mass assignment)
 - Missing verification that the acting user has authority to grant/revoke roles
 
+## Duplicated Security Decisions
+
+Search for independently re-implemented security decisions, not only missing
+checks. High-signal examples include:
+
+- the same claim-precedence or fallback chain in multiple handlers;
+- repeated username, tenant, or resource-owner derivation;
+- copied role or permission predicates;
+- separate normalization or hashing rules used to bind identities;
+- policy logic duplicated between request and background paths.
+
+Use graph similarity or normalized source comparison to identify candidates,
+then read every implementation. Report only when duplication can cause
+different principals, scopes, privileges, or partial remediation. Reference all
+enforcement points and identify the authoritative abstraction or contract that
+should own the decision.
+
+Do not confuse this with duplicate findings that describe the same code defect.
+The security risk is divergent enforcement or a fix applied at only some call
+sites.
+
 ## What This Catches That SonarQube Doesn't
 
 - Missing authorization on new endpoints (SonarQube doesn't understand route registration)
@@ -53,3 +77,5 @@ For each endpoint accepting an entity ID parameter:
 - Privilege escalation via direct object manipulation
 - Horizontal privilege escalation (user A accessing user B's data)
 - Mass assignment leading to role elevation
+- Divergent or partially remediated security decisions copied across
+  enforcement points

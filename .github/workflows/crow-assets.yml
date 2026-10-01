@@ -52,6 +52,16 @@ jobs:
         run: |
           & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
 
+      - name: Test security review synthesis
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-security-review\scripts\New-CrowSecuritySynthesis.Tests.ps1
+
+      - name: Test executive report rendering
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-executive-report\Test-ExecutiveReportOutput.Tests.ps1
+
       - name: Test solution architecture output validation
         shell: pwsh
         run: |

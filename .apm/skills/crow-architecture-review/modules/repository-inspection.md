@@ -17,6 +17,11 @@ Use codebase-memory-mcp when available to identify structure, clusters, entry po
 7. **Architecture decisions:** ADR locations, identifiers, titles, status, dates, and relevant trade-offs.
 8. **Unicode and globalization:** apply the routed Unicode module and trace representative Indigenous-language text across input, storage, processing, search, integration, export, rendering, printing, runtime globalization data, and fonts.
 9. **Platform alignment (when routed):** classify the role only from evidence; assess one-to-many impact, shared-service reuse without assuming a catalogue, data custodianship and purpose/subject scope, narrow question APIs, contract ownership/versioning, dependency degradation, and the open/shared/closed data spectrum.
+10. **Security-relevant workflows:** trace identity establishment, credential
+    lifecycles, privileged state changes, externally controlled data, sensitive
+    persistence, destructive maintenance, and failover/degradation paths across
+    components. Record the actor, trigger, ordered steps, enforcement points,
+    audit event, tests, and failure mode.
 
 ## Existing documentation
 
@@ -31,5 +36,7 @@ Use relevant repository documentation as evidence, including `README.md`, `CONTR
 - Replace generic placeholders and example diagrams with repository-specific content.
 - Use valid Mermaid node identifiers and balanced syntax; report any syntax that could not be validated.
 - Set the initial revision date to the current date.
+- Produce the compact `architecture-security-facts.json` sidecar according to
+  `security-handoff.md`; do not duplicate the full document in JSON.
 
 If a command fails, record the failure and keep the affected assertion `Unknown`. If an inspection pass has no applicable subject, mark the corresponding content `N/A` with a reason. Stop if the repository lacks enough content for a meaningful architecture document.

@@ -1,8 +1,12 @@
 ---
 document_type: security-review
 assessment_date: YYYY-MM-DD
+report_scope: "{{REPORT_SCOPE}}"
+service_name: "{{SERVICE_NAME}}"
+service_path: "{{SERVICE_PATH}}"
 application: "{{APPLICATION_NAME}}"
 application_acronym: "{{APPLICATION_ACRONYM}}"
+source_revision: "{{GIT_COMMIT_SHA}}"
 overall_risk: CRITICAL | HIGH | MODERATE | LOW | SECURE
 total_findings: 0
 critical_count: 0
@@ -12,6 +16,12 @@ low_count: 0
 informational_count: 0
 confirmed_count: 0
 probable_count: 0
+finding_chain_count: 0
+unresolved_validation_count: 0
+component_priority_model: crow-v1
+architecture_handoff: "NOT_FOUND"
+architecture_handoff_status: NOT_FOUND | VALID_FRESH | VALID_STALE | INVALID
+synthesis_artifact: "{{SYNTHESIS_ARTIFACT_PATH}}"
 owasp_categories: []
 cwe_ids: []
 asvs_requirements: []
@@ -417,7 +427,75 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 
 ---
 
-## 12. Vulnerability Findings Detail
+## 12. Security Finding Synthesis & Assurance
+
+### Architecture handoff
+
+| Handoff path | Validation | Source revision match | Facts consumed | Unknowns requiring verification |
+| :--- | :--- | :--- | :--- | :--- |
+| | `Not found / Valid / Invalid` | `Fresh / Stale / Unknown` | | |
+
+Consume only normalized security facts and workflows from a valid handoff.
+Stale, inferred, or unknown facts remain discovery hints and cannot establish a
+finding without current source evidence.
+
+### Security control assurance
+
+| Control / Finding | Enforcement Point | Unit Test | Integration Test | Negative Case | CI Gate | Assurance Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | | `Verified / Gap / Unknown / N/A` |
+
+Direct controller or handler construction does not verify middleware, filters,
+routing, authentication schemes, authorization policies, or anti-forgery
+enforcement. Link actionable test gaps to the `crow-testing` workflow.
+
+### Cross-cutting themes
+
+| Theme ID | Systemic Theme | Source Findings | Domains / Layers | Root Control or Workflow | Confidence |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | `High / Medium / Low` |
+
+Themes require an evidenced shared cause or control. Shared tags, files,
+severity, or keywords alone are not a theme.
+
+### Evidence-backed attack paths
+
+| Chain ID | Attack Path | Source Findings | Preconditions | Risk | Confidence |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | Include `Verified / Inferred / Unknown` status | | `High / Medium / Low` |
+
+For each chain, document its ordered steps and evidence-backed edges below the
+table. Chain risk does not change source-finding severity. Qualify any chain
+that depends on an unknown deployment or external-system precondition.
+
+### Component remediation priority
+
+The `crow-v1` score is an uncapped remediation-ordering aid, not a vulnerability
+severity or overall-risk rating:
+
+`round(sum(severity weight x confidence weight) x domain breadth x exposure, 1)`
+
+| Rank | Component | Exposure | Active Findings | Domains | Base | Breadth | Exposure Factor | Priority Score |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | `External / CrossService / Internal` | | | | | | |
+
+Severity weights: Critical 16, High 8, Medium 4, Low 1, Informational 0.
+Confidence weights: Confirmed 1.0, Probable 0.5, Informational 0. Chains are
+excluded to prevent double counting.
+
+### Validation adjudication
+
+| Finding ID | Validation Disposition | Difference Found | Resolution | Effective Severity / Scope | Evidence |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| | `Confirmed / PartiallyConfirmed / Disputed / Rejected / Unknown` | | `Accepted / Adjusted / Removed` | | |
+
+The final report must contain no pending adjudication. Apply accepted
+corrections to findings, counts, themes, chains, and priorities before
+finalization.
+
+---
+
+## 13. Vulnerability Findings Detail
 
 *For each finding, document using the structure below. Repeat for each finding.*
 
@@ -451,7 +529,7 @@ Analyze each OWASP Top 10 category against the codebase and record findings.
 
 ---
 
-## 13. Action Items & Security Remediation Roadmap
+## 14. Action Items & Security Remediation Roadmap
 
 Prioritized list of security actions required to improve the posture of the application.
 

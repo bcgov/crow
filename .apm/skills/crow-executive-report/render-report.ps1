@@ -89,6 +89,24 @@ function ConvertTo-OptionalHtmlText($value) {
     ConvertTo-HtmlText $text
 }
 
+function Get-RequiredReportText($object, [string]$name) {
+    $value = Get-ReportProperty $object $name
+    if ($value -isnot [string] -or [string]::IsNullOrWhiteSpace($value)) {
+        throw "security_synthesis.$name must be non-empty text."
+    }
+    ConvertTo-HtmlText $value
+}
+
+function Get-RequiredReportRows($object, [string]$name) {
+    $property = $object.PSObject.Properties[$name]
+    $value = $null
+    if ($null -ne $property) { $value = $property.Value }
+    if ($null -eq $value -or $value -isnot [array] -or $value.Count -gt 3) {
+        throw "security_synthesis.$name must be an array with at most three entries."
+    }
+    return ,$value
+}
+
 function ConvertTo-NonNegativeInteger($value, [string]$fieldName) {
     $parsed = 0L
     $text = [Convert]::ToString($value, [Globalization.CultureInfo]::InvariantCulture)
@@ -187,10 +205,6 @@ if ($hasCoveragePct) {
     # A partial denominator pair cannot produce a trustworthy percentage.
     $coveragePct = 0
     $coverageIsKnown = $false
-} elseif ($coverageGaps -eq 0) {
-    # No reported gaps is compatible with full coverage, but gaps alone do not
-    # provide a denominator for calculating a partial percentage.
-    $coveragePct = 100
 } else {
     $coveragePct = 0
     $coverageIsKnown = $false
@@ -366,6 +380,78 @@ if (-not [string]::IsNullOrWhiteSpace([Convert]::ToString($zeroTrustEvidence))) 
 "@
 }
 
+# --- Render optional, validated security synthesis without recomputing risk ---
+$synthesis = Get-ReportProperty $data 'security_synthesis'
+$synthesisHtml = ""
+if ($null -ne $synthesis) {
+    $revision = Get-RequiredReportText $synthesis 'source_revision'
+    $model = Get-RequiredReportText $synthesis 'priority_model'
+    if ($synthesis.priority_model -cne 'crow-v1') {
+        throw "Unsupported security_synthesis.priority_model '$($synthesis.priority_model)'."
+    }
+    $themes = Get-RequiredReportRows $synthesis 'themes'
+    $paths = Get-RequiredReportRows $synthesis 'attack_paths'
+    $priorities = Get-RequiredReportRows $synthesis 'component_priorities'
+    $gaps = Get-RequiredReportRows $synthesis 'assurance_gaps'
+
+    $synthesisHtml = "<h2>Systemic Security Risk &amp; Assurance</h2>`n"
+    $synthesisHtml += "<p class=`"section-note`">Reconciled assessment revision: $revision. Themes and attack paths are not additional findings; unknown conditions remain unverified.</p>`n"
+    if ($themes.Count -gt 0 -or $paths.Count -gt 0) {
+        $synthesisHtml += "<table class=`"data-table`"><thead><tr><th>Evidence</th><th>Business consequence / condition</th><th>Confidence or limitation</th><th>Action</th></tr></thead><tbody>`n"
+        foreach ($theme in $themes) {
+            $id = Get-RequiredReportText $theme 'id'
+            if ($theme.id -cnotmatch '^THEME-') { throw "Invalid theme ID '$($theme.id)'." }
+            $implication = Get-RequiredReportText $theme 'implication'
+            $action = Get-RequiredReportText $theme 'action'
+            $synthesisHtml += "<tr><td>$id</td><td>$implication</td><td>Evidence-backed theme</td><td>$action</td></tr>`n"
+        }
+        foreach ($path in $paths) {
+            $id = Get-RequiredReportText $path 'id'
+            if ($path.id -cnotmatch '^CHAIN-') { throw "Invalid attack-path ID '$($path.id)'." }
+            $risk = Get-RequiredReportText $path 'risk'
+            $confidence = Get-RequiredReportText $path 'confidence'
+            if ($path.confidence -cnotin @('High', 'Medium', 'Low')) {
+                throw "Invalid attack-path confidence '$($path.confidence)'."
+            }
+            $condition = Get-RequiredReportText $path 'condition'
+            $implication = Get-RequiredReportText $path 'implication'
+            $synthesisHtml += "<tr><td>$id</td><td>$implication; condition: $condition</td><td>Risk: $risk; confidence: $confidence</td><td>Verify conditions and remediate source findings</td></tr>`n"
+        }
+        $synthesisHtml += "</tbody></table>`n"
+    }
+    if ($priorities.Count -gt 0) {
+        $synthesisHtml += "<h3>Component Remediation Order</h3><p class=`"section-note`">$model is an uncapped relative priority within this assessment, not severity, a percentage, or a cross-application rating.</p>`n"
+        $synthesisHtml += "<table class=`"data-table`"><thead><tr><th>Component</th><th>Active findings</th><th>Relative priority</th><th>Action</th></tr></thead><tbody>`n"
+        foreach ($priority in $priorities) {
+            $component = Get-RequiredReportText $priority 'component'
+            $count = ConvertTo-NonNegativeInteger (Get-ReportProperty $priority 'active_finding_count') 'security_synthesis.component_priorities.active_finding_count'
+            $score = 0.0
+            $scoreValue = Get-ReportProperty $priority 'priority_score'
+            $scoreText = [Convert]::ToString($scoreValue, [Globalization.CultureInfo]::InvariantCulture)
+            if ($null -eq $scoreValue -or -not [double]::TryParse($scoreText, [Globalization.NumberStyles]::Float, [Globalization.CultureInfo]::InvariantCulture, [ref]$score) -or
+                [double]::IsNaN($score) -or [double]::IsInfinity($score) -or $score -lt 0) {
+                throw 'security_synthesis.component_priorities.priority_score must be a finite non-negative number.'
+            }
+            $action = Get-RequiredReportText $priority 'action'
+            $synthesisHtml += "<tr><td>$component</td><td>$count</td><td>$scoreText</td><td>$action</td></tr>`n"
+        }
+        $synthesisHtml += "</tbody></table>`n"
+    }
+    if ($gaps.Count -gt 0) {
+        $synthesisHtml += "<h3>Control Assurance Requiring Verification</h3><p class=`"section-note`">Missing test or CI evidence does not by itself establish a vulnerability.</p>`n"
+        $synthesisHtml += "<table class=`"data-table`"><thead><tr><th>Control / enforcement point</th><th>Status</th><th>Missing verification</th><th>Action</th></tr></thead><tbody>`n"
+        foreach ($gap in $gaps) {
+            $control = Get-RequiredReportText $gap 'control'
+            $status = Get-RequiredReportText $gap 'status'
+            if ($gap.status -cnotin @('Gap', 'Unknown')) { throw "Invalid assurance status '$($gap.status)'." }
+            $missing = Get-RequiredReportText $gap 'missing_verification'
+            $action = Get-RequiredReportText $gap 'action'
+            $synthesisHtml += "<tr><td>$control</td><td>$status</td><td>$missing</td><td>$action</td></tr>`n"
+        }
+        $synthesisHtml += "</tbody></table>`n"
+    }
+}
+
 # --- Replace repeating sections ---
 # OWASP bars
 $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat for each OWASP.*?</div>\s*</div>\s*\n\s*</div>' "$owaspHtml</div>"
@@ -378,6 +464,7 @@ $html = ConvertTo-RegexReplacedText $html '(?s)<!-- Repeat per component.*?<tr>\
 # Optional platform alignment (omitted when no evidence is supplied)
 $html = $html.Replace('{{PLATFORM_ALIGNMENT_SECTION}}', $platformHtml)
 $html = $html.Replace('{{ZERO_TRUST_POSTURE_SECTION}}', $zeroTrustHtml)
+$html = $html.Replace('{{SECURITY_SYNTHESIS_SECTION}}', $synthesisHtml)
 
 # --- Replace scalar placeholders ---
 $textScalars = @{
