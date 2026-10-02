@@ -21,6 +21,13 @@ criteria for the replacement**. The sequence:
 The value is that it makes an otherwise unfalsifiable claim — *"the rewrite behaves the same"* — into
 something a test suite either demonstrates or refutes.
 
+For an HTTP-facing REST or SOAP API, use
+[`api-modernization-harness.md`](api-modernization-harness.md) to inventory
+operations and response cases, exercise both implementations over HTTP, and
+gate the coverage claim against the inventory and run results. A cross-protocol
+rewrite compares approved semantic outcomes through protocol-specific
+adapters, not raw REST and SOAP wire payloads.
+
 ## Branch by abstraction
 
 Put both implementations behind one interface and select between them by configuration. This is what makes

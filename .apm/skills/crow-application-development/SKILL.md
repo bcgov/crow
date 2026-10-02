@@ -1,6 +1,6 @@
 ---
 name: crow-application-development
-description: Implement and evolve applications with technology-routed engineering practices. Use when writing production code, tests, configuration, integrations, persistence code, containers, or CI; includes current .NET and ASP.NET Core secure-by-default guidance.
+description: Implement and evolve applications with technology-routed engineering practices. Use when writing production code, REST or SOAP APIs, tests, configuration, integrations, persistence code, containers, or CI; includes current .NET and ASP.NET Core secure-by-default guidance.
 ---
 
 # Application Development
@@ -19,6 +19,7 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/dotnet/aspnet-core.md`](modules/dotnet/aspnet-core.md) for HTTP, MVC, Razor, Blazor, API, auth, middleware, or hosted SPA work.
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
+   - [`modules/api-contracts.md`](modules/api-contracts.md) for creating, changing, or modernizing a REST or SOAP API in any supported technology.
 8. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
 9. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
 10. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.

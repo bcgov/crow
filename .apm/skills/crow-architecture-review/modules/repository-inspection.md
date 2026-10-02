@@ -10,7 +10,7 @@ Use codebase-memory-mcp when available to identify structure, clusters, entry po
 
 1. **Metadata and organization:** application name, acronym, lifecycle status, organizational hints, ownership files, and repository URL.
 2. **Boundaries and capabilities:** business capabilities, user types, trust boundaries, external integrations, and deployment unit.
-3. **Logical structure:** layers, dependency direction, import or namespace seams, entry points, APIs, events, workers, and contracts.
+3. **Logical structure:** layers, dependency direction, import or namespace seams, entry points, APIs, events, workers, and contracts. For REST and SOAP APIs, use the API-inventory module to reconcile routes and operations with their OpenAPI/WSDL/XSD and source evidence.
 4. **Security architecture:** authentication, authorization, secret management, cryptography, concurrency controls, audit logging, and data classification. Record architecture only; dependency and vulnerability scanning belongs to the security review capability.
 5. **Deployment and observability:** CI/CD, infrastructure as code, containers, runtime topology, logging, metrics, traces, health checks, and alerting.
 6. **Resilience and recovery:** retries, circuit breakers, graceful degradation, backups, failover, RTO, and RPO.
@@ -36,6 +36,9 @@ Use relevant repository documentation as evidence, including `README.md`, `CONTR
 - Replace generic placeholders and example diagrams with repository-specific content.
 - Use valid Mermaid node identifiers and balanced syntax; report any syntax that could not be validated.
 - Set the initial revision date to the current date.
+- When an API is present, produce the service-scoped `api-inventory.json`
+  sidecar under the API-inventory module's contract. Keep operation coverage
+  evidence separate from security facts.
 - Produce the compact `architecture-security-facts.json` sidecar according to
   `security-handoff.md`; do not duplicate the full document in JSON.
 

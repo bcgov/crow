@@ -12,16 +12,25 @@ param(
     [ValidateSet('PreWrite', 'PostWrite')]
     [string]$Phase = 'PostWrite',
 
+    [switch]$RequireApiInventory,
+
     [switch]$RequireSecurityHandoff
 )
 
 $ErrorActionPreference = 'Stop'
 $errors = [System.Collections.Generic.List[string]]::new()
+$apiInventoryModulePath = Join-Path $PSScriptRoot 'CrowApiInventory.psm1'
+if (-not (Test-Path -LiteralPath $apiInventoryModulePath -PathType Leaf)) {
+    throw "Required API inventory validator is missing: $apiInventoryModulePath"
+}
+Import-Module $apiInventoryModulePath -Force -ErrorAction Stop
 $root = (Resolve-Path $RepoRoot).Path
 $docsPath = Join-Path $root 'docs'
 $rootArchitecturePath = Join-Path $docsPath 'architecture.md'
 $outputPaths = [System.Collections.Generic.List[string]]::new()
 $outputServicePaths = @{}
+$outputServiceNames = @{}
+$outputApiInventoryRequired = @{}
 $pathComparison = if ([System.IO.Path]::DirectorySeparatorChar -eq '\') {
     [System.StringComparison]::OrdinalIgnoreCase
 }
@@ -100,7 +109,9 @@ function Resolve-RepositoryPath {
 function Test-DocumentContent {
     param(
         [string]$Path,
-        [string]$ExpectedServicePath
+        [string]$ExpectedServicePath,
+        [string]$ExpectedServiceName,
+        [bool]$ApiInventoryRequired
     )
 
     if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
@@ -477,6 +488,10 @@ function Test-DocumentContent {
         }
     }
 
+    if ($content.Contains('API_INVENTORY_REFERENCE')) {
+        Add-ValidationError "Architecture document contains the unresolved API inventory reference: $Path"
+    }
+
     $checklistLabels = @(
         [regex]::Matches($templateContent, '(?m)^- \[ \] \*\*([^:]+):\*\*') |
             ForEach-Object { $_.Groups[1].Value }
@@ -497,6 +512,32 @@ function Test-DocumentContent {
     }
 
     Test-SecurityHandoffContent $Path $ExpectedServicePath
+
+    $apiInventoryPath = Join-Path (Split-Path -Parent $Path) 'api-inventory.json'
+    $apiInventoryExists = Test-Path -LiteralPath $apiInventoryPath -PathType Leaf
+    if ($ApiInventoryRequired -and -not $apiInventoryExists) {
+        Add-ValidationError "Required API inventory is missing: $apiInventoryPath"
+    }
+    if ($apiInventoryExists) {
+        if (Test-NoReparsePoint $apiInventoryPath 'API inventory output path') {
+            $inventoryValidation = Test-CrowApiInventory `
+                -RepoRoot $root `
+                -InventoryPath $apiInventoryPath `
+                -ExpectedClassification $Classification `
+                -ExpectedServiceName $ExpectedServiceName `
+                -ExpectedServicePath $ExpectedServicePath
+            foreach ($inventoryError in $inventoryValidation.Errors) {
+                Add-ValidationError "$inventoryError ($apiInventoryPath)"
+            }
+        }
+        $normalizedContent = $content.Replace('\', '/')
+        if ($normalizedContent -notmatch '\[[^\]]+\]\((?:\./)?api-inventory\.json(?:\s+"[^"]*")?\)') {
+            Add-ValidationError "Architecture document does not link its API inventory: $Path"
+        }
+    }
+    elseif ($content -match '\[[^\]]+\]\((?:\./)?api-inventory\.json(?:\s+"[^"]*")?\)') {
+        Add-ValidationError "Architecture document links a missing API inventory: $apiInventoryPath"
+    }
 }
 
 if ($Classification -eq 'SingleApp') {
@@ -506,6 +547,8 @@ if ($Classification -eq 'SingleApp') {
     if (Test-NoReparsePoint $rootArchitecturePath 'Single-application output path') {
         $outputPaths.Add($rootArchitecturePath)
         $outputServicePaths[$rootArchitecturePath] = '.'
+        $outputServiceNames[$rootArchitecturePath] = ''
+        $outputApiInventoryRequired[$rootArchitecturePath] = $RequireApiInventory.IsPresent
     }
 }
 else {
@@ -517,7 +560,12 @@ else {
     }
     else {
         try {
-            $inventory = @([System.IO.File]::ReadAllText((Resolve-Path $ServiceInventoryPath).Path) | ConvertFrom-Json)
+            $inventoryContent = [System.IO.File]::ReadAllText(
+                (Resolve-Path $ServiceInventoryPath).Path)
+            $inventory = $inventoryContent | ConvertFrom-Json
+            if ($inventory -isnot [System.Array]) {
+                $inventory = @($inventory)
+            }
         }
         catch {
             Add-ValidationError "Service inventory is invalid JSON: $($_.Exception.Message)"
@@ -562,6 +610,17 @@ else {
             if ($null -ne $resolvedOutput) {
                 $outputPaths.Add($resolvedOutput)
                 $outputServicePaths[$resolvedOutput] = ([string]$service.sourcePath).Replace('\', '/')
+                $outputServiceNames[$resolvedOutput] = $name
+                $requiresApiInventory = $false
+                if ($service.PSObject.Properties.Name -contains 'apiInventoryRequired') {
+                    if ($service.apiInventoryRequired -isnot [bool]) {
+                        Add-ValidationError "Service '$name' apiInventoryRequired must be a JSON boolean."
+                    }
+                    else {
+                        $requiresApiInventory = $service.apiInventoryRequired
+                    }
+                }
+                $outputApiInventoryRequired[$resolvedOutput] = $requiresApiInventory
             }
 
             Resolve-RepositoryPath ([string]$service.sourcePath) "Service '$name' source path" | Out-Null
@@ -627,7 +686,28 @@ else {
 
 if ($Phase -eq 'PostWrite') {
     foreach ($outputPath in $outputPaths) {
-        Test-DocumentContent $outputPath $outputServicePaths[$outputPath]
+        Test-DocumentContent `
+            $outputPath `
+            $outputServicePaths[$outputPath] `
+            $outputServiceNames[$outputPath] `
+            $outputApiInventoryRequired[$outputPath]
+    }
+
+    if (Test-Path -LiteralPath $docsPath -PathType Container) {
+        $allowedApiInventoryPaths = @(
+            $outputPaths | ForEach-Object {
+                Join-Path (Split-Path -Parent $_) 'api-inventory.json'
+            }
+        )
+        $actualApiInventories = @(
+            Get-ChildItem -Path $docsPath -Filter 'api-inventory.json' -File -Recurse -ErrorAction SilentlyContinue |
+                ForEach-Object { $_.FullName }
+        )
+        foreach ($apiInventoryPath in $actualApiInventories) {
+            if ($apiInventoryPath -notin $allowedApiInventoryPaths) {
+                Add-ValidationError "API inventory is not represented by an architecture document: $apiInventoryPath"
+            }
+        }
     }
 }
 

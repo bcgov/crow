@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "YYYY-MM-DDTHH:mm:ssZ",
+  "sourceRevision": "GIT_COMMIT_SHA",
+  "scope": {
+    "classification": "SingleApp",
+    "serviceName": "APPLICATION_OR_SERVICE_NAME",
+    "servicePath": "."
+  },
+  "completeness": "Partial",
+  "completenessEvidence": [],
+  "apis": [
+    {
+      "id": "API-001",
+      "name": "API name",
+      "protocol": "SOAP",
+      "version": "Unknown",
+      "owner": "Unknown",
+      "consumers": [
+        "Unknown"
+      ],
+      "authentication": "Unknown",
+      "contracts": [
+        {
+          "type": "WSDL",
+          "evidenceRef": "EV-001"
+        }
+      ],
+      "operations": [
+        {
+          "id": "OP-001",
+          "name": "Operation name",
+          "confidence": "Verified",
+          "evidenceRefs": [
+            "EV-001"
+          ],
+          "sideEffects": "Unknown",
+          "http": {
+            "method": "POST",
+            "path": "/service"
+          },
+          "requestMediaTypes": [
+            "text/xml"
+          ],
+          "successResponses": [
+            {
+              "id": "RC-001",
+              "code": "200",
+              "meaning": "Successful SOAP response."
+            }
+          ],
+          "errorResponses": [
+            {
+              "id": "RC-002",
+              "code": "Unknown",
+              "meaning": "Document the applicable SOAP fault or HTTP error."
+            }
+          ],
+          "soap": {
+            "version": "1.1",
+            "action": "Unknown",
+            "requestElement": "Unknown",
+            "responseElement": "Unknown",
+            "faults": [
+              "Unknown"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "evidence": [
+    {
+      "id": "EV-001",
+      "path": "contracts/service.wsdl",
+      "startLine": 1,
+      "endLine": 1,
+      "summary": "Replace with verified service-definition evidence."
+    }
+  ],
+  "unknowns": [
+    {
+      "id": "U-001",
+      "question": "Replace with an unresolved API-boundary question.",
+      "blocksCompleteness": true
+    }
+  ]
+}

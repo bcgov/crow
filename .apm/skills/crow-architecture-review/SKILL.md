@@ -1,6 +1,6 @@
 ---
 name: crow-architecture-review
-description: Routes the Crow Architecture Review Agent through repository classification, evidence-based inspection, architecture document generation or update, and deterministic output validation.
+description: Routes the Crow Architecture Review Agent through repository classification, evidence-based inspection, REST/SOAP operation inventory when applicable, architecture document generation or update, and deterministic output validation.
 ---
 
 # Architecture Review
@@ -17,9 +17,12 @@ Use this skill with the Crow Architecture Review Agent when creating or updating
    when producing or updating architecture output.
 5. Load [`modules/update-mode.md`](modules/update-mode.md) only when an architecture document already exists.
 6. Load [`resources/architecture-index-template.md`](resources/architecture-index-template.md) only for a monorepo.
-7. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
-8. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
-9. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
+7. Load [`modules/api-inventory.md`](modules/api-inventory.md) and
+   [`resources/api-inventory-template.json`](resources/api-inventory-template.json)
+   when repository evidence shows a REST or SOAP API.
+8. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
+9. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
+10. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
 
 Do not load monorepo or update guidance when the observable repository state does not require it.
 
@@ -34,11 +37,15 @@ Before writing, resolve `scripts/Test-ArchitectureOutput.ps1` relative to this i
 ```
 
 After writing the Markdown and its `architecture-security-facts.json` sidecar,
-rerun with `-Phase PostWrite -RequireSecurityHandoff`. For a monorepo, pass
+rerun with `-Phase PostWrite -RequireSecurityHandoff`. When APIs were
+identified, also write and validate the sibling `api-inventory.json`; pass
+`-RequireApiInventory` for a single application. For a monorepo, mark each
+API-bearing service with `apiInventoryRequired: true` in the service inventory
+and pass
 `-Classification Monorepo -ServiceInventoryPath <inventory.json>` in both
-phases. The inventory format and output contract are defined in the
-classification and security-handoff modules. Treat a non-zero exit code as a
-failed architecture review.
+phases. The service inventory, security handoff, and API inventory formats are
+defined in their routed modules. Treat a non-zero exit code as a failed
+architecture review.
 
 During the bounded architecture inspection, apply the routed platform-alignment
 module conditionally. Preserve `Unknown` or `N/A` when role, reuse, ownership,

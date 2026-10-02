@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "inventorySourceRevision": "0123456789abcdef0123456789abcdef01234567",
+  "inventorySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "targetPolicy": {
+    "environment": "Test",
+    "baselineBaseUrlEnvironmentVariable": "LEGACY_API_BASE_URL",
+    "candidateBaseUrlEnvironmentVariable": "MODERN_API_BASE_URL"
+  },
+  "scenarios": [
+    {
+      "id": "SCN-001",
+      "operationId": "OP-001",
+      "responseCaseId": "RC-001",
+      "kind": "success",
+      "description": "Replace with an approved semantic success assertion.",
+      "testReference": "tests/ApiModernizationTests.cs",
+      "safety": {
+        "classification": "ReadOnly"
+      }
+    },
+    {
+      "id": "SCN-002",
+      "operationId": "OP-001",
+      "responseCaseId": "RC-002",
+      "kind": "error",
+      "description": "Replace with an approved semantic error assertion.",
+      "testReference": "tests/ApiModernizationTests.cs",
+      "safety": {
+        "classification": "ReadOnly"
+      }
+    }
+  ]
+}

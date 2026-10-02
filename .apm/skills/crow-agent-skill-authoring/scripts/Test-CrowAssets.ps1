@@ -335,8 +335,16 @@ if ($errors.Count -eq 0) {
             Add-ValidationError "plugin.json must include '.apm/agents'."
         }
 
+        $keywordBlock = [regex]::Match(
+            $apmContent,
+            '(?ms)^keywords:[ \t]*\r?\n(?<items>.*?)(?=^[^ \t\r\n]|\z)')
+        if (-not $keywordBlock.Success) {
+            Add-ValidationError 'apm.yml does not declare a keywords list.'
+        }
         $apmKeywords = @(
-            [regex]::Matches($apmContent, '(?m)^\s{2}-\s+(crow-[a-z0-9-]+)\s*$') |
+            [regex]::Matches(
+                $keywordBlock.Groups['items'].Value,
+                '(?m)^[ \t]*-[ \t]+([A-Za-z0-9][A-Za-z0-9._-]*)[ \t]*\r?$') |
                 ForEach-Object { $_.Groups[1].Value } |
                 Sort-Object -Unique
         )

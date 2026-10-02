@@ -51,6 +51,9 @@ function New-ValidArchitectureDocument {
     $content = $content.Replace('{{APPLICATION_ACRONYM}}', 'TEST')
     $content = $content.Replace('{{APPLICATION_NAME}}', 'Test Application')
     $content = $content.Replace('YYYY-MM-DD', '2026-08-31')
+    $content = $content.Replace(
+        '`API_INVENTORY_REFERENCE`',
+        'N/A - no REST or SOAP API was identified in the inspected service boundary.')
     $content = $content.Replace('[Confidence: ]', '[Confidence: Unknown]')
     $content = $content.Replace('`[Name]`', 'Core')
     $content = $content.Replace(
@@ -148,6 +151,83 @@ function New-ValidSecurityHandoff {
     } | ConvertTo-Json -Depth 20
 }
 
+function Get-ValidApiInventory {
+    param(
+        [string]$Classification,
+        [string]$ServiceName,
+        [string]$ServicePath,
+        [string]$EvidencePath
+    )
+
+    return [ordered]@{
+        schemaVersion = '1.0'
+        generatedAt = '2026-10-02T18:00:00Z'
+        sourceRevision = '0123456789abcdef0123456789abcdef01234567'
+        scope = [ordered]@{
+            classification = $Classification
+            serviceName = $ServiceName
+            servicePath = $ServicePath
+        }
+        completeness = 'Verified'
+        completenessEvidence = @('EV-001')
+        apis = @(
+            [ordered]@{
+                id = 'API-001'
+                name = 'Synthetic API'
+                protocol = 'REST'
+                version = 'v1'
+                owner = 'Unknown'
+                consumers = @('Unknown')
+                authentication = 'Unknown'
+                contracts = @(
+                    [ordered]@{
+                        type = 'OpenAPI'
+                        evidenceRef = 'EV-001'
+                    }
+                )
+                operations = @(
+                    [ordered]@{
+                        id = 'OP-001'
+                        name = 'GetStatus'
+                        confidence = 'Verified'
+                        evidenceRefs = @('EV-001')
+                        sideEffects = 'ReadOnly'
+                        http = [ordered]@{
+                            method = 'GET'
+                            path = '/status'
+                        }
+                        requestMediaTypes = @()
+                        successResponses = @(
+                            [ordered]@{
+                                id = 'RC-001'
+                                code = '200'
+                                meaning = 'Status is returned.'
+                            }
+                        )
+                        errorResponses = @(
+                            [ordered]@{
+                                id = 'RC-002'
+                                code = '404'
+                                meaning = 'Status resource is not found.'
+                            }
+                        )
+                    }
+                )
+            }
+        )
+        evidence = @(
+            [ordered]@{
+                id = 'EV-001'
+                path = $EvidencePath
+                startLine = 1
+                endLine = 1
+                summary = 'Synthetic API contract evidence.'
+            }
+        )
+        unknowns = @()
+    } | ConvertTo-Json -Depth 20
+}
+
 function New-MonorepoFixture {
     param([string]$Root)
 
@@ -161,7 +241,8 @@ function New-MonorepoFixture {
     "sourcePath": "services/orders",
     "manifestPath": "services/orders/package.json",
     "deploymentEntryPoint": "services/orders/Dockerfile",
-    "outputPath": "docs/orders/architecture.md"
+    "outputPath": "docs/orders/architecture.md",
+    "apiInventoryRequired": false
   }
 ]
 '@
@@ -201,6 +282,41 @@ try {
         '-Classification', 'SingleApp',
         '-Phase', 'PostWrite',
         '-RequireSecurityHandoff') $true
+    Invoke-ValidatorTest 'single-app required API inventory missing' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $false
+    Write-TestFile (Join-Path $singleRoot 'contracts\api.openapi.yaml') 'openapi: 3.0.0'
+    $singleArchitecture = [System.IO.File]::ReadAllText(
+        (Join-Path $singleRoot 'docs\architecture.md')).Replace(
+        'N/A - no REST or SOAP API was identified in the inspected service boundary.',
+        '[api-inventory.json](./api-inventory.json) - Completeness Verified.')
+    Write-TestFile (Join-Path $singleRoot 'docs\architecture.md') $singleArchitecture
+    $singleApiInventoryPath = Join-Path $singleRoot 'docs\api-inventory.json'
+    $validSingleApiInventory = Get-ValidApiInventory `
+        -Classification 'SingleApp' `
+        -ServiceName 'Test Application' `
+        -ServicePath '.' `
+        -EvidencePath 'contracts/api.openapi.yaml'
+    Write-TestFile $singleApiInventoryPath $validSingleApiInventory
+    Invoke-ValidatorTest 'single-app required API inventory valid' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $true
+    $invalidSingleApiInventory = $validSingleApiInventory -replace `
+        '"protocol"\s*:\s*"REST"', '"protocol": "Unsupported"'
+    Write-TestFile $singleApiInventoryPath $invalidSingleApiInventory
+    Invoke-ValidatorTest 'invalid API protocol rejected' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $false
+    Write-TestFile $singleApiInventoryPath $validSingleApiInventory
     $singleHandoffPath = Join-Path $singleRoot 'docs\architecture-security-facts.json'
     $validSingleHandoff = New-ValidSecurityHandoff `
         -ArchitectureDocument 'docs/architecture.md' `
@@ -328,6 +444,60 @@ No inter-service communication was found.
         '-ServiceInventoryPath', $inventoryPath,
         '-Phase', 'PostWrite',
         '-RequireSecurityHandoff') $false
+
+    $serviceInventoryContent = [System.IO.File]::ReadAllText($inventoryPath)
+    $apiRequiredInventory = [regex]::Replace(
+        $serviceInventoryContent,
+        '("apiInventoryRequired"\s*:\s*)false',
+        '${1}true')
+    if ($apiRequiredInventory -ceq $serviceInventoryContent) {
+        throw 'Monorepo API inventory test fixture does not declare apiInventoryRequired as false.'
+    }
+    $apiRequiredInventoryDocument = $apiRequiredInventory | ConvertFrom-Json
+    if (-not [bool]$apiRequiredInventoryDocument[0].apiInventoryRequired) {
+        throw 'Monorepo API inventory test fixture failed to enable apiInventoryRequired.'
+    }
+    Write-TestFile $inventoryPath $apiRequiredInventory
+    $writtenApiRequiredInventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    if (-not [bool]$writtenApiRequiredInventory[0].apiInventoryRequired) {
+        throw 'Monorepo API inventory test fixture did not persist apiInventoryRequired.'
+    }
+    Write-TestFile (
+        Join-Path $monorepoRoot 'docs\orders\architecture-security-facts.json') (
+        New-ValidSecurityHandoff `
+            -ArchitectureDocument 'docs/orders/architecture.md' `
+            -Classification 'Monorepo' `
+            -ServiceName 'orders' `
+            -ServicePath 'services/orders')
+    Invoke-ValidatorTest 'monorepo required API inventory missing' @(
+        '-RepoRoot', $monorepoRoot,
+        '-Classification', 'Monorepo',
+        '-ServiceInventoryPath', $inventoryPath,
+        '-Phase', 'PostWrite') $false
+    $ordersArchitecturePath = Join-Path $monorepoRoot 'docs\orders\architecture.md'
+    $ordersArchitecture = [System.IO.File]::ReadAllText($ordersArchitecturePath).Replace(
+        'N/A - no REST or SOAP API was identified in the inspected service boundary.',
+        '[api-inventory.json](./api-inventory.json) - Completeness Verified.')
+    Write-TestFile $ordersArchitecturePath $ordersArchitecture
+    Write-TestFile (Join-Path $monorepoRoot 'docs\orders\api-inventory.json') (
+        Get-ValidApiInventory `
+            -Classification 'Monorepo' `
+            -ServiceName 'orders' `
+            -ServicePath 'services/orders' `
+            -EvidencePath 'services/orders/package.json')
+    Write-TestFile (
+        Join-Path $monorepoRoot 'docs\orders\architecture-security-facts.json') (
+        New-ValidSecurityHandoff `
+            -ArchitectureDocument 'docs/orders/architecture.md' `
+            -Classification 'Monorepo' `
+            -ServiceName 'orders' `
+            -ServicePath 'services/orders')
+    Invoke-ValidatorTest 'monorepo required API inventory valid' @(
+        '-RepoRoot', $monorepoRoot,
+        '-Classification', 'Monorepo',
+        '-ServiceInventoryPath', $inventoryPath,
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff') $true
 
     $indexTemplate = [System.IO.File]::ReadAllText(
         (Resolve-Path (Join-Path $PSScriptRoot '..\resources\architecture-index-template.md')).Path)

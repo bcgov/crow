@@ -2,8 +2,8 @@
 
 CROW is a public package of agents and skills for agentic software
 development. It supports brownfield architecture, application development,
-accessible B.C. government UX, testing, security review and remediation, and
-the project setup needed to use those capabilities across repositories.
+accessible B.C. government UX, testing, security review and remediation, and the project setup needed
+to use those capabilities across repositories.
 
 Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
 Copilot CLI plugin. The full package remains available, and curated
@@ -35,20 +35,20 @@ Install the [Starter Package](collections/starter-package/README.md) for
 daily brownfield development:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.10.3 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.11.0 --global --target copilot
 ```
 
 Install the [Security Remediation collection](collections/security-remediation/README.md)
 for application security scanning and remediation:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.10.3 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.11.0 --global --target copilot
 ```
 
 Install the complete Crow package when all capabilities are needed:
 
 ```powershell
-apm install bcgov/crow#v0.10.3 --global --target copilot
+apm install bcgov/crow#v0.11.0 --global --target copilot
 ```
 
 Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
@@ -161,7 +161,8 @@ package and are unaffected by the collections.
 - [**crow-release**](.apm/skills/crow-release/SKILL.md) — Versioned package
   preparation, validation, and publication.
 - [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Unit and integration
-  testing strategy and implementation.
+  testing, including HTTP characterization and differential testing for
+  REST/SOAP API modernization.
 
 ## Optional reporting prerequisite
 
@@ -181,7 +182,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.10.3.zip`. See
+The resulting archive is `build/bcgov-crow-0.11.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
