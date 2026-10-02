@@ -84,7 +84,7 @@ This section documents the actual project structure and highlights the real arch
 
 | Entry Point | Type | Path / Reference |
 | :--- | :--- | :--- |
-| | `REST API / gRPC / GraphQL / CLI / Worker / Event Consumer` | |
+| | `REST API / SOAP API / gRPC / GraphQL / CLI / Worker / Event Consumer` | |
 
 ### 3.3 Security-Relevant Workflows
 
@@ -112,11 +112,18 @@ there and referenced by evidence ID to avoid repeating prose or code excerpts.
 | | `Active / Deprecated / Sunset` | | |
 
 ### 4.2 Contract Documentation
-*Reference OpenAPI/Swagger specs, AsyncAPI definitions, or GraphQL schemas.*
+*Reference OpenAPI/Swagger, WSDL/XSD, AsyncAPI definitions, or GraphQL schemas.*
 
 | Contract Type | Location | Auto-Generated |
 | :--- | :--- | :--- |
 | | | `Yes / No` |
+
+**API operation inventory:** `API_INVENTORY_REFERENCE`
+
+For each REST or SOAP API, link the service-scoped `api-inventory.json`
+sidecar above and state whether its operation inventory is `Verified`,
+`Partial`, or `Unknown`. When no REST or SOAP API exists, replace the reference
+with `N/A` and explain the evidence boundary.
 
 ### 4.3 Contract Testing
 *Document any consumer-driven contract tests (Pact, Spring Cloud Contract, etc.) or schema validation pipelines.*

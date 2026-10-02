@@ -1,6 +1,6 @@
 ---
 name: 'Crow Architecture Review Agent'
-description: 'Inspects a repository and creates or updates verified, service-scoped architecture documentation under docs/, including conditional platform role, reuse, contract, data responsibility, and degradation assessment.'
+description: 'Inspects a repository and creates or updates verified, service-scoped architecture documentation under docs/, including conditional REST/SOAP API operation inventory, platform role, reuse, contract, data responsibility, and degradation assessment.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'assets/*', 'codebase-memory-mcp/*']
 ---
 
@@ -27,7 +27,9 @@ public-reference-only update policy.
 2. For a monorepo, build the complete service inventory required by the module before deeper analysis. Stop if independently deployable services or their output paths remain ambiguous.
 3. Use codebase-memory-mcp for structural discovery when available. Refresh a stale index, check indexing coverage for every cited or operated-on file, and verify graph results against source where coverage is partial. If unavailable, warn that discovery coverage may be reduced and continue with direct search and source reading.
 4. Load the repository-inspection module, architecture template,
-   security-handoff module, and security-handoff JSON template. Load
+   security-handoff module, and security-handoff JSON template. When a REST or
+   SOAP API is present, also load the API-inventory module and JSON template.
+   Load
    `crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode
    review. If evidence shows a shared capability, canonical register, public
    service, integration adapter, or one-to-many dependency, also load
@@ -43,13 +45,16 @@ public-reference-only update policy.
    the monorepo index template. Preserve the output contract selected during
    classification.
 8. Write one compact `architecture-security-facts.json` sidecar beside each
-   architecture document. Normalize evidence once and reference it by ID. Do
-   not copy the full architecture document, dependency inventories,
-   vulnerability conclusions, or code snippets into the sidecar.
+   architecture document. For every service with REST or SOAP APIs, also write
+   a service-scoped `api-inventory.json` and set
+   `apiInventoryRequired: true` in its monorepo inventory entry. Normalize
+   evidence once and reference it by ID. Do not copy the full architecture
+   document, dependency inventories, vulnerability conclusions, or code
+   snippets into either sidecar.
 9. Complete every item in Section 11 of the architecture template, including conditional platform-alignment and Zero Trust items. Check an item only when evidence verifies it and always fill its confidence annotation; use `Unknown` or `N/A` with a reason when the condition or evidence is absent.
 10. Run the architecture-output validator in `PostWrite` phase with
-    `-RequireSecurityHandoff`. A validation failure is a failed review, not
-    partial success.
+    `-RequireSecurityHandoff`; also require the API inventory when applicable.
+    A validation failure is a failed review, not partial success.
 11. Report the detected architecture, material gaps, Unicode readiness, output locations, checks performed, and any remaining manual verification.
 
 ## Tool and Failure Behavior

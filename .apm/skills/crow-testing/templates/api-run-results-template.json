@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.1",
+  "generatedAt": "YYYY-MM-DDTHH:mm:ssZ",
+  "inventorySourceRevision": "0123456789abcdef0123456789abcdef01234567",
+  "inventorySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "scenarioManifestSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "baselineBuildId": "legacy-api-build-id-or-image-digest",
+  "candidateBuildId": "modern-api-build-id-or-image-digest",
+  "results": [
+    {
+      "scenarioId": "SCN-001",
+      "baseline": {
+        "transport": "HTTP",
+        "requestCount": 1,
+        "outcome": "Passed",
+        "responseClass": "Success"
+      },
+      "candidate": {
+        "transport": "HTTP",
+        "requestCount": 1,
+        "outcome": "Passed",
+        "responseClass": "Success"
+      },
+      "comparison": {
+        "verdict": "Equivalent"
+      }
+    }
+  ]
+}

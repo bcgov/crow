@@ -91,3 +91,8 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-testing\scripts\Test-CrowTestingTemplateSync.ps1
+
+      - name: Test API modernization coverage gate
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-testing\scripts\Test-ApiModernizationCoverage.Tests.ps1

@@ -1,6 +1,6 @@
 ---
 name: crow-testing
-description: Guide definition and implementation of automated unit and integration tests, including managed updates for copied Crow test-utility templates. Use for a new testing strategy, a feature, bug, pain point, or managed-template drift. End-to-end testing is out of scope for now.
+description: Guide definition and implementation of automated unit and integration tests, including HTTP characterization and differential testing for REST/SOAP API modernization and managed updates for copied Crow test-utility templates. Use for a new testing strategy, a feature, bug, pain point, or managed-template drift. Browser E2E testing is out of scope.
 ---
 
 # Testing
@@ -58,6 +58,10 @@ reference according to that skill.
      first isn't safe because there are no tests yet.
    - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
      re-platform, or a move between stored procedures and application code.
+   - `api-modernization-harness.md` — an existing REST or SOAP API is being characterized, rewritten,
+     ported, or compared over HTTP. Also load
+     [`../crow-architecture-review/modules/api-inventory.md`](../crow-architecture-review/modules/api-inventory.md)
+     and validate its inventory with the bundled API modernization coverage script.
    - `xunit-v2-to-v3-migration.md` — an existing .NET test project uses xUnit v2; load it to assess
      migration cost, then require user confirmation before applying its migration steps.
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
@@ -115,7 +119,8 @@ reference according to that skill.
 ## Out of scope
 
 - End-to-end (E2E) / browser UI test automation — not covered yet; a future `modules/e2e/` addition can slot
-  into this router without restructuring it.
+  into this router without restructuring it. This exclusion does not apply to API integration tests that
+  exercise REST or SOAP operations over HTTP.
 - Authoring CI/CD pipelines, build/release tasks, or Azure DevOps Server configuration.
 - Searching for work items in Azure DevOps Server (or another tracker) via Raven MCP — not covered yet.
   This iteration checks only the local candidate index, accepts a user-supplied existing ID/link, and

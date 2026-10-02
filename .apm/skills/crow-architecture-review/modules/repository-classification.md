@@ -31,6 +31,12 @@ Build a complete inventory of independently deployable services before deeper in
 }
 ```
 
+When a service exposes a REST or SOAP API, add
+`"apiInventoryRequired": true` to that service's inventory record. Omit the
+property or set it to `false` when no API inventory is applicable. The
+architecture-output validator requires and validates `docs/<service-name>/api-inventory.json`
+for records marked `true`.
+
 Names and output paths must be unique. Every output path must have the form `docs/<service-name>/architecture.md`.
 
 Write exactly one service-scoped document per inventory record and a root `docs/architecture-index.md`. The index must link every service document and describe shared infrastructure and inter-service communication. A monorepo must not contain `docs/architecture.md`.
