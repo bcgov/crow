@@ -411,7 +411,7 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - **OWASP ASVS & CWE Top 25:** Map findings to specific ASVS v4.0.3 requirements (e.g., V2.1.1) and CWE/SANS Top 25 entries.
 - **Language-Specific & Ecosystem Rules:** Apply ecosystem-specific secure coding standards (e.g., CERT C/C++, Rust safe abstractions, Node.js prototype pollution checks).
 - **MITRE ATT&CK / D3FEND:** Map identified vulnerabilities to attacker tactics and techniques (e.g., T1190 — Exploit Public-Facing Application).
-- **STRIDE Threat Model:** Produce a STRIDE (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege) assessment for key components.
+- **STRIDE Threat Model:** Use the required, evidence-backed six-category matrix in `modules/stride-threat-model.md`.
 
 #### Pass G: LLM, Agent, and Markdown Security
 - Load `llm-prompt-and-markdown-security.md` whenever the repository contains LLM/agent SDKs, prompt templates, RAG/embedding/vector storage, tool/function/MCP calling, model-output rendering, Markdown/MDX rendering, documentation generation, or automation that consumes Markdown.
@@ -441,17 +441,16 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Tag all CVE references with provenance (`[SonarQube]`, `[NVD-verified]`, or `[AI-estimated]`).
 - Verify outdated scans: confirm CLI outdated scan commands were executed in Step 5 before writing the dependency inventory table.
 - Verify coverage baseline: confirm all entry points from Step 3 were assessed; document any gaps.
-- Write input; run `New-CrowSecuritySynthesis.ps1` with output at adjacent
-  `synthesis_artifact`; use its counts, chain IDs, and `crow-v1` priorities,
-  not score-derived severity.
+- Write the `schemaVersion: "1.1"` input with its required STRIDE array; run
+  `New-CrowSecuritySynthesis.ps1` with output at adjacent `synthesis_artifact`.
+  Use its counts, chain IDs, and `crow-v1` priorities, not score-derived severity.
 - When the assessed and total entry-point counts are known from the coverage
   baseline, write both `coverage_assessed` and `coverage_total` to frontmatter.
   If either count is unavailable, write both as null; never infer the total
   from `coverage_baseline_gaps`.
 - **Monorepo finalization gate:** Before writing or updating any report, re-run the service inventory/output-path checks from Step 2. After writing, verify that every inventoried service has exactly one `docs/<service-name>/security-review.md`, every service document contains only its service-scoped findings and frontmatter, `docs/security-index.md` links all service documents, and no root `docs/security-review.md` exists. If any assertion fails, treat the review as failed and do not present it as complete.
-- Run `Test-CrowSecurityReviewOutput.ps1` for each report and its frontmatter
-  synthesis path; fail scope/path mismatches, count errors, unresolved
-  adjudication, or missing synthesis IDs.
+- Run `Test-CrowSecurityReviewOutput.ps1` for each report and synthesis path;
+  any scope, synthesis, evidence, or STRIDE matrix mismatch blocks completion.
 - Set Revision History date to today's date and version to `1.0`.
 
 ---

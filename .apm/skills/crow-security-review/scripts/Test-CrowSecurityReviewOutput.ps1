@@ -59,6 +59,11 @@ if ($errors.Count -eq 0) {
 }
 
 if ($errors.Count -eq 0) {
+    $synthesisVersion = [string]$synthesis.schemaVersion
+    if ($synthesisVersion -cnotin @('1.0', '1.1')) {
+        Add-ValidationError "Security synthesis schemaVersion '$synthesisVersion' is unsupported; expected '1.0' or '1.1'."
+    }
+
     $frontmatterMatch = [regex]::Match(
         $report,
         '\A---\s*\r?\n(?<content>.*?)\r?\n---\s*\r?\n',
@@ -179,6 +184,301 @@ if ($errors.Count -eq 0) {
         'Validation adjudication')) {
         if ($report -notmatch ('(?m)^###\s+' + [regex]::Escape($heading) + '\s*$')) {
             Add-ValidationError "Security report is missing synthesis heading '$heading'."
+        }
+    }
+
+    $hasStructuredStride = $synthesisVersion -ceq '1.1'
+    $strideRowsProperty = $synthesis.PSObject.Properties['stride']
+    $strideRows = @()
+    if ($hasStructuredStride) {
+        if ($null -eq $strideRowsProperty -or
+            $strideRowsProperty.Value -isnot [array] -or
+            $strideRowsProperty.Value.Count -eq 0) {
+            Add-ValidationError 'Security synthesis schemaVersion 1.1 must contain a non-empty stride array.'
+        }
+        else {
+            $strideRows = @($strideRowsProperty.Value)
+        }
+    }
+    elseif ($null -ne $strideRowsProperty) {
+        Add-ValidationError 'Security synthesis schemaVersion 1.0 must not contain a stride property.'
+    }
+
+    $strideEvidenceIds = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::Ordinal)
+    $evidenceProperty = $synthesis.PSObject.Properties['evidence']
+    if ($null -eq $evidenceProperty -or $evidenceProperty.Value -isnot [array]) {
+        Add-ValidationError 'Security synthesis must contain an evidence array.'
+    }
+    else {
+        $evidenceRecords = @($evidenceProperty.Value)
+        if ($hasStructuredStride -and $evidenceRecords.Count -eq 0) {
+            Add-ValidationError 'Security synthesis schemaVersion 1.1 must contain evidence records.'
+        }
+        foreach ($evidence in $evidenceRecords) {
+            if ($null -eq $evidence -or $evidence -is [string]) {
+                Add-ValidationError 'Security synthesis contains an invalid evidence record.'
+                continue
+            }
+            $evidenceId = $evidence.PSObject.Properties['id']
+            if ($null -eq $evidenceId -or
+                $evidenceId.Value -isnot [string] -or
+                [string]::IsNullOrWhiteSpace($evidenceId.Value) -or
+                ($hasStructuredStride -and
+                    $evidenceId.Value -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$')) {
+                Add-ValidationError 'Security synthesis evidence requires a valid string ID.'
+                continue
+            }
+            if (-not $strideEvidenceIds.Add($evidenceId.Value)) {
+                Add-ValidationError "Security synthesis contains duplicate evidence ID '$($evidenceId.Value)'."
+            }
+
+            $evidencePathProperty = $evidence.PSObject.Properties['path']
+            if ($null -eq $evidencePathProperty -or
+                $evidencePathProperty.Value -isnot [string] -or
+                [string]::IsNullOrWhiteSpace($evidencePathProperty.Value)) {
+                Add-ValidationError "Evidence '$($evidenceId.Value)' requires a repository-relative path."
+            }
+            else {
+                $evidencePath = $evidencePathProperty.Value
+                $evidencePathSegments = @($evidencePath -split '[\\/]')
+                if ($evidencePath -match '^(?:[\\/]|[A-Za-z]:)' -or
+                    $evidencePath -match '^[A-Za-z][A-Za-z0-9+.-]*://' -or
+                    $evidencePathSegments -contains '' -or
+                    $evidencePathSegments -contains '.' -or
+                    $evidencePathSegments -contains '..') {
+                    Add-ValidationError "Evidence '$($evidenceId.Value)' path must be repository-relative."
+                }
+            }
+
+            $startLineProperty = $evidence.PSObject.Properties['startLine']
+            $endLineProperty = $evidence.PSObject.Properties['endLine']
+            $startLine = 0L
+            $endLine = 0L
+            $lineNumberStyle = [System.Globalization.NumberStyles]::Integer
+            $invariantCulture = [System.Globalization.CultureInfo]::InvariantCulture
+            if ($null -eq $startLineProperty -or
+                $startLineProperty.Value -is [string] -or
+                $startLineProperty.Value -is [bool] -or
+                $startLineProperty.Value -isnot [System.ValueType] -or
+                -not [long]::TryParse(
+                    [string]$startLineProperty.Value,
+                    $lineNumberStyle,
+                    $invariantCulture,
+                    [ref]$startLine) -or
+                $startLine -lt 1) {
+                Add-ValidationError "Evidence '$($evidenceId.Value)' startLine must be a positive integer."
+            }
+            if ($null -eq $endLineProperty -or
+                $endLineProperty.Value -is [string] -or
+                $endLineProperty.Value -is [bool] -or
+                $endLineProperty.Value -isnot [System.ValueType] -or
+                -not [long]::TryParse(
+                    [string]$endLineProperty.Value,
+                    $lineNumberStyle,
+                    $invariantCulture,
+                    [ref]$endLine) -or
+                $endLine -lt $startLine) {
+                Add-ValidationError "Evidence '$($evidenceId.Value)' endLine must be an integer greater than or equal to startLine."
+            }
+
+            $summaryProperty = $evidence.PSObject.Properties['summary']
+            if ($null -eq $summaryProperty -or
+                $summaryProperty.Value -isnot [string] -or
+                [string]::IsNullOrWhiteSpace($summaryProperty.Value)) {
+                Add-ValidationError "Evidence '$($evidenceId.Value)' requires a non-empty summary."
+            }
+        }
+    }
+    $strideComponents = [System.Collections.Generic.HashSet[string]]::new(
+        [System.StringComparer]::OrdinalIgnoreCase)
+    $strideDimensions = @('S', 'T', 'R', 'I', 'D', 'E')
+    $strideRatings = @('High', 'Medium', 'Low', 'Unknown', 'N/A')
+    foreach ($row in $strideRows) {
+        if ($null -eq $row) {
+            Add-ValidationError 'Security synthesis contains a null STRIDE row.'
+            continue
+        }
+        $component = $row.component
+        if ($component -isnot [string] -or
+            [string]::IsNullOrWhiteSpace($component) -or
+            $component -match '[\r\n|]') {
+            Add-ValidationError 'Every STRIDE row requires a component name without Markdown pipes or line breaks.'
+            continue
+        }
+        if (-not $strideComponents.Add($component)) {
+            Add-ValidationError "Security synthesis contains duplicate STRIDE component '$component'."
+        }
+        foreach ($dimension in $strideDimensions) {
+            $rating = $row.PSObject.Properties[$dimension]
+            if ($null -eq $rating -or
+                $rating.Value -isnot [string] -or
+                $rating.Value -cnotin $strideRatings) {
+                Add-ValidationError "STRIDE component '$component' requires a supported $dimension rating."
+            }
+        }
+        if ($row.rationale -isnot [string] -or
+            [string]::IsNullOrWhiteSpace($row.rationale) -or
+            $row.rationale -match '[\r\n|]') {
+            Add-ValidationError "STRIDE component '$component' requires rationale without Markdown pipes or line breaks."
+        }
+        $referencesProperty = $row.PSObject.Properties['evidenceRefs']
+        if ($null -eq $referencesProperty -or
+            $referencesProperty.Value -isnot [array] -or
+            $referencesProperty.Value.Count -eq 0) {
+            Add-ValidationError "STRIDE component '$component' must reference at least one evidence item."
+            continue
+        }
+        $referenceIds = @($referencesProperty.Value)
+        foreach ($reference in $referenceIds) {
+            if ($reference -isnot [string] -or
+                $reference -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+                Add-ValidationError "STRIDE component '$component' evidence references must be table-safe string IDs."
+            }
+        }
+        if (@($referenceIds | Select-Object -Unique).Count -ne $referenceIds.Count) {
+            Add-ValidationError "STRIDE component '$component' contains duplicate evidence references."
+        }
+        foreach ($reference in $referenceIds) {
+            if ($reference -isnot [string] -or
+                -not $strideEvidenceIds.Contains([string]$reference)) {
+                Add-ValidationError "STRIDE component '$component' references unresolved evidence '$reference'."
+            }
+        }
+    }
+
+    $strideSectionMatch = [regex]::Match(
+        $report,
+        '(?ms)^### STRIDE Threat Model Summary\s*\r?\n(?<section>.*?)(?=^## 12\. Security Finding Synthesis & Assurance\s*$)')
+    if (-not $strideSectionMatch.Success) {
+        Add-ValidationError 'Security report is missing the STRIDE Threat Model Summary table.'
+    }
+    else {
+        $markdownStrideHeaders = [System.Collections.Generic.List[object]]::new()
+        $markdownStrideRows = [System.Collections.Generic.List[object]]::new()
+        $markdownStrideHeaderCaptured = $false
+        foreach ($line in ($strideSectionMatch.Groups['section'].Value -split '\r?\n')) {
+            if ($line -notmatch '^\s*\|(?<cells>.*?)\|\s*$') {
+                continue
+            }
+            $cells = @(
+                $matches['cells'] -split '\s*\|\s*' |
+                    ForEach-Object { $_.Trim() }
+            )
+            if (@($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count -eq 0) {
+                continue
+            }
+            if (-not $markdownStrideHeaderCaptured -and
+                $cells.Count -gt 0 -and
+                $cells[0] -ceq 'Component') {
+                $markdownStrideHeaders.Add($cells)
+                $markdownStrideHeaderCaptured = $true
+                continue
+            }
+            $markdownStrideRows.Add($cells)
+        }
+
+        $legacyHeader = @(
+            'Component', 'Spoofing', 'Tampering', 'Repudiation',
+            'Info Disclosure', 'DoS', 'Elevation of Privilege'
+        )
+        $structuredHeader = @(
+            'Component', 'Spoofing', 'Tampering', 'Repudiation',
+            'Information Disclosure', 'Denial of Service',
+            'Elevation of Privilege', 'Evidence IDs', 'Rationale'
+        )
+        if ($markdownStrideHeaders.Count -ne 1) {
+            Add-ValidationError "Security report must contain exactly one STRIDE table header; found $($markdownStrideHeaders.Count)."
+        }
+        $headerCells = @()
+        if ($markdownStrideHeaders.Count -eq 1) {
+            $headerCells = @($markdownStrideHeaders[0])
+            $headerText = $headerCells -join '|'
+            $structuredHeaderText = $structuredHeader -join '|'
+            $legacyHeaderText = $legacyHeader -join '|'
+            $validHeader = if ($hasStructuredStride) {
+                $headerText -ceq $structuredHeaderText
+            }
+            else {
+                $headerText -ceq $legacyHeaderText
+            }
+            if (-not $validHeader) {
+                Add-ValidationError "Security report STRIDE table header is not in the canonical category order for schemaVersion $synthesisVersion."
+            }
+        }
+        if ($markdownStrideRows.Count -eq 0) {
+            Add-ValidationError 'Security report STRIDE table must contain at least one component row.'
+        }
+
+        $markdownStrideComponents = [System.Collections.Generic.HashSet[string]]::new(
+            [System.StringComparer]::OrdinalIgnoreCase)
+        $strideRatings = @('High', 'Medium', 'Low', 'Unknown', 'N/A')
+        foreach ($markdownRow in $markdownStrideRows) {
+            $cells = @($markdownRow)
+            if ($headerCells.Count -eq 0 -or $cells.Count -ne $headerCells.Count) {
+                Add-ValidationError "Security report STRIDE row has $($cells.Count) cells; expected $($headerCells.Count)."
+                continue
+            }
+            $component = [string]$cells[0]
+            if ([string]::IsNullOrWhiteSpace($component) -or
+                $component -match '[\r\n|]') {
+                Add-ValidationError 'Every security report STRIDE row requires a safe component name.'
+                continue
+            }
+            if (-not $markdownStrideComponents.Add($component)) {
+                Add-ValidationError "Security report contains duplicate STRIDE component '$component'."
+            }
+            for ($dimensionIndex = 1; $dimensionIndex -le 6; $dimensionIndex++) {
+                if ($cells[$dimensionIndex] -cnotin $strideRatings) {
+                    Add-ValidationError "Security report STRIDE component '$component' has unsupported rating '$($cells[$dimensionIndex])'."
+                }
+            }
+            if ($headerCells.Count -eq 9) {
+                $referenceIds = @($cells[7] -split ',\s*')
+                if ([string]::IsNullOrWhiteSpace($cells[7]) -or
+                    [string]::IsNullOrWhiteSpace($cells[8])) {
+                    Add-ValidationError "Security report STRIDE component '$component' requires evidence IDs and rationale."
+                }
+                foreach ($reference in $referenceIds) {
+                    if ($reference -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+                        Add-ValidationError "Security report STRIDE component '$component' contains an unsafe evidence ID."
+                    }
+                    elseif (-not $strideEvidenceIds.Contains($reference)) {
+                        Add-ValidationError "Security report STRIDE component '$component' references unresolved evidence '$reference'."
+                    }
+                }
+            }
+        }
+
+        if ($hasStructuredStride) {
+            if ($markdownStrideRows.Count -ne $strideRows.Count) {
+                Add-ValidationError "Security report has $($markdownStrideRows.Count) STRIDE rows; synthesis has $($strideRows.Count)."
+            }
+            $rowsToCompare = [Math]::Min($markdownStrideRows.Count, $strideRows.Count)
+            for ($index = 0; $index -lt $rowsToCompare; $index++) {
+                $row = $strideRows[$index]
+                $expectedCells = @(
+                    [string]$row.component,
+                    [string]$row.S,
+                    [string]$row.T,
+                    [string]$row.R,
+                    [string]$row.I,
+                    [string]$row.D,
+                    [string]$row.E,
+                    (@($row.evidenceRefs) -join ', '),
+                    [string]$row.rationale
+                )
+                $actualCells = @($markdownStrideRows[$index])
+                if ($actualCells.Count -ne $expectedCells.Count) {
+                    Add-ValidationError "Security report STRIDE row $($index + 1) has $($actualCells.Count) cells; expected $($expectedCells.Count)."
+                    continue
+                }
+                for ($cellIndex = 0; $cellIndex -lt $expectedCells.Count; $cellIndex++) {
+                    if ($actualCells[$cellIndex] -cne $expectedCells[$cellIndex]) {
+                        Add-ValidationError "Security report STRIDE row '$($row.component)' does not match synthesis cell $($cellIndex + 1)."
+                    }
+                }
+            }
         }
     }
 

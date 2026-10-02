@@ -45,9 +45,10 @@ locators, or credentials into executive reports.
      exact path and recommend rerunning the corresponding review agent. Halt if
      a source is missing unless the user explicitly requests partial data.
 4. When the security frontmatter names `synthesis_artifact`, resolve that
-   repository-relative path exactly; do not assume a root-level default. Before
-   using it, confirm its `schemaVersion` is supported, its `serviceName`
-   matches the assessed service and frontmatter `service_name`, and its
+   repository-relative path exactly; do not assume a root-level default.
+   Accept synthesis schema versions `1.0` and `1.1` for migration
+   compatibility. Require `serviceName` to match the assessed service and
+   frontmatter `service_name`, and its
    `sourceRevision` equals both the security review's `source_revision` and the
    current inspected Git HEAD. Compare its `summary` counts to the frontmatter
    and require `unresolvedValidationCount: 0`. If the artifact is missing,
@@ -58,9 +59,16 @@ locators, or credentials into executive reports.
    records before using it. Treat missing, duplicate, or incomplete evidence
    records and unresolved references as an invalid synthesis; cite only the
    evidence ID, repository path, line range, and summary needed to support the
-   executive claim.
+   executive claim. For schema `1.1`, require a non-empty `stride` array,
+   validate all six ratings and evidence references, and confirm each
+   component, rating, evidence ID, and rationale exactly matches the Section
+   11 table. Schema `1.0` has no structured STRIDE field: obtain ratings only
+   from a complete legacy Section 11 table, never from prose. A legacy
+   seven-column table does not carry row-level evidence IDs or rationale;
+   disclose that limitation rather than presenting it as an evidence-linked
+   assessment.
 5. If an `architecture-security-facts.json` handoff exists, compare its `sourceRevision` with the architecture review's assessed revision (when recorded) and current inspected HEAD before using any `Verified` fact. A stale, `Inferred`, or `Unknown` fact is a question to verify, not an executive security conclusion. The handoff never supersedes the architecture document or the adjudicated security review. If it is absent, use the architecture Markdown and label any unverified architecture-dependent claim as unknown.
-6. For legacy security reviews without a `synthesis_artifact`, use only the document's stated metrics and findings; explicitly label synthesis, chain, and component-priority information unavailable. A one-month-old assessment is not proof that its inspected commit is current.
+6. For legacy security reviews without a `synthesis_artifact`, use only the document's stated metrics and findings; explicitly label synthesis, chain, and component-priority information unavailable. A complete seven-column legacy Section 11 STRIDE table may supply the six ratings, but its lack of row-level evidence references must be disclosed. If the table is absent, malformed, or incomplete, stop and request an updated security review; never infer ratings from prose. A one-month-old assessment is not proof that its inspected commit is current.
 
 ### Step 2: Load Executive Report Resources
 
@@ -71,6 +79,8 @@ Required files:
 - `executive-report.html` — HTML dashboard template (with `{{PLACEHOLDER}}` tokens)
 - `executive-report.min.css` — Pre-minified CSS (injected by render script)
 - `render-report.ps1` — Deterministic renderer script
+- `Test-CrowExecutiveReportStride.ps1` — Deterministic check that report-data
+  ratings match the security review and any available synthesis
 - `report-data.schema.json` — JSON schema with example values
 
 Read the Markdown template and the JSON schema file. Do NOT read the HTML template or CSS file — the render script handles those.
@@ -163,9 +173,18 @@ Populate the JSON following the schema in `report-data.schema.json`. Key fields:
 **Array fields** (model extracts and translates):
 - `findings[]` — Critical and High issues with `title`, `severity`, `classification`, `business_risk`, `action`
 - `tech_debt[]` — EOL/outdated components with `component`, `category`, `risk`, `impact`, `action`
-- `stride[]` — Per-component STRIDE ratings with `component`, `S`, `T`, `R`, `I`, `D`, `E` (values: "High"/"Medium"/"Low")
+- `stride[]` — Required, non-empty per-component STRIDE rows copied from the validated synthesis (or, for legacy reports, the complete Section 11 table). Each row has `component`, `S`, `T`, `R`, `I`, `D`, `E` (values: "High", "Medium", "Low", "Unknown", or "N/A"). Do not infer or re-rate values from the prose summary; retain `Unknown` rather than defaulting to `Low`.
 
 ### Step 6: Render HTML Dashboard & PDF
+
+Before rendering, run `Test-CrowExecutiveReportStride.ps1` from the
+`crow-executive-report` skill directory against `report-data.json` and the
+scoped `security-review.md`. When frontmatter declares a synthesis artifact,
+pass its resolved path with `-SynthesisPath`. The check must pass; it verifies
+that review, report-data, and synthesis paths match the declared service scope,
+checks complete evidence records and the ratings against the source matrix,
+rejects unresolved evidence references, and supports only the canonical
+seven-column v1.0 legacy-table migration. Do not render a report when it fails.
 
 Run the deterministic render script to produce the HTML dashboard:
 

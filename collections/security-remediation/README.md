@@ -7,7 +7,7 @@ evidence-backed findings, and implementing and verifying remediations.
 Install it with the Crow release tag:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.10.2 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.10.3 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)

@@ -20,7 +20,29 @@ bounded security control-assurance section. The renderer displays a short
 conditional section and never computes or changes security severity or
 component-priority scores.
 
-Run `render-report.ps1` from this skill directory with the target repository's `report-data.json` path. Write generated reports to the target repository's `docs/` directory; do not modify the bundled resources.
+The STRIDE heatmap is required. Populate `report-data.json.stride` from the
+validated `security-review-synthesis.json.stride` array for schema version
+`1.1`, preserving all six ratings and component names. For a legacy `1.0`
+synthesis, or a legacy review without a synthesis artifact, use only a
+complete Section 11 STRIDE table. The canonical seven-column legacy table is
+accepted for migration; disclose that it lacks row-level evidence IDs and
+rationale. Never derive ratings from prose.
+
+Before rendering, run `Test-CrowExecutiveReportStride.ps1` with the report-data
+path and scoped security-review path. Pass `-SynthesisPath` when the review
+declares a synthesis artifact. This deterministic gate verifies the
+report-data ratings against the source table, compares schema `1.1` values
+across JSON and Markdown, and rejects unresolved or unsafe evidence references.
+It also validates complete evidence records and confirms the report data,
+review, and synthesis paths match the declared single-app or monorepo scope.
+Do not render when validation fails. Run
+`Test-CrowExecutiveReportStride.Tests.ps1` when changing this contract.
+
+`render-report.ps1` displays an explicit “STRIDE ratings unavailable” row when
+the field is missing or empty as a fail-safe for standalone use. That fallback
+is not a valid executive report; the pre-render validation gate requires a
+complete, source-matched matrix. Write generated reports to the target
+repository's `docs/` directory; do not modify the bundled resources.
 
 When a PDF is required on Windows, use Microsoft Edge's built-in headless
 print-to-PDF support against the rendered HTML (for example, `msedge.exe

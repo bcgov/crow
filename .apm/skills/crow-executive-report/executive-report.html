@@ -96,6 +96,8 @@ p, li { margin-bottom: 0.4em; }
 .heatmap .cell-high { background: #fecaca; color: var(--critical); font-weight: 600; }
 .heatmap .cell-medium { background: #fef08a; color: var(--medium); font-weight: 600; }
 .heatmap .cell-low { background: #bbf7d0; color: var(--secure); font-weight: 600; }
+.heatmap .cell-unknown { background: #e5e7eb; color: #4b5563; font-weight: 600; }
+.heatmap .cell-na { background: var(--info-bg); color: var(--info); font-weight: 600; }
 
 /* ===== Tables ===== */
 table.data-table { border-collapse: collapse; width: 100%; font-size: 0.82em; margin: 0.5em 0; }
@@ -401,7 +403,7 @@ table.data-table tr:nth-child(even) { background: #fafafa; }
     <tr><th>Component</th><th>Spoofing</th><th>Tampering</th><th>Repudiation</th><th>Info Disclosure</th><th>DoS</th><th>Elevation</th></tr>
   </thead>
   <tbody>
-    <!-- Repeat per component. Cell class: cell-high | cell-medium | cell-low -->
+    <!-- Repeat per component. Cell classes distinguish ratings, unknowns, and N/A. -->
     <tr>
       <td>{{COMPONENT_NAME}}</td>
       <td class="{{STRIDE_S_CLASS}}">{{STRIDE_S}}</td>
