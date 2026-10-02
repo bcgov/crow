@@ -145,6 +145,10 @@ foreach ($item in $evidence) {
         throw 'Evidence property ''id'' must be a string.'
     }
     $evidenceId = $evidenceIdValue
+    if ($schemaVersion -eq '1.1' -and
+        $evidenceId -notmatch '^[A-Za-z0-9][A-Za-z0-9._-]*$') {
+        throw "Evidence ID '$evidenceId' is not a table-safe string ID."
+    }
     if (-not $evidenceIds.Add($evidenceId)) {
         throw "Duplicate evidence ID '$evidenceId'."
     }

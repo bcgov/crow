@@ -168,6 +168,39 @@ try {
     Write-Fixture -ReviewText $structuredReview -WriteSynthesis
     Invoke-StrideValidator -WithSynthesis
 
+    $componentNamedRatings = [ordered]@{}
+    foreach ($property in $ratings.GetEnumerator()) {
+        $componentNamedRatings[$property.Key] = $property.Value
+    }
+    $componentNamedRatings.component = 'Component'
+    $componentNamedSynthesisStride = [ordered]@{
+        component = 'Component'
+        S = 'High'
+        T = 'Medium'
+        R = 'Unknown'
+        I = 'Low'
+        D = 'Medium'
+        E = 'N/A'
+        evidenceRefs = @('EV-001')
+        rationale = 'Risk rationale'
+    }
+    $componentNamedSynthesis = [ordered]@{}
+    foreach ($property in $synthesis.GetEnumerator()) {
+        if ($property.Key -cne 'stride') {
+            $componentNamedSynthesis[$property.Key] = $property.Value
+        }
+    }
+    $componentNamedSynthesis.stride = @($componentNamedSynthesisStride)
+    $componentNamedTable = $structuredTable.Replace('| API boundary |', '| Component |')
+    $componentNamedReview = Get-ReviewText -Table $componentNamedTable -WithSynthesis
+    Write-Fixture `
+        -Data ([ordered]@{ stride = @($componentNamedRatings) }) `
+        -ReviewText $componentNamedReview `
+        -SynthesisData $componentNamedSynthesis `
+        -WriteSynthesis
+    Invoke-StrideValidator -WithSynthesis
+    Write-Fixture -ReviewText $structuredReview -WriteSynthesis
+
     $incompleteEvidence = [ordered]@{}
     foreach ($property in $synthesis.GetEnumerator()) {
         $incompleteEvidence[$property.Key] = $property.Value

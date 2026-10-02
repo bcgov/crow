@@ -3,6 +3,7 @@
   "$comment": "Schema for report-data.json consumed by render-report.ps1. The LLM emits ONLY this file; all chart math and HTML rendering is handled by the script.",
 
   "type": "object",
+  "required": ["stride"],
   "properties": {
     "stride": {
       "type": "array",

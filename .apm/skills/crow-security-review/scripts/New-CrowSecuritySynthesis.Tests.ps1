@@ -166,6 +166,20 @@ try {
     if ($result.chains[0].edges[0].evidenceRefs[0] -notin @($result.evidence.id)) {
         throw 'A chain evidence reference could not be resolved from synthesis evidence.'
     }
+    $savedEvidenceIds = $input.evidence
+    $input.evidence += [ordered]@{
+        id = 'EV|002'
+        path = 'src/other.cs'
+        startLine = 20
+        endLine = 20
+        summary = 'Synthetic unreferenced evidence.'
+    }
+    Write-Json $inputPath $input
+    Assert-CommandFails 'all v1.1 evidence IDs must be table safe' $synthesisScript @(
+        '-InputPath', $inputPath,
+        '-OutputPath', $outputPath)
+    $input.evidence = $savedEvidenceIds
+
     if ($result.stride.Count -ne 1 -or
         $result.stride[0].component -ne 'API boundary' -or
         $result.stride[0].R -ne 'Unknown' -or
@@ -330,6 +344,31 @@ SEC-002
     [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
 
     $strideMarkdownRow = "| $($stride.component) | $($stride.S) | $($stride.T) | $($stride.R) | $($stride.I) | $($stride.D) | $($stride.E) | $($stride.evidenceRefs -join ', ') | $($stride.rationale) |"
+    $componentNamedSynthesis = [ordered]@{}
+    foreach ($property in $result.PSObject.Properties) {
+        $componentNamedSynthesis[$property.Name] = $property.Value
+    }
+    $componentNamedStrideRow = [ordered]@{}
+    foreach ($property in $stride.PSObject.Properties) {
+        $componentNamedStrideRow[$property.Name] = $property.Value
+    }
+    $componentNamedStrideRow.component = 'Component'
+    $componentNamedSynthesis.stride = @($componentNamedStrideRow)
+    $componentNamedMarkdownRow = $strideMarkdownRow.Replace(
+        "| $($stride.component) |",
+        '| Component |')
+    $componentNamedReport = $report.Replace(
+        $strideMarkdownRow,
+        $componentNamedMarkdownRow)
+    Write-Json $outputPath $componentNamedSynthesis
+    [System.IO.File]::WriteAllText($reportPath, $componentNamedReport, $utf8)
+    & $reportValidator -ReportPath $reportPath -SynthesisPath $outputPath | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw 'A valid STRIDE component named Component did not pass validation.'
+    }
+    Write-Json $outputPath $result
+    [System.IO.File]::WriteAllText($reportPath, $report, $utf8)
+
     [System.IO.File]::WriteAllText(
         $reportPath,
         $report.Replace($strideMarkdownRow, ''),

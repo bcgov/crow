@@ -356,6 +356,7 @@ if ($errors.Count -eq 0) {
     else {
         $markdownStrideHeaders = [System.Collections.Generic.List[object]]::new()
         $markdownStrideRows = [System.Collections.Generic.List[object]]::new()
+        $markdownStrideHeaderCaptured = $false
         foreach ($line in ($strideSectionMatch.Groups['section'].Value -split '\r?\n')) {
             if ($line -notmatch '^\s*\|(?<cells>.*?)\|\s*$') {
                 continue
@@ -367,8 +368,11 @@ if ($errors.Count -eq 0) {
             if (@($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count -eq 0) {
                 continue
             }
-            if ($cells.Count -gt 0 -and $cells[0] -ceq 'Component') {
+            if (-not $markdownStrideHeaderCaptured -and
+                $cells.Count -gt 0 -and
+                $cells[0] -ceq 'Component') {
                 $markdownStrideHeaders.Add($cells)
+                $markdownStrideHeaderCaptured = $true
                 continue
             }
             $markdownStrideRows.Add($cells)

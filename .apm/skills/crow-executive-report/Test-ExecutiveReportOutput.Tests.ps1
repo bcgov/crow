@@ -22,6 +22,9 @@ function Render-TestReport {
 
 try {
     [System.IO.Directory]::CreateDirectory($tempRoot) | Out-Null
+    if ($schema.required -notcontains 'stride') {
+        throw 'Report data schema must require the STRIDE matrix.'
+    }
     $legacy = Render-TestReport
     foreach ($component in @($data.stride.component)) {
         if (-not $legacy.Contains($component)) {

@@ -79,6 +79,7 @@ function Get-StrideMarkdownRows {
     )
     $headers = [System.Collections.Generic.List[object]]::new()
     $rows = [System.Collections.Generic.List[object]]::new()
+    $headerCaptured = $false
     foreach ($line in ($sectionMatch.Groups['section'].Value -split '\r?\n')) {
         if ($line -notmatch '^\s*\|(?<cells>.*?)\|\s*$') {
             continue
@@ -90,8 +91,11 @@ function Get-StrideMarkdownRows {
         if (@($cells | Where-Object { $_ -notmatch '^:?-+:?$' }).Count -eq 0) {
             continue
         }
-        if ($cells.Count -gt 0 -and $cells[0] -ceq 'Component') {
+        if (-not $headerCaptured -and
+            $cells.Count -gt 0 -and
+            $cells[0] -ceq 'Component') {
             $headers.Add($cells)
+            $headerCaptured = $true
         }
         else {
             $rows.Add($cells)
