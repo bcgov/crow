@@ -23,6 +23,12 @@ For every operation, capture:
 - evidence references, confidence, ownership, consumers, authentication, and
   unresolved questions.
 
+Each operation must have at least one documented success response.
+`errorResponses` may be an empty array when the verified contract documents no
+error cases. For SOAP, retain an explicitly empty `action` when the WSDL
+declares `soapAction=""`, and use an empty `faults` array when no named faults
+are declared; do not replace either known value with `Unknown`.
+
 Inventory each distinct REST method/path and each SOAP operation, even when
 several SOAP operations share one HTTP service endpoint. Keep source evidence
 repository-relative and line-addressable. Do not put credentials, captured

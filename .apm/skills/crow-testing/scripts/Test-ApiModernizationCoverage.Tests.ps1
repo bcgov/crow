@@ -172,13 +172,16 @@ function Get-ValidScenarioManifest {
     $revision = '0123456789abcdef0123456789abcdef01234567'
     $inventorySha256 = (Get-FileHash -LiteralPath $inventoryPath -Algorithm SHA256).Hash.ToLowerInvariant()
     return [ordered]@{
-        schemaVersion = '1.0'
+        schemaVersion = '1.1'
         inventorySourceRevision = $revision
         inventorySha256 = $inventorySha256
         targetPolicy = [ordered]@{
             environment = 'Test'
+            environmentClassification = 'NonProduction'
             baselineBaseUrlEnvironmentVariable = 'LEGACY_API_BASE_URL'
             candidateBaseUrlEnvironmentVariable = 'MODERN_API_BASE_URL'
+            expectedBaselineBuildId = 'legacy-orders-release-2026.09.1'
+            expectedCandidateBuildId = 'modern-orders-commit-0123456789abcdef'
         }
         scenarios = @(
             [ordered]@{
@@ -263,11 +266,13 @@ function Get-ValidRunResult {
         }
     }
     return [ordered]@{
-        schemaVersion = '1.0'
+        schemaVersion = '1.1'
         generatedAt = '2026-10-02T18:30:00Z'
         inventorySourceRevision = $revision
         inventorySha256 = $inventorySha256
         scenarioManifestSha256 = $scenarioManifestSha256
+        baselineBuildId = 'legacy-orders-release-2026.09.1'
+        candidateBuildId = 'modern-orders-commit-0123456789abcdef'
         results = $results
     }
 }
@@ -355,6 +360,27 @@ try {
 
     Reset-Fixture
     $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    $inventory.apis[0].operations[0].errorResponses = @()
+    Write-TestJson $inventoryPath $inventory
+    $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
+    $scenarios.scenarios = @(
+        $scenarios.scenarios | Where-Object { $_.responseCaseId -ne 'RC-002' })
+    Write-TestJson $scenarioPath $scenarios
+    $results = [System.IO.File]::ReadAllText($resultsPath) | ConvertFrom-Json
+    $results.results = @($results.results | Where-Object { $_.scenarioId -ne 'SCN-002' })
+    Write-TestJson $resultsPath $results
+    Update-RunProvenance
+    Invoke-CoverageTest 'verified success-only response contract passes' $true
+
+    Reset-Fixture
+    $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    $inventory.apis[0].operations[0].successResponses = @()
+    Write-TestJson $inventoryPath $inventory
+    Update-RunProvenance
+    Invoke-CoverageTest 'operation requires at least one success response' $false
+
+    Reset-Fixture
+    $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
     $inventory.completeness = 'Partial'
     Write-TestJson $inventoryPath $inventory
     Invoke-CoverageTest 'partial API inventory rejected' $false
@@ -374,6 +400,87 @@ try {
         -Force
     Write-TestJson $inventoryPath $inventory
     Invoke-CoverageTest 'REST operation with SOAP contract rejected' $false
+
+    Reset-Fixture
+    $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    $inventory.apis[1].operations[0].soap.action = ''
+    $inventory.apis[1].operations[0].soap.faults = @()
+    Write-TestJson $inventoryPath $inventory
+    Update-RunProvenance
+    Invoke-CoverageTest 'empty SOAP action and fault list accepted' $true
+
+    Reset-Fixture
+    $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    $inventory.apis[0].operations[0].successResponses += [pscustomobject]@{
+        id = 'rc-001'
+        code = '206'
+        meaning = 'A partial order representation is returned.'
+    }
+    Write-TestJson $inventoryPath $inventory
+    Update-RunProvenance
+    Invoke-CoverageTest 'uncovered mixed-case response ID is not hidden' $false
+
+    Reset-Fixture
+    $inventory = [System.IO.File]::ReadAllText($inventoryPath) | ConvertFrom-Json
+    $inventory.apis[0].operations += [pscustomobject]@{
+        id = 'op-001'
+        name = 'CreateOrder'
+        confidence = 'Verified'
+        evidenceRefs = @('EV-001')
+        sideEffects = 'StateMutating'
+        http = [pscustomobject]@{
+            method = 'POST'
+            path = '/orders'
+        }
+        requestMediaTypes = @('application/json')
+        successResponses = @(
+            [pscustomobject]@{
+                id = 'RC-005'
+                code = '201'
+                meaning = 'The order is created.'
+            }
+        )
+        errorResponses = @()
+    }
+    Write-TestJson $inventoryPath $inventory
+    $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
+    $scenarios.scenarios += [pscustomobject]@{
+        id = 'SCN-005'
+        operationId = 'op-001'
+        responseCaseId = 'RC-005'
+        kind = 'success'
+        description = 'An isolated order is created.'
+        testReference = 'tests\ApiModernizationTests.cs'
+        safety = [pscustomobject]@{
+            classification = 'IsolatedMutation'
+            approvalReference = 'docs\testing\api-scenarios-approved.md'
+            isolation = 'Dedicated synthetic test tenant.'
+            cleanup = 'Remove the unique test order after the run.'
+        }
+    }
+    Write-TestJson $scenarioPath $scenarios
+    Update-RunProvenance
+    $results = [System.IO.File]::ReadAllText($resultsPath) | ConvertFrom-Json
+    $results.results += [pscustomobject]@{
+        scenarioId = 'SCN-005'
+        baseline = [pscustomobject]@{
+            transport = 'HTTP'
+            requestCount = 1
+            outcome = 'Passed'
+            responseClass = 'Success'
+        }
+        candidate = [pscustomobject]@{
+            transport = 'HTTP'
+            requestCount = 1
+            outcome = 'Passed'
+            responseClass = 'Success'
+        }
+        comparison = [pscustomobject]@{
+            verdict = 'Equivalent'
+        }
+    }
+    Write-TestJson $resultsPath $results
+    Invoke-CoverageTest 'mixed-case operation IDs retain their own metadata' $true
 
     Reset-Fixture
     $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
@@ -419,10 +526,37 @@ try {
 
     Reset-Fixture
     $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
+    $scenarios.targetPolicy.environment = 'NonProduction'
+    Write-TestJson $scenarioPath $scenarios
+    Update-RunProvenance
+    Invoke-CoverageTest 'NonProduction environment label accepted' $true
+
+    Reset-Fixture
+    $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
+    $scenarios.targetPolicy.environment = 'PreProduction'
+    Write-TestJson $scenarioPath $scenarios
+    Update-RunProvenance
+    Invoke-CoverageTest 'PreProduction environment label accepted' $true
+
+    Reset-Fixture
+    $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json
     $scenarios.targetPolicy.environment = 'Production'
+    $scenarios.targetPolicy.environmentClassification = 'Production'
     Write-TestJson $scenarioPath $scenarios
     Update-RunProvenance
     Invoke-CoverageTest 'production target rejected' $false
+
+    Reset-Fixture
+    $results = [System.IO.File]::ReadAllText($resultsPath) | ConvertFrom-Json
+    $results.baselineBuildId = 'legacy-orders-release-2026.09.0'
+    Write-TestJson $resultsPath $results
+    Invoke-CoverageTest 'stale baseline build result rejected' $false
+
+    Reset-Fixture
+    $results = [System.IO.File]::ReadAllText($resultsPath) | ConvertFrom-Json
+    $results.candidateBuildId = 'modern-orders-commit-fedcba9876543210'
+    Write-TestJson $resultsPath $results
+    Invoke-CoverageTest 'stale candidate build result rejected' $false
 
     Reset-Fixture
     $scenarios = [System.IO.File]::ReadAllText($scenarioPath) | ConvertFrom-Json

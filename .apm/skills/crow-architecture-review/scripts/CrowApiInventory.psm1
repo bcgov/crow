@@ -46,7 +46,8 @@ function Get-CrowApiInventoryString {
         [object]$Object,
         [string]$Name,
         [string]$Context,
-        [System.Collections.Generic.List[string]]$Errors
+        [System.Collections.Generic.List[string]]$Errors,
+        [switch]$AllowEmpty
     )
 
     if ($null -eq $Object -or
@@ -57,7 +58,9 @@ function Get-CrowApiInventoryString {
     }
 
     $value = $Object.PSObject.Properties[$Name].Value
-    if ($value -isnot [string] -or [string]::IsNullOrWhiteSpace([string]$value)) {
+    if ($value -isnot [string] -or
+        (([string]$value).Length -eq 0 -and -not $AllowEmpty) -or
+        (([string]$value).Length -gt 0 -and [string]::IsNullOrWhiteSpace([string]$value))) {
         Add-CrowApiInventoryError $Errors "$Context '$Name' must be a non-empty string."
         return $null
     }
@@ -579,7 +582,8 @@ function Test-CrowApiInventory {
                 foreach ($caseProperty in @('successResponses', 'errorResponses')) {
                     $hasCases = Test-CrowApiInventoryObjectArray `
                         -Object $operation -Name $caseProperty `
-                        -Context "Operation '$operationId'" -Errors $errors
+                        -Context "Operation '$operationId'" -Errors $errors `
+                        -AllowEmpty:($caseProperty -eq 'errorResponses')
                     if (-not $hasCases) {
                         continue
                     }
@@ -608,13 +612,23 @@ function Test-CrowApiInventory {
                         if ($soapVersion -notin @('1.1', '1.2', 'Unknown')) {
                             Add-CrowApiInventoryError $errors "Operation '$operationId' has unsupported SOAP version '$soapVersion'."
                         }
-                        foreach ($property in @('action', 'requestElement', 'responseElement')) {
-                            Get-CrowApiInventoryString $operation.soap $property "Operation '$operationId' SOAP contract" $errors | Out-Null
+                        Get-CrowApiInventoryString `
+                            -Object $operation.soap `
+                            -Name 'action' `
+                            -Context "Operation '$operationId' SOAP contract" `
+                            -Errors $errors `
+                            -AllowEmpty | Out-Null
+                        foreach ($property in @('requestElement', 'responseElement')) {
+                            Get-CrowApiInventoryString `
+                                -Object $operation.soap `
+                                -Name $property `
+                                -Context "Operation '$operationId' SOAP contract" `
+                                -Errors $errors | Out-Null
                         }
                         Test-CrowApiInventoryStringArray `
                             -Object $operation.soap -Name 'faults' `
                             -Context "Operation '$operationId' SOAP contract" `
-                            -Errors $errors | Out-Null
+                            -Errors $errors -AllowEmpty | Out-Null
                     }
                 }
                 elseif ($operation.PSObject.Properties.Name -contains 'soap') {

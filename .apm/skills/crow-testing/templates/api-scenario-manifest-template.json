@@ -1,11 +1,14 @@
 {
-  "schemaVersion": "1.0",
+  "schemaVersion": "1.1",
   "inventorySourceRevision": "0123456789abcdef0123456789abcdef01234567",
   "inventorySha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
   "targetPolicy": {
     "environment": "Test",
+    "environmentClassification": "NonProduction",
     "baselineBaseUrlEnvironmentVariable": "LEGACY_API_BASE_URL",
-    "candidateBaseUrlEnvironmentVariable": "MODERN_API_BASE_URL"
+    "candidateBaseUrlEnvironmentVariable": "MODERN_API_BASE_URL",
+    "expectedBaselineBuildId": "legacy-api-build-id-or-image-digest",
+    "expectedCandidateBuildId": "modern-api-build-id-or-image-digest"
   },
   "scenarios": [
     {

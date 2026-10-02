@@ -307,6 +307,50 @@ try {
         '-Phase', 'PostWrite',
         '-RequireSecurityHandoff',
         '-RequireApiInventory') $true
+    $emptyErrorResponsesInventory = $validSingleApiInventory | ConvertFrom-Json
+    $emptyErrorResponsesInventory.apis[0].operations[0].errorResponses = @()
+    Write-TestFile $singleApiInventoryPath (
+        $emptyErrorResponsesInventory | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'API inventory accepts empty error response cases' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $true
+    $emptySuccessResponsesInventory = $validSingleApiInventory | ConvertFrom-Json
+    $emptySuccessResponsesInventory.apis[0].operations[0].successResponses = @()
+    Write-TestFile $singleApiInventoryPath (
+        $emptySuccessResponsesInventory | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'API inventory requires a success response case' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $false
+    Write-TestFile (Join-Path $singleRoot 'contracts\api.wsdl') '<definitions />'
+    $emptySoapFieldsInventory = $validSingleApiInventory | ConvertFrom-Json
+    $emptySoapFieldsInventory.apis[0].protocol = 'SOAP'
+    $emptySoapFieldsInventory.apis[0].contracts[0].type = 'WSDL'
+    $emptySoapFieldsInventory.evidence[0].path = 'contracts/api.wsdl'
+    $emptySoapFieldsInventory.apis[0].operations[0] | Add-Member `
+        -MemberType NoteProperty `
+        -Name soap `
+        -Value ([pscustomobject]@{
+            version = '1.1'
+            action = ''
+            requestElement = 'GetStatus'
+            responseElement = 'GetStatusResponse'
+            faults = @()
+        }) `
+        -Force
+    Write-TestFile $singleApiInventoryPath (
+        $emptySoapFieldsInventory | ConvertTo-Json -Depth 20)
+    Invoke-ValidatorTest 'SOAP inventory accepts empty action and fault list' @(
+        '-RepoRoot', $singleRoot,
+        '-Classification', 'SingleApp',
+        '-Phase', 'PostWrite',
+        '-RequireSecurityHandoff',
+        '-RequireApiInventory') $true
     $invalidSingleApiInventory = $validSingleApiInventory -replace `
         '"protocol"\s*:\s*"REST"', '"protocol": "Unsupported"'
     Write-TestFile $singleApiInventoryPath $invalidSingleApiInventory

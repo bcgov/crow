@@ -35,6 +35,16 @@ protocol-neutral inventory, scenario, safety, and completion contract.
   references matching `^[A-Z_][A-Z0-9_]*$`; keep actual addresses,
   credentials, tokens, cookies, authorization headers, request/response
   bodies, and production traffic out of manifests and result reports.
+- Set `environmentClassification` to `NonProduction` in the scenario manifest;
+  `environment` remains a descriptive label and may be `NonProduction` or
+  `PreProduction`. The gate rejects every other classification rather than
+  guessing from substrings in the label.
+- Pin `expectedBaselineBuildId` and `expectedCandidateBuildId` in
+  `targetPolicy` to immutable revision, release, or image-digest identifiers.
+  The HTTP test suite must report the actual `baselineBuildId` and
+  `candidateBuildId` it exercised in the run-results document. The gate
+  requires exact matches so a stale passing report cannot be reused after
+  changing an expected implementation target.
 - Use approved non-production targets only. Before any state-mutating request,
   confirm an isolated dataset/tenant, explicit scenario approval, unique test
   data, and reliable cleanup or reset. Do not replay production writes or
@@ -59,11 +69,13 @@ Start from:
 The approved test suite must emit a sanitized run-results JSON document from
 its actual HTTP calls. Each result records the scenario ID, baseline and
 candidate HTTP request counts, pass/fail outcome, observed response class, and
-comparison verdict. The scenario manifest records the SHA-256 of the exact API
-inventory; run results record the SHA-256 values of both the inventory and
-scenario manifest. The coverage checker rejects stale or mismatched artifacts.
-The result file is evidence supplied by the suite; the coverage checker does
-not send requests or independently authenticate that evidence.
+comparison verdict. The scenario manifest records schema version `1.1`, the
+SHA-256 of the exact API inventory, explicit non-production classification, and
+expected build IDs. Run results also use schema version `1.1` and record the
+SHA-256 values of both the inventory and scenario manifest, plus the actual
+build IDs exercised. The coverage checker rejects stale or mismatched artifacts
+and build IDs. The result file is evidence supplied by the suite; the coverage
+checker does not send requests or independently authenticate that evidence.
 
 Run the coverage gate from the repository root:
 
@@ -80,8 +92,8 @@ inventory is not `Verified`, source revisions differ, any response-case ID
 lacks a scenario, a scenario lacks a result on either side, a recorded result
 does not show an HTTP request, a test outcome failed, an error scenario did not
 observe an error response class, or a comparison is unresolved. Mutating
-operations require the reviewed isolation and cleanup references. A production
-target declaration is rejected.
+operations require the reviewed isolation and cleanup references. A target
+without an explicit `NonProduction` classification is rejected.
 
 “100% coverage” means every approved success and error response case in the
 verified inventory has an approved scenario and that scenario passed over HTTP

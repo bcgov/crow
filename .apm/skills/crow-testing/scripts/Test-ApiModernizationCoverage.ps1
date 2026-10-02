@@ -238,11 +238,11 @@ $scenarioManifestSha256 = (Get-FileHash -LiteralPath $scenarioFullPath -Algorith
 $scenarios = $scenarioDocument.Document
 $results = $resultsDocument.Document
 
-if ((Get-CoverageString $scenarios 'schemaVersion' 'API scenario manifest') -cne '1.0') {
-    Add-CoverageError 'API scenario manifest schemaVersion must be 1.0.'
+if ((Get-CoverageString $scenarios 'schemaVersion' 'API scenario manifest') -cne '1.1') {
+    Add-CoverageError 'API scenario manifest schemaVersion must be 1.1.'
 }
-if ((Get-CoverageString $results 'schemaVersion' 'API run results') -cne '1.0') {
-    Add-CoverageError 'API run results schemaVersion must be 1.0.'
+if ((Get-CoverageString $results 'schemaVersion' 'API run results') -cne '1.1') {
+    Add-CoverageError 'API run results schemaVersion must be 1.1.'
 }
 if ((Get-CoverageString $scenarios 'inventorySourceRevision' 'API scenario manifest') -cne $sourceRevision) {
     Add-CoverageError 'API scenario manifest inventorySourceRevision does not match the API inventory.'
@@ -282,9 +282,11 @@ if ($null -eq $targetPolicy -or
     Add-CoverageError 'API scenario manifest targetPolicy must be a JSON object.'
 }
 else {
-    $environment = Get-CoverageString $targetPolicy 'environment' 'API scenario targetPolicy'
-    if ($environment -match '(?i)prod(uction)?|live') {
-        Add-CoverageError 'API modernization coverage must not target a production or live environment.'
+    Get-CoverageString $targetPolicy 'environment' 'API scenario targetPolicy' | Out-Null
+    $environmentClassification = Get-CoverageString `
+        $targetPolicy 'environmentClassification' 'API scenario targetPolicy'
+    if ($environmentClassification -cne 'NonProduction') {
+        Add-CoverageError 'API modernization coverage requires environmentClassification NonProduction.'
     }
     foreach ($property in @(
         'baselineBaseUrlEnvironmentVariable',
@@ -299,6 +301,33 @@ else {
         [string]$targetPolicy.candidateBaseUrlEnvironmentVariable) {
         Add-CoverageError 'Baseline and candidate base-address environment-variable references must differ.'
     }
+
+    foreach ($implementation in @(
+        [pscustomobject]@{
+            Name = 'baseline'
+            ExpectedBuildIdProperty = 'expectedBaselineBuildId'
+            ResultsBuildIdProperty = 'baselineBuildId'
+        },
+        [pscustomobject]@{
+            Name = 'candidate'
+            ExpectedBuildIdProperty = 'expectedCandidateBuildId'
+            ResultsBuildIdProperty = 'candidateBuildId'
+        }
+    )) {
+        $expectedBuildId = Get-CoverageString `
+            $targetPolicy `
+            $implementation.ExpectedBuildIdProperty `
+            'API scenario targetPolicy'
+        $testedBuildId = Get-CoverageString `
+            $results `
+            $implementation.ResultsBuildIdProperty `
+            'API run results'
+        if ($null -ne $expectedBuildId -and
+            $null -ne $testedBuildId -and
+            $expectedBuildId -cne $testedBuildId) {
+            Add-CoverageError "API run results $($implementation.Name)BuildId does not match the expected implementation target."
+        }
+    }
 }
 
 if (-not (Test-CoverageProperty $scenarios 'scenarios' 'API scenario manifest') -or
@@ -311,8 +340,10 @@ if (-not (Test-CoverageProperty $results 'results' 'API run results') -or
     Add-CoverageError 'API run results results must be a JSON array.'
 }
 
-$operationById = @{}
-$responseCaseById = @{}
+$operationById = [System.Collections.Generic.Dictionary[string, object]]::new(
+    [System.StringComparer]::Ordinal)
+$responseCaseById = [System.Collections.Generic.Dictionary[string, object]]::new(
+    [System.StringComparer]::Ordinal)
 $operationCount = 0
 foreach ($api in $inventory.apis) {
     foreach ($operation in $api.operations) {
@@ -330,10 +361,12 @@ foreach ($api in $inventory.apis) {
     }
 }
 
-$scenarioById = @{}
+$scenarioById = [System.Collections.Generic.Dictionary[string, object]]::new(
+    [System.StringComparer]::Ordinal)
 $coveredResponseCases = [System.Collections.Generic.HashSet[string]]::new(
     [System.StringComparer]::Ordinal)
-$scenarioOperations = @{}
+$scenarioOperations = [System.Collections.Generic.Dictionary[string, object]]::new(
+    [System.StringComparer]::Ordinal)
 if ($scenarios.scenarios -is [System.Array]) {
     foreach ($scenario in $scenarios.scenarios) {
         if ($null -eq $scenario -or
@@ -433,7 +466,8 @@ foreach ($responseCaseId in $responseCaseById.Keys) {
     }
 }
 
-$resultByScenarioId = @{}
+$resultByScenarioId = [System.Collections.Generic.Dictionary[string, object]]::new(
+    [System.StringComparer]::Ordinal)
 if ($results.results -is [System.Array]) {
     foreach ($result in $results.results) {
         if ($null -eq $result -or
