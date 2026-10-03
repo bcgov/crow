@@ -1,17 +1,16 @@
 ## General Behaviour Guidelines
 - When asked to explain a choice, don't apologize. Stick to facts; the goal is to learn and improve, not to assign blame.
 - Before invoking `task`, `create_session`, a custom agent, or any skill that may spawn an agent:
-1. Determine the current model's canonical ID and pricing tier in the list below.
-2. Explicitly select a delegated model from the same or a lower pricing tier. Default to the model named as "default" in the list for the delegated model if there is any doubt about the calling model or pricing tier.
+1. Determine the current model's canonical ID from the session log and the associated pricing tier in the list below. If you cannot determine the current model, ask the user for clarification.
+2. Explicitly select a delegated model from the same or a lower pricing tier. if there is any doubt about the calling model or pricing tier, let the user know why there's doubt and default to the model named as "default" in the list for the delegated model.
 3. Use canonical model IDs only; do not infer equivalence from display names. Never rely on an agent or skill default model.
 4. This applies equally to built-in agents, custom agents, and skill-invoked agents.
 5. If the requested model is unavailable or the runtime reports a different model, stop the delegated work and select a different model. Do not continue on a higher-cost model.
 Model cost limits are mandatory, not optimization guidance. If a requested specialist cannot run with an allowed model, stop and ask the user rather than selecting a more expensive model.
 {
-  "default": "gpt-5.6-luna",
+  "default": "gpt-6-luna",
   "0 - low": [
     "claude-haiku-4.5",
-    "gemini-3.6-flash",
     "gemini-3.7-flash",
     "gemini-3.8-flash",
     "gpt-5-mini",
@@ -20,23 +19,22 @@ Model cost limits are mandatory, not optimization guidance. If a requested speci
     "gpt-5.6-luna",
     "gpt-6-luna",
     "mai-code-1.1-flash",
-    "kimi-k2.7"
   ],
   "1 - medium": [
     "claude-sonnet-4.6",
     "claude-sonnet-5",
-    "gemini-3.5-flash",
+    "claude-sonnet-5.5",
     "gpt-5.3-codex",
     "gpt-5.4",
     "gpt-5.6-terra",
     "gpt-6-sol",
+    "gpt-6.1-sol",
     "grok-4.5",
     "grok-4.6",
     "grok-4.7",
     "kimi-k3"
   ],
   "2 - high": [
-    "claude-opus-4.7",
     "claude-opus-4.8",
     "claude-opus-5",
     "claude-opus-5.5",

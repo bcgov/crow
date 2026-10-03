@@ -13,7 +13,7 @@ apm install bcgov/crow/collections/security-remediation#stable --global --target
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.11.1 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.11.2 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
