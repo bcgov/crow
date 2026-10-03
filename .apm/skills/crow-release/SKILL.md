@@ -125,6 +125,12 @@ creation. It must not infer a version from a branch name, silently overwrite
 an existing tag or release, accept a lightweight tag, publish a draft
 automatically, or place private provider values in release notes.
 
+The APM-facing `stable` branch is advanced only after a stable GitHub release
+is published. A successful main-branch asset-validation run seeds it from the
+latest published release; later `release.published` events advance it
+fast-forward-only to the newly published release. Drafts and prereleases do
+not move it, and versioned release tags are never moved.
+
 ## Release validation sequence
 
 Run the following checks against the exact release commit before approving or

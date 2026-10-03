@@ -46,28 +46,76 @@ before switching state; never update the active checkout in place.
 
 ## Freshness and updates
 
-The default is an invocation-time check, not a resident process:
+Updates are checked at invocation time, not by a resident process:
 
-- check at most once every 24 hours based on user-local state;
+- the Raven `check` command checks at most once every 24 hours based on its
+  user-local state;
 - allow an explicit `--force` check;
 - use short network timeouts and report offline or rate-limit failures;
 - record only the timestamp and resolved public versions;
 - do not send telemetry;
 - notify about available changes but never apply them automatically.
 
-When Crow is installed globally through APM, the daily `check` also asks APM
-to inspect `bcgov/crow` with its read-only global freshness check. APM does
-not automatically update Crow: `apm update --global bcgov/crow` is an
-explicit, consent-gated update. `apm self-update` updates the APM CLI itself,
-not Crow. Installs managed outside APM, such as a direct Copilot plugin
-install, are not represented by the APM check.
+The Raven `check` command writes its 24-hour timestamp only after the checks
+complete successfully. An APM lookup failure therefore remains eligible for a
+retry instead of suppressing checks for a day.
 
-An OS-native daily scheduler is opt-in and separately confirmed. It may run
-only the notification check, must have a documented removal command, and must
-not hold credentials or perform upgrades.
+An optional, user-level Copilot hook can check for updates while the user works
+with agents. The Raven Setup Agent offers it once; the hook is installed only
+after explicit consent. It uses Copilot's user hook directory (`~/.copilot/hooks`
+or `$COPILOT_HOME/hooks`) and runs on submitted prompts. It checks Crow's latest
+stable GitHub release and, when recorded as installed in Crow Setup state,
+Raven's latest stable release and codebase-memory-mcp's npm `latest` version.
+For Raven, this release check applies to the bundled-release delivery; use the
+Raven Setup Agent's freshness check for pinned-source revisions. Without Crow
+Setup state, the hook checks Crow only.
 
-Before an update, show the old and new immutable versions, trust level,
-selected servers, configuration impact, and rollback target. Build and verify
-the replacement before switching the fragment and state. Retain at least the
-previous verified runtime. Rollback must restore both runtime selection and
-generated configuration, then rerun verification.
+Checks run at most once every 24 hours. If one release source fails, updates
+found from the other sources are still reported, and the failed source is
+retried after about one hour. The hook reads setup state without rewriting the
+managed MCP fragment. It stores its decision, timestamps, and resolved public
+versions in `~/.crow/update-check`; no scheduled task is required or installed,
+and no update is applied automatically. When Crow Setup uses a non-default
+state directory, pass `--setup-state-dir <path>` to `update-hook install` and
+use that same argument for later hook status or removal commands. On Windows,
+Copilot CLI 1.0.45 or later falls back to Windows PowerShell (`powershell.exe`)
+when `pwsh` is unavailable; earlier versions may still require PowerShell 7.
+Restart Copilot CLI after installing or changing the hook because user-level
+hooks load at startup.
+To run a manual check from the Crow package root:
+
+```text
+node .apm/skills/crow-raven-setup/scripts/crow-raven-setup.mjs update-check --force
+```
+
+Append `--setup-state-dir <path>` when Crow Setup state is stored outside its
+default `~/.crow/raven-setup` directory.
+
+When `apm outdated --global` reports a newer Crow release, `apm update --global`
+still follows the selector in the global APM manifest. An exact tag such as
+`#v0.10.2` is a fixed ref, so APM can report a newer release without changing
+the pin.
+
+Crow's `stable` branch follows the latest published stable release. It is
+initialized from the latest published release after a successful main-branch
+asset validation, then advanced only after a stable GitHub release is
+published; drafts, prereleases, and unreleased commits do not advance it. To
+migrate an exact-pinned global Copilot install and enable future updates, run:
+
+```powershell
+apm install 'bcgov/crow#stable' --global --target copilot
+```
+
+After migration, `apm update --global --target copilot` resolves the current
+published stable branch. The command `apm install bcgov/crow` without a ref
+follows the repository's default branch and can include unreleased changes;
+exact version tags remain fixed. For a collection install, use that
+collection's package path with `#stable`. `apm self-update` updates the APM
+CLI itself, not Crow. Installs managed outside APM, such as a direct Copilot
+plugin install, require their corresponding updater.
+
+Before a Raven dependency update, show the old and new immutable versions,
+trust level, selected servers, configuration impact, and rollback target.
+Build and verify the replacement before switching the fragment and state.
+Retain at least the previous verified runtime. Rollback must restore both
+runtime selection and generated configuration, then rerun verification.

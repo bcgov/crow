@@ -35,25 +35,36 @@ Install the [Starter Package](collections/starter-package/README.md) for
 daily brownfield development:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.11.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#stable --global --target copilot
 ```
 
 Install the [Security Remediation collection](collections/security-remediation/README.md)
 for application security scanning and remediation:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.11.0 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#stable --global --target copilot
 ```
 
 Install the complete Crow package when all capabilities are needed:
 
 ```powershell
-apm install bcgov/crow#v0.11.0 --global --target copilot
+apm install bcgov/crow#stable --global --target copilot
 ```
 
 Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
 The `--global` option installs into the selected client's user profile rather
 than copying Crow into every project.
+
+The `stable` branch follows the latest published stable Crow release. It is
+seeded after successful main-branch asset validation and advances only when a
+stable release is published. To migrate an existing exact-tag global install
+to this update stream, run the full-package command above once; future
+`apm update --global --target copilot` runs can then follow published releases.
+For an exact, reproducible install of this release, use:
+
+```powershell
+apm install bcgov/crow#v0.11.1 --global --target copilot
+```
 
 ### Direct Copilot CLI plugin
 
@@ -90,6 +101,12 @@ checks for available Crow package updates without applying them.
 Setup state is user-local under `~/.crow/raven-setup` by default. Do not
 commit it or put Raven credentials in a repository.
 
+For Copilot users, setup offers once to install an optional user-level hook
+for update reminders. If enabled, it checks Crow's stable release and any
+bundled Raven or codebase-memory-mcp release recorded by Crow Setup on an agent
+prompt at most once every 24 hours. It creates no scheduled task and never
+installs updates automatically.
+
 ### 4. Verify the installation
 
 Use the selected client's normal discovery commands:
@@ -109,9 +126,11 @@ Use the selected client's normal discovery commands:
   review, Sonar scanning, secure architecture, application development,
   testing, and remediation.
 
-Collections use the same Crow release tag as the full package. Existing
-`apm install bcgov/crow#...` installations continue to receive the full
-package and are unaffected by the collections.
+APM selectors control update behavior: `#stable` follows published releases,
+while an exact version tag such as `#v0.11.1` remains fixed. Installing
+`bcgov/crow` without a ref follows the default branch and can include
+unreleased commits. Collections use the same `stable` branch as the full
+package.
 
 ## Agents
 
@@ -182,7 +201,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.11.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.11.1.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

@@ -1,0 +1,194 @@
+name: Maintain Crow stable branch
+
+on:
+  workflow_run:
+    workflows:
+      - Crow asset validation
+    types:
+      - completed
+    branches:
+      - main
+  release:
+    types:
+      - published
+
+concurrency:
+  group: crow-stable-branch
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  advance-stable:
+    name: Point stable to a published Crow release
+    if: >-
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.repository.full_name == github.repository) ||
+      (github.event_name == 'release' &&
+       github.event.release.draft == false &&
+       github.event.release.prerelease == false &&
+       github.event.repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate and advance the stable branch
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          function Invoke-CheckedCommand {
+              param(
+                  [string]$Command,
+                  [string[]]$Arguments
+              )
+
+              & $Command @Arguments
+              if ($LASTEXITCODE -ne 0) {
+                  throw "'$Command $($Arguments -join ' ')' failed with exit code $LASTEXITCODE."
+              }
+          }
+
+          function Get-CheckedCommandOutput {
+              param(
+                  [string]$Command,
+                  [string[]]$Arguments
+              )
+
+              $output = (& $Command @Arguments 2>$null | Out-String).Trim()
+              if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($output)) {
+                  throw "'$Command $($Arguments -join ' ')' did not return a value."
+              }
+              return $output
+          }
+
+          if ($env:EVENT_NAME -eq 'release') {
+              $releaseTag = $env:RELEASE_TAG
+          }
+          else {
+              $releaseTag = Get-CheckedCommandOutput gh @(
+                  'api', "repos/$env:REPOSITORY/releases/latest", '--jq', '.tag_name')
+          }
+
+          if ($releaseTag -notmatch '^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$') {
+              throw "Refusing non-stable or invalid Crow release tag '$releaseTag'."
+          }
+          $version = $releaseTag.Substring(1)
+
+          $releaseJson = Get-CheckedCommandOutput gh @(
+              'release', 'view', $releaseTag,
+              '--repo', $env:REPOSITORY,
+              '--json', 'tagName,isDraft,isPrerelease,assets')
+          $release = ConvertFrom-Json -InputObject $releaseJson
+          if ($release.tagName -ne $releaseTag -or $release.isDraft -or $release.isPrerelease) {
+              throw "Release '$releaseTag' is not a published stable release."
+          }
+
+          $expectedAssets = @(
+              "bcgov-crow-$version.zip",
+              "bcgov-crow-$version.zip.sha256"
+          )
+          $actualAssets = @($release.assets | ForEach-Object { $_.name })
+          if (@(Compare-Object $expectedAssets $actualAssets).Count -gt 0) {
+              throw "Release '$releaseTag' does not have the expected archive and checksum assets."
+          }
+
+          Invoke-CheckedCommand git @('fetch', 'origin', 'main', '--no-tags')
+          $releaseRef = "refs/tags/$releaseTag"
+          Invoke-CheckedCommand git @(
+              'fetch', 'origin', "+${releaseRef}:${releaseRef}")
+          $tagType = Get-CheckedCommandOutput git @('cat-file', '-t', $releaseRef)
+          if ($tagType -ne 'tag') {
+              throw "Crow release tag '$releaseTag' is not annotated."
+          }
+          $releaseSha = Get-CheckedCommandOutput git @(
+              'rev-parse', "$($releaseRef)^{commit}")
+          & git merge-base --is-ancestor $releaseSha 'origin/main'
+          if ($LASTEXITCODE -ne 0) {
+              throw "Crow release '$releaseTag' does not point to a commit on main."
+          }
+
+          $manifest = Get-CheckedCommandOutput git @(
+              'show', "$($releaseSha):apm.yml")
+          $manifestVersion = [regex]::Match(
+              $manifest,
+              '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$')
+          $pluginJson = Get-CheckedCommandOutput git @(
+              'show', "$($releaseSha):.github/plugin/plugin.json")
+          $plugin = ConvertFrom-Json -InputObject $pluginJson
+          if (-not $manifestVersion.Success -or
+              $manifestVersion.Groups[1].Value -ne $version -or
+              $plugin.version -ne $version) {
+              throw "Crow package metadata at '$releaseTag' does not match its tag."
+          }
+
+          $stableOutput = (& git ls-remote --heads origin refs/heads/stable 2>$null | Out-String).Trim()
+          if ($LASTEXITCODE -ne 0) {
+              throw 'Could not inspect the remote stable branch.'
+          }
+          if (-not [string]::IsNullOrWhiteSpace($stableOutput)) {
+              $stableSha = ($stableOutput -split '\s+')[0]
+              Invoke-CheckedCommand git @(
+                  'fetch', 'origin', "+refs/heads/stable:refs/remotes/origin/stable")
+              $stableManifest = Get-CheckedCommandOutput git @(
+                  'show', "$($stableSha):apm.yml")
+              $stableVersionMatch = [regex]::Match(
+                  $stableManifest,
+                  '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$')
+              if (-not $stableVersionMatch.Success) {
+                  throw 'The remote stable branch has invalid Crow package metadata.'
+              }
+              $stableVersion = [version]$stableVersionMatch.Groups[1].Value
+              $publishedVersion = [version]$version
+
+              if ($publishedVersion -lt $stableVersion) {
+                  Write-Output "Stable already points to a newer release than $releaseTag; no change is needed."
+                  return
+              }
+              if ($publishedVersion -eq $stableVersion) {
+                  if ($releaseSha -ne $stableSha) {
+                      throw "Release '$releaseTag' reuses the stable version with a different commit."
+                  }
+                  Write-Output "Stable already points to $releaseTag."
+                  return
+              }
+
+              & git merge-base --is-ancestor $stableSha $releaseSha
+              if ($LASTEXITCODE -ne 0) {
+                  throw "Release '$releaseTag' is not a fast-forward from the stable branch."
+              }
+          }
+
+          $tokenBytes = [System.Text.Encoding]::ASCII.GetBytes("x-access-token:$env:GH_TOKEN")
+          $encodedToken = [Convert]::ToBase64String($tokenBytes)
+          $env:GIT_CONFIG_COUNT = '1'
+          $env:GIT_CONFIG_KEY_0 = 'http.https://github.com/.extraheader'
+          $env:GIT_CONFIG_VALUE_0 = "AUTHORIZATION: basic $encodedToken"
+          Invoke-CheckedCommand git @(
+              'push', 'origin', "$($releaseSha):refs/heads/stable")
+
+          $updatedStable = Get-CheckedCommandOutput git @(
+              'ls-remote', '--heads', 'origin', 'refs/heads/stable')
+          $updatedSha = ($updatedStable -split '\s+')[0]
+          if ($updatedSha -ne $releaseSha) {
+              throw 'The remote stable branch did not resolve to the published release commit.'
+          }
+
+          Write-Output "Stable now points to published release $releaseTag ($releaseSha)."
