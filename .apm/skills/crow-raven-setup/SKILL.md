@@ -27,7 +27,10 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    decision is `pending`, offer the hook once and install it only after
    explicit user consent; persist a decline with `update-hook decline`. Do not
    repeat a recorded offer. If the decision is `missing`, ask whether to
-   restore the previously enabled hook. The hook checks Crow, plus bundled
+   restore the previously enabled hook. If the decision is `recoverable`, the
+   matching hook file exists but its persisted opt-in is missing; ask the user
+   to confirm recovery, then run `update-hook install --confirm` before
+   reporting it enabled. The hook checks Crow, plus bundled
    Raven and codebase-memory-mcp when they are recorded in Crow Setup state;
    source-pinned Raven revisions remain covered by the setup freshness check.
    When setup state uses a non-default directory, pass
@@ -46,8 +49,11 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    when Crow is APM-managed; it never applies that update. If `apm outdated`
    reports a newer Crow release but `apm update --global` leaves an exact-pinned
    install unchanged, explain that the exact tag is fixed. After confirmation,
-   migrate the global Copilot install to Crow's release-maintained branch with
-   `apm install 'bcgov/crow#stable' --global --target copilot`. Later,
+   migrate the same installed selector to Crow's release-maintained branch by
+   appending `#stable`: use `bcgov/crow#stable` for the full package,
+   `bcgov/crow/collections/starter-package#stable` for that collection, or
+   `bcgov/crow/collections/security-remediation#stable` for that collection.
+   Do not add the full package to update a collection. Later,
    `apm update --global --target copilot` follows published stable releases.
 5. Configure credentials only through Raven's official user-local mechanism.
 6. Merge generated entries into a client only with confirmation, preserving

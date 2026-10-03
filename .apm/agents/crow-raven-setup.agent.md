@@ -54,7 +54,10 @@ releases, installing an OS scheduler, or automatically applying updates.
    yes, run `update-hook install --confirm`; on a no, run `update-hook decline`.
    Do not re-offer a recorded decline. If the decision is `missing`, explain
    that the previously enabled hook file is absent and ask whether to restore
-   it. The hook checks Crow, plus bundled Raven and codebase-memory-mcp when
+   it. If the decision is `recoverable`, explain that the matching hook file
+   exists but its persisted opt-in is missing; ask whether to restore it, then
+   run `update-hook install --confirm` before reporting it enabled. The hook
+   checks Crow, plus bundled Raven and codebase-memory-mcp when
    they are recorded in Crow Setup state; source-pinned Raven revisions remain
    covered by the setup freshness check. If Crow Setup uses a non-default state
    directory, pass `--setup-state-dir <path>` consistently to hook status,
@@ -84,9 +87,11 @@ releases, installing an OS scheduler, or automatically applying updates.
    immediate check. Notify about differences; require confirmation to update.
    When APM reports a newer Crow release but `apm update --global` leaves an
    exact-pinned package unchanged, explain the selector behavior. After
-   confirmation, migrate or update the global Copilot install to Crow's
-   release-maintained branch with
-   `apm install 'bcgov/crow#stable' --global --target copilot`. Later,
+   confirmation,    migrate the same installed selector to Crow's release-maintained branch by
+   appending `#stable`: use `bcgov/crow#stable` for the full package,
+   `bcgov/crow/collections/starter-package#stable` for that collection, or
+   `bcgov/crow/collections/security-remediation#stable` for that collection.
+   Do not add the full package to update a collection. Later,
    `apm update --global --target copilot` follows published stable releases.
 
 ## Completion gate

@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  unlinkSync,
   writeFileSync
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -22,6 +23,7 @@ import {
   latestCrowVersion,
   latestRavenVersion,
   markCrowUpdateNotified,
+  resolveInstalledCrowPackage,
   parseCrowOutdatedOutput,
   persistSuccessfulFreshnessCheck,
   ravenRepositoryUrl,
@@ -383,6 +385,51 @@ test("compares managed package versions using semantic ordering", async () => {
   assert.deepEqual(result.updates.map((update) => update.current), ["1.9.0"]);
 });
 
+test("orders managed prerelease identifiers using semantic precedence", async () => {
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-prerelease-state-"));
+  const cases = [
+    ["1.0.0-alpha.9", "1.0.0-alpha.10", true],
+    ["1.0.0-alpha.10", "1.0.0-alpha.9", false],
+    ["1.0.0-rc.1", "1.0.0", true],
+    ["1.0.0-alpha.1", "1.0.0-alpha.beta", true],
+    ["1.0.0-alpha.beta", "1.0.0-alpha.beta.1", true]
+  ];
+
+  for (const [current, latest, updateExpected] of cases) {
+    const stateDir = mkdtempSync(join(tmpdir(), "crow-prerelease-check-"));
+    const setupState = codebaseOnlyState(setupStateDir);
+    setupState.codebaseMemory.version = current;
+    setupState.codebaseMemory.installPath = join(
+      setupStateDir,
+      "codebase-memory",
+      `${current}-00000000-0000-0000-0000-000000000000`
+    );
+    setupState.managedFragment = createFragment(
+      null,
+      [],
+      setupState.codebaseMemory.installPath,
+      "codebase-memory-only",
+      false
+    );
+    writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(setupState));
+
+    const result = await checkCrowUpdates({
+      stateDir,
+      setupStateDir,
+      now: Date.now() + 60_000,
+      getCurrentVersion: () => "0.11.0",
+      getLatestVersion: () => "0.11.0",
+      getLatestCodebaseVersion: () => latest
+    });
+    assert.equal(result.checked, true);
+    assert.equal(
+      result.updates.some((update) => update.component === "codebaseMemory"),
+      updateExpected,
+      `${current} -> ${latest}`
+    );
+  }
+});
+
 test("a malformed setup state does not suppress Crow update detection", async () => {
   const setupStateDir = mkdtempSync(join(tmpdir(), "crow-malformed-setup-state-"));
   const stateDir = mkdtempSync(join(tmpdir(), "crow-malformed-setup-check-"));
@@ -563,6 +610,69 @@ test("installs the optional hook once and preserves the user's Copilot hook file
   assert.equal(JSON.parse(finalStatus.stdout).decision, "declined");
 });
 
+test("reports an installed hook with missing opt-in state as recoverable", async () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-hook-state-recovery-"));
+  const stateDir = join(root, "state");
+  const hookDir = join(root, "hooks");
+  const installArgs = [
+    "update-hook", "install",
+    "--state-dir", stateDir,
+    "--hook-dir", hookDir,
+    "--confirm"
+  ];
+  const installed = run(installArgs);
+  assert.equal(installed.status, 0, installed.stderr);
+  const hookPath = join(hookDir, "crow-update-notification.json");
+  const expectedHook = readFileSync(hookPath, "utf8");
+  const statePath = join(stateDir, "state.json");
+  const pendingState = JSON.parse(readFileSync(statePath, "utf8"));
+  pendingState.hookDecision = "pending";
+  pendingState.hookDecisionAt = null;
+  writeFileSync(statePath, JSON.stringify(pendingState));
+
+  const pending = run([
+    "update-hook", "status", "--state-dir", stateDir, "--hook-dir", hookDir
+  ]);
+  assert.equal(pending.status, 0, pending.stderr);
+  assert.equal(JSON.parse(pending.stdout).decision, "recoverable");
+
+  unlinkSync(statePath);
+
+  const recoverable = run([
+    "update-hook", "status", "--state-dir", stateDir, "--hook-dir", hookDir
+  ]);
+  assert.equal(recoverable.status, 0, recoverable.stderr);
+  assert.deepEqual(JSON.parse(recoverable.stdout), {
+    decision: "recoverable",
+    hookInstalled: true,
+    persistedDecision: "pending",
+    lastSuccessfulCheckAt: null
+  });
+  assert.equal(existsSync(statePath), false);
+
+  const restored = run(installArgs);
+  assert.equal(restored.status, 0, restored.stderr);
+  assert.equal(JSON.parse(restored.stdout).alreadyInstalled, true);
+  assert.equal(readFileSync(hookPath, "utf8"), expectedHook);
+  const restoredStatus = run([
+    "update-hook", "status", "--state-dir", stateDir, "--hook-dir", hookDir
+  ]);
+  assert.equal(JSON.parse(restoredStatus.stdout).decision, "enabled");
+
+  const eventResult = await handleUpdateHookEvent({
+    hook_event_name: "UserPromptSubmit",
+    session_id: "recovered-hook-session",
+    prompt: "Check for updates."
+  }, {
+    stateDir,
+    getConfiguredUpdateVersions: noManagedUpdateVersions,
+    now: Date.now() + 60_000,
+    getCurrentVersion: () => "0.11.0",
+    getLatestVersion: () => "0.11.0"
+  });
+  assert.equal(eventResult.checkResult.checked, true);
+});
+
 test("refuses to overwrite a conflicting Copilot hook file", () => {
   const root = mkdtempSync(join(tmpdir(), "crow-update-hook-conflict-"));
   const stateDir = join(root, "state");
@@ -609,6 +719,7 @@ test("delivers update reminders using Local and Copilot CLI hook output formats"
     stateDir: localStateDir,
     getConfiguredUpdateVersions: noManagedUpdateVersions,
     now: localNow,
+    getCrowInstallSelector: () => "bcgov/crow",
     getCurrentVersion: () => "0.10.2",
     getLatestVersion: () => "0.11.0"
   });
@@ -643,6 +754,7 @@ test("delivers update reminders using Local and Copilot CLI hook output formats"
     stateDir: cliStateDir,
     getConfiguredUpdateVersions: noManagedUpdateVersions,
     now: localNow,
+    getCrowInstallSelector: () => "bcgov/crow",
     getCurrentVersion: () => "0.10.2",
     getLatestVersion: () => "0.11.0"
   });
@@ -650,6 +762,46 @@ test("delivers update reminders using Local and Copilot CLI hook output formats"
   assert.match(transformed.progress.message, /Crow update available: installed v0\.10\.2; latest v0\.11\.0/);
   assert.match(transformed.progress.message, /apm install 'bcgov\/crow#stable'/);
   assert.equal(markCrowUpdateNotified(cliStateDir, transformed.checkResult, localNow), true);
+});
+
+test("uses the detected selector when recommending Crow collection updates", async () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-collection-update-reminder-"));
+  for (const selector of [
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ]) {
+    const selectorName = selector.split("/").at(-1);
+    const stateDir = join(root, selectorName, "state");
+    const hookDir = join(root, selectorName, "hooks");
+    const installed = run([
+      "update-hook", "install",
+      "--state-dir", stateDir,
+      "--hook-dir", hookDir,
+      "--confirm"
+    ]);
+    assert.equal(installed.status, 0, installed.stderr);
+
+    const now = Date.now() + 60_000;
+    const result = await handleUpdateHookEvent({
+      hook_event_name: "UserPromptSubmit",
+      session_id: `${selectorName}-session`,
+      prompt: "What updates are available?"
+    }, {
+      stateDir,
+      getConfiguredUpdateVersions: noManagedUpdateVersions,
+      now,
+      getCrowInstallSelector: () => selector,
+      getCurrentVersion: () => "0.10.2",
+      getLatestVersion: () => "0.11.0"
+    });
+    assert.ok(
+      result.output.systemMessage.includes(
+        `apm install '${selector}#stable' --global --target copilot`
+      )
+    );
+    assert.doesNotMatch(result.output.systemMessage, /bcgov\/crow#stable/);
+    assert.equal(markCrowUpdateNotified(stateDir, result.checkResult, now), true);
+  }
 });
 
 test("notifies about configured Raven and codebase-memory updates during agent use", async () => {
@@ -719,6 +871,84 @@ test("validates GitHub's latest Crow release before accepting its version", asyn
     })),
     /stable Crow release/
   );
+});
+
+test("resolves the installed APM selector and version for the full package and collections", () => {
+  for (const selector of [
+    "bcgov/crow",
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ]) {
+    const root = mkdtempSync(join(tmpdir(), "crow-apm-selector-"));
+    const manifestPath = join(root, "apm.yml");
+    const scriptPath = selector === "bcgov/crow"
+      ? script
+      : join(root, "installed", "scripts", "crow-raven-setup.mjs");
+    writeFileSync(manifestPath, [
+      "name: test-global",
+      "dependencies:",
+      "  apm:",
+      `    - ${selector}#v0.10.2`,
+      "  mcp: []"
+    ].join("\n"));
+    let apmCalls = 0;
+    const installed = resolveInstalledCrowPackage({
+      manifestPath,
+      scriptPath,
+      runApm: (args) => {
+        apmCalls++;
+        assert.deepEqual(args, ["view", selector, "--global"]);
+        return {
+          status: 0,
+          stdout: "Name: installed-crow-package\nVersion: 0.10.2",
+          stderr: "",
+          error: null
+        };
+      }
+    });
+    assert.equal(installed.selector, selector);
+    if (selector === "bcgov/crow") {
+      const plugin = JSON.parse(readFileSync(
+        new URL("../../../../.github/plugin/plugin.json", import.meta.url),
+        "utf8"
+      ));
+      assert.equal(installed.version, plugin.version);
+      assert.equal(apmCalls, 0);
+    } else {
+      assert.equal(installed.version, "0.10.2");
+      assert.equal(apmCalls, 1);
+    }
+  }
+});
+
+test("resolves a Crow collection from its APM repository path", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-apm-collection-path-"));
+  const manifestPath = join(root, "apm.yml");
+  const selector = "bcgov/crow/collections/starter-package";
+  writeFileSync(manifestPath, [
+    "name: test-global",
+    "dependencies:",
+    "  apm:",
+    "    - git: https://github.com/bcgov/crow.git",
+    "      path: collections/starter-package",
+    "      ref: v0.10.2",
+    "  mcp: []"
+  ].join("\n"));
+
+  const installed = resolveInstalledCrowPackage({
+    manifestPath,
+    scriptPath: join(root, "installed", "scripts", "crow-raven-setup.mjs"),
+    runApm: (args) => {
+      assert.deepEqual(args, ["view", selector, "--global"]);
+      return {
+        status: 0,
+        stdout: "Name: installed-crow-collection\nVersion: 0.10.2",
+        stderr: "",
+        error: null
+      };
+    }
+  });
+  assert.deepEqual(installed, { version: "0.10.2", selector });
 });
 
 test("validates the latest Raven release and codebase-memory registry version", async () => {

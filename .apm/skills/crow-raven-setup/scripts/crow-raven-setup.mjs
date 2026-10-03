@@ -260,11 +260,163 @@ function readCrowPackageVersion(scriptPath = fileURLToPath(import.meta.url)) {
   return null;
 }
 
-function installedCrowVersion() {
-  const packageVersion = readCrowPackageVersion();
-  if (packageVersion) return packageVersion;
+function removeApmInlineComment(value) {
+  for (let index = 1; index < value.length; index++) {
+    if (value[index] === "#" && value[index - 1].trim() === "") {
+      return value.slice(0, index).trimEnd();
+    }
+  }
+  return value.trim();
+}
 
-  const metadata = runApm(["view", "bcgov/crow", "--global"]);
+function removeApmQuotes(value) {
+  if (value.length >= 2 &&
+      ((value[0] === "'" && value.at(-1) === "'") ||
+       (value[0] === "\"" && value.at(-1) === "\""))) {
+    return value.slice(1, -1);
+  }
+  return value;
+}
+
+function normalizeCrowApmSelector(value) {
+  if (typeof value !== "string") return null;
+  const unquoted = removeApmQuotes(removeApmInlineComment(value.trim()));
+  const packagePath = unquoted.split("#", 1)[0].trim();
+  const githubPrefix = "https://github.com/";
+  const repository = packagePath.toLowerCase().startsWith(githubPrefix)
+    ? packagePath.slice(githubPrefix.length)
+    : packagePath;
+  const normalizedRepository = repository.toLowerCase();
+  const selector = normalizedRepository.endsWith(".git")
+    ? normalizedRepository.slice(0, -4)
+    : normalizedRepository;
+  if ([
+    "bcgov/crow",
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ].includes(selector)) {
+    return selector;
+  }
+  return null;
+}
+
+function readCrowApmYamlValue(content, key) {
+  const separator = content.indexOf(":");
+  if (separator < 0 || content.slice(0, separator).trim() !== key) return null;
+  return removeApmInlineComment(content.slice(separator + 1).trim());
+}
+
+function parseInlineCrowApmSelectors(inlineValue) {
+  if (!inlineValue || inlineValue === "[]") return [];
+  const values = inlineValue.startsWith("[") && inlineValue.endsWith("]")
+    ? inlineValue.slice(1, -1).split(",")
+    : [inlineValue];
+  const selectors = [];
+  for (const value of values) {
+    const selector = normalizeCrowApmSelector(value);
+    if (selector) selectors.push(selector);
+  }
+  return selectors;
+}
+
+function parseCrowApmDependency(itemLines) {
+  const firstLine = itemLines[0] || "";
+  const separator = firstLine.indexOf(":");
+  const firstKey = separator < 0 ? "" : firstLine.slice(0, separator).trim();
+  if (firstLine && !["git", "repo_url", "path", "ref"].includes(firstKey)) {
+    return normalizeCrowApmSelector(firstLine);
+  }
+
+  const fields = new Map();
+  for (const line of itemLines) {
+    const fieldSeparator = line.indexOf(":");
+    if (fieldSeparator < 0) continue;
+    const key = line.slice(0, fieldSeparator).trim();
+    if (["git", "repo_url", "path"].includes(key)) {
+      fields.set(key, removeApmInlineComment(line.slice(fieldSeparator + 1).trim()));
+    }
+  }
+
+  const repository = normalizeCrowApmSelector(fields.get("git") || fields.get("repo_url"));
+  if (!repository) return null;
+  let dependencyPath = removeApmQuotes(fields.get("path") || "").trim();
+  if (!dependencyPath || dependencyPath === ".") return repository;
+
+  dependencyPath = dependencyPath.replaceAll("\\", "/");
+  if (dependencyPath.startsWith("./")) dependencyPath = dependencyPath.slice(2);
+  let pathEnd = dependencyPath.length;
+  while (pathEnd > 0 && dependencyPath[pathEnd - 1] === "/") pathEnd--;
+  const normalizedPath = dependencyPath.slice(0, pathEnd);
+  if (normalizedPath.startsWith("collections/")) {
+    return normalizeCrowApmSelector(`${repository}/${normalizedPath}`);
+  }
+  return null;
+}
+
+function appendCrowApmDependency(itemLines, selectors) {
+  if (itemLines === null) return;
+  const selector = parseCrowApmDependency(itemLines);
+  if (selector) selectors.push(selector);
+}
+
+function parseGlobalApmCrowSelectors(manifest) {
+  const selectors = [];
+  let inDependencies = false;
+  let apmIndent = null;
+  let currentItem = null;
+
+  for (const line of manifest.split(/\r?\n/)) {
+    const content = line.trim();
+    if (!content || content.startsWith("#")) continue;
+    const indentation = line.length - line.trimStart().length;
+    if (indentation === 0) {
+      appendCrowApmDependency(currentItem, selectors);
+      currentItem = null;
+      inDependencies = readCrowApmYamlValue(content, "dependencies") !== null;
+      apmIndent = null;
+      continue;
+    }
+    if (!inDependencies) continue;
+    if (apmIndent === null) {
+      const inlineValue = readCrowApmYamlValue(content, "apm");
+      if (inlineValue === null) continue;
+      apmIndent = indentation;
+      selectors.push(...parseInlineCrowApmSelectors(inlineValue));
+      continue;
+    }
+    if (indentation <= apmIndent) {
+      appendCrowApmDependency(currentItem, selectors);
+      currentItem = null;
+      apmIndent = null;
+      continue;
+    }
+    if (content.startsWith("-")) {
+      appendCrowApmDependency(currentItem, selectors);
+      currentItem = [content.slice(1).trim()];
+    } else if (currentItem !== null) {
+      currentItem.push(content);
+    }
+  }
+  appendCrowApmDependency(currentItem, selectors);
+  return [...new Set(selectors)];
+}
+
+function readGlobalCrowApmSelectors(manifestPath = join(
+  process.env.APM_HOME || join(homedir(), ".apm"),
+  "apm.yml"
+)) {
+  if (!existsSync(manifestPath)) return { exists: false, selectors: [] };
+  let manifest;
+  try {
+    manifest = readFileSync(manifestPath, "utf8");
+  } catch (error) {
+    throw new Error(`Could not read the APM global package manifest: ${error.message}`);
+  }
+  return { exists: true, selectors: parseGlobalApmCrowSelectors(manifest) };
+}
+
+function readApmInstalledPackageVersion(selector, runCommand = runApm) {
+  const metadata = runCommand(["view", selector, "--global"]);
   if (metadata.error) {
     if (metadata.error.code === "ENOENT") {
       throw new Error("Could not determine the installed Crow version from package metadata or APM.");
@@ -272,10 +424,49 @@ function installedCrowVersion() {
     throw new Error(`Could not read the installed Crow version from APM: ${metadata.error.message}`);
   }
   if (metadata.status !== 0) {
-    throw new Error(`Could not read the installed Crow version from APM (exit code ${metadata.status}).`);
+    throw new Error(
+      `Could not read the installed Crow package '${selector}' from APM (exit code ${metadata.status}).`
+    );
   }
   const version = metadata.stdout.match(/\bVersion:\s+(v?\d+\.\d+\.\d+)\b/i)?.[1];
-  return normalizeCrowVersion(version, "APM Crow package version");
+  return normalizeCrowVersion(version, `APM ${selector} package version`);
+}
+
+function resolveInstalledCrowPackage(options = {}) {
+  const pluginVersion = readCrowPackageVersion(options.scriptPath);
+  const apmManifest = readGlobalCrowApmSelectors(options.manifestPath);
+  let selector = null;
+  if (apmManifest.selectors.length === 1) {
+    [selector] = apmManifest.selectors;
+  } else if (apmManifest.selectors.length > 1) {
+    if (pluginVersion && apmManifest.selectors.includes("bcgov/crow")) {
+      selector = "bcgov/crow";
+    } else {
+      throw new Error(
+        `Multiple Crow package selectors are installed globally: ${apmManifest.selectors.join(", ")}.`
+      );
+    }
+  }
+
+  if (selector === "bcgov/crow" && pluginVersion) {
+    return { version: pluginVersion, selector };
+  }
+  if (selector) {
+    return {
+      version: readApmInstalledPackageVersion(selector, options.runApm || runApm),
+      selector
+    };
+  }
+  if (pluginVersion) return { version: pluginVersion, selector: null };
+  if (!apmManifest.exists) {
+    return {
+      version: readApmInstalledPackageVersion("bcgov/crow", options.runApm || runApm),
+      selector: "bcgov/crow"
+    };
+  }
+  throw new Error(
+    "Could not identify an installed Crow package selector from the APM global manifest."
+  );
 }
 
 async function latestCrowVersion(fetcher = fetch) {
@@ -347,39 +538,53 @@ function normalizeUpdateReleaseVersion(value, label) {
   return version;
 }
 
+function compareNumericPrereleaseIdentifiers(left, right) {
+  if (left.length < right.length) return -1;
+  if (left.length > right.length) return 1;
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+function compareUpdatePrereleaseIdentifiers(left, right) {
+  const leftIsNumeric = /^\d+$/.test(left);
+  const rightIsNumeric = /^\d+$/.test(right);
+  if (leftIsNumeric) {
+    return rightIsNumeric ? compareNumericPrereleaseIdentifiers(left, right) : -1;
+  }
+  if (rightIsNumeric) return 1;
+  if (left === right) return 0;
+  return left < right ? -1 : 1;
+}
+
+function compareUpdatePrereleaseVersions(left, right) {
+  const leftIdentifiers = left ? left.split(".") : [];
+  const rightIdentifiers = right ? right.split(".") : [];
+  if (leftIdentifiers.length === 0 && rightIdentifiers.length === 0) return 0;
+  if (leftIdentifiers.length === 0) return 1;
+  if (rightIdentifiers.length === 0) return -1;
+
+  const commonLength = Math.min(leftIdentifiers.length, rightIdentifiers.length);
+  for (let index = 0; index < commonLength; index++) {
+    const comparison = compareUpdatePrereleaseIdentifiers(
+      leftIdentifiers[index],
+      rightIdentifiers[index]
+    );
+    if (comparison !== 0) return comparison;
+  }
+  if (leftIdentifiers.length === rightIdentifiers.length) return 0;
+  return leftIdentifiers.length < rightIdentifiers.length ? -1 : 1;
+}
+
 function compareUpdateReleaseVersions(left, right) {
   const leftMatch = updateReleaseVersionPattern.exec(left);
   const rightMatch = updateReleaseVersionPattern.exec(right);
   for (let index = 1; index <= 3; index++) {
     const leftPart = Number(leftMatch[index]);
     const rightPart = Number(rightMatch[index]);
-    if (leftPart !== rightPart) return leftPart < rightPart ? -1 : 1;
+    if (leftPart < rightPart) return -1;
+    if (leftPart > rightPart) return 1;
   }
-  const leftPrerelease = leftMatch[4]?.split(".") || [];
-  const rightPrerelease = rightMatch[4]?.split(".") || [];
-  if (leftPrerelease.length === 0 || rightPrerelease.length === 0) {
-    return leftPrerelease.length === rightPrerelease.length
-      ? 0
-      : leftPrerelease.length === 0 ? 1 : -1;
-  }
-  for (let index = 0; index < Math.max(leftPrerelease.length, rightPrerelease.length); index++) {
-    const leftIdentifier = leftPrerelease[index];
-    const rightIdentifier = rightPrerelease[index];
-    if (leftIdentifier === undefined || rightIdentifier === undefined) {
-      return leftIdentifier === undefined ? -1 : 1;
-    }
-    if (leftIdentifier === rightIdentifier) continue;
-    const leftIsNumeric = /^\d+$/.test(leftIdentifier);
-    const rightIsNumeric = /^\d+$/.test(rightIdentifier);
-    if (leftIsNumeric && rightIsNumeric) {
-      return leftIdentifier.length !== rightIdentifier.length
-        ? leftIdentifier.length < rightIdentifier.length ? -1 : 1
-        : leftIdentifier < rightIdentifier ? -1 : 1;
-    }
-    if (leftIsNumeric !== rightIsNumeric) return leftIsNumeric ? -1 : 1;
-    return leftIdentifier < rightIdentifier ? -1 : 1;
-  }
-  return 0;
+  return compareUpdatePrereleaseVersions(leftMatch[4], rightMatch[4]);
 }
 
 function defaultCrowUpdateState() {
@@ -407,7 +612,7 @@ function defaultCrowUpdateState() {
 function isUpdateReleaseVersion(value) {
   if (typeof value !== "string") return false;
   const match = updateReleaseVersionPattern.exec(value);
-  if (!match || !match.slice(1, 4).every((part) => Number.isSafeInteger(Number(part)))) {
+  if (!match?.slice(1, 4).every((part) => Number.isSafeInteger(Number(part)))) {
     return false;
   }
   const prereleaseIdentifiers = match[4]?.split(".") || [];
@@ -418,6 +623,13 @@ function isUpdateReleaseVersion(value) {
   ) && buildIdentifiers.every((identifier) => identifier.length > 0);
 }
 
+function hasExactObjectKeys(record, expectedKeys) {
+  if (!isRecord(record)) return false;
+  const actualKeys = Object.keys(record);
+  return actualKeys.length === expectedKeys.length &&
+    expectedKeys.every((key) => Object.hasOwn(record, key));
+}
+
 function isCrowUpdateState(value) {
   if (!isRecord(value) ||
       value.schemaVersion !== 2 ||
@@ -426,9 +638,8 @@ function isCrowUpdateState(value) {
     return false;
   }
   const components = ["crow", "raven", "codebaseMemory"];
-  const hasExactKeys = (record) => isRecord(record) &&
-    JSON.stringify(Object.keys(record).sort()) === JSON.stringify([...components].sort());
-  if (!hasExactKeys(value.versions) || !hasExactKeys(value.lastNotifiedVersions)) {
+  if (!hasExactObjectKeys(value.versions, components) ||
+      !hasExactObjectKeys(value.lastNotifiedVersions, components)) {
     return false;
   }
   const timestamps = [
@@ -449,8 +660,7 @@ function isCrowUpdateState(value) {
   for (const component of components) {
     const versions = value.versions[component];
     const lastNotifiedVersion = value.lastNotifiedVersions[component];
-    if (!isRecord(versions) ||
-        JSON.stringify(Object.keys(versions).sort()) !== JSON.stringify(["current", "latest"]) ||
+    if (!hasExactObjectKeys(versions, ["current", "latest"]) ||
         ((versions.current === null) !== (versions.latest === null))) {
       return false;
     }
@@ -599,11 +809,12 @@ function readExpectedCrowUpdateHook(path, expected) {
 function statusCrowUpdateHook(target, state, expected) {
   const hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
   let decision = state.hookDecision;
-  if (hookInstalled) decision = "enabled";
-  else if (decision === "enabled") decision = "missing";
+  if (hookInstalled && decision !== "enabled") decision = "recoverable";
+  else if (!hookInstalled && decision === "enabled") decision = "missing";
   console.log(JSON.stringify({
     decision,
     hookInstalled,
+    persistedDecision: state.hookDecision,
     lastSuccessfulCheckAt: state.lastSuccessfulCheckAt
   }, null, 2));
 }
@@ -783,6 +994,156 @@ function shouldNotifyCrowUpdate(state, now, updateAvailable) {
   return sinceLastNotice >= crowUpdateCheckIntervalMs;
 }
 
+function readCrowManagedUpdateVersions(options) {
+  try {
+    const configured = (options.getConfiguredUpdateVersions || readConfiguredUpdateVersions)(
+      options.setupStateDir
+    );
+    if (!isRecord(configured) ||
+        !Object.hasOwn(configured, "raven") ||
+        !Object.hasOwn(configured, "codebaseMemory")) {
+      throw new Error("Crow setup returned invalid managed-component versions.");
+    }
+    return { configured, failure: null };
+  } catch (error) {
+    return {
+      configured: { raven: null, codebaseMemory: null },
+      failure: safeUpdateCheckError(error)
+    };
+  }
+}
+
+function createCrowUpdateChecks(options, configured) {
+  const ravenCurrent = configured.raven === null
+    ? null
+    : normalizeUpdateReleaseVersion(configured.raven, "Installed Raven version");
+  const codebaseMemoryCurrent = configured.codebaseMemory === null
+    ? null
+    : normalizeUpdateReleaseVersion(
+      configured.codebaseMemory,
+      "Installed codebase-memory-mcp version"
+    );
+  let installedCrowPackage = null;
+  const currentCrowVersion = options.getCurrentVersion || (() => {
+    installedCrowPackage = (options.resolveInstalledCrowPackage || resolveInstalledCrowPackage)();
+    return installedCrowPackage.version;
+  });
+  const checks = [
+    {
+      component: "crow",
+      name: "Crow",
+      current: currentCrowVersion,
+      latest: options.getLatestVersion || latestCrowVersion,
+      normalize: (version, label) => normalizeCrowVersion(version, label)
+    }
+  ];
+  if (ravenCurrent !== null) {
+    checks.push({
+      component: "raven",
+      name: "Raven",
+      current: () => ravenCurrent,
+      latest: options.getLatestRavenVersion || latestRavenVersion,
+      normalize: normalizeUpdateReleaseVersion
+    });
+  }
+  if (codebaseMemoryCurrent !== null) {
+    checks.push({
+      component: "codebaseMemory",
+      name: "codebase-memory-mcp",
+      current: () => codebaseMemoryCurrent,
+      latest: options.getLatestCodebaseVersion ||
+        (() => fetchLatestCodebaseVersion(fetch, crowUpdateCheckTimeoutMs)),
+      normalize: normalizeUpdateReleaseVersion
+    });
+  }
+  return {
+    checks,
+    getSelector: () => options.getCrowInstallSelector
+      ? options.getCrowInstallSelector()
+      : installedCrowPackage?.selector || null
+  };
+}
+
+async function checkCrowUpdateComponent(check) {
+  const values = await Promise.allSettled([
+    Promise.resolve().then(() => check.current()),
+    Promise.resolve().then(() => check.latest())
+  ]);
+  const failures = values
+    .filter((value) => value.status === "rejected")
+    .map((value) => safeUpdateCheckError(value.reason));
+  if (failures.length > 0) {
+    throw new Error(`${check.name}: ${failures.join("; ")}`);
+  }
+  return {
+    component: check.component,
+    current: check.normalize(values[0].value, `Installed ${check.name} version`),
+    latest: check.normalize(values[1].value, `Latest ${check.name} version`)
+  };
+}
+
+function collectCrowUpdateFailures(setupStateFailure, checkedComponents) {
+  const failures = [];
+  if (setupStateFailure) failures.push(setupStateFailure);
+  for (const value of checkedComponents) {
+    if (value.status !== "rejected") continue;
+    failures.push(safeUpdateCheckError(value.reason));
+  }
+  return failures;
+}
+
+function mergeCrowUpdateVersions(state, checks, checkedComponents) {
+  const versions = Object.fromEntries(
+    ["crow", "raven", "codebaseMemory"].map((component) => [
+      component,
+      { ...state.versions[component] }
+    ])
+  );
+  for (const component of ["raven", "codebaseMemory"]) {
+    if (!checks.some((check) => check.component === component)) {
+      versions[component] = { current: null, latest: null };
+    }
+  }
+  const successfulComponents = new Set();
+  for (const value of checkedComponents) {
+    if (value.status !== "fulfilled") continue;
+    const checked = value.value;
+    successfulComponents.add(checked.component);
+    versions[checked.component] = {
+      current: checked.current,
+      latest: checked.latest
+    };
+  }
+  return { versions, successfulComponents };
+}
+
+function findCrowUpdateCandidates(versions, successfulComponents) {
+  const updates = [];
+  const comparisons = {
+    crow: compareCrowVersions,
+    raven: compareUpdateReleaseVersions,
+    codebaseMemory: compareUpdateReleaseVersions
+  };
+  for (const [component, name] of [
+    ["crow", "Crow"],
+    ["raven", "Raven"],
+    ["codebaseMemory", "codebase-memory-mcp"]
+  ]) {
+    if (!successfulComponents.has(component)) continue;
+    const version = versions[component];
+    if (version.current === null) continue;
+    if (comparisons[component](version.current, version.latest) < 0) {
+      updates.push({
+        component,
+        name,
+        current: version.current,
+        latest: version.latest
+      });
+    }
+  }
+  return updates;
+}
+
 async function runCrowUpdateCheck(statePath, state, now, options) {
   const attemptAt = new Date(now).toISOString();
   state.lastAttemptAt = attemptAt;
@@ -791,127 +1152,21 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
 
   let versions;
   let updates;
+  let crowSelector = null;
   let failures = [];
-  let setupStateFailure = null;
-  const successfulComponents = new Set();
+  let successfulComponents = new Set();
   try {
-    let configured;
-    try {
-      configured = (options.getConfiguredUpdateVersions || readConfiguredUpdateVersions)(
-        options.setupStateDir
-      );
-      if (!isRecord(configured) ||
-          !Object.hasOwn(configured, "raven") ||
-          !Object.hasOwn(configured, "codebaseMemory")) {
-        throw new Error("Crow setup returned invalid managed-component versions.");
-      }
-    } catch (error) {
-      setupStateFailure = safeUpdateCheckError(error);
-      configured = { raven: null, codebaseMemory: null };
-    }
-    const ravenCurrent = configured.raven === null
-      ? null
-      : normalizeUpdateReleaseVersion(configured.raven, "Installed Raven version");
-    const codebaseMemoryCurrent = configured.codebaseMemory === null
-      ? null
-      : normalizeUpdateReleaseVersion(
-        configured.codebaseMemory,
-        "Installed codebase-memory-mcp version"
-      );
-    const checks = [
-      {
-        component: "crow",
-        name: "Crow",
-        current: options.getCurrentVersion || installedCrowVersion,
-        latest: options.getLatestVersion || latestCrowVersion,
-        normalize: (version, label) => normalizeCrowVersion(version, label)
-      }
-    ];
-    if (ravenCurrent !== null) {
-      checks.push({
-        component: "raven",
-        name: "Raven",
-        current: () => ravenCurrent,
-        latest: options.getLatestRavenVersion || latestRavenVersion,
-        normalize: normalizeUpdateReleaseVersion
-      });
-    }
-    if (codebaseMemoryCurrent !== null) {
-      checks.push({
-        component: "codebaseMemory",
-        name: "codebase-memory-mcp",
-        current: () => codebaseMemoryCurrent,
-        latest: options.getLatestCodebaseVersion ||
-          (() => fetchLatestCodebaseVersion(fetch, crowUpdateCheckTimeoutMs)),
-        normalize: normalizeUpdateReleaseVersion
-      });
-    }
-
-    const checkedComponents = await Promise.allSettled(checks.map(async (check) => {
-      const values = await Promise.allSettled([
-        Promise.resolve().then(() => check.current()),
-        Promise.resolve().then(() => check.latest())
-      ]);
-      const failures = values
-        .filter((value) => value.status === "rejected")
-        .map((value) => safeUpdateCheckError(value.reason));
-      if (failures.length > 0) {
-        throw new Error(`${check.name}: ${failures.join("; ")}`);
-      }
-      return {
-        component: check.component,
-        current: check.normalize(values[0].value, `Installed ${check.name} version`),
-        latest: check.normalize(values[1].value, `Latest ${check.name} version`)
-      };
-    }));
-    failures = [
-      ...(setupStateFailure ? [setupStateFailure] : []),
-      ...checkedComponents
-        .filter((value) => value.status === "rejected")
-        .map((value) => safeUpdateCheckError(value.reason))
-    ];
-
-    versions = Object.fromEntries(
-      ["crow", "raven", "codebaseMemory"].map((component) => [
-        component,
-        { ...state.versions[component] }
-      ])
+    const { configured, failure: setupStateFailure } = readCrowManagedUpdateVersions(options);
+    const updateChecks = createCrowUpdateChecks(options, configured);
+    const checkedComponents = await Promise.allSettled(
+      updateChecks.checks.map(checkCrowUpdateComponent)
     );
-    for (const component of ["raven", "codebaseMemory"]) {
-      if (!checks.some((check) => check.component === component)) {
-        versions[component] = { current: null, latest: null };
-      }
-    }
-    for (const value of checkedComponents) {
-      if (value.status !== "fulfilled") continue;
-      const checked = value.value;
-      successfulComponents.add(checked.component);
-      versions[checked.component] = {
-        current: checked.current,
-        latest: checked.latest
-      };
-    }
-    updates = [];
-    for (const [component, name] of [
-      ["crow", "Crow"],
-      ["raven", "Raven"],
-      ["codebaseMemory", "codebase-memory-mcp"]
-    ]) {
-      if (!successfulComponents.has(component)) continue;
-      const version = versions[component];
-      if (version.current === null) continue;
-      const compare = component === "crow"
-        ? compareCrowVersions
-        : compareUpdateReleaseVersions;
-      if (compare(version.current, version.latest) < 0) {
-        updates.push({
-          component,
-          name,
-          current: version.current,
-          latest: version.latest
-        });
-      }
-    }
+    failures = collectCrowUpdateFailures(setupStateFailure, checkedComponents);
+    crowSelector = updateChecks.getSelector();
+    const merged = mergeCrowUpdateVersions(state, updateChecks.checks, checkedComponents);
+    versions = merged.versions;
+    successfulComponents = merged.successfulComponents;
+    updates = findCrowUpdateCandidates(versions, successfulComponents);
   } catch (error) {
     state.lastAttemptStatus = "failed";
     writeCrowUpdateState(statePath, state);
@@ -947,6 +1202,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
     checked: true,
     current: versions.crow.current,
     latest: versions.crow.latest,
+    crowSelector,
     versions,
     updates,
     updateAvailable,
@@ -1002,8 +1258,15 @@ function markCrowUpdateNotified(stateDir, result, now = Date.now()) {
   return true;
 }
 
-function crowUpdateInstallCommand() {
-  return "apm install 'bcgov/crow#stable' --global --target copilot";
+function crowUpdateInstallCommand(selector) {
+  if (![
+    "bcgov/crow",
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ].includes(selector)) {
+    throw new Error("The installed Crow package selector is unsupported.");
+  }
+  return `apm install '${selector}#stable' --global --target copilot`;
 }
 
 function updateReminder(result) {
@@ -1016,9 +1279,15 @@ function updateReminder(result) {
       ).join("; ")}.`;
     const instructions = [];
     if (updates.some((update) => update.component === "crow")) {
-      instructions.push(
-        `For an APM global Copilot install, migrate or update to the release-maintained stable branch with \`${crowUpdateInstallCommand()}\`; then \`apm update --global --target copilot\` follows published stable releases. Exact-version pins remain fixed. For other Crow installation methods, use the corresponding updater.`
-      );
+      if (result.crowSelector) {
+        instructions.push(
+          `For an APM global Copilot install, migrate or update the detected \`${result.crowSelector}\` selector to its release-maintained stable branch with \`${crowUpdateInstallCommand(result.crowSelector)}\`; then \`apm update --global --target copilot\` follows published stable releases.`
+        );
+      } else {
+        instructions.push(
+          "Use the corresponding updater for the Crow installation that provided this agent; its APM package selector could not be determined."
+        );
+      }
     }
     if (updates.some((update) =>
       update.component === "raven" || update.component === "codebaseMemory"
@@ -2625,6 +2894,7 @@ export {
   fetchLatestCodebaseVersion,
   markCrowUpdateNotified,
   parseCrowOutdatedOutput,
+  resolveInstalledCrowPackage,
   persistSuccessfulFreshnessCheck,
   ravenRepositoryUrl,
   releasedServers,
