@@ -14,6 +14,9 @@ import {
   readlinkSync,
   renameSync,
   rmSync,
+  rmdirSync,
+  statSync,
+  unlinkSync,
   writeFileSync
 } from "node:fs";
 import { homedir } from "node:os";
@@ -21,6 +24,7 @@ import { basename, dirname, join, resolve } from "node:path";
 import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { isDeepStrictEqual } from "node:util";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(scriptDir, "..");
@@ -30,12 +34,22 @@ const ravenRepositoryUrl = `https://github.com/${ravenRepository}`;
 const ravenUrl = `${ravenRepositoryUrl}.git`;
 const ravenApi = `https://api.github.com/repos/${ravenRepository}`;
 const ravenRawUrl = `https://raw.githubusercontent.com/${ravenRepository}`;
+const crowApi = "https://api.github.com/repos/bcgov/crow";
 const npmRegistryUrl = "https://registry.npmjs.org/codebase-memory-mcp/latest";
 const defaultStateDir = join(homedir(), ".crow", "raven-setup");
+const defaultCrowUpdateStateDir = join(homedir(), ".crow", "update-check");
 const npmCli = process.platform === "win32"
   ? join(dirname(process.execPath), "node_modules", "npm", "bin", "npm-cli.js")
   : null;
 const planLifetimeMs = 24 * 60 * 60 * 1000;
+const crowUpdateCheckIntervalMs = 24 * 60 * 60 * 1000;
+const crowUpdateRetryIntervalMs = 60 * 60 * 1000;
+const crowUpdateLockStaleMs = 30 * 1000;
+const crowUpdateCheckTimeoutMs = 5000;
+const crowUpdateHookTimeoutSeconds = 20;
+const crowUpdateHookFileName = "crow-update-notification.json";
+const updateReleaseVersionPattern =
+  /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
 const startupGraceMs = 5000;
 const startupStopMs = 2000;
 const networkTimeoutMs = 10000;
@@ -108,7 +122,11 @@ function runApm(args) {
 }
 
 function parseCrowOutdatedOutput(output) {
-  const normalized = output.replace(/\u001b\[[0-9;]*m/g, "");
+  const ansiEscape = String.fromCodePoint(27);
+  const normalized = output.replaceAll(
+    new RegExp(String.raw`${ansiEscape}\[[0-9;]*m`, "g"),
+    ""
+  );
   const line = normalized
     .split(/\r?\n/)
     .find((candidate) => /\bbcgov\/crow\b/i.test(candidate));
@@ -195,6 +213,916 @@ function checkCrowApmUpdate(runCommand = runApm) {
     updateAvailable: parsed.updateAvailable,
     source: "apm outdated --global"
   };
+}
+
+function normalizeCrowVersion(value, label = "Crow version") {
+  const match = typeof value === "string"
+    ? /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(value)
+    : null;
+  if (!match) throw new Error(`${label} is not a stable semantic version.`);
+  const parts = match.slice(1).map(Number);
+  if (!parts.every(Number.isSafeInteger)) {
+    throw new Error(`${label} exceeds the supported semantic-version range.`);
+  }
+  return parts.join(".");
+}
+
+function compareCrowVersions(left, right) {
+  const leftParts = normalizeCrowVersion(left).split(".").map(Number);
+  const rightParts = normalizeCrowVersion(right).split(".").map(Number);
+  for (let index = 0; index < leftParts.length; index++) {
+    if (leftParts[index] !== rightParts[index]) {
+      return leftParts[index] < rightParts[index] ? -1 : 1;
+    }
+  }
+  return 0;
+}
+
+function readCrowPackageVersion(scriptPath = fileURLToPath(import.meta.url)) {
+  let directory = dirname(resolve(scriptPath));
+  for (let depth = 0; depth < 8; depth++) {
+    const manifestPath = join(directory, ".github", "plugin", "plugin.json");
+    if (existsSync(manifestPath)) {
+      let manifest;
+      try {
+        manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+      } catch (error) {
+        throw new Error(`Crow plugin metadata is malformed: ${error.message}`);
+      }
+      if (manifest.name === "bcgov-crow") {
+        return normalizeCrowVersion(manifest.version, "Crow plugin version");
+      }
+    }
+    const parent = dirname(directory);
+    if (parent === directory) break;
+    directory = parent;
+  }
+  return null;
+}
+
+function installedCrowVersion() {
+  const packageVersion = readCrowPackageVersion();
+  if (packageVersion) return packageVersion;
+
+  const metadata = runApm(["view", "bcgov/crow", "--global"]);
+  if (metadata.error) {
+    if (metadata.error.code === "ENOENT") {
+      throw new Error("Could not determine the installed Crow version from package metadata or APM.");
+    }
+    throw new Error(`Could not read the installed Crow version from APM: ${metadata.error.message}`);
+  }
+  if (metadata.status !== 0) {
+    throw new Error(`Could not read the installed Crow version from APM (exit code ${metadata.status}).`);
+  }
+  const version = metadata.stdout.match(/\bVersion:\s+(v?\d+\.\d+\.\d+)\b/i)?.[1];
+  return normalizeCrowVersion(version, "APM Crow package version");
+}
+
+async function latestCrowVersion(fetcher = fetch) {
+  let response;
+  try {
+    response = await fetcher(`${crowApi}/releases/latest`, {
+      headers: { "User-Agent": "bcgov-crow-update-check" },
+      signal: AbortSignal.timeout(crowUpdateCheckTimeoutMs)
+    });
+  } catch (error) {
+    throw new Error(`Could not query the latest Crow release: ${error.message}`);
+  }
+  if (!response.ok) {
+    throw new Error(`GitHub returned HTTP ${response.status} while checking Crow releases.`);
+  }
+  let release;
+  try {
+    release = await response.json();
+  } catch {
+    throw new Error("GitHub returned invalid Crow release metadata.");
+  }
+  if (!isRecord(release) ||
+      release.draft ||
+      release.prerelease ||
+      typeof release.tag_name !== "string" ||
+      !/^v\d+\.\d+\.\d+$/.test(release.tag_name)) {
+    throw new Error("GitHub did not return a stable Crow release.");
+  }
+  return normalizeCrowVersion(release.tag_name, "GitHub Crow release tag");
+}
+
+async function latestRavenVersion(fetcher = fetch) {
+  let response;
+  try {
+    response = await fetcher(`${ravenApi}/releases/latest`, {
+      headers: { "User-Agent": "bcgov-crow-update-check" },
+      signal: AbortSignal.timeout(crowUpdateCheckTimeoutMs)
+    });
+  } catch (error) {
+    throw new Error(`Could not query the latest Raven release: ${error.message}`);
+  }
+  if (!response.ok) {
+    throw new Error(`GitHub returned HTTP ${response.status} while checking Raven releases.`);
+  }
+  let release;
+  try {
+    release = await response.json();
+  } catch {
+    throw new Error("GitHub returned invalid Raven release metadata.");
+  }
+  if (!isRecord(release) ||
+      release.draft ||
+      release.prerelease ||
+      typeof release.tag_name !== "string") {
+    throw new Error("GitHub did not return a stable Raven release.");
+  }
+  const version = release.tag_name.replace(/^v/, "");
+  if (!isUpdateReleaseVersion(version)) {
+    throw new Error("GitHub returned an invalid Raven release tag.");
+  }
+  return version;
+}
+
+function normalizeUpdateReleaseVersion(value, label) {
+  const version = typeof value === "string" ? value.replace(/^v/, "") : "";
+  if (!isUpdateReleaseVersion(version)) {
+    throw new Error(`${label} is not a valid release version.`);
+  }
+  return version;
+}
+
+function compareUpdateReleaseVersions(left, right) {
+  const leftMatch = updateReleaseVersionPattern.exec(left);
+  const rightMatch = updateReleaseVersionPattern.exec(right);
+  for (let index = 1; index <= 3; index++) {
+    const leftPart = Number(leftMatch[index]);
+    const rightPart = Number(rightMatch[index]);
+    if (leftPart !== rightPart) return leftPart < rightPart ? -1 : 1;
+  }
+  const leftPrerelease = leftMatch[4]?.split(".") || [];
+  const rightPrerelease = rightMatch[4]?.split(".") || [];
+  if (leftPrerelease.length === 0 || rightPrerelease.length === 0) {
+    return leftPrerelease.length === rightPrerelease.length
+      ? 0
+      : leftPrerelease.length === 0 ? 1 : -1;
+  }
+  for (let index = 0; index < Math.max(leftPrerelease.length, rightPrerelease.length); index++) {
+    const leftIdentifier = leftPrerelease[index];
+    const rightIdentifier = rightPrerelease[index];
+    if (leftIdentifier === undefined || rightIdentifier === undefined) {
+      return leftIdentifier === undefined ? -1 : 1;
+    }
+    if (leftIdentifier === rightIdentifier) continue;
+    const leftIsNumeric = /^\d+$/.test(leftIdentifier);
+    const rightIsNumeric = /^\d+$/.test(rightIdentifier);
+    if (leftIsNumeric && rightIsNumeric) {
+      return leftIdentifier.length !== rightIdentifier.length
+        ? leftIdentifier.length < rightIdentifier.length ? -1 : 1
+        : leftIdentifier < rightIdentifier ? -1 : 1;
+    }
+    if (leftIsNumeric !== rightIsNumeric) return leftIsNumeric ? -1 : 1;
+    return leftIdentifier < rightIdentifier ? -1 : 1;
+  }
+  return 0;
+}
+
+function defaultCrowUpdateState() {
+  return {
+    schemaVersion: 2,
+    hookDecision: "pending",
+    hookDecisionAt: null,
+    lastAttemptAt: null,
+    lastAttemptStatus: null,
+    lastSuccessfulCheckAt: null,
+    versions: {
+      crow: { current: null, latest: null },
+      raven: { current: null, latest: null },
+      codebaseMemory: { current: null, latest: null }
+    },
+    lastNotifiedAt: null,
+    lastNotifiedVersions: {
+      crow: null,
+      raven: null,
+      codebaseMemory: null
+    }
+  };
+}
+
+function isUpdateReleaseVersion(value) {
+  if (typeof value !== "string") return false;
+  const match = updateReleaseVersionPattern.exec(value);
+  if (!match || !match.slice(1, 4).every((part) => Number.isSafeInteger(Number(part)))) {
+    return false;
+  }
+  const prereleaseIdentifiers = match[4]?.split(".") || [];
+  const buildIdentifiers = match[5]?.split(".") || [];
+  return prereleaseIdentifiers.every((identifier) =>
+    identifier.length > 0 &&
+    !(/^\d+$/.test(identifier) && identifier.length > 1 && identifier.startsWith("0"))
+  ) && buildIdentifiers.every((identifier) => identifier.length > 0);
+}
+
+function isCrowUpdateState(value) {
+  if (!isRecord(value) ||
+      value.schemaVersion !== 2 ||
+      !["pending", "enabled", "declined"].includes(value.hookDecision) ||
+      ![null, "started", "failed", "success"].includes(value.lastAttemptStatus)) {
+    return false;
+  }
+  const components = ["crow", "raven", "codebaseMemory"];
+  const hasExactKeys = (record) => isRecord(record) &&
+    JSON.stringify(Object.keys(record).sort()) === JSON.stringify([...components].sort());
+  if (!hasExactKeys(value.versions) || !hasExactKeys(value.lastNotifiedVersions)) {
+    return false;
+  }
+  const timestamps = [
+    value.hookDecisionAt,
+    value.lastAttemptAt,
+    value.lastSuccessfulCheckAt,
+    value.lastNotifiedAt
+  ];
+  if (!timestamps.every((timestamp) => timestamp === null || isTimestamp(timestamp)) ||
+      (value.hookDecision === "pending"
+        ? value.hookDecisionAt !== null
+        : value.hookDecisionAt === null) ||
+      (value.lastAttemptAt === null
+        ? value.lastAttemptStatus !== null
+        : value.lastAttemptStatus === null)) {
+    return false;
+  }
+  for (const component of components) {
+    const versions = value.versions[component];
+    const lastNotifiedVersion = value.lastNotifiedVersions[component];
+    if (!isRecord(versions) ||
+        JSON.stringify(Object.keys(versions).sort()) !== JSON.stringify(["current", "latest"]) ||
+        ((versions.current === null) !== (versions.latest === null))) {
+      return false;
+    }
+    const isValidVersion = component === "crow"
+      ? (version) => normalizeCrowVersionOrNull(version) !== null
+      : isUpdateReleaseVersion;
+    if ((versions.current !== null &&
+        (!isValidVersion(versions.current) || !isValidVersion(versions.latest))) ||
+        (lastNotifiedVersion !== null && !isValidVersion(lastNotifiedVersion))) {
+      return false;
+    }
+  }
+  if ((value.lastSuccessfulCheckAt !== null && value.versions.crow.current === null) ||
+      (value.lastNotifiedAt === null
+        ? components.some((component) => value.lastNotifiedVersions[component] !== null)
+        : components.every((component) => value.lastNotifiedVersions[component] === null))) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeCrowVersionOrNull(value) {
+  try {
+    return normalizeCrowVersion(value);
+  } catch {
+    return null;
+  }
+}
+
+function readCrowUpdateState(path) {
+  if (!existsSync(path)) return defaultCrowUpdateState();
+  let state;
+  try {
+    state = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`Crow update state is malformed: ${error.message}`);
+  }
+  if (isRecord(state) && state.schemaVersion === 1) {
+    state = {
+      schemaVersion: 2,
+      hookDecision: state.hookDecision,
+      hookDecisionAt: state.hookDecisionAt,
+      lastAttemptAt: state.lastAttemptAt,
+      lastAttemptStatus: state.lastAttemptStatus,
+      lastSuccessfulCheckAt: state.lastSuccessfulCheckAt,
+      versions: {
+        crow: { current: state.currentVersion, latest: state.latestVersion },
+        raven: { current: null, latest: null },
+        codebaseMemory: { current: null, latest: null }
+      },
+      lastNotifiedAt: state.lastNotifiedAt,
+      lastNotifiedVersions: {
+        crow: state.lastNotifiedVersion,
+        raven: null,
+        codebaseMemory: null
+      }
+    };
+  }
+  if (!isCrowUpdateState(state)) {
+    throw new Error("Crow update state has an unsupported or invalid schema.");
+  }
+  return state;
+}
+
+function writeCrowUpdateState(path, state) {
+  if (!isCrowUpdateState(state)) {
+    throw new Error("Refusing to write invalid Crow update state.");
+  }
+  mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  writeJsonAtomic(path, state, { throwOnError: true });
+}
+
+function getCrowUpdatePaths(args = {}) {
+  const stateDir = resolve(args["state-dir"] || defaultCrowUpdateStateDir);
+  const setupStateDir = resolve(args["setup-state-dir"] || defaultStateDir);
+  const copilotHome = args["hook-dir"]
+    ? null
+    : process.env.COPILOT_HOME;
+  const hookDir = resolve(
+    args["hook-dir"] ||
+    (copilotHome
+      ? join(copilotHome, "hooks")
+      : join(homedir(), ".copilot", "hooks"))
+  );
+  return {
+    stateDir,
+    setupStateDir,
+    state: join(stateDir, "state.json"),
+    lock: join(stateDir, "check.lock"),
+    hook: join(hookDir, crowUpdateHookFileName)
+  };
+}
+
+function quoteBashArgument(value) {
+  const backslash = String.fromCodePoint(92);
+  const escapable = new Set([backslash, '"', "$", "`"]);
+  return `"${Array.from(value, (character) =>
+    escapable.has(character) ? backslash + character : character
+  ).join("")}"`;
+}
+
+function quotePowerShellArgument(value) {
+  return `'${value.replaceAll("'", "''")}'`;
+}
+
+function createCrowUpdateHookConfig(scriptPath, stateDir, setupStateDir = defaultStateDir) {
+  const resolvedScript = resolve(scriptPath);
+  const resolvedStateDir = resolve(stateDir);
+  const resolvedSetupStateDir = resolve(setupStateDir);
+  const hookArgs = ["update-hook-event", "--state-dir", resolvedStateDir];
+  const setupStateArgument = resolvedSetupStateDir === resolve(defaultStateDir)
+    ? ""
+    : ` --setup-state-dir ${quoteBashArgument(resolvedSetupStateDir)}`;
+  const powershellSetupStateArgument = resolvedSetupStateDir === resolve(defaultStateDir)
+    ? ""
+    : ` --setup-state-dir ${quotePowerShellArgument(resolvedSetupStateDir)}`;
+  const hookCommand = {
+    type: "command",
+    bash: `${quoteBashArgument(process.execPath)} ${quoteBashArgument(resolvedScript)} ${hookArgs[0]} ${hookArgs[1]} ${quoteBashArgument(resolvedStateDir)}${setupStateArgument}`,
+    powershell: `${quotePowerShellArgument(process.execPath)} ${quotePowerShellArgument(resolvedScript)} ${hookArgs[0]} ${hookArgs[1]} ${quotePowerShellArgument(resolvedStateDir)}${powershellSetupStateArgument}`,
+    timeoutSec: crowUpdateHookTimeoutSeconds
+  };
+  return {
+    version: 1,
+    hooks: {
+      userPromptSubmitted: [hookCommand],
+      userPromptTransformed: [hookCommand]
+    }
+  };
+}
+
+function readExpectedCrowUpdateHook(path, expected) {
+  if (!existsSync(path)) return false;
+  let current;
+  try {
+    current = JSON.parse(readFileSync(path, "utf8"));
+  } catch (error) {
+    throw new Error(`The Copilot hook file is malformed and was left unchanged: ${error.message}`);
+  }
+  if (!isDeepStrictEqual(current, expected)) {
+    throw new Error("The Copilot hook file already exists with different content and was left unchanged.");
+  }
+  return true;
+}
+
+function statusCrowUpdateHook(target, state, expected) {
+  const hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
+  let decision = state.hookDecision;
+  if (hookInstalled) decision = "enabled";
+  else if (decision === "enabled") decision = "missing";
+  console.log(JSON.stringify({
+    decision,
+    hookInstalled,
+    lastSuccessfulCheckAt: state.lastSuccessfulCheckAt
+  }, null, 2));
+}
+
+function installCrowUpdateHook(args, target, state, expected) {
+  if (!args.confirm) fail("Installing the user-level Copilot hook requires --confirm after the user opts in.");
+  const alreadyInstalled = readExpectedCrowUpdateHook(target.hook, expected);
+  let created = false;
+  try {
+    if (!alreadyInstalled) {
+      mkdirSync(dirname(target.hook), { recursive: true });
+      writeFileSync(target.hook, `${JSON.stringify(expected, null, 2)}\n`, {
+        encoding: "utf8",
+        flag: "wx",
+        mode: 0o600
+      });
+      created = true;
+    }
+    state.hookDecision = "enabled";
+    state.hookDecisionAt = new Date().toISOString();
+    writeCrowUpdateState(target.state, state);
+  } catch (error) {
+    if (created && existsSync(target.hook)) unlinkSync(target.hook);
+    throw error;
+  }
+  console.log(JSON.stringify({
+    hookInstalled: true,
+    alreadyInstalled,
+    decision: "enabled",
+    hookFile: target.hook
+  }, null, 2));
+}
+
+function declineCrowUpdateHook(target, state, expected) {
+  if (existsSync(target.hook)) {
+    readExpectedCrowUpdateHook(target.hook, expected);
+    fail("The Copilot hook is installed; remove it explicitly instead of recording a decline.");
+  }
+  if (state.hookDecision !== "declined") {
+    state.hookDecision = "declined";
+    state.hookDecisionAt = new Date().toISOString();
+    writeCrowUpdateState(target.state, state);
+  }
+  console.log(JSON.stringify({ hookInstalled: false, decision: "declined" }, null, 2));
+}
+
+function removeCrowUpdateHook(args, target, state, expected) {
+  if (!args.confirm) fail("Removing the user-level Copilot hook requires --confirm.");
+  const hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
+  if (hookInstalled) unlinkSync(target.hook);
+  state.hookDecision = "declined";
+  state.hookDecisionAt = new Date().toISOString();
+  try {
+    writeCrowUpdateState(target.state, state);
+  } catch (error) {
+    if (hookInstalled) {
+      writeFileSync(target.hook, `${JSON.stringify(expected, null, 2)}\n`, {
+        encoding: "utf8",
+        flag: "wx",
+        mode: 0o600
+      });
+    }
+    throw error;
+  }
+  console.log(JSON.stringify({ hookInstalled: false, decision: "declined" }, null, 2));
+}
+
+function crowUpdateHookCommand(args) {
+  const action = args._[1] || "status";
+  const target = getCrowUpdatePaths(args);
+  const expected = createCrowUpdateHookConfig(
+    fileURLToPath(import.meta.url),
+    target.stateDir,
+    target.setupStateDir
+  );
+  const state = readCrowUpdateState(target.state);
+  switch (action) {
+    case "status":
+      statusCrowUpdateHook(target, state, expected);
+      break;
+    case "install":
+      installCrowUpdateHook(args, target, state, expected);
+      break;
+    case "decline":
+      declineCrowUpdateHook(target, state, expected);
+      break;
+    case "remove":
+      removeCrowUpdateHook(args, target, state, expected);
+      break;
+    default:
+      fail(`Unknown update-hook action '${action}'. Use status, install, decline, or remove.`);
+  }
+}
+
+function validateCrowUpdateClock(state, now) {
+  for (const value of [
+    state.hookDecisionAt,
+    state.lastAttemptAt,
+    state.lastSuccessfulCheckAt,
+    state.lastNotifiedAt
+  ]) {
+    if (value !== null && Date.parse(value) > now) {
+      throw new Error("Crow update state contains a future timestamp.");
+    }
+  }
+}
+
+function crowUpdateSkipReason(state, now, force) {
+  if (force || state.lastAttemptAt === null) return null;
+  const elapsed = now - Date.parse(state.lastAttemptAt);
+  if (elapsed < 0) throw new Error("Crow update state contains a future attempt timestamp.");
+  const interval = state.lastAttemptStatus === "success"
+    ? crowUpdateCheckIntervalMs
+    : crowUpdateRetryIntervalMs;
+  if (elapsed >= interval) return null;
+  return state.lastAttemptStatus === "success" ? "fresh" : "retry-backoff";
+}
+
+function crowUpdateCheckSkipReason(state, now, options) {
+  validateCrowUpdateClock(state, now);
+  if (options.requireEnabledHook && state.hookDecision !== "enabled") {
+    return "hook-disabled";
+  }
+  return crowUpdateSkipReason(state, now, options.force === true);
+}
+
+function acquireCrowUpdateLock(path) {
+  mkdirSync(dirname(path), { recursive: true });
+  const createLock = () => {
+    try {
+      mkdirSync(path, { mode: 0o700 });
+      return true;
+    } catch (error) {
+      if (error.code === "EEXIST") return false;
+      throw error;
+    }
+  };
+  if (createLock()) return true;
+
+  let lockAge;
+  try {
+    lockAge = Date.now() - statSync(path).mtimeMs;
+  } catch (error) {
+    if (error.code === "ENOENT") return createLock();
+    throw error;
+  }
+  if (lockAge < crowUpdateLockStaleMs) return false;
+  try {
+    rmdirSync(path);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+  return createLock();
+}
+
+function releaseCrowUpdateLock(path) {
+  try {
+    rmdirSync(path);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
+function safeUpdateCheckError(error) {
+  const message = error instanceof Error ? error.message : "Unknown update check failure.";
+  return message.replaceAll(/[\r\n\t]+/g, " ").slice(0, 240);
+}
+
+function shouldNotifyCrowUpdate(state, now, updateAvailable) {
+  if (!updateAvailable) return false;
+  const sinceLastNotice = state.lastNotifiedAt === null
+    ? crowUpdateCheckIntervalMs
+    : now - Date.parse(state.lastNotifiedAt);
+  if (sinceLastNotice < 0) {
+    throw new Error("Crow update state contains a future notification timestamp.");
+  }
+  return sinceLastNotice >= crowUpdateCheckIntervalMs;
+}
+
+async function runCrowUpdateCheck(statePath, state, now, options) {
+  const attemptAt = new Date(now).toISOString();
+  state.lastAttemptAt = attemptAt;
+  state.lastAttemptStatus = "started";
+  writeCrowUpdateState(statePath, state);
+
+  let versions;
+  let updates;
+  let failures = [];
+  let setupStateFailure = null;
+  const successfulComponents = new Set();
+  try {
+    let configured;
+    try {
+      configured = (options.getConfiguredUpdateVersions || readConfiguredUpdateVersions)(
+        options.setupStateDir
+      );
+      if (!isRecord(configured) ||
+          !Object.hasOwn(configured, "raven") ||
+          !Object.hasOwn(configured, "codebaseMemory")) {
+        throw new Error("Crow setup returned invalid managed-component versions.");
+      }
+    } catch (error) {
+      setupStateFailure = safeUpdateCheckError(error);
+      configured = { raven: null, codebaseMemory: null };
+    }
+    const ravenCurrent = configured.raven === null
+      ? null
+      : normalizeUpdateReleaseVersion(configured.raven, "Installed Raven version");
+    const codebaseMemoryCurrent = configured.codebaseMemory === null
+      ? null
+      : normalizeUpdateReleaseVersion(
+        configured.codebaseMemory,
+        "Installed codebase-memory-mcp version"
+      );
+    const checks = [
+      {
+        component: "crow",
+        name: "Crow",
+        current: options.getCurrentVersion || installedCrowVersion,
+        latest: options.getLatestVersion || latestCrowVersion,
+        normalize: (version, label) => normalizeCrowVersion(version, label)
+      }
+    ];
+    if (ravenCurrent !== null) {
+      checks.push({
+        component: "raven",
+        name: "Raven",
+        current: () => ravenCurrent,
+        latest: options.getLatestRavenVersion || latestRavenVersion,
+        normalize: normalizeUpdateReleaseVersion
+      });
+    }
+    if (codebaseMemoryCurrent !== null) {
+      checks.push({
+        component: "codebaseMemory",
+        name: "codebase-memory-mcp",
+        current: () => codebaseMemoryCurrent,
+        latest: options.getLatestCodebaseVersion ||
+          (() => fetchLatestCodebaseVersion(fetch, crowUpdateCheckTimeoutMs)),
+        normalize: normalizeUpdateReleaseVersion
+      });
+    }
+
+    const checkedComponents = await Promise.allSettled(checks.map(async (check) => {
+      const values = await Promise.allSettled([
+        Promise.resolve().then(() => check.current()),
+        Promise.resolve().then(() => check.latest())
+      ]);
+      const failures = values
+        .filter((value) => value.status === "rejected")
+        .map((value) => safeUpdateCheckError(value.reason));
+      if (failures.length > 0) {
+        throw new Error(`${check.name}: ${failures.join("; ")}`);
+      }
+      return {
+        component: check.component,
+        current: check.normalize(values[0].value, `Installed ${check.name} version`),
+        latest: check.normalize(values[1].value, `Latest ${check.name} version`)
+      };
+    }));
+    failures = [
+      ...(setupStateFailure ? [setupStateFailure] : []),
+      ...checkedComponents
+        .filter((value) => value.status === "rejected")
+        .map((value) => safeUpdateCheckError(value.reason))
+    ];
+
+    versions = Object.fromEntries(
+      ["crow", "raven", "codebaseMemory"].map((component) => [
+        component,
+        { ...state.versions[component] }
+      ])
+    );
+    for (const component of ["raven", "codebaseMemory"]) {
+      if (!checks.some((check) => check.component === component)) {
+        versions[component] = { current: null, latest: null };
+      }
+    }
+    for (const value of checkedComponents) {
+      if (value.status !== "fulfilled") continue;
+      const checked = value.value;
+      successfulComponents.add(checked.component);
+      versions[checked.component] = {
+        current: checked.current,
+        latest: checked.latest
+      };
+    }
+    updates = [];
+    for (const [component, name] of [
+      ["crow", "Crow"],
+      ["raven", "Raven"],
+      ["codebaseMemory", "codebase-memory-mcp"]
+    ]) {
+      if (!successfulComponents.has(component)) continue;
+      const version = versions[component];
+      if (version.current === null) continue;
+      const compare = component === "crow"
+        ? compareCrowVersions
+        : compareUpdateReleaseVersions;
+      if (compare(version.current, version.latest) < 0) {
+        updates.push({
+          component,
+          name,
+          current: version.current,
+          latest: version.latest
+        });
+      }
+    }
+  } catch (error) {
+    state.lastAttemptStatus = "failed";
+    writeCrowUpdateState(statePath, state);
+    return { checked: false, error: safeUpdateCheckError(error) };
+  }
+
+  if (successfulComponents.size === 0) {
+    state.lastAttemptStatus = "failed";
+    writeCrowUpdateState(statePath, state);
+    return {
+      checked: false,
+      error: failures.length > 0
+        ? failures.join("; ")
+        : "No component versions could be checked."
+    };
+  }
+
+  const updateAvailable = updates.length > 0;
+  const notify = shouldNotifyCrowUpdate(state, now, updateAvailable);
+  state.lastAttemptStatus = failures.length > 0 ? "failed" : "success";
+  if (failures.length === 0) state.lastSuccessfulCheckAt = attemptAt;
+  state.versions = versions;
+  if (!updateAvailable && failures.length === 0) {
+    state.lastNotifiedAt = null;
+    state.lastNotifiedVersions = {
+      crow: null,
+      raven: null,
+      codebaseMemory: null
+    };
+  }
+  writeCrowUpdateState(statePath, state);
+  return {
+    checked: true,
+    current: versions.crow.current,
+    latest: versions.crow.latest,
+    versions,
+    updates,
+    updateAvailable,
+    notify,
+    checkedAt: attemptAt,
+    ...(failures.length > 0 ? { error: failures.join("; ") } : {})
+  };
+}
+
+async function checkCrowUpdates(options = {}) {
+  const stateDir = resolve(options.stateDir || defaultCrowUpdateStateDir);
+  const statePath = join(stateDir, "state.json");
+  const lockPath = join(stateDir, "check.lock");
+  const now = options.now ?? Date.now();
+  if (!Number.isFinite(now)) throw new Error("Crow update check time is invalid.");
+
+  let state = readCrowUpdateState(statePath);
+  let reason = crowUpdateCheckSkipReason(state, now, options);
+  if (reason) return { checked: false, reason };
+  if (!acquireCrowUpdateLock(lockPath)) {
+    return { checked: false, reason: "check-in-progress" };
+  }
+
+  try {
+    state = readCrowUpdateState(statePath);
+    reason = crowUpdateCheckSkipReason(state, now, options);
+    if (reason) return { checked: false, reason };
+    return await runCrowUpdateCheck(statePath, state, now, options);
+  } finally {
+    releaseCrowUpdateLock(lockPath);
+  }
+}
+
+function markCrowUpdateNotified(stateDir, result, now = Date.now()) {
+  if (!result.checked || !result.updateAvailable || !result.notify) return false;
+  if (!Number.isFinite(now)) throw new Error("Crow update notification time is invalid.");
+  const statePath = join(resolve(stateDir || defaultCrowUpdateStateDir), "state.json");
+  const state = readCrowUpdateState(statePath);
+  validateCrowUpdateClock(state, now);
+  if (!["success", "failed"].includes(state.lastAttemptStatus) ||
+      state.lastAttemptAt !== result.checkedAt ||
+      !isDeepStrictEqual(state.versions, result.versions)) {
+    throw new Error("Crow update state changed before the notification could be recorded.");
+  }
+  state.lastNotifiedAt = new Date(now).toISOString();
+  state.lastNotifiedVersions = {
+    crow: result.updates.find((update) => update.component === "crow")?.latest || null,
+    raven: result.updates.find((update) => update.component === "raven")?.latest || null,
+    codebaseMemory: result.updates
+      .find((update) => update.component === "codebaseMemory")?.latest || null
+  };
+  writeCrowUpdateState(statePath, state);
+  return true;
+}
+
+function crowUpdateInstallCommand() {
+  return "apm install 'bcgov/crow#stable' --global --target copilot";
+}
+
+function updateReminder(result) {
+  if (result.checked && result.updateAvailable && result.notify) {
+    const updates = result.updates;
+    const summary = updates.length === 1
+      ? `${updates[0].name} update available: installed v${updates[0].current}; latest v${updates[0].latest}.`
+      : `Updates available: ${updates.map((update) =>
+        `${update.name} v${update.current} -> v${update.latest}`
+      ).join("; ")}.`;
+    const instructions = [];
+    if (updates.some((update) => update.component === "crow")) {
+      instructions.push(
+        `For an APM global Copilot install, migrate or update to the release-maintained stable branch with \`${crowUpdateInstallCommand()}\`; then \`apm update --global --target copilot\` follows published stable releases. Exact-version pins remain fixed. For other Crow installation methods, use the corresponding updater.`
+      );
+    }
+    if (updates.some((update) =>
+      update.component === "raven" || update.component === "codebaseMemory"
+    )) {
+      instructions.push(
+        "Ask the Crow Raven Setup Agent to review these component updates; it will request confirmation before applying them."
+      );
+    }
+    const retry = result.error
+      ? ` Some update checks failed: ${result.error}. Failed checks will retry in about one hour.`
+      : "";
+    return `${summary} ${instructions.join(" ")}${retry} No update was installed automatically.`;
+  }
+  if (result.error) {
+    return `The daily Crow, Raven, and codebase-memory-mcp update check could not complete: ${result.error}. It will retry in about one hour; no update was installed.`;
+  }
+  return null;
+}
+
+async function handleUpdateHookEvent(event, options = {}) {
+  if (!isRecord(event)) throw new Error("Copilot sent an invalid Crow update-hook event.");
+  if (typeof event.sessionId === "string" &&
+      typeof event.prompt === "string" &&
+      typeof event.transformedPrompt !== "string") {
+    return { output: {}, checkResult: null };
+  }
+  const localPromptSubmit = event.hook_event_name === "UserPromptSubmit";
+  const copilotPromptTransform = typeof event.transformedPrompt === "string";
+  if (!localPromptSubmit && !copilotPromptTransform) {
+    throw new Error("Copilot sent an unsupported Crow update-hook event.");
+  }
+
+  const result = await checkCrowUpdates({
+    ...options,
+    requireEnabledHook: true
+  });
+  const notice = updateReminder(result);
+  if (!notice) return { output: {}, checkResult: result };
+  if (localPromptSubmit) {
+    return {
+      output: {
+        systemMessage: notice,
+        hookSpecificOutput: {
+          hookEventName: "UserPromptSubmit",
+          additionalContext: `${notice} Tell the user about this update or check failure.`
+        }
+      },
+      checkResult: result
+    };
+  }
+  return {
+    output: {
+      modifiedTransformedPrompt: `${event.transformedPrompt}\n\n[${notice}]`
+    },
+    progress: {
+      type: "progress",
+      message: notice
+    },
+    checkResult: result
+  };
+}
+
+async function updateCheckCommand(args) {
+  const result = await checkCrowUpdates({
+    stateDir: args["state-dir"],
+    setupStateDir: args["setup-state-dir"],
+    force: args.force === true
+  });
+  console.log(JSON.stringify(result, null, 2));
+  markCrowUpdateNotified(args["state-dir"], result);
+  if (result.error) {
+    process.exitCode = 1;
+  } else if (result.updateAvailable) {
+    process.exitCode = 10;
+  }
+}
+
+async function updateHookEventCommand(args) {
+  let event;
+  try {
+    const input = new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(0));
+    event = JSON.parse(input);
+  } catch (error) {
+    throw new Error(`Copilot sent invalid JSON to the Crow update hook: ${error.message}`);
+  }
+  const result = await handleUpdateHookEvent(event, {
+    stateDir: args["state-dir"],
+    setupStateDir: args["setup-state-dir"]
+  });
+  if (result.progress) process.stdout.write(`${JSON.stringify(result.progress)}\n`);
+  process.stdout.write(`${JSON.stringify(result.output)}\n`);
+  if (result.checkResult) {
+    markCrowUpdateNotified(args["state-dir"], result.checkResult);
+  }
+}
+
+function persistSuccessfulFreshnessCheck(target, state, result, now = new Date()) {
+  if (!isRecord(result.crowPackage)) {
+    throw new Error("Crow Raven freshness check did not return APM status.");
+  }
+  if (result.crowPackage.error) return false;
+  state.lastCheckedAt = now.toISOString();
+  writeJsonAtomic(target.state, state);
+  return true;
 }
 
 function npmInvocation(args) {
@@ -322,6 +1250,33 @@ function isStateSnapshot(value) {
   }
   return JSON.stringify(value.serverCatalog.servers.map((server) => server.id)) ===
     JSON.stringify(value.selectedServers);
+}
+
+function readConfiguredUpdateVersions(stateDir = defaultStateDir) {
+  const statePath = join(resolve(stateDir), "state.json");
+  if (!existsSync(statePath)) {
+    return { raven: null, codebaseMemory: null };
+  }
+  let state;
+  try {
+    state = JSON.parse(readFileSync(statePath, "utf8"));
+  } catch (error) {
+    throw new Error(`Could not read Crow Raven setup state: ${error.message}`);
+  }
+  if (!isRecord(state) || state.schemaVersion !== 1 || !isStateSnapshot(state)) {
+    throw new Error("Crow Raven setup state is malformed or has an unsupported schema.");
+  }
+  return {
+    raven: state.raven?.delivery === "bundled-release"
+      ? normalizeUpdateReleaseVersion(state.raven.suiteVersion, "Installed Raven version")
+      : null,
+    codebaseMemory: state.codebaseMemory
+      ? normalizeUpdateReleaseVersion(
+        state.codebaseMemory.version,
+        "Installed codebase-memory-mcp version"
+      )
+      : null
+  };
 }
 
 function readState(target) {
@@ -508,19 +1463,34 @@ function resolveRavenRevision(ref) {
   fail(`Raven ref '${ref}' was not found.`);
 }
 
-async function latestCodebaseVersion() {
+async function fetchLatestCodebaseVersion(fetcher = fetch, timeoutMs = networkTimeoutMs) {
   let response;
   try {
-    response = await fetch(npmRegistryUrl, { signal: AbortSignal.timeout(10000) });
+    response = await fetcher(npmRegistryUrl, { signal: AbortSignal.timeout(timeoutMs) });
   } catch (error) {
-    fail(`Could not query codebase-memory-mcp: ${error.message}`);
+    throw new Error(`Could not query codebase-memory-mcp: ${error.message}`);
   }
-  if (!response.ok) fail(`npm registry returned HTTP ${response.status}.`);
-  const metadata = await response.json();
-  if (!/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(metadata.version || "")) {
-    fail("npm registry returned an invalid codebase-memory-mcp version.");
+  if (!response.ok) {
+    throw new Error(`npm registry returned HTTP ${response.status}.`);
+  }
+  let metadata;
+  try {
+    metadata = await response.json();
+  } catch {
+    throw new Error("npm registry returned invalid codebase-memory-mcp metadata.");
+  }
+  if (!isRecord(metadata) || !isUpdateReleaseVersion(metadata.version)) {
+    throw new Error("npm registry returned an invalid codebase-memory-mcp version.");
   }
   return metadata.version;
+}
+
+async function latestCodebaseVersion() {
+  try {
+    return await fetchLatestCodebaseVersion();
+  } catch (error) {
+    fail(error.message);
+  }
 }
 
 async function fetchJson(url, label) {
@@ -1142,11 +2112,16 @@ Commands:
   setup --plan <path> --plan-sha256 <digest> --confirm
   check [--state-dir <path>] [--force]
   rollback [--state-dir <path>] --confirm
+  update-check [--state-dir <path>] [--setup-state-dir <path>] [--force]
+  update-hook [status|install|decline|remove] [--state-dir <path>]
+              [--setup-state-dir <path>] [--hook-dir <path>] [--confirm]
+  update-hook-event --state-dir <path> [--setup-state-dir <path>]
 
 Plan resolves every mutable version and writes a reviewable pending-plan.json.
 Raven uses verified bundled releases by default. Source builds require the
 explicit --delivery source fallback. Setup does not merge client configuration
-or collect credentials.`);
+or collect credentials. The optional Copilot update hook checks at most once
+per day during agent use and never installs updates.`);
 }
 
 function listCommand(args) {
@@ -1547,8 +2522,6 @@ async function checkCommand(args) {
     ? resolveRavenRevision(freshnessTrack.value)
     : state.raven?.revision || null;
   const latestCodebase = await latestCodebaseVersion();
-  state.lastCheckedAt = new Date().toISOString();
-  writeJsonAtomic(target.state, state);
   let ravenResult = null;
   if (state.raven && state.delivery === "bundled-release") {
     ravenResult = {
@@ -1575,6 +2548,7 @@ async function checkCommand(args) {
     codebaseMemory: { current: state.codebaseMemory.version, latest: latestCodebase, updateAvailable: state.codebaseMemory.version !== latestCodebase },
     crowPackage: checkCrowApmUpdate()
   };
+  persistSuccessfulFreshnessCheck(target, state, result);
   console.log(JSON.stringify(result, null, 2));
   if (result.crowPackage.error) {
     process.exitCode = 1;
@@ -1642,8 +2616,16 @@ async function rollbackCommand(args) {
 
 export {
   checkCrowApmUpdate,
+  checkCrowUpdates,
   createFragment,
+  createCrowUpdateHookConfig,
+  handleUpdateHookEvent,
+  latestCrowVersion,
+  latestRavenVersion,
+  fetchLatestCodebaseVersion,
+  markCrowUpdateNotified,
   parseCrowOutdatedOutput,
+  persistSuccessfulFreshnessCheck,
   ravenRepositoryUrl,
   releasedServers,
   sha256Tree,
@@ -1664,6 +2646,9 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1] || "")).href) {
     case "setup": await setupCommand(args); break;
     case "check": await checkCommand(args); break;
     case "rollback": await rollbackCommand(args); break;
+    case "update-check": await updateCheckCommand(args); break;
+    case "update-hook": crowUpdateHookCommand(args); break;
+    case "update-hook-event": await updateHookEventCommand(args); break;
     default: fail(`Unknown command '${command}'. Run 'help' for usage.`);
   }
 }

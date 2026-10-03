@@ -4,10 +4,16 @@ The Security Remediation collection provides a focused workflow for scanning
 an application, documenting its security-relevant architecture, producing
 evidence-backed findings, and implementing and verifying remediations.
 
-Install it with the Crow release tag:
+Install it from Crow's release-maintained stable branch:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.11.0 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#stable --global --target copilot
+```
+
+For an immutable install of this release:
+
+```powershell
+apm install bcgov/crow/collections/security-remediation#v0.11.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)

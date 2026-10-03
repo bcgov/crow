@@ -20,7 +20,19 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 ## Workflow
 
 1. Inspect prerequisites and existing state with
-   `node scripts/crow-raven-setup.mjs status`.
+   `node scripts/crow-raven-setup.mjs status`, and inspect the optional
+   user-level Copilot update-hook decision with
+   `node scripts/crow-raven-setup.mjs update-hook status` when the active
+   client is Copilot Local, Copilot Agent Host, or Copilot CLI. When its
+   decision is `pending`, offer the hook once and install it only after
+   explicit user consent; persist a decline with `update-hook decline`. Do not
+   repeat a recorded offer. If the decision is `missing`, ask whether to
+   restore the previously enabled hook. The hook checks Crow, plus bundled
+   Raven and codebase-memory-mcp when they are recorded in Crow Setup state;
+   source-pinned Raven revisions remain covered by the setup freshness check.
+   When setup state uses a non-default directory, pass
+   `--setup-state-dir <path>` consistently to hook status, install, and removal
+   commands. Skip this offer for non-Copilot or unknown clients.
 2. Resolve server selection through focused user questions and validate IDs
    against the bundled catalog. Record an explicit `--no-raven` choice when
    the user wants only codebase-memory-mcp.
@@ -31,7 +43,12 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version
    resolution, state, or fragment-generation logic in model-authored commands.
    Its `check` command also reports an outstanding global APM update for Crow
-   when Crow is APM-managed; it never applies that update.
+   when Crow is APM-managed; it never applies that update. If `apm outdated`
+   reports a newer Crow release but `apm update --global` leaves an exact-pinned
+   install unchanged, explain that the exact tag is fixed. After confirmation,
+   migrate the global Copilot install to Crow's release-maintained branch with
+   `apm install 'bcgov/crow#stable' --global --target copilot`. Later,
+   `apm update --global --target copilot` follows published stable releases.
 5. Configure credentials only through Raven's official user-local mechanism.
 6. Merge generated entries into a client only with confirmation, preserving
    unrelated entries and stopping on collisions.
