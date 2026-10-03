@@ -423,8 +423,8 @@ Systematically evaluate each OWASP Top 10 category against the codebase:
 - Load `security-logging-and-audit.md` for authentication, authorization,
   credential, token, privileged, or sensitive-state lifecycles.
 - Load `security-control-assurance.md`; map each material security control to
-  unit, integration, negative-case, and CI evidence. Run the CI gate candidate
-  script and verify its observations.
+  unit, integration, negative-case, and CI evidence; verify tests invoke
+  production controls. Run and verify the CI gate candidate script.
 - Independently adjudicate every Critical/High finding and every proposed chain
   source. Resolve changed severity, scope, preconditions, or causal language.
 - When two or more findings share an evidenced control, workflow, resource, or

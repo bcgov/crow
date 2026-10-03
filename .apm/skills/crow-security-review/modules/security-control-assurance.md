@@ -6,10 +6,26 @@ gates without replacing the Crow testing workflow.
 ## Control matrix
 
 For each authentication, authorization, anti-forgery, validation, cryptographic,
-credential, audit, and safe-degradation control, record:
+credential (including revocation), audit, safe-degradation, and
+security-relevant data retention or deletion control, record:
 
 | Control | Enforcement point | Unit test | Integration test | Negative case | CI gate | Status |
 |---|---|---|---|---|---|---|
+
+For each test cited as control evidence, inspect its arrange/act/assert path
+against the production enforcement point. Verify that the act invokes the
+production method or exercises its real framework/host entry point, and that
+the assertions observe the resulting behavior or effects. Trace through
+helpers, mocks, and callbacks: a mock may supply inputs or observe
+collaborators, but a callback or inline sequence that implements the control
+instead of calling production code does not validate that control. Do not
+credit a test that independently performs the same deletion, token revocation,
+authorization decision, or other security behavior and then asserts on its own
+effects. Exclude that test as evidence, assess any other tests, then mark the
+control `Verified`, `Gap`, or `Unknown` as appropriate. Cite the test and
+production locations for a gap and pass replacement-test requirements to
+`crow-testing`. A test may still cover a different control it actually invokes;
+do not discard valid evidence merely because it uses helpers or mocks.
 
 Direct controller or handler construction does not prove framework middleware,
 filters, routing, authentication schemes, authorization policies, or
