@@ -186,14 +186,15 @@ The `crow-security-review` skill bundles the detection modules and the `security
 Available modules:
 - `auth-and-access-control.md` — Authorization gaps, IDOR, privilege escalation
 - `framework-security-config.md` — Per-framework secure defaults and misconfigurations
+- `java-containers.md` — Java web container security (Tomcat, Jetty, Undertow, Jakarta EE)
 - `data-flow-sinks.md` — Cross-file entry-to-sink patterns for trace_path verification
 - `secrets-and-credentials.md` — Non-code secret locations, rotation gaps
 - `deserialization-and-integrity.md` — Type confusion, gadget chains, unsigned data
 - `crypto-and-transport.md` — Key management, protocol config, RNG misuse
 - `api-and-session-security.md` — Rate limiting, CORS, cookie flags, JWT flaws
-- `security-logging-and-audit.md` — Security-event lifecycles, authoritative audit points, attribution, and redaction
-- `security-control-assurance.md` — Security-control tests, negative cases, framework-boundary coverage, and CI enforcement
-- `finding-synthesis-and-validation.md` — Validation adjudication, cross-domain themes, attack paths, and component priority
+- `security-logging-and-audit.md` — Security-event lifecycles, audit points, attribution, redaction
+- `security-control-assurance.md` — Security-control tests, negative cases, framework boundaries, CI gates
+- `finding-synthesis-and-validation.md` — Finding validation, shared themes, attack paths, priority
 - `frontend-spa-security.md` — React, Vue, Angular, Svelte: client-side XSS, auth bypass, secret exposure, SSR leakage
 - `llm-prompt-and-markdown-security.md` — Direct and stored/second-order prompt injection, RAG/tool agency, insecure model output, and Markdown/document pipeline security
 - `platform-data-and-proofs.md` — Conditional data minimization, scoped questions, pairwise correlation, digital proof properties, assurance fallback, and privacy-preserving audit context
