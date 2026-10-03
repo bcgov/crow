@@ -451,6 +451,10 @@ finding without current source evidence.
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | | | | | | | `Verified / Gap / Unknown / N/A` |
 
+Credit a test only when its act invokes the production control (or its real
+host entry point) and its assertions observe the effects; copied control logic
+is not evidence. Consider other tests before marking a gap; cite both locations
+for any gap.
 Direct controller or handler construction does not verify middleware, filters,
 routing, authentication schemes, authorization policies, or anti-forgery
 enforcement. Link actionable test gaps to the `crow-testing` workflow.
