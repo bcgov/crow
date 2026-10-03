@@ -38,11 +38,14 @@ reference according to that skill.
    [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md)
    and include only the applicable denial, expiry, revocation, replay, exception, degradation, and audit
    scenarios.
-7. For .NET (`.sln`, `.slnx`, `.csproj`, `.fsproj`, `global.json` present), also load:
+7. For .NET (`.sln`, `.slnx`, `.csproj`, `.vbproj`, `.fsproj`, `global.json` present), also load:
    - [`modules/dotnet/unit-tests.md`](modules/dotnet/unit-tests.md) for unit-level work.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
      against SQL Server.
-8. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
+8. For Java source or Maven/Gradle Java manifests (`pom.xml`, `build.gradle`, `build.gradle.kts`), confirm the target is Java rather than Kotlin-only or another JVM language, then load:
+   - [`modules/java/unit-tests.md`](modules/java/unit-tests.md) for unit-level work.
+   - [`modules/java/integration-tests.md`](modules/java/integration-tests.md) for HTTP, container, persistence, or external-boundary work.
+9. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
    for the situation at hand. Available reference material, and its trigger:
    - `property-based-testing.md` — writing a property-based test or its generators.
    - `managed-template-lifecycle.md` — installing a ready-to-copy template, or an existing
@@ -91,12 +94,12 @@ reference according to that skill.
    **Size discipline for future additions:** core modules stay small and answer "what do I do now";
    reference files are single-decision and independently loadable. A reference file that outgrows its one
    decision should be **split**, not allowed to grow.
-9. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
+10. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
    deferred automation. Use [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md)
    for the consuming project's single `docs/testing/manual-coverage.md` index and
    [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md) for linked detail
    documents under `docs/testing/manual/`.
-10. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
+11. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
    [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md), and
    [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md),
@@ -107,14 +110,14 @@ reference according to that skill.
    asks for a fuller writeup than a `testability-notes.md` row — see
    [`modules/reference/testability-improvements.md`](modules/reference/testability-improvements.md) §
    Handing off.
-11. When writing property-based tests in .NET, copy from
+12. When writing property-based tests in .NET, copy from
    [`templates/dotnet/generators/`](templates/dotnet/generators/) (see
    [`modules/reference/property-based-testing.md`](modules/reference/property-based-testing.md)) through the
    managed-template script rather than regenerating equivalent generator code or copying it without
    provenance.
-12. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
-   `modules/python/`), each with its own `unit-tests.md`/`integration-tests.md` pair mirroring
-   `modules/dotnet/`, and route to them here. Never load unrelated technology modules.
+13. Add future technology stacks as sibling folders under `modules/` (e.g. `modules/node/`,
+   `modules/python/`), each with its own `unit-tests.md`/`integration-tests.md` pair, and route to
+   them here. Never load unrelated technology modules.
 
 ## Out of scope
 

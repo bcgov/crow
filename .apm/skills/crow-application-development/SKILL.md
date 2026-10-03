@@ -1,6 +1,6 @@
 ---
 name: crow-application-development
-description: Implement and evolve applications with technology-routed engineering practices. Use when writing production code, REST or SOAP APIs, tests, configuration, integrations, persistence code, containers, or CI; includes current .NET and ASP.NET Core secure-by-default guidance.
+description: Implement and evolve applications with technology-routed engineering practices. Use for production code, APIs, tests, persistence, containers, and CI; includes .NET and Java secure-by-default guidance.
 ---
 
 # Application Development
@@ -20,9 +20,15 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
    - [`modules/api-contracts.md`](modules/api-contracts.md) for creating, changing, or modernizing a REST or SOAP API in any supported technology.
-8. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
-9. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
-10. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
+8. For Java source or a Maven/Gradle Java project (`pom.xml`, `build.gradle`, `build.gradle.kts`), load [`modules/java/foundation.md`](modules/java/foundation.md); confirm the target is Java rather than Kotlin-only or another JVM language. Add only the affected modules:
+   - [`modules/java/web.md`](modules/java/web.md) for Spring MVC, Servlet, Jakarta REST, API, auth, or HTTP work.
+   - [`modules/java/persistence.md`](modules/java/persistence.md) for JPA/Hibernate, JDBC, SQL, migrations, or transactions.
+   - [`modules/java/testing-ci.md`](modules/java/testing-ci.md) for tests, builds, dependencies, images, or pipelines.
+   - [`modules/java/containers.md`](modules/java/containers.md) for embedded or external Tomcat, Jetty, Undertow, or a Jakarta EE server.
+   - [`modules/api-contracts.md`](modules/api-contracts.md) for REST/SOAP contract changes.
+9. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
+10. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
+11. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
 
@@ -48,7 +54,8 @@ behavior; define a safe, visible fallback; and plan migration and rollback.
 Load the relevant `../crow-security-review/modules/` files before implementing the affected surface:
 
 - endpoint or permission change: `auth-and-access-control.md`;
-- ASP.NET Core bootstrap/configuration: `framework-security-config.md`;
+- ASP.NET Core or Java web bootstrap/configuration: `framework-security-config.md`;
+- Java servlet or Jakarta EE container deployment: `java-containers.md`;
 - API, cookie, token, CORS, antiforgery, or rate limit: `api-and-session-security.md`;
 - SQL, file, process, redirect, or outbound URL: `data-flow-sinks.md`;
 - secrets or deployment configuration: `secrets-and-credentials.md`;

@@ -31,6 +31,7 @@ Located in `modules/`:
 - **`security-review-template.md`** — Security review document structure with YAML frontmatter for machine-readable metadata.
 - **`modules/auth-and-access-control.md`** — Authorization gaps, IDOR, privilege escalation per framework.
 - **`modules/framework-security-config.md`** — Per-framework secure defaults and misconfigurations (CSRF, debug modes, middleware ordering, auto-escaping).
+- **`modules/java-containers.md`** — Java web container deployment and configuration checks (Tomcat, Jetty, Undertow, Jakarta EE servers).
 - **`modules/data-flow-sinks.md`** — Cross-file entry-to-sink tracing protocol for SQL injection, command injection, SSRF, and path traversal.
 - **`modules/secrets-and-credentials.md`** — Secrets in infrastructure files (Docker, CI/CD, Kubernetes, Terraform, Helm) that source-code scanners miss.
 - **`modules/deserialization-and-integrity.md`** — Insecure deserialization per language, gadget chain reachability, unsigned data acceptance, CI/CD integrity.
