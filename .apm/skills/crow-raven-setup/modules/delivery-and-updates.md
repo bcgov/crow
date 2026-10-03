@@ -78,8 +78,10 @@ versions in `~/.crow/update-check`; no scheduled task is required or installed,
 and no update is applied automatically. When Crow Setup uses a non-default
 state directory, pass `--setup-state-dir <path>` to `update-hook install` and
 use that same argument for later hook status or removal commands. On Windows,
-Copilot CLI hooks require PowerShell 7 or later in `PATH`. Restart Copilot CLI
-after installing or changing the hook because user-level hooks load at startup.
+Copilot CLI 1.0.45 or later falls back to Windows PowerShell (`powershell.exe`)
+when `pwsh` is unavailable; earlier versions may still require PowerShell 7.
+Restart Copilot CLI after installing or changing the hook because user-level
+hooks load at startup.
 To run a manual check from the Crow package root:
 
 ```text

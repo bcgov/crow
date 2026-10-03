@@ -87,8 +87,9 @@ releases, installing an OS scheduler, or automatically applying updates.
    immediate check. Notify about differences; require confirmation to update.
    When APM reports a newer Crow release but `apm update --global` leaves an
    exact-pinned package unchanged, explain the selector behavior. After
-   confirmation,    migrate the same installed selector to Crow's release-maintained branch by
-   appending `#stable`: use `bcgov/crow#stable` for the full package,
+   confirmation, migrate the same installed selector to Crow's
+   release-maintained branch by appending `#stable`: use `bcgov/crow#stable` for
+   the full package,
    `bcgov/crow/collections/starter-package#stable` for that collection, or
    `bcgov/crow/collections/security-remediation#stable` for that collection.
    Do not add the full package to update a collection. Later,

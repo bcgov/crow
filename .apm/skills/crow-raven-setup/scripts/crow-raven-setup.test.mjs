@@ -587,6 +587,7 @@ test("installs the optional hook once and preserves the user's Copilot hook file
   assert.deepEqual(Object.keys(config.hooks), ["userPromptSubmitted", "userPromptTransformed"]);
   assert.match(config.hooks.userPromptSubmitted[0].bash, /"[^"]*crow-raven-setup\.mjs"/);
   assert.match(config.hooks.userPromptSubmitted[0].powershell, /'[^']*crow-raven-setup\.mjs'/);
+  assert.match(config.hooks.userPromptSubmitted[0].powershell, /^& '/);
   assert.deepEqual(config.hooks.userPromptSubmitted[0], config.hooks.userPromptTransformed[0]);
 
   const repeatedInstall = run([

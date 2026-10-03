@@ -780,7 +780,7 @@ function createCrowUpdateHookConfig(scriptPath, stateDir, setupStateDir = defaul
   const hookCommand = {
     type: "command",
     bash: `${quoteBashArgument(process.execPath)} ${quoteBashArgument(resolvedScript)} ${hookArgs[0]} ${hookArgs[1]} ${quoteBashArgument(resolvedStateDir)}${setupStateArgument}`,
-    powershell: `${quotePowerShellArgument(process.execPath)} ${quotePowerShellArgument(resolvedScript)} ${hookArgs[0]} ${hookArgs[1]} ${quotePowerShellArgument(resolvedStateDir)}${powershellSetupStateArgument}`,
+    powershell: `& ${quotePowerShellArgument(process.execPath)} ${quotePowerShellArgument(resolvedScript)} ${hookArgs[0]} ${hookArgs[1]} ${quotePowerShellArgument(resolvedStateDir)}${powershellSetupStateArgument}`,
     timeoutSec: crowUpdateHookTimeoutSeconds
   };
   return {
