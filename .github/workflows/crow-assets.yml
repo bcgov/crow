@@ -71,6 +71,7 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
+          node --test .\.apm\skills\crow-solution-architecture\scripts\technology-preferences.test.mjs
 
       - name: Test business rule validation and rendering
         shell: pwsh

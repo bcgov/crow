@@ -155,7 +155,12 @@ package.
 - [**crow-bcgov-ux**](.apm/skills/crow-bcgov-ux/SKILL.md) — B.C. Design
   System and WCAG 2.2 AA UX guidance.
 - [**crow-solution-architecture**](.apm/skills/crow-solution-architecture/SKILL.md) —
-  B.C.-aligned solution architecture and stakeholder decisions.
+  B.C.-aligned solution architecture and stakeholder decisions. Interactive
+  sessions can keep dated, context-specific choices in user-local
+  `~/.crow/technology-preferences.json` after asking permission for each
+  update; preferences never replace project constraints. See the
+  [technology preferences guide](.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
+  for review, removal, and supported categories.
 - [**crow-application-architecture**](.apm/skills/crow-application-architecture/SKILL.md) —
   Application boundaries, dependencies, platforms, and Zero Trust.
 - [**crow-application-development**](.apm/skills/crow-application-development/SKILL.md) —

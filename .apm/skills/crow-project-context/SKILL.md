@@ -8,6 +8,9 @@ description: Reads and safely maintains the public-reference project memory in a
 Use this skill when an agent needs project-specific Sonar settings, CI/CD
 references, work-tracking locations, related repositories, documentation
 locations, or must record a resource supplied during the current task.
+Personal technology preferences are separate from this project-reference
+manifest; use the `crow-solution-architecture` technology-preferences module
+and user-local store, not `crow.config`, for those choices.
 
 ## Workflow
 
