@@ -14,8 +14,8 @@ or services are universal.
    implementation, deployment, testing, review, remediation, or maintenance. State the
    user and verifiable outcome. Setup and release support must enable these
    workflows.
-2. **Ground advice in evidence.** Inspect relevant sources, distinguish facts
-   from assumptions. Never invent organizational rules or approvals.
+2. **Ground advice in evidence.** Inspect relevant sources and
+   distinguish facts from assumptions. Never invent organizational rules or approvals.
 3. **Keep people in control.** Make external writes and consequential changes
    confirmation-gated. Expose failures and uncertainty; never report an
    unperformed check as passed.
