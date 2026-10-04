@@ -43,8 +43,11 @@ export function validate(data) {
       !item.choice.includes("//") && !item.choice.includes(".."),
     "Choice must be a short technology label, not a URL, path, or note.");
     assert(["prefer", "avoid"].includes(item.stance), "Invalid preference stance.");
-    assert(typeof item.recorded_on === "string" && datePattern.test(item.recorded_on) &&
-      !Number.isNaN(Date.parse(`${item.recorded_on}T00:00:00Z`)),
+    const recordedAt = typeof item.recorded_on === "string" && datePattern.test(item.recorded_on)
+      ? Date.parse(`${item.recorded_on}T00:00:00Z`) : NaN;
+    assert(Number.isFinite(recordedAt) &&
+      new Date(recordedAt).toISOString().slice(0, 10) === item.recorded_on &&
+      item.recorded_on <= new Date().toISOString().slice(0, 10),
     "Invalid preference date.");
     const key = `${item.category}:${item.context}:${item.choice.toLowerCase()}`;
     assert(!keys.has(key), "Duplicate technology preference.");

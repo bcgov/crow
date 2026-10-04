@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
 import { fileURLToPath } from "node:url";
-import { load, run } from "./technology-preferences.mjs";
+import { load, run, validate } from "./technology-preferences.mjs";
 
 const directory = mkdtempSync(join(tmpdir(), "crow-technology-preferences-"));
 const path = join(directory, "user", "technology-preferences.json");
@@ -63,9 +63,15 @@ test("unsafe and unknown input is rejected without changing the file", () => {
 });
 
 test("malformed and unsupported memory fails visibly rather than being overwritten", () => {
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   for (const malformed of [
     "{", '{"schema_version":2,"preferences":[]}',
-    '{"schema_version":1,"preferences":[{"category":"backend","choice":"x"}]}'
+    '{"schema_version":1,"preferences":[{"category":"backend","choice":"x"}]}',
+    ...["2025-02-31", tomorrow].map((recorded_on) => JSON.stringify({
+      schema_version: 1,
+      preferences: [{ category: "backend", choice: "Java", context: "any",
+        stance: "prefer", recorded_on }]
+    }))
   ]) {
     writeFileSync(path, malformed);
     assert.throws(() => run(["list"], path));
@@ -73,4 +79,12 @@ test("malformed and unsupported memory fails visibly rather than being overwritt
       "--context", "any", "--stance", "prefer", "--confirm", "yes"], path));
     assert.equal(readFileSync(path, "utf8"), malformed);
   }
+});
+
+test("a real past leap day is a valid confirmation date", () => {
+  assert.doesNotThrow(() => validate({
+    schema_version: 1,
+    preferences: [{ category: "backend", choice: "Java", context: "any",
+      stance: "prefer", recorded_on: "2024-02-29" }]
+  }));
 });
