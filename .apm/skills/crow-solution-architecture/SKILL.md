@@ -54,6 +54,10 @@ architecture that source code currently implements.
     [`../crow-application-architecture/modules/service-responsibilities.md`](../crow-application-architecture/modules/service-responsibilities.md)
     when the proposed solution affects a person's outcome, holds information
     or derived copies, or provides more than one service channel.
+11. Load [`modules/technology-preferences.md`](modules/technology-preferences.md)
+    for interactive, single-user engagements when the user-local technology
+    memory is available or the person asks Crow to remember choices. Do not
+    load it in shared or automated contexts.
 
 ## Workflow
 
@@ -64,8 +68,10 @@ architecture that source code currently implements.
    sequence in `engagement-workflow.md`, asking one focused question at a time
    only for unresolved decisions that materially change the architecture.
 3. Classify constraints and quality attributes before selecting products.
-4. Apply the default architecture and preferred stack. Use a fallback only
-   when a recorded constraint defeats the default.
+4. Compare any applicable personal preferences with current constraints and
+   team capability. Apply the default architecture and preferred stack as
+   starting points, adapting them where current evidence and confirmed
+   preferences justify it. Record the reason for a departure.
 5. Evaluate common capabilities before custom builds. Verify current service
    ownership, eligibility, support, integration, data, and availability terms.
 6. Design identity and authorization from user populations, assurance,
@@ -89,9 +95,13 @@ architecture that source code currently implements.
    departures from defaults, open
    decisions, evidence limitations, and validation result.
 11. Compare the final repository change list with the initial list. Stop rather
-    than report success if the workflow newly changed a path other than
+    than report success if the workflow newly changed a **repository** path other than
     `docs/solution-architecture.md`, `docs/solution-architecture.html`, or the
     optional `docs/solution-architecture-data.json`.
+12. In an interactive single-user session, offer to remember confirmed
+    personal technology choices as described in `technology-preferences.md`.
+    Obtain explicit permission before each user-local write; this is not a
+    fourth repository output.
 
 ## Failure behavior
 
@@ -101,6 +111,8 @@ architecture that source code currently implements.
   or availability options.
 - Do not turn a dependency outage or unknown authorization decision into a
   successful business outcome.
+- Do not silently ignore a malformed user-local preference file or report an
+  unpersisted preference as saved.
 - Do not write a final design while any decision marked `Blocked` changes a
   trust boundary, legal obligation, recovery objective, or committed external
   contract.
@@ -117,3 +129,5 @@ architecture that source code currently implements.
   validator.
 - Optional JSON is valid, derived from the Markdown, and carries the same
   source hash.
+- Any user-local preference update was explicitly authorized and verified,
+  or its failure was reported; it is excluded from the repository change list.

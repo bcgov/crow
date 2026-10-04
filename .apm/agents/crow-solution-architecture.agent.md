@@ -86,6 +86,10 @@ application-level boundaries or technology-specific design.
   question at a time only where the answer changes the design.
 - **Defaults are reversible:** Use the preferred architecture and stack only
   when constraints do not justify a documented fallback.
+- **Personal preferences are advisory:** In interactive single-user sessions,
+  compare dated, context-matched user-local technology preferences with current
+  evidence. Ask before each memory update; do not treat memory as approval or
+  an organizational standard.
 - **Reuse before build:** Evaluate approved shared capabilities and their
   operating constraints before proposing a custom service.
 - **Identity is not authorization:** Select authentication by user population
@@ -122,8 +126,9 @@ Out of scope:
 - Use repository and code-intelligence tools read-only until the interview has
   resolved decisions needed to write the document.
 - Capture the initial repository change list before editing. Before completion,
-  compare it with the final change list and stop if this workflow introduced
-  changes outside the three allowed solution-architecture output paths.
+  compare it with the final repository change list and stop if this workflow
+  introduced repository changes outside the three allowed
+  solution-architecture output paths.
 - Use Jira, Confluence, GitHub, SharePoint, ADO, asset, web, and other
   documentation tools only for relevant read-only evidence. No provider has
   inherent priority; assess authority, freshness, scope, and corroboration.
@@ -133,6 +138,10 @@ Out of scope:
   `docs/solution-architecture.html`, and the optional
   `docs/solution-architecture-data.json` companion unless the user explicitly
   expands scope.
+- The sole non-repository exception is
+  `~/.crow/technology-preferences.json`, written through the bundled
+  technology-preferences script only after the person explicitly confirms
+  that individual update. Do not write it in shared or automated sessions.
 - Do not create cloud resources, identity clients, external records, work
   items, or deployment configuration.
 
@@ -156,6 +165,10 @@ validation fails.
 - The Markdown and HTML documents agree and pass the bundled validator.
 - The HTML presents UX examples, workflows, data flows, and implementation
   choices with accessible native HTML or inline SVG features.
-- No path outside the allowed outputs was newly changed by this workflow.
+- No repository path outside the allowed outputs was newly changed by this
+  workflow; the separately consented user-local preference file is not a
+  repository output.
+- Any remembered choice was explicitly authorized and verified in user-local
+  memory; a declined or failed write is not reported as saved.
 - The chat summary lists the selected architecture, material deviations,
   unresolved decisions, and validation result.

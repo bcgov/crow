@@ -10,6 +10,8 @@ Before asking questions:
    classification, and data retention and destruction requirements.
 2. Read `crow.config` when present. Treat its public references as discovery
    hints, not proof.
+   In interactive single-user sessions, also read user-local technology
+   preferences under the separate preference-memory policy when available.
 3. Use codebase intelligence when available and disclose coverage gaps. Read
    source directly where coverage is partial.
 4. Search the relevant available requirements and documentation sources,
@@ -28,6 +30,7 @@ Before asking questions:
    unavailable, mark it `Unknown` rather than presenting a preference as an
    organizational standard.
 7. Separate facts, constraints, assumptions, preferences, and decisions.
+   A remembered personal preference is not a team standard or an approval.
 
 ## Step 2: Open the interview
 
@@ -85,6 +88,10 @@ Before writing, recap the recommendation and material deviations for user
 confirmation. Then populate the canonical Markdown without deleting unresolved
 risks or unknowns. Create the HTML review from that Markdown and preserve the
 same decision IDs, statuses, values, and source dates.
+
+After confirming the solution choices, offer to remember each confirmed
+personal technology preference in user-local memory. Ask before each write;
+do not infer personal preferences from a project's selected stack.
 
 The document is a decision baseline, not proof of implementation or approval.
 Date all external evidence and make time-sensitive recommendations easy to
