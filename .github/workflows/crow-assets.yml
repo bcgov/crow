@@ -10,6 +10,25 @@ permissions:
   contents: read
 
 jobs:
+  release_version:
+    name: Check PR release version
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out proposed merge
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Require version bump for release changes
+        shell: pwsh
+        env:
+          BASE_COMMIT: ${{ github.event.pull_request.base.sha }}
+        run: |
+          & ./.apm/skills/crow-release/scripts/Test-CrowPullRequestVersion.ps1 -BaseCommit $env:BASE_COMMIT
+
   validate:
     name: Validate Crow assets (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -82,6 +101,7 @@ jobs:
         shell: pwsh
         run: |
           & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
+          & .\.apm\skills\crow-release\scripts\Test-CrowPullRequestVersion.Tests.ps1
 
       - name: Test release draft preparation
         shell: pwsh

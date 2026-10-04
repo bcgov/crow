@@ -44,7 +44,7 @@ export function validate(data) {
     "Choice must be a short technology label, not a URL, path, or note.");
     assert(["prefer", "avoid"].includes(item.stance), "Invalid preference stance.");
     const recordedAt = typeof item.recorded_on === "string" && datePattern.test(item.recorded_on)
-      ? Date.parse(`${item.recorded_on}T00:00:00Z`) : NaN;
+      ? Date.parse(`${item.recorded_on}T00:00:00Z`) : Number.NaN;
     assert(Number.isFinite(recordedAt) &&
       new Date(recordedAt).toISOString().slice(0, 10) === item.recorded_on &&
       item.recorded_on <= new Date().toISOString().slice(0, 10),
