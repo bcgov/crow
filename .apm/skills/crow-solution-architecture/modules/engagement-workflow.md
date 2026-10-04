@@ -51,6 +51,12 @@ the solution. Cover these decision areas, skipping those already resolved:
 7. hosting, network, licensing, procurement, and migration constraints;
 8. which decision maker can accept trade-offs and remaining risk.
 
+When applicable, resolve who owns a decision affecting a person and its human
+review path; which stores and processors hold information, including derived
+copies; and whether people must continue a case across digital or assisted
+channels. Record unavailable legal authority, records schedules, governance
+arrangements, or channel staffing as unresolved rather than assuming them.
+
 For each answer, update the decision status:
 
 - `Confirmed`: accepted by an accountable stakeholder or authoritative source;

@@ -20,7 +20,8 @@ Use this skill when designing a new application or making a structural change to
 9. Load [`modules/java-web.md`](modules/java-web.md) for Java HTTP/Servlet, Spring MVC, Jakarta EE web, embedded server, or WAR deployments. Inspect the actual container and packaging before applying container-specific advice.
 10. Load [`modules/platform-alignment.md`](modules/platform-alignment.md) only when the application provides or consumes a shared capability, canonical register, public service, integration adapter, or other one-to-many dependency.
 11. Load [`modules/zero-trust.md`](modules/zero-trust.md) only when the application has a meaningful identity, device, workload, resource, transaction, privileged, network, API, external-decision, or cross-service trust boundary.
-12. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
+12. Load [`modules/service-responsibilities.md`](modules/service-responsibilities.md) when software affects a person's outcome, information stores or derived copies are in scope, or a service spans multiple channels. Apply only the relevant sections.
+13. For another technology, add a sibling module and route to it here. Do not expand the default context with unrelated stacks.
 
 If the application uses multiple technologies, load only the modules for components affected by the current decision.
 
@@ -37,6 +38,7 @@ If the application uses multiple technologies, load only the modules for compone
 9. When the impact-analysis module is routed, record affected callers, contracts, tests, graph/search bounds, and blind spots.
 10. When the platform-alignment module is routed, record the conditional role classification, one-to-many impact, reuse decision, data custodian and sharing spectrum, narrow-question API choice, contract owner/versioning, and dependency degradation behavior with evidence and confidence.
 11. When the Zero Trust module is routed, inventory protected resources and access paths, identify enforcement points, define least-privilege scope and duration, specify revocation and degradation behavior, document time-bound exceptions, and record only evidence-supported measures.
+12. When service responsibilities are routed, record applicable decision-review, information-lifecycle, or cross-channel continuity paths with owners, evidence, unknowns, and verification; do not infer legal authority or operational capacity.
 
 ## Security integration
 

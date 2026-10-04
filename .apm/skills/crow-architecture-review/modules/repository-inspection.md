@@ -22,6 +22,11 @@ Use codebase-memory-mcp when available to identify structure, clusters, entry po
     persistence, destructive maintenance, and failover/degradation paths across
     components. Record the actor, trigger, ordered steps, enforcement points,
     audit event, tests, and failure mode.
+11. **Conditional service responsibilities:** when evidenced, trace automated
+    outcomes and their review/correction paths, information held in primary
+    and derived stores with retention and processing locations, and continuity
+    across implemented digital or assisted channels. Mark undocumented
+    governance and operational capacity `Unknown`, not verified.
 
 ## Existing documentation
 

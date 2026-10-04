@@ -1,5 +1,5 @@
 name: bcgov-crow-security-remediation
-version: 0.11.3
+version: 0.11.4
 description: Crow agents and skills for application security scanning and remediation
 author:
   name: bcgov
@@ -19,37 +19,37 @@ dependencies:
   apm:
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-architecture-review.agent.md
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-raven-setup.agent.md
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-security-remediation.agent.md
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-security-review.agent.md
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-application-architecture
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-application-development
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-architecture-review
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-project-context
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-raven-setup
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-security-review
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-sonar-scan
-      ref: v0.11.3
+      ref: v0.11.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-testing
-      ref: v0.11.3
+      ref: v0.11.4
