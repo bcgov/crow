@@ -12,6 +12,14 @@ Crow uses semantic versioning for the combined APM and Copilot plugin package.
 
 Use the highest classification present in the release diff. A new capability remains minor even when it also updates existing skills. Security fixes are patch unless they add a new user-visible capability or require an incompatible contract.
 
+Pull requests that change `.apm/`, `collections/`, or `apm.yml` must declare a
+package version higher than the base branch's version. The PR check is in
+`scripts/Test-CrowPullRequestVersion.ps1` and runs before merge in the Crow
+asset validation workflow. Keep all manifests, collection refs, and README
+examples aligned. This check verifies the bump, not the semantic classification
+or GitHub release availability; the release preparation and publication gates
+still handle those separately.
+
 ## Major release control
 
 The agent must explain the incompatibility and ask the user whether to release a major version. Scripts require `-ConfirmMajor` as a second independent guard. Neither prior release history nor the apparent size of a change authorizes a major release.
