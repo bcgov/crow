@@ -6,7 +6,7 @@ Crow helps B.C. public-sector teams understand, improve, secure, and maintain
 software. It makes agent-assisted delivery more reliable in both existing and new applications: people can trace a recommendation to evidence, make informed
 decisions, and verify the outcome. Its guidance should be portable to other teams
 where the underlying practices apply, without pretending that B.C.-specific policy
-or services are universal. 
+or services are universal.
 
 ## Principles
 
