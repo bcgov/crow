@@ -10,7 +10,7 @@
 
 ## 2. Scope and Context
 
-<!-- Define users, business capabilities, system boundary, in-scope and out-of-scope responsibilities. Include representative UX examples and assisted or alternate channels. -->
+<!-- Define users, business capabilities, system boundary, in-scope and out-of-scope responsibilities. Include representative UX examples and confirmed assisted or alternate channels. Where channels share a case, identify the state owner and how a person resumes without repeating work. -->
 
 ### Representative UX examples
 
@@ -43,6 +43,12 @@ flowchart LR
 | Data classification | | `Must / Should / Could` | | |
 | Data retention and destruction | | `Must / Should / Could` | | |
 
+For applicable services, describe any consequential automated decision and
+the verified review path, derived or operational stores and third-party
+processing, and cross-channel continuity or save-and-resume needs. Record
+unknown authorities and operational commitments rather than treating them as
+confirmed constraints.
+
 ## 5. Proposed Architecture
 
 <!-- Describe deployment units, module or service boundaries, dependency direction, main workflows, data flows, and failure boundaries. Include separate Mermaid views when one diagram cannot communicate them clearly. -->
@@ -70,6 +76,30 @@ flowchart LR
 | Capability or flow | Owner and system of record | Contract and data purpose | Reuse decision | Failure, reconciliation, and recovery | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | | | | | | `Confirmed / Provisional / Rejected / Blocked / N/A` |
+
+### Decision review, information lifecycle, and channel continuity
+
+Where software affects a person's outcome, distinguish process automation,
+decision support, and automated decisions, including embedded vendor AI.
+Identify the decision owner, approval or assessment status, safe reason/source
+provenance, how a person learns of and challenges the result, who reviews it,
+and how corrections reach downstream consumers. Mark unavailable approval or
+human review capacity `Blocked` if it changes the design.
+
+Inventory relevant stores (including caches, logs, search, analytics, backups,
+and non-production copies) and material third-party processing. For each,
+record classification, purpose, residency, source/steward where derived,
+freshness and correction propagation, approved retention/disposition or legal
+hold, and evidence or unresolved authority for collection and reuse. Where
+Indigenous identity or community data is involved, identify the applicable
+governance authority and requirements; do not infer them from language support.
+
+If multiple digital or assisted channels are offered, describe the shared case
+state, authorized resumption, confirmation rather than re-entry of lawfully
+reusable facts, correction at the authoritative source, and a cross-channel
+continuation test. For lengthy forms or unreliable connectivity, consider
+save-and-resume without assuming offline synchronization is required.
+Document `N/A` with a reason for any of these three concerns that do not apply.
 
 ## 9. Deployment and Operations
 

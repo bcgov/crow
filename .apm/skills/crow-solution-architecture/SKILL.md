@@ -50,6 +50,10 @@ architecture that source code currently implements.
    as the human-review surface. Use
    [`scripts/Test-SolutionArchitectureOutput.ps1`](scripts/Test-SolutionArchitectureOutput.ps1)
    before and after writing.
+10. Load the applicable sections of
+    [`../crow-application-architecture/modules/service-responsibilities.md`](../crow-application-architecture/modules/service-responsibilities.md)
+    when the proposed solution affects a person's outcome, holds information
+    or derived copies, or provides more than one service channel.
 
 ## Workflow
 

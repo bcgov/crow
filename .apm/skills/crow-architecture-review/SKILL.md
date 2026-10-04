@@ -23,6 +23,7 @@ Use this skill with the Crow Architecture Review Agent when creating or updating
 8. Load `../crow-application-architecture/modules/unicode-and-utf8.md` for the Unicode inspection pass.
 9. Load `../crow-application-architecture/modules/platform-alignment.md` only when repository evidence shows a shared capability, canonical register, public service, integration adapter, or one-to-many dependency.
 10. Load `../crow-application-architecture/modules/zero-trust.md` only when repository evidence shows a meaningful identity, device, resource, transaction, privileged, workload, network, API, external-decision, or cross-service trust boundary.
+11. Load the applicable sections of `../crow-application-architecture/modules/service-responsibilities.md` when source or documentation indicates decisions affecting people, information stores or derived copies, or multiple service channels.
 
 Do not load monorepo or update guidance when the observable repository state does not require it.
 
@@ -56,6 +57,10 @@ During the bounded inspection, when Zero Trust is routed, record protected
 resources and access paths, enforcement points, authorization separate from
 authentication, least-privilege duration, revocation, degradation, exceptions,
 telemetry, and evidence confidence. Do not infer enterprise-wide posture.
+
+When service responsibilities are routed, distinguish implemented behavior
+from proposed or unknown decision-review, information-lifecycle, and
+cross-channel paths. Do not infer approvals or operational staffing from code.
 
 Keep the handoff token-efficient: normalize source locations in its `evidence`
 array, reference them by ID, and include only security-relevant facts,

@@ -59,6 +59,10 @@ insufficient. Do not invent a shared-service catalogue.
 For one-to-many capabilities, document consumer support, capacity/SLO
 expectations, compatibility notifications, and the consequence of a change.
 
+Where applicable, document the authoritative source and steward of derived
+data and whether users confirm existing values rather than re-entering them.
+Record the evidence for lawful reuse; do not infer permission from access.
+
 ---
 
 ## 3. Logical & Structural Component Breakdown
@@ -99,6 +103,21 @@ or perform sensitive background maintenance.
 The normalized, machine-readable subset of these facts is stored beside this
 document in `architecture-security-facts.json`. Source locations are normalized
 there and referenced by evidence ID to avoid repeating prose or code excerpts.
+
+### 3.4 Decisions affecting people and service continuity (conditional)
+
+Where software produces, recommends, or changes an outcome for a person,
+distinguish process automation, decision support, and automated decisions
+(including embedded vendor AI). Identify the decision owner, reason/source
+provenance, assessment or approval evidence, how the outcome is disclosed or
+challenged, the human review owner where required, and the correction path
+and test evidence. Record unsupported approvals or review capacity `Unknown`.
+
+If multiple channels are offered, identify where case state lives, how
+authorized users resume across digital or assisted channels, whether reusable
+facts are confirmed instead of re-entered, and the cross-channel test evidence.
+For lengthy flows on unreliable connections, note save-and-resume behavior.
+Otherwise explain `N/A`; do not assume an assisted channel exists.
 
 ---
 
@@ -197,6 +216,15 @@ This section defines the security posture, authentication/authorization model, c
 | Data Category | Classification | Encryption at Rest | Encryption in Transit | Retention Policy |
 | :--- | :--- | :--- | :--- | :--- |
 | | `Public / Internal / Confidential / Restricted` | `Yes / No / N/A` | `TLS 1.2+ / mTLS` | |
+
+Inventory actual stores, including caches, logs, search or analytics copies,
+backups, non-production data, and material third-party processing. For each,
+record purpose, classification, residency/processing location, source and
+steward for derived copies, freshness and correction propagation, approved
+records schedule and disposition or legal-hold behavior where applicable.
+Record unverified authority or processing location as `Unknown`. Where
+Indigenous identity or community data is handled, identify any confirmed
+governance authority and requirements; do not conflate this with text encoding.
 
 ---
 
@@ -320,6 +348,9 @@ Key architectural decisions are recorded to capture history and trade-offs.
 - [ ] **Observability:** Health endpoints, structured logging, and alerting are configured. `[Confidence: ]`
 - [ ] **Deployment Pipeline:** CI/CD includes automated tests and security scanning gates. `[Confidence: ]`
 - [ ] **Data Classification:** Sensitive data categories are identified with appropriate encryption and retention controls. `[Confidence: ]`
+- [ ] **Information Lifecycle (conditional):** Primary, derived, operational, non-production, and third-party stores have evidence-backed classification, processing locations, retention/disposition authority, and correction propagation where applicable. `[Confidence: ]`
+- [ ] **Reviewable Decisions (conditional):** Consequential automated outcomes have a named owner, explainable provenance, assessment status, challenge and human review path where required, and tested correction behavior; otherwise `N/A` with a reason. `[Confidence: ]`
+- [ ] **Cross-Channel Continuity (conditional):** Implemented service channels share authorized case state and a tested resume path without unnecessary re-entry; otherwise `N/A` with a reason. `[Confidence: ]`
 - [ ] **Security Architecture Handoff:** Security-relevant facts, workflows, evidence, and unknowns are captured in the validated `architecture-security-facts.json` sidecar. `[Confidence: ]`
 - [ ] **Disaster Recovery:** Backup and recovery procedures are documented and tested. `[Confidence: ]`
 - [ ] **Platform Role (conditional):** Where shared, public, canonical, or adapter evidence exists, one role is classified and one-to-many impact and reuse decisions are recorded; otherwise the result is `N/A` or `Unknown` with a reason. `[Confidence: ]`

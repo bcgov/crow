@@ -28,7 +28,8 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/api-contracts.md`](modules/api-contracts.md) for REST/SOAP contract changes.
 9. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
 10. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
-11. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
+11. For changes to decisions affecting people, information stores or derived copies, or cross-channel service flows, load the applicable sections of [`../crow-application-architecture/modules/service-responsibilities.md`](../crow-application-architecture/modules/service-responsibilities.md).
+12. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
 
@@ -42,6 +43,7 @@ Use this skill while implementing or changing an application. Data architecture 
 8. For text-bearing changes, test representative Indigenous-language and multilingual values across the complete affected round trip.
 9. Run the repository's existing formatter/linter first, then the smallest relevant tests, then build/package checks.
 10. Run the repository's established security and quality scans. Do not weaken gates to make the change pass.
+11. When service responsibilities are routed, test the affected decision challenge and correction path, derived-copy freshness and propagation, or cross-channel resume behavior as applicable. Do not claim an approval or assisted path that the service owner has not confirmed.
 
 For routed platform boundaries, confirm shared-service reuse before adding a
 new capability; identify the contract owner and version/compatibility policy;
