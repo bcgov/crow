@@ -9,6 +9,9 @@ Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
 Copilot CLI plugin. The full package remains available, and curated
 collections are available when a project needs only part of Crow.
 
+The [Crow vision and capability governance](GOVERNANCE.md) draft describes
+the principles used to decide which agents and skills belong in Crow.
+
 [APM]: https://github.com/microsoft/apm
 [Raven]: https://github.com/bcgov/raven
 [codebase-memory-mcp]: https://github.com/bcgov/codebase-memory-mcp
