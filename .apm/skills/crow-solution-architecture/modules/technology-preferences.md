@@ -7,7 +7,9 @@ repository's public `crow.config` and its private locator overlay
 `~/.crow/crow.config.local`. Do not commit, package, synchronize, or copy this
 file into generated architecture documents.
 
-At discovery, run the installed script with `list`, for example:
+At discovery, run the installed
+[`technology-preferences.mjs` script](../scripts/technology-preferences.mjs)
+with `list`, for example:
 
 ```text
 node <Crow package>/.apm/skills/crow-solution-architecture/scripts/technology-preferences.mjs list

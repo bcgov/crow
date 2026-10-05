@@ -3,6 +3,11 @@
 The Security Remediation collection provides a focused workflow for scanning
 an application, documenting its security-relevant architecture, producing
 evidence-backed findings, and implementing and verifying remediations.
+Routine framework and dependency maintenance has a separate
+[Crow Framework & Dependency Update Agent](../../.apm/agents/crow-framework-dependency-update.agent.md)
+in the Starter Package.
+The existing `framework-upgrades` and `dependencies` scopes remain as
+deprecated compatibility routes through the update skills.
 
 Install it from Crow's release-maintained stable branch:
 
@@ -13,7 +18,7 @@ apm install bcgov/crow/collections/security-remediation#stable --global --target
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.11.5 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.12.0 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -38,6 +43,17 @@ project connections.
 - [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
 - [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)
 - [crow-testing](../../.apm/skills/crow-testing/SKILL.md)
+- [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
+- [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
+
+The collection also includes the
+[technology-preferences module](../../.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
+and its [command-line helper](../../.apm/skills/crow-solution-architecture/scripts/technology-preferences.mjs),
+conditionally used by `crow-project-context`.
+
+The collection also includes the
+[BC Gov UX review-remediation module](../../.apm/skills/crow-bcgov-ux/modules/review-remediation.md),
+conditionally referenced by `crow-testing`'s manual-coverage guidance.
 
 The collection keeps external issue publication and ticket updates
 confirmation-gated. Review findings and remediation scope before allowing any

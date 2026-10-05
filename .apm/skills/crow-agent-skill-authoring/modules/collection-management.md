@@ -18,6 +18,9 @@ must not duplicate or fork the source assets under `.apm/`.
   against the repository, not against an individual subdirectory.
 - Include every supporting skill explicitly when an agent loads it by name.
   A collection should work without the full Crow package being installed.
+- The Crow asset validator builds an agent/skill dependency graph and checks
+  that collection manifests include transitively linked skills and modules.
+  Keep that check green when changing an agent, skill, module, or collection.
 - Keep collection READMEs focused on purpose, included assets, prerequisites,
   and the release-tagged install command.
 
@@ -27,7 +30,9 @@ must not duplicate or fork the source assets under `.apm/`.
    creating a new collection.
 2. Update the collection manifest and README together with the source asset.
 3. Verify every dependency path resolves inside the repository and remains
-   covered by the root package's explicit publication allowlist.
+   covered by the root package's explicit publication allowlist. Run the
+   asset validator's dependency-graph check to verify agent-to-skill and
+   skill-to-module closure.
 4. Update the root README's collection links and the release-relevant workflow
    when collection distribution changes.
 5. Run the Crow asset validator and test a local APM resolution or package
