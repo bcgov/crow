@@ -163,6 +163,11 @@ gates below.
      negative cases, real framework-boundary coverage, or enforcing CI gates
      identified by the control matrix.
 
+For `security-tickets-selected` and `security-tickets-all`, limit Steps 6, 8,
+and 9 to work supported by validated findings in the applicable ticket
+backlog. Do not expand ticket work to unrelated report findings, general
+refactoring, or unrelated control-matrix gaps.
+
 ---
 
 ### Step 3: Codebase Knowledge Graph Indexing (If Available)
@@ -219,11 +224,15 @@ If non-obvious choices exist:
 
 ---
 
-### Step 6: Remediate Security Vulnerabilities (Queues B & C — Target: `vulnerabilities` or `all`)
+### Step 6: Remediate Security Vulnerabilities (Queues B & C — Target: `vulnerabilities`, ticket scopes, or `all`)
 
-*Skip this step unless canonical `targetScope` is `vulnerabilities` or `all`.*
+*Skip this step unless canonical `targetScope` is `vulnerabilities`, `security-tickets-selected`, `security-tickets-all`, or `all`.*
 
 Before remediating code findings:
+For either ticket scope, remediate only validated vulnerability findings
+represented in the selected ticket backlog; do not broaden work to unrelated
+findings in the security-review report.
+
 1. Load the `crow-security-review` skill and read the relevant bundled detection pattern module files corresponding to the project's tech stack (e.g. `frontend-spa-security.md`, `framework-security-config.md`, `api-and-session-security.md`, `auth-and-access-control.md`, `data-flow-sinks.md`).
 2. Load `../skills/crow-security-review/modules/platform-data-and-proofs.md` when the finding concerns shared/canonical data, external decisions, digital proofs, or identity assurance. For each finding in Queue B and Queue C:
    - **Verification Check:** If the finding is tagged as `Probable`, verify the exploit path using `trace_path` or manual code inspection. If existing code or framework auto-escaping/parameterization already mitigates the issue (false positive), document this and skip modifying the code.
@@ -257,9 +266,13 @@ Before remediating code findings:
 
 ---
 
-### Step 8: Security Refactoring & Code Hardening (Target: `refactoring` or `all`)
+### Step 8: Security Refactoring & Code Hardening (Target: `refactoring`, ticket scopes, or `all`)
 
-*Skip this step unless canonical `targetScope` is `refactoring` or `all`.*
+*Skip this step unless canonical `targetScope` is `refactoring`, `security-tickets-selected`, `security-tickets-all`, or `all`.*
+
+For either ticket scope, perform only hardening needed to remediate a
+validated ticket finding; do not treat ticket scope as authorization for
+general architectural refactoring.
 
 1. Perform architectural security refactoring aligned with the applicable architecture document. In a monorepo, make changes within the matching service scope unless the change is explicitly documented as shared infrastructure:
    - Refactor monolithic or tightly coupled authentication/authorization handlers into dedicated middleware or guards.
@@ -269,9 +282,13 @@ Before remediating code findings:
 
 ---
 
-### Step 9: Test Suite Expansion & Coverage Targeting (Queue E — Target: `test-coverage` or `all`)
+### Step 9: Test Suite Expansion & Coverage Targeting (Queue E — Target: `test-coverage`, ticket scopes, or `all`)
 
-*Skip this step unless canonical `targetScope` is `test-coverage` or `all`.*
+*Skip this step unless canonical `targetScope` is `test-coverage`, `security-tickets-selected`, `security-tickets-all`, or `all`.*
+
+For ticket scopes, add or expand tests only to verify remediation of validated
+ticket findings. Do not expand into unrelated control gaps or pursue the 40%
+aggregate coverage goal as an independent reason to add tests.
 
 1. **Coverage Audit:**
    - Inspect existing test frameworks (`xUnit/NUnit/MSTest`, `Jest/Vitest`, `JUnit/TestNG`, `pytest`, `go test`).

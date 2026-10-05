@@ -42,7 +42,7 @@ Assert-Content `
     -Scenario 'Gates framework updates on canonical scope'
 Assert-Content `
     -Content $agentContent `
-    -Expected '*Skip this step unless canonical `targetScope` is `vulnerabilities` or `all`.*' `
+    -Expected '*Skip this step unless canonical `targetScope` is `vulnerabilities`, `security-tickets-selected`, `security-tickets-all`, or `all`.*' `
     -Scenario 'Gates vulnerability remediation on canonical scope'
 Assert-Content `
     -Content $agentContent `
@@ -52,13 +52,29 @@ Assert-Content `
     -Content $agentContent `
     -Expected 'When canonical `targetScope` is `framework-upgrades` or `dependencies`' `
     -Scenario 'Applies the update-only review exemption to canonical scope'
+Assert-Content `
+    -Content $agentContent `
+    -Expected 'For `security-tickets-selected` and `security-tickets-all`, limit Steps 6, 8, and 9 to work supported by validated findings in the applicable ticket backlog.' `
+    -Scenario 'Restricts ticket scopes to validated backlog findings'
+Assert-Content `
+    -Content $agentContent `
+    -Expected 'For either ticket scope, remediate only validated vulnerability findings represented in the selected ticket backlog' `
+    -Scenario 'Restricts ticket vulnerability remediation to validated findings'
+Assert-Content `
+    -Content $agentContent `
+    -Expected 'For either ticket scope, perform only hardening needed to remediate a validated ticket finding' `
+    -Scenario 'Restricts ticket hardening to validated findings'
+Assert-Content `
+    -Content $agentContent `
+    -Expected 'For ticket scopes, add or expand tests only to verify remediation of validated ticket findings.' `
+    -Scenario 'Restricts ticket test expansion to validated findings'
 
 $expectedSkipLines = @(
     '*Skip this step unless canonical `targetScope` is `framework-upgrades` or `all`.*',
-    '*Skip this step unless canonical `targetScope` is `vulnerabilities` or `all`.*',
+    '*Skip this step unless canonical `targetScope` is `vulnerabilities`, `security-tickets-selected`, `security-tickets-all`, or `all`.*',
     '*Skip this step unless canonical `targetScope` is `dependencies` or `all`.*',
-    '*Skip this step unless canonical `targetScope` is `refactoring` or `all`.*',
-    '*Skip this step unless canonical `targetScope` is `test-coverage` or `all`.*'
+    '*Skip this step unless canonical `targetScope` is `refactoring`, `security-tickets-selected`, `security-tickets-all`, or `all`.*',
+    '*Skip this step unless canonical `targetScope` is `test-coverage`, `security-tickets-selected`, `security-tickets-all`, or `all`.*'
 )
 foreach ($skipLine in $expectedSkipLines) {
     Assert-Content `

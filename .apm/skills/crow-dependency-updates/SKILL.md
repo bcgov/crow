@@ -1,6 +1,6 @@
 ---
 name: crow-dependency-updates
-description: Perform recurring, scope-limited updates of third-party libraries, plugins, and development tools using exact package-manager evidence, lockfile integrity, and compatibility checks.
+description: Perform recurring, scope-limited updates of third-party libraries, plugins, and development tools using exact package-manager evidence, native resolution, and compatibility checks.
 ---
 
 # Third-Party Dependency Updates
@@ -27,7 +27,9 @@ patch/minor releases of those components.
    breaking upgrades, dependency replacements, or changes to licensing or
    package sources.
 4. Update one component-sized batch of scoped declarations and regenerate
-   lockfiles with the repository's pinned package manager. Avoid force
+   lockfiles with the repository's pinned package manager when the manager or
+   repository policy uses or requires them. Otherwise, verify native
+   declarations and resolution without creating a new lockfile. Avoid force
    upgrades and bulk `audit fix` commands that can cross the requested scope.
    In unattended mode, capture the exact pre-update contents of each file
    before editing; defer if doing so would overwrite pre-existing work.
@@ -57,6 +59,7 @@ claiming that those findings have been remediated.
 
 - Every changed package is in scope and has an exact, evidence-backed target
   version.
-- Package manager and lockfile state are consistent.
+- Package-manager declarations and, where used, lockfile/resolution state are
+  consistent.
 - Advisory checks, builds, and tests were run where available, with failures
   and gaps reported explicitly.

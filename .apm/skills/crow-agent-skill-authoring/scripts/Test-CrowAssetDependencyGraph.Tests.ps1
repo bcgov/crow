@@ -90,6 +90,8 @@ description: Synthetic support skill for graph tests.
     Write-FixtureFile -Path $rootReadmePath -Content @'
 # Root-relative link fixture
 
+[Repository root relative](.)
+[Repository root absolute](/)
 [Root skill](/.apm/skills/crow-main/SKILL.md)
 '@
 
@@ -115,6 +117,14 @@ dependencies:
     })
     if ($mainToSupportEdge.Count -eq 0) {
         throw 'The dependency graph did not include the transitive skill reference.'
+    }
+    $repositoryRootEdges = @($report.Graph.Edges | Where-Object {
+        $_.From -eq 'README.md' -and
+        $_.To -eq '.' -and
+        $_.Kind -eq 'MarkdownLink'
+    })
+    if ($repositoryRootEdges.Count -ne 2) {
+        throw 'The dependency graph did not resolve both repository-root links.'
     }
     Assert-HasError `
         -Errors $report.Errors `
@@ -148,6 +158,28 @@ dependencies:
     }
     Write-Information `
         -MessageData 'Passed: Builds agent, skill, and module dependency edges' `
+        -InformationAction Continue
+
+    Write-FixtureFile -Path $agentPath -Content @'
+---
+name: 'Crow Graph Test Agent'
+description: 'Synthetic agent for dependency graph tests.'
+tools: ['read']
+---
+
+Load crow-main before proceeding.
+'@
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    $knownSkillWithoutContextEdge = @($report.Graph.Edges | Where-Object {
+        $_.From -eq '.apm/agents/crow-test.agent.md' -and
+        $_.To -eq '.apm/skills/crow-main/SKILL.md' -and
+        $_.Kind -eq 'SkillReference'
+    })
+    if ($knownSkillWithoutContextEdge.Count -eq 0) {
+        throw 'The dependency graph did not route a known skill named without the word skill.'
+    }
+    Write-Information `
+        -MessageData 'Passed: Recognizes routing actions for known skill names without skill context' `
         -InformationAction Continue
 
     $completeManifest = $incompleteManifest.TrimEnd() +
@@ -273,10 +305,33 @@ Use the `crow-support` skill when needed, and see
         -Errors $report.Errors `
         -ExpectedText "Collection 'fixture' is missing required skill/module '.apm/skills/crow-support/scripts/support.mjs'" `
         -Scenario 'Reports a required script missing when only its linked module is bundled'
+    Assert-HasError `
+        -Errors $report.Errors `
+        -ExpectedText "Collection 'fixture' is missing required skill/module '.apm/skills/crow-support/SKILL.md'" `
+        -Scenario 'Requires the full skill when an explicit skill route also links a module'
+    $explicitModuleRouteSkillEdge = @($report.Graph.Edges | Where-Object {
+        $_.From -eq '.apm/skills/crow-main/SKILL.md' -and
+        $_.To -eq '.apm/skills/crow-support/SKILL.md' -and
+        $_.Kind -eq 'SkillReference'
+    })
+    if ($explicitModuleRouteSkillEdge.Count -eq 0) {
+        throw 'The explicit skill route was suppressed by its same-sentence module link.'
+    }
 
     $moduleOnlyManifest = $moduleOnlyManifest.TrimEnd() +
         [Environment]::NewLine + $supportScriptDependency
     Write-FixtureFile -Path $manifestPath -Content $moduleOnlyManifest
+    Write-FixtureFile -Path $mainSkillPath -Content @'
+---
+name: crow-main
+description: Synthetic main skill for graph tests.
+---
+
+[Main module](modules/main.md)
+For module-specific details, see [support module][support-module].
+
+[support-module]: ../crow-support/modules/support.md
+'@
     $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
     if ($report.Errors.Count -ne 0) {
         throw "A module-only dependency closure produced errors: $($report.Errors -join ' | ')"
@@ -295,7 +350,7 @@ Use the `crow-support` skill when needed, and see
         $_.Kind -eq 'SkillReference'
     })
     if ($supportSkillEdge.Count -ne 0) {
-        throw 'The dependency graph treated an explicit module link as a requirement for the entire skill.'
+        throw 'The dependency graph required the entire skill for a module-only link.'
     }
     Write-Information `
         -MessageData 'Passed: Accepts a module-only cross-skill dependency' `
@@ -307,8 +362,7 @@ name: crow-main
 description: Synthetic main skill for graph tests.
 ---
 
-Use the `crow-support` skill when needed, and see
-[support module][].
+For module-specific details, see [support module][].
 
 [support module]: ../crow-support/modules/support.md
 '@
@@ -316,6 +370,14 @@ Use the `crow-support` skill when needed, and see
     $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
     if ($report.Errors.Count -ne 0) {
         throw "A collapsed-reference module-only closure produced errors: $($report.Errors -join ' | ')"
+    }
+    $collapsedReferenceModuleEdge = @($report.Graph.Edges | Where-Object {
+        $_.From -eq '.apm/skills/crow-main/SKILL.md' -and
+        $_.To -eq '.apm/skills/crow-support/modules/support.md' -and
+        $_.Kind -eq 'MarkdownLink'
+    })
+    if ($collapsedReferenceModuleEdge.Count -eq 0) {
+        throw 'The graph did not resolve a collapsed reference to a module.'
     }
     $collapsedReferenceSkillEdge = @($report.Graph.Edges | Where-Object {
         $_.From -eq '.apm/skills/crow-main/SKILL.md' -and
@@ -335,14 +397,21 @@ name: crow-main
 description: Synthetic main skill for graph tests.
 ---
 
-Use the `crow-support` skill when needed, and see
-[support module].
+For module-specific details, see [support module].
 
 [support module]: ../crow-support/modules/support.md
 '@
     $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
     if ($report.Errors.Count -ne 0) {
         throw "A shortcut-reference module-only closure produced errors: $($report.Errors -join ' | ')"
+    }
+    $shortcutReferenceModuleEdge = @($report.Graph.Edges | Where-Object {
+        $_.From -eq '.apm/skills/crow-main/SKILL.md' -and
+        $_.To -eq '.apm/skills/crow-support/modules/support.md' -and
+        $_.Kind -eq 'MarkdownLink'
+    })
+    if ($shortcutReferenceModuleEdge.Count -eq 0) {
+        throw 'The graph did not resolve a shortcut reference to a module.'
     }
     $shortcutReferenceSkillEdge = @($report.Graph.Edges | Where-Object {
         $_.From -eq '.apm/skills/crow-main/SKILL.md' -and
@@ -376,7 +445,7 @@ Use the `crow-support` skill when needed: [support overview](../crow-support/REA
     Assert-HasError `
         -Errors $report.Errors `
         -ExpectedText "Collection 'fixture' is missing required skill/module '.apm/skills/crow-support/SKILL.md'" `
-        -Scenario 'Requires the full skill when its non-module child is linked'
+        -Scenario 'Requires the full skill when routed through a non-module child'
 
     Write-FixtureFile -Path $mainSkillPath -Content @'
 ---
@@ -384,9 +453,7 @@ name: crow-main
 description: Synthetic main skill for graph tests.
 ---
 
-[Main module](modules/main.md)
-Use the `crow-support` skill when needed, and see
-[support module][support-module].
+For module-specific details, see [support module][support-module].
 
 [support-module]: ../crow-support/modules/support.md
 '@
@@ -442,6 +509,26 @@ Load the `crow-removed-skill` skill before proceeding.
         -Errors $report.Errors `
         -ExpectedText "Unknown skill reference 'crow-removed-skill'" `
         -Scenario 'Reports an unresolved named skill reference'
+
+    Write-FixtureFile -Path $agentPath -Content @'
+---
+name: 'Crow Graph Test Agent'
+description: 'Synthetic agent for dependency graph tests.'
+tools: ['read']
+---
+
+Load crow-removed-skill before proceeding.
+'@
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    $unqualifiedUnknownSkillErrors = @($report.Errors | Where-Object {
+        $_.Contains("Unknown skill reference 'crow-removed-skill'")
+    })
+    if ($unqualifiedUnknownSkillErrors.Count -gt 0) {
+        throw 'The dependency graph reported an unknown name without skill context.'
+    }
+    Write-Information `
+        -MessageData 'Passed: Retains skill-context validation for unknown names' `
+        -InformationAction Continue
 
     Write-FixtureFile -Path $agentPath -Content @'
 ---

@@ -25,13 +25,22 @@ function Get-CrowRepositoryRelativePath {
             [System.IO.Path]::DirectorySeparatorChar,
             [System.IO.Path]::AltDirectorySeparatorChar
         ))
-    $fullPath = [System.IO.Path]::GetFullPath($Path)
-    $rootPrefix = $rootPath + [System.IO.Path]::DirectorySeparatorChar
-    if (-not $fullPath.StartsWith(
-            $rootPrefix,
-            (Get-CrowPathComparison))) {
-        return $null
-    }
+    $fullPath = [System.IO.Path]::GetFullPath($Path).TrimEnd(
+        [char[]]@(
+            [System.IO.Path]::DirectorySeparatorChar,
+            [System.IO.Path]::AltDirectorySeparatorChar
+        ))
+        $pathComparison = Get-CrowPathComparison
+        if ($fullPath.Equals($rootPath, $pathComparison)) {
+            return '.'
+        }
+
+        $rootPrefix = $rootPath + [System.IO.Path]::DirectorySeparatorChar
+        if (-not $fullPath.StartsWith(
+                $rootPrefix,
+                $pathComparison)) {
+            return $null
+        }
 
     return $fullPath.Substring($rootPrefix.Length).Replace('\', '/')
 }
@@ -391,7 +400,12 @@ function Get-CrowSkillMentionFromParagraph {
 
         $sentence = $Text.Substring($sentenceStart, $sentenceEnd - $sentenceStart)
         $prefix = $Text.Substring($sentenceStart, $match.Index - $sentenceStart)
-        $hasSkillContext = [regex]::IsMatch($sentence, '(?i)\bskill\b')
+        $isMarkdownLinkDestination = [regex]::IsMatch(
+            $prefix,
+            '\]\((?:\\.|[^()]|(?<TargetOpen>\()|(?<-TargetOpen>\)))*(?(TargetOpen)(?!))$')
+        $hasSkillContext = [regex]::IsMatch(
+            $sentence,
+            '(?i)(?<![A-Za-z0-9_-])skill(?![A-Za-z0-9_-])')
         $hasRoutingAction = [regex]::IsMatch(
             $prefix,
             '(?i)\b(?:load|use|read|consult|follow|invoke|route|apply)\b')
@@ -415,6 +429,7 @@ function Get-CrowSkillMentionFromParagraph {
             Sentence = $sentence
             HasSkillContext = $hasSkillContext
             HasRoutingAction = $hasRoutingAction
+            IsMarkdownLinkDestination = $isMarkdownLinkDestination
         }
     }
 }
@@ -630,10 +645,13 @@ function Get-CrowAssetDependencyReport {
         if ($sourceKind -in @('Agent', 'SkillFile')) {
             foreach ($mention in Get-CrowSkillMention -File $markdownFile) {
                 $skillName = $mention.Name
-                if (-not $mention.HasSkillContext -or -not $mention.HasRoutingAction) {
+                if (-not $mention.HasRoutingAction) {
                     continue
                 }
                 if (-not $graph.SkillNameToRoot.ContainsKey($skillName)) {
+                    if (-not $mention.HasSkillContext) {
+                        continue
+                    }
                     $errors.Add(
                         "Unknown skill reference '$skillName' in '$sourcePath' (line $($mention.Line)).")
                     continue
@@ -671,7 +689,9 @@ function Get-CrowAssetDependencyReport {
                             $pathComparison)
                     }).Count -gt 0
                 }
-                if ($hasExplicitModuleLink) {
+                if ($hasExplicitModuleLink -and
+                    -not $mention.HasSkillContext -and
+                    $mention.IsMarkdownLinkDestination) {
                     continue
                 }
 

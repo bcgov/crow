@@ -78,7 +78,9 @@ scoped updates that can be run independently of security remediation.
    runs. In scheduled/unattended runs, defer anything that requires a question.
 6. Apply only the approved and in-scope changes in one component-sized batch.
    Use the repository's package manager and toolchain to regenerate lockfiles
-   and keep runtime pins, containers, and CI configuration aligned where
+   where the manager or repository policy uses or requires them; otherwise,
+   verify native declarations and resolution without creating a lockfile.
+   Keep runtime pins, containers, and CI configuration aligned where
    applicable. In unattended mode, preserve the exact pre-update contents of
    each file before changing it; if that cannot be done without overwriting
    pre-existing work, defer the component.
@@ -98,7 +100,8 @@ scoped updates that can be run independently of security remediation.
 
 - Every changed version was within the requested scope and supported by
   verifiable evidence.
-- Manifests and generated lockfiles are consistent.
+- Manifests and, where used, generated lockfiles or native resolution data are
+  consistent.
 - Required builds and tests were run, with failures and unavailable checks
   reported accurately.
 - Scheduled/unattended runs deferred changes that needed human decisions and
