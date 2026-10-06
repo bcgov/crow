@@ -26,7 +26,13 @@ Use this skill when adding or changing Crow agents, skills, modules, templates, 
 6. Store research and review evidence only in a repository-root ignored `evidence/` path outside `.apm/`, or in session-local storage. Never package or commit it.
 7. Update `apm.yml`, `.github/plugin/plugin.json`, collection manifests when relevant, and README discovery lists when capabilities change.
 8. Classify version impact and apply user-decision gates from the canonical versioning policy.
-9. Run [`scripts/Test-CrowAssets.ps1`](scripts/Test-CrowAssets.ps1), then the repository's package checks.
+9. Run [`scripts/Test-CrowAssets.ps1`](scripts/Test-CrowAssets.ps1), which
+   checks local Markdown links and collection dependency closure, then the
+   repository's package checks. Run
+   [`scripts/Test-CrowAssetDependencyGraph.Tests.ps1`](scripts/Test-CrowAssetDependencyGraph.Tests.ps1)
+   when changing graph validation, and
+   [`scripts/Test-CrowSecurityRemediationScopes.Tests.ps1`](scripts/Test-CrowSecurityRemediationScopes.Tests.ps1)
+   when changing the security-remediation scope routes.
 10. Run the dedicated Crow review and a rubber-duck review. Resolve material findings before completion.
 
 For cross-cutting platform or reuse guidance, prefer a conditionally routed
@@ -44,6 +50,8 @@ Use a script instead of model prose when the operation can be expressed as stabl
 - Only relevant modules are loaded.
 - Package manifests and documentation agree.
 - Collection manifests are version-aligned, resolve only repository-local source assets, and remain subsets of the full package.
+- The asset dependency graph finds no dead links; each collection includes the
+  linked skills and modules required by its bundled agents.
 - Local references resolve.
 - No tracked evidence or sensitive material exists.
 - Validator and package checks pass.

@@ -1,6 +1,6 @@
 name: bcgov-crow
-version: 0.11.5
-description: Global agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, REST/SOAP API modernization, secure development, architecture and security review, remediation, business rule documentation, executive reporting, Crow authoring, and releases.
+version: 0.12.0
+description: Global agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, REST/SOAP API modernization, framework and dependency updates, secure development, architecture and security review, remediation, business rule documentation, executive reporting, Crow authoring, and releases.
 type: hybrid
 author:
   name: bcgov
@@ -17,6 +17,8 @@ keywords:
   - crow-soap-api
   - crow-security-review
   - crow-security-remediation
+  - crow-framework-updates
+  - crow-dependency-updates
   - crow-testing
   - crow-project-context
   - crow-business-rules
@@ -43,6 +45,8 @@ includes:
   - .apm/skills/crow-business-rules
   - .apm/skills/crow-executive-report
   - .apm/skills/crow-security-review
+  - .apm/skills/crow-framework-updates
+  - .apm/skills/crow-dependency-updates
   - .apm/skills/crow-sonar-scan
   - .apm/skills/crow-agent-skill-authoring
   - .apm/skills/crow-agent-skill-review

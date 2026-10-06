@@ -50,6 +50,16 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
 
+      - name: Test agent and skill dependency graph
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssetDependencyGraph.Tests.ps1
+
+      - name: Test security remediation scope aliases
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowSecurityRemediationScopes.Tests.ps1
+
       - name: Test Raven setup CLI
         shell: pwsh
         run: |

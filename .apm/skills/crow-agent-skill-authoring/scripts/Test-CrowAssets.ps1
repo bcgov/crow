@@ -10,6 +10,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $errors = [System.Collections.Generic.List[string]]::new()
 $warnings = [System.Collections.Generic.List[string]]::new()
+$dependencyGraphPath = Join-Path $PSScriptRoot 'CrowAssetDependencyGraph.ps1'
+if (Test-Path -LiteralPath $dependencyGraphPath -PathType Leaf) {
+    . $dependencyGraphPath
+}
+else {
+    $errors.Add("Required dependency graph script is missing: $dependencyGraphPath")
+}
 
 function Add-ValidationError {
     param([string]$Message)
@@ -64,28 +71,6 @@ function Get-Frontmatter {
     }
 
     return $values
-}
-
-function Get-LocalMarkdownTargets {
-    param([System.IO.FileInfo]$File)
-
-    $content = [System.IO.File]::ReadAllText($File.FullName)
-    foreach ($match in [regex]::Matches($content, '\[[^\]]+\]\(([^)]+)\)')) {
-        $target = $match.Groups[1].Value.Trim().Trim('<', '>')
-        if ([string]::IsNullOrWhiteSpace($target) -or
-            $target.StartsWith('#') -or
-            $target -match '^[A-Za-z][A-Za-z0-9+.-]*:' -or
-            $target -match '[\[\]]' -or
-            $target.Contains('{{')) {
-            continue
-        }
-
-        $target = ($target -split '#', 2)[0]
-        $target = ($target -split '\s+"', 2)[0]
-        if (-not [string]::IsNullOrWhiteSpace($target)) {
-            $target
-        }
-    }
 }
 
 $root = (Resolve-Path $RepoRoot).Path
@@ -375,18 +360,9 @@ if ($errors.Count -eq 0) {
         }
     }
 
-    $markdownFiles = @(
-        Get-ChildItem $agentsPath, $skillsPath -File -Filter '*.md' -Recurse
-        Get-ChildItem $collectionsPath -File -Filter '*.md' -Recurse
-        Get-Item (Join-Path $root 'README.md')
-    )
-    foreach ($markdownFile in $markdownFiles) {
-        foreach ($target in Get-LocalMarkdownTargets $markdownFile) {
-            $candidate = Join-Path $markdownFile.Directory.FullName $target
-            if (-not (Test-Path $candidate)) {
-                Add-ValidationError "$($markdownFile.FullName): local Markdown target '$target' does not exist."
-            }
-        }
+    $dependencyReport = Get-CrowAssetDependencyReport -RepoRoot $root
+    foreach ($dependencyError in $dependencyReport.Errors) {
+        Add-ValidationError $dependencyError
     }
 
     $powerShellTestFiles = @(
