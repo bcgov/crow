@@ -18,13 +18,16 @@ apm install bcgov/crow/collections/security-remediation#stable --global --target
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.12.0 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.12.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
 first. The security review workflow requires code intelligence and may
 require the Sonar MCP server, depending on the requested scan and configured
-project connections.
+project connections. When Sonar MCP is configured or selected during setup,
+the Raven Setup Agent also verifies the local SonarScanner CLI and, when a
+compatible SDK is available, the .NET/MSBuild scanner; it offers compatible
+updates only after confirmation.
 
 ## Included agents
 
