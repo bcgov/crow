@@ -24,9 +24,14 @@ Inspect both scanner tools independently:
   `Get-Command sonar-scanner.bat` on Windows, and `command -v sonar-scanner`
   on macOS or Linux. Run `sonar-scanner --version` (or
   `sonar-scanner.bat --version` on Windows).
-- Check the SDK with `dotnet --version` and `dotnet --list-sdks`. When an SDK
-  is available, inspect the global tool with `dotnet tool list --global` and
-  verify it with `dotnet sonarscanner --version`.
+- Check the SDK with `dotnet --version` and `dotnet --list-sdks`, then compare
+  the installed SDKs with the selected scanner release's documented
+  requirements. Use `dotnet tool list --global` to identify an installed
+  global tool and verify its exact package version. Only when a compatible SDK
+  is available, run `dotnet sonarscanner` without arguments to confirm the
+  command starts and prints its usage; do not run `begin` or `end` as a setup
+  check. Do not use `dotnet sonarscanner --version`: it is not a supported
+  version-query command and exits with a usage error.
 
 MCP does not expose another process's `PATH`. Inspect an explicit `env.PATH`
 in the selected client's server configuration when present; otherwise compare
@@ -125,18 +130,25 @@ that are not yet installed:
 It may contain only a schema version, check timestamp, current and previous
 scanner versions, and local install paths. It must not contain server URLs,
 credentials, or provider responses. Create or change it only after preview
-and confirmation. If it is malformed or does not match the installed tools,
-stop and report the mismatch instead of replacing it.
+and confirmation. For `dotnetMsbuild`, record `previousVersion: null` only
+when pre-install inventory confirmed that the global tool was absent; after a
+successful first-time installation, this means rollback must restore the
+previous state by uninstalling the tool. If the prior tool state is unknown,
+stop and report the mismatch instead of treating it as absent.
 
 Before an update, save the exact previous CLI path/version and .NET tool
 version in the state file. Update recorded current versions only after the
 installed commands report the expected versions. If verification fails,
-restore the previous CLI path and run
+restore the previous CLI path. For the .NET scanner, run
 `dotnet tool update --global dotnet-sonarscanner --version <previous-version>`
-for the .NET scanner, then verify both rollback results. On a later rollback
-request, show the current and previous versions, obtain confirmation, restore
-both exact versions/paths, and update the state only after verification.
-Report rollback failures explicitly.
+when a previous version is recorded; when `previousVersion` is null because
+pre-install inventory confirmed the tool was absent, run
+`dotnet tool uninstall --global dotnet-sonarscanner` and verify it is no longer
+listed. On a later rollback request, show the current and previous versions,
+obtain confirmation, restore the previous CLI path and .NET tool version, or
+uninstall the .NET tool when its recorded previous version is null. Update the
+state only after verifying the restored versions or absence. Report rollback
+failures explicitly.
 
 ## Freshness and verification
 
@@ -148,8 +160,12 @@ if the user declines, report which scanner remains behind. The Raven setup
 CLI and optional Copilot update hook do not track SonarScanner versions, so
 scanner checks require invoking the Raven Setup Agent.
 
-After setup or update, verify the exact CLI version and, when the SDK is
-compatible, the exact .NET scanner version. Confirm that the selected MCP
-server's configured or inherited PATH resolves each installed executable. If
-visibility cannot be verified without running an analysis, report the
-limitation and do not claim the scanner is ready for Sonar MCP.
+After setup or update, verify the exact CLI version and confirm the exact
+.NET scanner package version with `dotnet tool list --global`. Only when the
+SDK is compatible, run `dotnet sonarscanner` without arguments to confirm it
+starts and displays usage; do not run `begin` or `end`. If no compatible SDK
+is available, skip that command check and report MSBuild scanning as blocked.
+Confirm that the selected MCP server's configured or inherited PATH resolves
+each installed executable. If visibility cannot be verified without running
+an analysis, report the limitation and do not claim the scanner is ready for
+Sonar MCP.

@@ -102,7 +102,7 @@ release bundles, and writes a Crow-owned MCP configuration fragment without
 overwriting existing client configuration or collecting credentials. When
 Sonar MCP is already configured (`sonar` in the Raven catalog or
 `sonar-mcp`) or selected during setup, it also sets up the local SonarScanner
-CLI and .NET/MSBuild scanner when the .NET SDK is available, checks official
+CLI and .NET/MSBuild scanner when a compatible .NET SDK is available, checks official
 stable releases during setup or maintenance, and asks before upgrades.
 
 Setup state is user-local under `~/.crow/raven-setup` by default. Do not

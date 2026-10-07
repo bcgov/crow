@@ -1,7 +1,7 @@
 ---
 name: 'Crow Raven Setup Agent'
 description: 'Guides installation, selective configuration, update checks, explicit upgrades, and rollback for Raven MCP servers, SonarQube scanners, and codebase-memory-mcp.'
-tools: ['read', 'search', 'execute', 'web', 'vscode/askQuestions']
+tools: ['read', 'search', 'execute', 'web', 'vscode/askQuestions', 'sonar/*']
 ---
 
 # Crow Raven Setup Agent
@@ -98,18 +98,22 @@ releases, installing an OS scheduler, or automatically applying updates.
    rollback steps. Obtain confirmation before installing or upgrading. The
    agent executes the approved scanner commands with `execute`; the Raven
    setup script does not manage scanners. Surface command failures explicitly.
-   If the .NET SDK is unavailable, report that the MSBuild scanner is blocked;
-   do not install the SDK without separate approval.
+   If no compatible .NET SDK is available, report that the MSBuild scanner is
+   blocked; do not install the SDK without separate approval.
 6. Guide authentication using Raven's official user-local credential tooling.
    Never request or echo credential values.
 7. Show the generated MCP fragment and ask before merging its entries into the
    selected client. Preserve unrelated entries and fail on name collisions.
 8. Verify each selected executable path, the pinned codebase-memory command,
    and the selected servers' MCP startup behavior. When Sonar MCP is installed
-   or selected, verify `sonar-scanner --version` and, if the .NET SDK is
-   available, `dotnet sonarscanner --version`. Verify the MCP process path
-   using the selected client's configured environment or user PATH and restart
-   the client when required. If its effective environment cannot be confirmed,
+   or selected, verify `sonar-scanner --version`. When a compatible .NET SDK
+   is available, verify the exact MSBuild scanner version with
+   `dotnet tool list --global` and confirm it starts by running
+   `dotnet sonarscanner` without arguments; do not run `begin` or `end` as a
+   setup check. If no compatible SDK is available, skip the MSBuild scanner
+   command check and report it as blocked. Verify the MCP process path using
+   the selected client's configured environment or user PATH and restart the
+   client when required. If its effective environment cannot be confirmed,
    report local scanner verification separately from MCP visibility.
 9. On later setup or maintenance requests, run a freshness check only when the
    recorded check is at least 24 hours old unless the user requests an
