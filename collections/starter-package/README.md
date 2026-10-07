@@ -17,13 +17,16 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.12.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.12.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
 first. It configures the optional Raven servers and
 [codebase-memory-mcp](https://github.com/bcgov/codebase-memory-mcp) used by
-the architecture and testing workflows.
+the architecture and testing workflows. When Sonar MCP is configured or
+selected during setup, it also sets up the local SonarScanner CLI and the
+.NET/MSBuild scanner when a compatible SDK is available, and checks for
+compatible stable releases during setup or maintenance.
 
 ## Included agents
 

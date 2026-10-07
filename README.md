@@ -67,7 +67,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.12.0 --global --target copilot
+apm install bcgov/crow#v0.12.1 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -99,8 +99,11 @@ first:
 The guided setup checks prerequisites, lets you choose Raven capability
 groups or [codebase-memory-mcp], pins server versions, verifies attested
 release bundles, and writes a Crow-owned MCP configuration fragment without
-overwriting existing client configuration or collecting credentials. It also
-checks for available Crow package updates without applying them.
+overwriting existing client configuration or collecting credentials. When
+Sonar MCP is already configured (`sonar` in the Raven catalog or
+`sonar-mcp`) or selected during setup, it also sets up the local SonarScanner
+CLI and .NET/MSBuild scanner when a compatible .NET SDK is available, checks official
+stable releases during setup or maintenance, and asks before upgrades.
 
 Setup state is user-local under `~/.crow/raven-setup` by default. Do not
 commit it or put Raven credentials in a repository.
@@ -109,7 +112,9 @@ For Copilot users, setup offers once to install an optional user-level hook
 for update reminders. If enabled, it checks Crow's stable release and any
 bundled Raven or codebase-memory-mcp release recorded by Crow Setup on an agent
 prompt at most once every 24 hours. It creates no scheduled task and never
-installs updates automatically.
+installs updates automatically. **The hook does not track SonarScanner
+releases.** Run the Raven Setup Agent directly to check scanner versions when
+Sonar MCP is configured or selected during setup.
 
 ### 4. Verify the installation
 
@@ -132,7 +137,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.12.0` remains fixed. Installing
+while an exact version tag such as `#v0.12.1` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -217,7 +222,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.12.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.12.1.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
