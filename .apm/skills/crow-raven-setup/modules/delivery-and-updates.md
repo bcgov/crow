@@ -32,8 +32,8 @@ before switching state; never update the active checkout in place.
 
 ## Raven release contract
 
-- Raven's current public runtime and catalog contract starts at `0.1.0` and
-  remains pre-stable; do not infer stability from repository age.
+- Raven's public runtime and catalog contract began at `0.1.0` and remains
+  pre-stable; do not infer stability from repository age.
 - Tag releases as `v<version>` and publish immutable assets from that tag.
 - Version the suite, every server, and the catalog schema explicitly.
 - Produce a signed manifest containing artifact digest, source commit, server

@@ -2228,6 +2228,34 @@ async function stageRavenBundle(raven) {
   return stagingRoot;
 }
 
+function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error.code === "ESRCH") return false;
+    if (error.code === "EPERM") return true;
+    throw error;
+  }
+}
+
+function taskkillTerminationError(result, rootPid, processIsRunning = isProcessRunning) {
+  if (result.status === 0) return null;
+  const output = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
+  const detail = output || result.error?.message || `taskkill exited with ${result.status}`;
+  const affectedPids = new Set([rootPid]);
+  let reportedPid = false;
+  for (const match of detail.matchAll(/\bPID\s+(\d+)\b/gi)) {
+    affectedPids.add(Number(match[1]));
+    reportedPid = true;
+  }
+  if (!reportedPid) return detail;
+  for (const pid of affectedPids) {
+    if (processIsRunning(pid)) return detail;
+  }
+  return null;
+}
+
 function terminateProcessTree(child, force = false) {
   if (process.platform === "win32") {
     if (!Number.isInteger(child.pid)) return "child process ID is unavailable";
@@ -2239,8 +2267,7 @@ function terminateProcessTree(child, force = false) {
       ["/PID", String(child.pid), "/T", "/F"],
       { encoding: "utf8", stdio: "pipe", shell: false }
     );
-    if (result.status === 0) return null;
-    return (result.stderr || result.stdout || `taskkill exited with ${result.status}`).trim();
+    return taskkillTerminationError(result, child.pid);
   }
   const signal = force ? "SIGKILL" : "SIGTERM";
   if (child.kill(signal)) return null;
@@ -2900,6 +2927,7 @@ export {
   releasedServers,
   sha256Tree,
   startupInvocation,
+  taskkillTerminationError,
   validateReleaseCatalog,
   validateReleaseManifest,
   verifyStartup
