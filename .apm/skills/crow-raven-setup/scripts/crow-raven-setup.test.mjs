@@ -1255,6 +1255,26 @@ test("Windows taskkill errors are ignored only when reported processes have exit
   );
 });
 
+test("Windows taskkill root-not-found errors are ignored only when the root has exited", () => {
+  const result = {
+    status: 1,
+    stderr: 'ERROR: The process "26648" not found.'
+  };
+  const checkedPids = [];
+  assert.equal(
+    taskkillTerminationError(result, 26648, (pid) => {
+      checkedPids.push(pid);
+      return false;
+    }),
+    null
+  );
+  assert.deepEqual(checkedPids, [26648]);
+  assert.match(
+    taskkillTerminationError(result, 26648, (pid) => pid === 26648),
+    /The process "26648" not found/
+  );
+});
+
 test("runtime tree digest detects generated and launcher changes", async () => {
   const root = mkdtempSync(join(tmpdir(), "crow-raven-tree-"));
   mkdirSync(join(root, "bin"));

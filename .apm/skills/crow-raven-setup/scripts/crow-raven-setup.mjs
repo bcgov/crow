@@ -2249,6 +2249,9 @@ function taskkillTerminationError(result, rootPid, processIsRunning = isProcessR
     affectedPids.add(Number(match[1]));
     reportedPid = true;
   }
+  if (new RegExp(`\\bThe process\\s+["']?${rootPid}["']?\\s+not found\\b`, "i").test(detail)) {
+    reportedPid = true;
+  }
   if (!reportedPid) return detail;
   for (const pid of affectedPids) {
     if (processIsRunning(pid)) return detail;
