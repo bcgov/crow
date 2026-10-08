@@ -1,35 +1,32 @@
-# Manual QA scope index
+# Manual QA index and release scope
 
 <!--
-Single index for recurring manual-only and deferred-automation QA scope.
-Keep this document concise. Put setup, steps, and expected results in linked detail
-documents under docs/testing/manual/<feature>/.
-QA selects applicable rows based on the release and records execution outside the repository.
-The index is for recurring `Manual-only` and `Deferred automation` areas; coverage gaps remain
-automation work and not-implemented behavior is not registered until it exists.
+One tester-facing index for recurring Manual-only and Deferred automation checks.
+Follow the repository's application/category vocabulary when available; never invent categories or create empty folders.
+Link directly to runnable detail in the owning feature using a plain-language check name;
+do not copy steps or create a second hand-maintained browse index. Track execution outside
+the repository.
 -->
+
+## Manual checks
+
+| Application / group or feature | Area ID | Check | Classification | Recheck when |
+|---|---|---|---|---|
+| [Application / page or feature in user terms] | MC-XXX | [Link to the runnable check with a plain-language action or outcome as its text] | Manual-only / Deferred automation | [When this page or feature changes] |
 
 ## Current status
 
 | Field | Current value |
 |---|---|
 | Index status | Current / Needs backfill |
-| Manual QA areas | Count and/or links below |
-| Open decisions | Short list or `None` |
-
-## Manual QA areas
-
-| Area ID | Feature / bug | Detail document | Classification | Release trigger | QA scope summary |
-|---|---|---|---|---|---|
-| MC-XXX | | `manual/<feature>/<Feature>ManualScenarios.md` | Manual-only / Deferred automation | Every release / When changed / Smoke only | |
+| Manual QA areas | Count distinct `MC-XXX` area IDs |
+| Open decisions | Short list, or omit when none |
 
 ## Maintenance
 
-- Keep one index row per recurring manual-QA area.
-- Link to a detail document instead of copying steps into this index.
-- Use the linked detail document for the Area ID's scenario IDs, scope and rationale, prerequisites and
-  test data, route or entry point, steps, expected results, source components, related work item, and
-  recheck/automation triggers.
-- Update the row and detail document together when scope, classification, or release trigger changes.
-- Close or remove an area only when equivalent automated coverage exists and passes, or the behavior is retired.
-- QA execution results, build evidence, and run dates belong in the team's external test process.
+- Keep one row per linked manual detail document. Repeat an area ID when checks span pages or applications;
+  count distinct area IDs, and never reuse a scenario ID for an unrelated behavior.
+- Keep the work-item reference in the linked detail; use the index only for navigation and release selection.
+- Update the index and detail together when a check's scope, classification, location, or release trigger changes.
+- Remove a check only when equivalent automated coverage exists and passes or the behavior is retired.
+- QA execution results, build evidence, and run dates belong in the external QA process.

@@ -1,6 +1,6 @@
 ---
 name: crow-testing
-description: Guide definition and implementation of automated unit and integration tests, including HTTP characterization and differential testing for REST/SOAP API modernization and managed updates for copied Crow test-utility templates. Use for a new testing strategy, a feature, bug, pain point, or managed-template drift. Browser E2E testing is out of scope.
+description: Guide reviewed feature scenarios, automated unit and integration tests, and business-readable manual QA coverage using repository-specific scenario organization. Also supports HTTP characterization and differential testing for REST/SOAP API modernization and managed updates for copied Crow test-utility templates. Use for a new testing strategy, feature, bug, manual QA gap, pain point, or managed-template drift. Browser E2E testing is out of scope.
 ---
 
 # Testing
@@ -20,6 +20,10 @@ reference according to that skill.
 
 1. Load [`modules/workflow.md`](modules/workflow.md) and
    [`modules/foundation.md`](modules/foundation.md) for every engagement.
+   When planning feature-level scenarios or organizing testing documents without a repository
+   `docs/testing/guides/scenario-organization.md`, also load
+   [`modules/scenario-organization.md`](modules/scenario-organization.md) to derive and confirm a
+   project-specific guide from code and existing docs. Do not copy another project's categories.
 2. Load [`../crow-application-architecture/modules/impact-analysis.md`](../crow-application-architecture/modules/impact-analysis.md) for bug fixes or shared behavior changes.
 3. If the repository has no test project yet (or the user wants a fresh discovery pass), load
    [`modules/discovery.md`](modules/discovery.md).
@@ -110,17 +114,24 @@ reference according to that skill.
    reference files are single-decision and independently loadable. A reference file that outgrows its one
    decision should be **split**, not allowed to grow.
 11. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
-   deferred automation. Use [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md)
-   for the consuming project's single `docs/testing/manual-coverage.md` index and
+   deferred automation. Follow the consuming repository's `docs/testing/guides/scenario-organization.md`
+   and its application/category feature homes when present. Otherwise follow an existing project layout,
+   or create a feature home under `docs/testing/scenarios/<application>/<feature>/` when the application
+   is known and no approved group applies, or `docs/testing/scenarios/<feature>/` only when no
+   application boundary applies. Resolve pending ownership before placing new checks. Use
+   [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md) for the single
+   `docs/testing/manual-coverage.md` browse/release index. Prefer a repository-provided manual template
+   when present, otherwise use
    [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md) for linked detail
-   documents under `docs/testing/manual/`.
+   under the owning feature's `manual/` folder. Preserve current documents and IDs; do not mass-regenerate.
 12. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
-   [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md), and
+   [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md),
    [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md),
    [`templates/testability-notes-template.md`](templates/testability-notes-template.md), and
    [`templates/modernization-handoff-template.md`](templates/modernization-handoff-template.md) when
-   producing the corresponding `docs/testing/` artifacts described in `modules/workflow.md`.
+   producing the corresponding `docs/testing/` artifacts described in `modules/workflow.md`. When the
+   repository supplies its own manual template, use that instead of Crow's default.
    The last one is only for a cross-cutting finding (a habit/convention across many files) or when the user
    asks for a fuller writeup than a `testability-notes.md` row — see
    [`modules/reference/testability-improvements.md`](modules/reference/testability-improvements.md) §

@@ -1,61 +1,68 @@
-# [Feature or area] Manual QA scenarios
+# [Action or outcome a tester recognizes] (MC-XXX)
 
 <!--
-Recurring manual-QA scope for one feature, bug, or manual-QA area.
-This document says what QA should test. Execution and run evidence are tracked outside the repository.
-Omit any field below that doesn't apply to this document instead of writing N/A.
+One authoritative, business-readable manual check (or related checks on one page).
+QA execution results belong outside the repository. Omit inapplicable technical fields.
+Do not invent setup conditions or expected behavior: get reviewer approval when uncertain.
+Write the tester-facing sections as instructions for a person using the application, not
+as code, API requests, database queries, or test-framework steps. Use verified on-screen
+labels and menu names; if they are unknown, resolve them rather than guessing.
 -->
 
-## Overview
+## What this checks
+
+[One or two plain-language sentences describing the behavior and scope.]
+
+## Before you start
+
+- Use [application] in an approved non-production test environment.
+- Sign in as [user role or permission in plain language; state if no sign-in is needed].
+- Open [page] by selecting [visible menu items or links that lead there].
+- Find [a recognizable test record with the required status, dates, relationships, or other
+  relevant state]. If it must be created or changed first, say exactly how, or name the
+  person/team who will provide it. Use synthetic/non-sensitive test data.
+- [External dependency or alternate account, if required.]
+
+## Steps
+
+1. [Choose a visible button, link, field, or menu item by its on-screen name.]
+2. [Enter or select the exact test value needed; continue with the next visible action.]
+
+## Expected result
+
+[What the tester can see on the page after these steps. Include an intermediate result beside
+the relevant step if it matters. Include save/reopen only when persistence is in scope.]
+
+---
+
+## Technical details
 
 | Field | Value |
 |---|---|
-| Area ID | `MC-XXX` - index: `docs/testing/manual-coverage.md` |
-| Classification | Manual-only / Deferred automation |
-| Status | Draft / Current / Needs decision |
-| Release trigger | Every release / When <component> changes / Smoke only |
-| Related work item | `None`, `DRAFT-*`, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
-| Source component(s) | `<path, route, service, or other owning component>` |
-| Open decisions | Short list or `None` |
+| Scenario ID | `MC-XXX-01`; link to `docs/testing/manual-coverage.md` with the correct relative path |
+| Status | Draft / Needs decision (omit when current) |
+| Work item | [ID/link when applicable] |
+| Page / route | [Actual relative route when applicable] |
+| Source components | [Paths when useful] |
+| Classification | Manual-only / Deferred automation: [brief reason] |
+| Related automated checks / known gap | [Test file/folder link or omit] |
+| Recheck when | [User-facing feature or shared control that changes; match the index] |
+| Representative pages | [For shared UI controls only: chosen pages and why they represent the change] |
 
-## Scope and automation rationale
+<!--
+For multiple short, independent checks sharing the same setup, use this form instead of the
+single Steps/Expected result pair (each row has its own stable, unique scenario ID):
 
-- **In scope:** ...
-- **Out of scope:** ...
-- **Why manual:** ...
-- **Representative sample (omit if not a shared UI element):** <page/component> @ <relative route> -
-  reason chosen
+## Checks
 
-## Prerequisites and test setup
+| ID | What to do | What you should see |
+|---|---|---|
+| MC-XXX-01 | [On-screen action] | [Visible outcome] |
+| MC-XXX-02 | [Other on-screen action] | [Other visible outcome] |
 
-- **Environment:** ...
-- **Page(s)/route(s) to test:** <relative path(s), e.g. `/settings/profile`> - start point (omit only when
-  the behavior has no navigable page).
-- **Role/permissions (omit if the outcome doesn't vary by role):** ...
-- **Pre-seeded data/state (omit if no special setup is required):** ...
-- **External dependencies (omit if none):** ...
-
-## Test matrix
-
-| ID | Scenario | Precondition / variant | Expected outcome | Release trigger |
-|---|---|---|---|---|
-| MC-XXX-01 | | | | Default / Smoke / Full |
-
-If scenarios start on different pages, add a `Page/route` column to the matrix instead of relying on the
-shared "Prerequisites" field.
-
-## Detailed scenarios
-
-### MC-XXX-01 - Short scenario name
-
-1. ...
-2. ...
-
-**Expected result:**
-
-- ...
-
-## Recheck and automation triggers
-
-- **Recheck when:** ...
-- **Automate when:** ... (omit if permanently manual-only)
+For a check requiring several actions, use a separate numbered Steps and Expected result
+subsection with its own scenario ID instead of compressing actions into a table cell.
+When checks have different setup or starting pages, give each its own "Before you start".
+When one check has app/page variants, name each variant and its expected result explicitly.
+For shared UI controls, state representative pages and why they were chosen under Technical details.
+-->

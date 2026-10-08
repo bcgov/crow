@@ -200,9 +200,10 @@ package.
   Read-only Crow asset quality and release review.
 - [**crow-release**](.apm/skills/crow-release/SKILL.md) — Versioned package
   preparation, validation, and publication.
-- [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Unit and integration
-  testing, including HTTP characterization and differential testing for
-  REST/SOAP API modernization.
+- [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Reviewed feature
+  scenarios organized by repository features, automated unit/integration tests,
+  and business-readable manual QA coverage; includes HTTP characterization and
+  differential testing for REST/SOAP API modernization.
 
 ## Optional reporting prerequisite
 

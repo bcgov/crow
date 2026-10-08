@@ -29,11 +29,22 @@ Do not record whether QA has executed a scenario in this repository.
 2. Identify behaviors crossing UI-rendering, browser, database, external-service, timing, or concurrency
    boundaries.
 3. Classify each behavior using the table above.
-4. Create or update one concise index row in the consuming project's `docs/testing/manual-coverage.md`
-   for every recurring manual-only or deferred-automation area.
-5. Create or update the linked detail document under
-   `docs/testing/manual/<feature>/<Feature>ManualScenarios.md`. Put the detailed test matrix, prerequisites,
-   steps, expected results, work item, and recheck/automation triggers there.
+4. Create or update the consuming project's single `docs/testing/manual-coverage.md` browse/release
+   index using `templates/manual-coverage-template.md`, adapted to the repository's vocabulary and
+   existing rows. Use one row per linked manual detail document, repeating the area ID for checks in
+   different pages or applications. Show the stable area ID, linked detail, classification, and release
+   trigger. Do not maintain a second hand-written browse index or copy steps into the register.
+5. Create or update linked detail in the owning feature's `manual/` folder. Follow the repository's
+   `docs/testing/guides/scenario-organization.md` when present, including group, cross-application,
+   and first-use ownership decisions. Otherwise follow the existing project layout, or use
+   `docs/testing/scenarios/<application>/<feature>/manual/` when the application is known and no
+   approved group applies (`docs/testing/scenarios/<feature>/manual/` only when no application boundary
+   applies). Resolve applicable pending ownership before creating new detail. Prefer the repository's manual template
+   when available, otherwise use `templates/manual-scenario-template.md`. Put reproducible
+   prerequisites, user actions and observable expected results first; place the route, work item, source
+   components, classification rationale and known gaps under Technical details. For UI checks, give
+   testers the visible menu path, on-screen control labels, and recognizable test data in everyday
+   language rather than code navigation or backend instructions.
 6. Include manual-only and deferred items in the handoff and completion summary, clearly stating that the
    register describes QA scope rather than execution results.
 7. Revisit entries after refactors, shared-component changes, test-infrastructure changes, or related
@@ -53,8 +64,8 @@ variant, or a permission-sensitive/destructive-action view. If the repository al
 reuse its representative-screen categories in
 [`review-remediation.md`](../../crow-bcgov-ux/modules/review-remediation.md) instead of restating them here.
 
-Record the sample and reason in the scope section (see "Required register fields" below), and revisit it
-only when the shared element or affected pages materially change.
+Record the sample and reason under "Representative pages" in the detail document's Technical details,
+and revisit it only when the shared element or affected pages materially change.
 
 Manual coverage is not a substitute for an available unit or integration test. Do not claim a feature is
 fully automated while manual-only, deferred, or coverage-gap scenarios remain. One-time post-fix checks
@@ -72,16 +83,34 @@ Only `Manual-only` and `Deferred automation` behaviors belong in this recurring 
   Do not create an `MC-###` manual-QA entry.
 - **Not implemented:** do not make a coverage claim or create a manual-QA entry until the behavior exists.
 
-Each index row needs a stable area ID (`MC-XXX`), a feature/bug link, a detail-document link,
-classification, release trigger, and short QA scope. Each detail document needs that stable area ID plus
-stable scenario IDs (`MC-XXX-01`, `MC-XXX-02`, ...), related work-item and source-component links,
-behavior/scope, classification and reason, status, release/recheck trigger, prerequisites and test data
-(including external dependencies), the page(s)/relative route(s) a tester navigates to, manual steps, and
-expected result. If the behavior has a UI entry point, record the actual relative path (for example
-`/admin/users/{id}/edit`), not just a page name.
+Each index row needs an application/category or feature grouping where known, a stable area ID (`MC-XXX`),
+a descriptive link to the runnable detail, classification (per row or shared when uniform), and a
+release/recheck trigger. Keep the work-item reference in the linked detail; existing indexes with a
+work-item column may retain it. Each detail document needs that stable area ID plus stable scenario IDs
+(`MC-XXX-01`, `MC-XXX-02`, ...), related work item, behavior/scope, classification and reason, status
+when draft or unresolved, release/recheck trigger, required role or permissions, starting page, exact test
+data state (including status, dates, or relationships when relevant), setup owner if the tester cannot
+prepare it, external dependencies when relevant, manual steps, and expected results. For a UI entry
+point, put the user-facing navigation at the top and the actual relative route (for example
+`/admin/users/{id}/edit`) under Technical details.
+
+Do not assign the same scenario ID to unrelated checks in different documents. If one scenario spans
+pages/applications, label each variant with its page/application and expected result, and keep its area ID
+stable; give independent checks distinct scenario IDs. Do not invent a future date, persistence assertion,
+or other precondition absent from approved behavior.
+For a short check, omit the duplicate scenario matrix; use a compact actions/results table only when
+multiple independent one-action checks share the same setup. Give multi-step or differently prepared
+checks their own numbered steps, expected result, and setup. Describe each UI action using verified
+on-screen labels, exact values when needed, and an outcome the tester can observe; ask for clarification
+when labels or behavior cannot be confirmed. Do not ask a tester to call an API, query a database, read
+source code, or infer a result from logs; if setup requires technical help, name its owner. Keep technical
+rationale out of the tester's starting path, but retain required traceability and gaps at the bottom.
+An automated rule test does not prove rendered UI behavior.
+Reference automated coverage by test file or folder, not a method name; a location is evidence to inspect,
+not proof of passing coverage.
 
 Execution evidence — results, screenshots, logs, payloads, run dates — belongs in the team's external QA
 system, per the consuming project's security and privacy practices, not in this repository's Markdown.
 
-Use `templates/manual-coverage-template.md` for the index shape and
-`templates/manual-scenario-template.md` for each detailed scenario document.
+Use the repository's manual template where provided; otherwise use Crow's tester-first manual scenario
+template and single browse/release index.
