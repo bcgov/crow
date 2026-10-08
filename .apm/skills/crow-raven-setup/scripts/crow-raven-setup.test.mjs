@@ -30,6 +30,7 @@ import {
   releasedServers,
   sha256Tree,
   startupInvocation,
+  taskkillTerminationError,
   validateReleaseCatalog,
   validateReleaseManifest,
   verifyStartup
@@ -1210,6 +1211,68 @@ test("Raven release metadata reconciles reviewed servers and native launchers", 
   } else {
     assert.deepEqual(invocation, { command: launcher, args: [] });
   }
+});
+
+test("Crow's reviewed catalog matches Raven v0.2.0 contracts", () => {
+  const catalog = JSON.parse(readFileSync(new URL("../resources/raven-servers.json", import.meta.url), "utf8"));
+  for (const server of catalog.servers) {
+    assert.equal(server.packageVersion, "0.2.0", server.id);
+  }
+
+  const ado = catalog.servers.find((server) => server.id === "ado");
+  assert.ok(ado);
+  const releasedCatalog = {
+    servers: [{
+      id: "ado",
+      package: "@nrs/ado-mcp",
+      launcher: "raven-ado",
+      entrypoint: "packages/ado-mcp/dist/index.js",
+      packageVersion: "0.2.0",
+      access: "read-write"
+    }]
+  };
+  assert.equal(releasedServers([ado], releasedCatalog)[0].launcher, "raven-ado");
+});
+
+test("Windows taskkill errors are ignored only when reported processes have exited", () => {
+  const result = {
+    status: 1,
+    stderr: "ERROR: The process with PID 26724 (child process of PID 26648) could not be terminated.\n" +
+      "Reason: There is no running instance of the task."
+  };
+  const checkedPids = [];
+  assert.equal(
+    taskkillTerminationError(result, 26648, (pid) => {
+      checkedPids.push(pid);
+      return false;
+    }),
+    null
+  );
+  assert.deepEqual(checkedPids, [26648, 26724]);
+  assert.match(
+    taskkillTerminationError(result, 26648, (pid) => pid === 26724),
+    /There is no running instance of the task/
+  );
+});
+
+test("Windows taskkill root-not-found errors are ignored only when the root has exited", () => {
+  const result = {
+    status: 1,
+    stderr: 'ERROR: The process "26648" not found.'
+  };
+  const checkedPids = [];
+  assert.equal(
+    taskkillTerminationError(result, 26648, (pid) => {
+      checkedPids.push(pid);
+      return false;
+    }),
+    null
+  );
+  assert.deepEqual(checkedPids, [26648]);
+  assert.match(
+    taskkillTerminationError(result, 26648, (pid) => pid === 26648),
+    /The process "26648" not found/
+  );
 });
 
 test("runtime tree digest detects generated and launcher changes", async () => {
