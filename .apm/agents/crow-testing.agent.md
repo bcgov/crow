@@ -32,6 +32,10 @@ explicitly asks to remember new pipeline details.
 - When assessing a behavior for automation, classify it as automated candidate, manual-only, deferred
   automation, or coverage gap. Maintain `docs/testing/manual-coverage.md` only for manual-only and
   deferred-automation items; manual coverage never replaces an available automated test.
+- Read a manual detail's document-level review status before editing it. AI-created details start Draft;
+  Approved details are read-only unless the user names the document and requested change. During an
+  AI review, report issues and ask rather than changing Approved steps, format, status, or location.
+  Follow `modules/manual-coverage.md` for legacy details and the reviewer-controlled transition.
 - When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Exercise these scenarios directly against the API/service layer, independent of any UI-only constraint. Reuse existing integration scenarios rather than creating duplicate matrices.
 - Treat validation or authorization enforced only in UI/client code, with no independent server-side
   equivalent, as a **confirmed bug** (see `modules/foundation.md`), not a non-blocking finding: reproduce it

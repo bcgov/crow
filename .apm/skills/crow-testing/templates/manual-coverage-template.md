@@ -2,6 +2,7 @@
 
 <!--
 One tester-facing index for recurring Manual-only and Deferred automation checks.
+The index's Current / Needs backfill status is not a manual detail's Draft / Approved review status.
 Follow the repository's application/category vocabulary when available; never invent categories or create empty folders.
 Link to each application/page-specific check in the owning feature using a plain-language check name;
 different rows may link to the same canonical detail document when it contains multiple variants.

@@ -79,7 +79,9 @@ Do not infer age from QA execution dates, which belong outside repository Markdo
 
 Use the narrowest affected document as the unit of review. Do not wait for a threshold to remove an item
 that is plainly obsolete when the document is already being edited, but do not perform a repository-wide
-cleanup pass.
+cleanup pass. Before pruning, moving, or refreshing manual details, follow the document-level
+Draft/Approved edit authority in [`manual-coverage.md`](manual-coverage.md). Flag a proposed change to
+an Approved detail for its reviewer rather than editing it under this checkpoint.
 
 Classify content before pruning:
 
@@ -122,7 +124,8 @@ interpret the remaining index; otherwise avoid adding a new history log.
    `docs/testing/scenarios/<feature>/manual/` only when no application boundary applies. If an
    applicable application's or group's ownership is pending, resolve it before placing new detail
    and adding its index row. Apply the index/detail fields in `modules/manual-coverage.md` without
-   copying manual steps.
+   copying manual steps. Start AI-authored details as Draft and read an existing detail's review status
+   before editing; for Approved content, report discrepancies and request a named-document instruction.
 
 ## Step 3: Discovery
 
@@ -248,7 +251,10 @@ recurring manual-only or deferred item is actually discovered or changed.
    this engagement's outcome
    before it is considered complete. Update `manual-coverage.md` only when this engagement actually
    produced or changed a recurring manual-only/deferred item. Update the manual-QA index row and linked
-   detail document together. Update the Work-item candidates table and durable draft path whenever a
+   detail document together only when the detail is Draft or a reviewer explicitly authorized a change
+   to that named Approved document. Otherwise update valid index metadata independently, report the
+   protected detail's discrepancy and leave it unchanged; do not claim synchronization is complete.
+   Update the Work-item candidates table and durable draft path whenever a
    confirmed bug or approved actionable design smell is drafted. If the user confirms manual filing, replace
    the draft path with the supplied work-item reference and remove the local draft only after the index update
    succeeds.

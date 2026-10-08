@@ -1,9 +1,15 @@
 # [Action or outcome a tester recognizes] (MC-XXX)
 
+**Review status:** Draft
+
 <!--
 One authoritative, business-readable manual check (or related checks with application/page variants).
 QA execution results belong outside the repository. Omit inapplicable technical fields.
 Do not invent setup conditions or expected behavior: get reviewer approval when uncertain.
+Keep Review status at the top: AI-generated detail starts Draft. After review, the reviewer sets
+Approved or explicitly directs AI to do so for this named document. AI must not change an Approved
+detail without a request naming the document and desired change; an authorized AI content edit
+returns it to Draft unless the reviewer approves the revised content.
 Write the tester-facing sections as instructions for a person using the application, not
 as code, API requests, database queries, or test-framework steps. Use verified on-screen
 labels and menu names; if they are unknown, resolve them rather than guessing.
@@ -41,7 +47,6 @@ the relevant step if it matters. Include save/reopen only when persistence is in
 |---|---|
 | Manual QA area ID | `MC-XXX` |
 | Manual QA index | Link to `docs/testing/manual-coverage.md` with the correct relative path |
-| Status | Draft / Needs decision (omit when current) |
 | Work item | [ID/link when applicable] |
 | Page / route | [Actual relative route when applicable] |
 | Source components | [Paths when useful] |

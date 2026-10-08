@@ -4,6 +4,26 @@ Load when a behavior cannot, should not, or will not be covered by the repositor
 This is a design-time register of recurring QA scope. QA selects applicable scenarios for each release and
 tracks execution outside the repository.
 
+## Review status and edit authority
+
+Every AI-created manual detail document starts with a visible, document-level **Review status: Draft**.
+This is separate from `Manual-only`/`Deferred automation` coverage classification, the index's
+`Current`/`Needs backfill` status, scenario approval, and QA execution. A developer, business analyst,
+or tester reviews the content and sets **Review status: Approved** themselves, or explicitly asks the
+AI to mark the named document Approved after review. Do not infer approval from a PR, test run, or general
+request to update a feature. Do not mass-add statuses to existing documents; a legacy detail without a
+review status is treated as Draft. An unrecognized or conflicting review status requires clarification,
+not an assumption that the document is editable.
+
+Before changing a manual detail, read its review status. Draft details may be edited within the task's
+scope. An Approved detail is read-only to AI unless the user explicitly names that document and the
+requested change. This includes steps, formatting, status, relocation, and deletion; a generic request
+to refresh docs, synchronize tests, or move feature homes is not permission. If AI review finds an
+issue, report the specific finding and ask how to proceed without editing the Approved detail. After
+an authorized AI content edit, return it to Draft for review unless the reviewer explicitly approves
+the revised content. Leave the central index independently maintainable only where its links remain
+valid and its metadata does not imply a protected detail was changed or reapproved.
+
 ## Required classification
 
 Classify every uncovered behavior as one of the following:
@@ -54,9 +74,11 @@ Do not record whether QA has executed a scenario in this repository.
    work-item completion.
 
 When a check is retired or equivalent automated coverage is established and passes, remove its index row;
-remove a shared detail document only when no active checks still use it. Do not retain one-time execution
-history in repository Markdown; preserve only a current scenario reference when it is still needed to explain
-a coverage decision.
+remove a shared detail document only when no active checks still use it and its review status permits
+deletion. For an Approved detail, flag the proposed retirement and request a document-specific decision
+before changing the detail; do not silently orphan an active check by removing its index link. Do not
+retain one-time execution history in repository Markdown; preserve only a current scenario reference
+when it is still needed to explain a coverage decision.
 
 ## Selecting a representative sample for a shared UI change
 
