@@ -30,6 +30,16 @@ Complete this before opening the discussion:
 4. Prefer `codebase-memory-mcp` for structural discovery. If unavailable, use repository search/read tools and
    state that analysis coverage may be reduced.
 5. Read `README.md`, `docs/`, ADRs, and existing `docs/testing/` artifacts.
+   If `docs/testing/guides/scenario-organization.md` exists, use its application/category vocabulary,
+   feature homes, manual index, and first-use ownership gate. For feature-level scenario planning or
+   documentation organization without a guide, load `modules/scenario-organization.md`: derive a proposed
+   project-specific feature map from existing docs, reviewer-approved vocabulary, vertical slices, routes
+   and pages, then confirm it with reviewers before creating the guide. Otherwise follow existing
+   project layout. For a new testing-doc set, use
+   `docs/testing/scenarios/<application>/<feature>/` when the application is known and no approved
+   group applies, or `docs/testing/scenarios/<feature>/` only when no application boundary applies.
+   If applicable ownership is unresolved, keep existing documents in place and defer new placement
+   until confirmed. Put manual checks in the owning feature's `manual/` folder.
    When a security review contains a Security control assurance matrix, use its
    control/finding ID, enforcement point, required negative behavior, trust
    boundary, and test level as discovery inputs. Re-verify current source and
@@ -70,7 +80,9 @@ Do not infer age from QA execution dates, which belong outside repository Markdo
 
 Use the narrowest affected document as the unit of review. Do not wait for a threshold to remove an item
 that is plainly obsolete when the document is already being edited, but do not perform a repository-wide
-cleanup pass.
+cleanup pass. Before pruning, moving, or refreshing manual details, follow the document-level
+Draft/Approved edit authority in [`manual-coverage.md`](manual-coverage.md). Flag a proposed change to
+an Approved detail for its reviewer rather than editing it under this checkpoint.
 
 Classify content before pruning:
 
@@ -93,14 +105,28 @@ interpret the remaining index; otherwise avoid adding a new history log.
 ## Step 2: Open the discussion
 
 1. Present discovered facts and concrete assumptions for correction or confirmation.
-2. Classify the engagement:
-   - broad discovery or no meaningful tests: continue to Step 3;
-   - specific feature, bug, or pain point: refresh organization guides if needed, then route to Step 5 or 6.
+2. Classify the engagement: broad discovery or no meaningful tests continues to Step 3; a specific feature,
+   bug, or pain point routes to Step 5 or 6 **after** applicable decisions and manual scope in items 3–4.
+   Refresh the unit/integration organization guides in Step 4 when needed; they do not replace a
+   scenario-organization guide.
 3. Clarify ambiguous business terminology and write it to `docs/testing/testability-notes.md`; do not leave
-   decisions only in chat.
-4. Record every recurring manual-only or deferred-automation area in `docs/testing/manual-coverage.md`,
-   then create or update its linked detail document under `docs/testing/manual/<feature>/`, using the
-   required index/detail fields from `modules/manual-coverage.md`.
+   decisions only in chat. When creating feature-level scenario or manual detail documents without a scenario-organization
+   guide, present the proposed application and feature/page map with source evidence or reviewer-approved
+   vocabulary. Confirm the proposed map before writing the guide; approved future categories may be listed
+   with ownership pending, but do not create folders or new feature/manual documents there until
+   ownership and slug are confirmed. Keep existing documents in place pending an approved move.
+   Do not invent empty categories. Qualifying
+   simple unit tests in Step 6 need no scenario guide or ownership gate.
+4. Record every recurring manual-only or deferred-automation check in the single
+   `docs/testing/manual-coverage.md` browse/release index, then create or update its linked detail
+   document in the owning feature's `manual/` folder. Follow the confirmed guide or existing layout;
+   for a new area without conventions use `docs/testing/scenarios/<application>/<feature>/manual/`
+   when the application is known and no approved group is applicable, or
+   `docs/testing/scenarios/<feature>/manual/` only when no application boundary applies. If an
+   applicable application's or group's ownership is pending, resolve it before placing new detail
+   and adding its index row. Apply the index/detail fields in `modules/manual-coverage.md` without
+   copying manual steps. Start AI-authored details as Draft and read an existing detail's review status
+   before editing; for Approved content, report discrepancies and request a named-document instruction.
 
 ## Step 3: Discovery
 
@@ -157,10 +183,18 @@ content each of these bullets references. Do not regenerate a guide that is alre
 1. Apply `foundation.md`'s level-selection rule. Route boundary-free behavior to Step 6 and propose a seam when
    the boundary is accidental.
 2. Load `integration-tests.md` and the applicable technology module.
-3. Create `docs/testing/<feature>/<Feature>Scenarios.md` from `scenario-doc-template.md`, including scope,
-   terminology, authoritative rules, scenarios, required assertions, and status.
-4. Offer to expand partial requirements into a complete scenario set.
-5. Stop for explicit user review and approval before writing test code.
+3. Create the scenario document in the approved feature home or existing layout. For a new area
+   without a guide, use `docs/testing/scenarios/<application>/<feature>/` when the application is
+   known and no approved group applies, or `docs/testing/scenarios/<feature>/` only when no
+   application boundary applies. Resolve pending group/application ownership first. Adapt
+   `scenario-doc-template.md` to existing
+   multi-document sets (phases, rules, diagrams, harnesses) rather than flattening or copying them.
+   Include scope, terminology, authoritative rules, scenarios, required assertions, and status.
+4. Offer to expand partial requirements into a complete scenario set. Have the developer, business analyst,
+   and client or their designated reviewers review the applicable scenarios, including manual outcomes.
+   Distinguish automated rule/data checks from remaining rendered or judgment-based manual checks.
+5. Stop for explicit scenario review and approval before writing test code; document unresolved decisions
+   rather than inventing prerequisites or expected results for manual checks.
 6. After approval, implement in phases. Keep the scenario doc's top Current status rollup, Coverage
    field/summary, and `testing-plan.md`'s Feature-scenarios row synchronized as tests land — not just
    reported in chat.
@@ -184,7 +218,7 @@ item; there is no shared-validator exhaustive-matrix obligation; and no meaningf
 is crossed. If any of these don't hold, route to Step 5 instead.
 
 Add or refresh one compact `testing-plan.md` Feature-scenarios row: `Scenarios doc` = `None - simple unit
-work`, `Status` = `Automated - <test file or TestClass.Method>`, `Manual/deferred items` = `None`.
+work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` = `None`.
 
 ## Step 7: Bug regressions
 
@@ -218,7 +252,10 @@ recurring manual-only or deferred item is actually discovered or changed.
    this engagement's outcome
    before it is considered complete. Update `manual-coverage.md` only when this engagement actually
    produced or changed a recurring manual-only/deferred item. Update the manual-QA index row and linked
-   detail document together. Update the Work-item candidates table and durable draft path whenever a
+   detail document together only when the detail is Draft or a reviewer explicitly authorized a change
+   to that named Approved document. Otherwise update valid index metadata independently, report the
+   protected detail's discrepancy and leave it unchanged; do not claim synchronization is complete.
+   Update the Work-item candidates table and durable draft path whenever a
    confirmed bug or approved actionable design smell is drafted. If the user confirms manual filing, replace
    the draft path with the supplied work-item reference and remove the local draft only after the index update
    succeeds.

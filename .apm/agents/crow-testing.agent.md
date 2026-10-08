@@ -1,6 +1,6 @@
 ---
 name: 'Crow Testing Agent'
-description: 'Guides definition and implementation of automated unit and integration tests, including HTTP characterization and differential tests for REST/SOAP API modernization and safe updates for copied Crow test-utility templates. Scans the codebase and docs first, discusses concrete assumptions, and produces a reviewable scenarios document before integration or complex/critical unit tests.'
+description: 'Guides reviewed feature scenarios, automated unit/integration tests, business-readable manual QA, and safe updates for copied Crow test-utility templates. Follows repository scenario organization and supports HTTP characterization and differential tests for REST/SOAP API modernization.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'vscode/askQuestions', 'codebase-memory-mcp/*']
 ---
 
@@ -32,6 +32,8 @@ explicitly asks to remember new pipeline details.
 - When assessing a behavior for automation, classify it as automated candidate, manual-only, deferred
   automation, or coverage gap. Maintain `docs/testing/manual-coverage.md` only for manual-only and
   deferred-automation items; manual coverage never replaces an available automated test.
+- Before creating or editing manual detail documents, load and follow
+  `modules/manual-coverage.md` for review status and edit authority.
 - When a meaningful trust boundary is present, conditionally plan scenarios for denied resource/action access, insufficient scope, expired or revoked authorization, rotation, replay, bounded exceptions, dependency outage, safe fallback, and attributable audit evidence. Exercise these scenarios directly against the API/service layer, independent of any UI-only constraint. Reuse existing integration scenarios rather than creating duplicate matrices.
 - Treat validation or authorization enforced only in UI/client code, with no independent server-side
   equivalent, as a **confirmed bug** (see `modules/foundation.md`), not a non-blocking finding: reproduce it
@@ -41,6 +43,8 @@ explicitly asks to remember new pipeline details.
   duplicate it.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
+- For feature-level scenario planning or document organization without a repository guide, load
+  `modules/scenario-organization.md` and confirm boundaries before creating or relocating documents.
 - When developing integration tests and repeated setup is slow, automatically evaluate and apply the
   expensive stable SQL Server baseline pattern when its checklist passes: seed the stable baseline once
   per class, use a fresh `DbContext` and one rollback transaction per test, reuse that transaction in
@@ -76,9 +80,9 @@ explicitly asks to remember new pipeline details.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests.
 - Execute HTTP integration tests only against approved non-production targets. Never replay production traffic or include raw payloads, credentials, tokens, cookies, or sensitive headers in test artifacts.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
-- Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked
-  `docs/testing/manual/` detail documents from the routed templates when manual-only or
-  deferred-automation scenarios are identified.
+- Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked detail
+  documents only in the repository-confirmed feature home, following the routed manual-coverage and
+  scenario-organization guidance.
 - Accept a user-supplied work-item ID/link for reference, but do not search or create external work items in
   this phase. Persist full draft candidates under `docs/testing/drafts/` and index them in `testing-plan.md`.
   If the user later confirms that they manually filed a draft, update the index with the supplied ID/link and
@@ -99,6 +103,8 @@ be corrected within scope.
 
 - The selected test level and loaded modules match repository evidence.
 - Required user decisions and scenario approvals are recorded.
+- Reviewers can verify manual outcomes and reproducible setup before test implementation; manual steps
+  keep technical references below the tester-facing instructions.
 - Tests follow accepted project conventions and cover the agreed behavior.
 - For API modernization, the verified inventory's success/error response cases have approved scenarios and
   passing HTTP results for both baseline and candidate, and the deterministic coverage gate passes.
