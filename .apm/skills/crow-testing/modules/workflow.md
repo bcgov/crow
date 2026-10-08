@@ -156,19 +156,22 @@ Adapt them to detected conventions. Cover the selected framework/libraries, proj
 builder/test-data patterns, and integration environment and cleanup strategy. When the project uses CsCheck
 property-based tests, the Unit Test Organization Guide must document:
 
-- **What `seed:` does.** It pins CsCheck iteration 1 only; iterations 2..N still vary across runs and thread
-  scheduling. `seed:` is a failure-replay handle, not a whole-run determinism switch. Reproducibility of a
-  failure comes from CsCheck's shrinker printing the minimal case's seed, which the developer then pins into
-  a regression test.
+- **The seed-replay procedure.** Each property test has a local `string? ReplaySeed = null;` wired as
+  `seed: ReplaySeed, iter: ReplaySeed is null ? Check.Iter : 1`, plus a trailing
+  `Assert.True(ReplaySeed is null, ...)` guard so a forgotten seed fails the test instead of silently limiting
+  it to one case. It is a failure-replay handle, not a whole-run determinism switch (a seed pins iteration 1
+  only, hence `iter: 1`). To debug, paste the seed from the failure message into that variable, run only that
+  test (Test Explorer or `dotnet test --filter`), then reset to `null`. Non-null seeds are committed only in
+  `*_ReplayFromSeed` tests (no guard).
 - **The two-build strategy.** A PR/main pipeline runs with CsCheck's default `Check.Iter = 100`, and a
   nightly pipeline sets `CsCheck_Iter=1000` (or an equivalent value) to scale general property tests.
-  Explicit `iter:` values on narrow boundary properties intentionally do not scale. Include one local
+  Literal `iter:` counts (e.g. `20`) on narrow boundary properties intentionally do not scale. Include one local
   example for each supported shell (for example, `$env:CsCheck_Iter = "1000"; dotnet test` on Windows or
   `CsCheck_Iter=1000 dotnet test` on Linux/macOS), and note the `dotnet test -e CsCheck_Iter=1000`
   passthrough form.
 - **The failure-pin regression workflow.** When CsCheck reports a reproduction seed, prefer pinning the
-  shrunken minimized input as a hardcoded `[Fact]`; use a labelled `Sample(..., seed: "reported", iter: 1)`
-  replay only when the minimized input is generator-shaped. Keep an unseeded general property alongside so
+  shrunken minimized input as a hardcoded `[Fact]`; use a labelled `ReplaySeed = "reported"` (with `iter: 1`)
+  replay only when the minimized input is generator-shaped. Keep a `ReplaySeed = null` general property alongside so
   exploration continues.
 
 See [`reference/property-based-testing.md`](reference/property-based-testing.md) for the canonical

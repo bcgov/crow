@@ -4,7 +4,10 @@ Deeper guidance for writing property-based tests with CsCheck. Load only when ac
 
 **Prerequisites:** add the `CsCheck` NuGet package to the test project. The generator templates below
 target a modern .NET TFM; if the project targets .NET 5 or earlier, drop or replace any `TimeOnly`/`DateOnly`
-generators in `GenDateExtensions.cs` (introduced in .NET 6) with `DateTime`-based equivalents.
+generators in `GenDateExtensions.cs` (introduced in .NET 6) with `DateTime`-based equivalents. The
+`ReplaySeed` samples use `string?`, so nullable reference types must be enabled in the test project (the
+default in modern SDK templates). The date generators are relative to today by design; a case that needs
+exact dates belongs in a `[Fact]`/`[Theory]`, not a property test.
 
 ## When to reach for a property-based test
 
@@ -23,32 +26,54 @@ to read. Property-based testing earns its keep for things like:
 
 ## Core pattern
 
-Call `Sample` directly from CsCheck — no wrapper. Omit `seed:` for normal exploration; the
-[seed section](#what-seed-does-and-does-not-do) below explains why.
+Call `Sample` directly from CsCheck — no wrapper. **Every property test declares a `ReplaySeed` local that is
+`null` by default**, passes it to `Sample`, and ends with a guard that fails if it is still set. Normal runs
+explore new inputs; when a run fails, the developer pastes the reported seed into that one variable and
+re-runs just that test (see [Reproducing a failure](#reproducing-a-failure-paste-the-seed-run-one-test)).
 
 ```csharp
 [Fact]
 public void SanitizedName_NeverEndsWithDash()
 {
+    string? ReplaySeed = null;   // paste the seed from a failure here to replay it; revert after the fix
+
     Gen.String[1, 200].Sample(input =>
     {
         var result = Sanitize.DownloadFileName(input);
         if (!string.IsNullOrEmpty(result))
             Assert.NotEqual('-', result[^1]);
-    });
+    }, seed: ReplaySeed, iter: ReplaySeed is null ? Check.Iter : 1);
+
+    Assert.True(ReplaySeed is null, "ReplaySeed is still set; revert it to null before committing.");
 }
 
 [Fact]
 public void SanitizedName_OnlyContainsValidSlugCharacters()
 {
+    string? ReplaySeed = null;
+
     Gen.String[1, 200].Sample(input =>
     {
         var result = Sanitize.DownloadFileName(input);
         Assert.Matches(@"^[a-z0-9-]*$", result);
-    });
+    }, seed: ReplaySeed, iter: ReplaySeed is null ? Check.Iter : 1);
+
+    Assert.True(ReplaySeed is null, "ReplaySeed is still set; revert it to null before committing.");
 }
 ```
 
+- `seed: null` is a no-op and `Check.Iter` is CsCheck's default (100, or `CsCheck_Iter`), so an unreplayed
+  test behaves exactly like a bare `Sample(...)`. With a seed set, `iter: 1` runs only the failing case
+  (unset `CsCheck_Time`; it overrides `iter:`).
+- **Design choice — isolated replay, with a guard against leftovers.** A seed pins one case, so replay uses
+  `iter: 1`: it reproduces the exact case, the reported seed stays the same, and breakpoints hit once. (A bare
+  `seed:` with default iterations is not isolated: it runs all iterations, shrinks, and reports a different
+  seed.) The cost is that a forgotten seed would silently reduce the test to one case, so the trailing guard
+  fails the test once the defect is fixed until the seed is reverted to `null`. While the failure is
+  reproducing, the guard is never reached.
+- Use a plain local, not `const`: a `const` null makes the `is null` checks raise CS8519/CS8520, which break
+  builds that treat warnings as errors.
+- Keep the variable local to each test so replaying one test never affects another.
 - Compose generators (`Gen.Int`, `Gen.String`, `Gen.OneOf`, `Gen.Select`, `Gen.Frequency`) to build
   realistic domain objects instead of hand-rolling random values.
 - A property-based test explores; a fixed seed gives repeatability of a single case, not broad exploration.
@@ -61,54 +86,63 @@ public void SanitizedName_OnlyContainsValidSlugCharacters()
 - Pair a small number of property-based tests (covering the general rule) with a handful of example-based
   tests (covering specific, named edge cases a reader will recognize).
 
+## Reproducing a failure: paste the seed, run one test
+
+When a property test fails, the output contains:
+
+```
+Set seed: "6qoQwbfBvu15" or -e CsCheck_Seed=6qoQwbfBvu15 to reproduce (0 shrinks, 0 skipped, 100 total).
+```
+
+1. Open the failing test (Test Explorer → failing test → Go to Test).
+2. Set `string? ReplaySeed = "6qoQwbfBvu15";` (value copied from the message, quotes included).
+3. Run or debug **just that test** in Visual Studio Test Explorer (or `dotnet test --filter "FullyQualifiedName~TestName"`).
+   It fails on the same input every time, so breakpoints and fixes are repeatable.
+4. Fix the defect, then promote the case to a permanent regression
+   ([Regression pattern](#regression-pattern-for-a-discovered-failure)) and set `ReplaySeed` back to `null`
+   (the test's trailing guard fails until you do). Non-null seeds stay only in `*_ReplayFromSeed` tests.
+
+Alternative without editing code: `CsCheck_Seed=6qoQwbfBvu15` as an environment variable (or
+`dotnet test -e CsCheck_Seed=...`). It applies to every property in the run, so combine it with a test
+filter; in Test Explorer prefer the in-code constant.
+
 ## What `seed:` does (and does not) do
 
-CsCheck's `seed:` argument and `CsCheck_Seed` environment variable are commonly misread as a
-"deterministic CI/CD" switch. They are not.
+`seed:` / `CsCheck_Seed` are a **failure-replay handle, not a "deterministic CI/CD" switch**. Revalidate
+against the CsCheck version in use when upgrading the dependency.
 
-> **Common pitfalls**
+- `Sample(assertion, seed: X, iter: N)` generates iteration 1 from the PCG state of `X`; iterations 2..N run
+  across worker threads, each seeded from `Stopwatch.GetTimestamp()`. A seed therefore pins **one case only**,
+  not the run — hence `iter: 1` for replay.
+- Reproducibility of a failure comes from the shrinker, which prints the seed of the *minimal failing case*.
+  Replay it to investigate, then promote the minimized input to a permanent regression test
+  ([Regression pattern](#regression-pattern-for-a-discovered-failure)).
+- Committed tests keep `ReplaySeed = null` (enforced by the trailing guard), so every CI run explores new
+  inputs and coverage compounds. A
+  descriptive seed is not documentation of intent; put intent in the test name and generator composition.
+
+> **Common pitfall: Bogus and CsCheck use seeds in opposite ways.**
 >
-> - A seeded **Bogus builder** fixes fixture defaults for the same builder, locale, seed, and generation
->   sequence; it is not the same mechanism as CsCheck exploration.
-> - CsCheck properties are **unseeded by default**. Its `seed:` pins the first iteration only, not the
->   whole test run.
-> - Replay a reported seed only for a pinned regression (normally with `iter: 1`); keep the general
->   property unseeded so exploration continues. See the detailed seed policy below.
-
-**What `Sample(assertion, seed: X, iter: N)` actually does** (revalidate against the CsCheck version used
-by the target project when upgrading the dependency):
-
-- Iteration 1 is generated from the parsed PCG state of `X`.
-- Iterations 2..N run across worker threads (default = `Environment.ProcessorCount`), each seeded from
-  `Stopwatch.GetTimestamp()` on first touch of its thread-static PCG.
-- Therefore a supplied seed pins **one case only**, not the whole run. Iterations 2..N still vary across
-  runs and thread scheduling.
-
-**Reproducibility of failures does not come from pinning the run.** It comes from the CsCheck shrinker,
-which prints the seed of the *minimal failing case* on failure. The developer replays that seed for
-investigation and promotes the minimized input into a permanent regression test. See
-[Regression pattern for a discovered failure](#regression-pattern-for-a-discovered-failure).
-
-**Conventions:**
-
-- **Omit `seed:` by default.** Let CsCheck use its default seeding so every run explores different inputs.
-  This is what compounds coverage over time across the team's CI runs.
-- **Pass `seed:` only** when re-covering a specific reported failure as a regression (paired with `iter: 1`
-  so no unrelated case can also fail from that call), or when a test is deliberately documenting a "canary"
-  case for iteration 1. A descriptive seed is not documentation of test intent; put the intent in the test
-  name and generator composition.
-
-This is a different determinism model than test-data builders. Bogus builders should still use a
-fixed seed so a fixture's defaults reproduce exactly; that's a separate concern from CsCheck's exploration.
+> | | Bogus builders (`UseSeed(_seed)`) | CsCheck properties (`seed:` / `CsCheck_Seed`) |
+> |---|---|---|
+> | Purpose | Deterministic fixtures, identical every run | Temporary replay handle for a reported failure |
+> | Scope | Pins the entire generated sequence | Pins **only the first case** |
+> | Committed value | A fixed seed constant | `null` (explore new inputs every run) |
+>
+> **A CsCheck seed is never a determinism switch.** A developer used to Bogus may assume that setting one makes
+> a property test repeatable; it doesn't, because the remaining iterations still vary. Use it only to replay a
+> failure (with `iter: 1`), then reset `ReplaySeed` to `null`; the trailing assertion fails a test that still
+> has one set. Conversely, keep Bogus builders seeded so fixtures stay reproducible. See
+> [`test-data-builders.md`](test-data-builders.md).
 
 ## Iteration counts
 
-- **General property tests:** omit `iter:` and inherit CsCheck's static default (`Check.Iter = 100`). See
-  [Two-build strategy](#two-build-strategy-pr-run-vs-nightly-run) for how the nightly run scales this.
+- **General property tests:** `iter: ReplaySeed is null ? Check.Iter : 1` (default 100, scaled by
+  `CsCheck_Iter`). See [Two-build strategy](#two-build-strategy-pr-run-vs-nightly-run).
 - **Narrow, already-biased property spaces** (for example, varied invalid email forms just beyond a length
-  threshold — generator space itself is small and targeted): pass `iter: 20`. An explicit `iter:` value does
-  not scale with the nightly env var, which is the desired behavior — a narrow space does not benefit from
-  more iterations.
+  threshold): `iter: ReplaySeed is null ? 20 : 1`. A literal count does not scale with the nightly env var,
+  which is intended — a narrow space does not benefit from more iterations.
+
 - **Exact threshold boundaries** (`N-1`, `N`, `N+1`) stay as ordinary example tests, not property tests.
   See [Pair properties with explicit boundary examples](#pair-properties-with-explicit-boundary-examples).
 - The generator's bias and partition coverage matter more than raw volume; raise counts only when the state
@@ -135,11 +169,15 @@ public void Email_At_Exact_200_Chars_Should_Pass()   // boundary example, exact 
 [Fact]
 public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space beyond it
 {
+    string? ReplaySeed = null;
+
     Gen.String[Gen.Char.AlphaNumeric, 210, 260].Sample(local =>
     {
         var model = BuildModelWithEmail(local + "@test.com");
         Validator.TestValidate(model).ShouldHaveValidationErrorFor(EmailExpression);
-    }, iter: 20);
+    }, seed: ReplaySeed, iter: ReplaySeed is null ? 20 : 1);
+
+    Assert.True(ReplaySeed is null, "ReplaySeed is still set; revert it to null before committing.");
 }
 ```
 
@@ -148,22 +186,20 @@ public void Property_Email_Exceeding_200_Chars_Always_Fails()   // the space bey
 Property-based tests belong in CI — dev-only exploration wastes their value. The standard shape is two
 pipelines that share the same tests but exercise them differently.
 
-- **PR / main pipeline:** run with CsCheck's default `Check.Iter = 100`. Fast feedback, catches obvious
-  regressions and any new property violation. Any failure is reproducible from the reported seed.
-- **Nightly pipeline:** set the `CsCheck_Iter` environment variable to scale general property tests
-  (typical value: `1000`). Explicit `iter:` values on narrow boundary properties intentionally do not
-  scale — their generator space is small. Deeper exploration compounds coverage across nights.
+- **PR / main pipeline:** CsCheck's default `Check.Iter = 100`. Fast feedback; any failure is reproducible
+  from the reported seed.
+- **Nightly pipeline:** set `CsCheck_Iter` (typical value: `1000`) to scale general property tests. Literal
+  `iter:` counts (e.g. `20`) on narrow properties intentionally do not scale. Deeper exploration compounds
+  coverage across nights.
 
-Both pipelines rely on the same failure workflow: shrinker prints the reproducing seed → developer pins
-the minimized input as a regression test → next runs keep exploring. Determinism of the whole run is
-neither required nor useful; determinism of *each discovered failure* is guaranteed by the shrinker's
-reported seed.
+Both pipelines use the same failure workflow (see
+[Reproducing a failure](#reproducing-a-failure-paste-the-seed-run-one-test)). Determinism of the whole run is
+neither required nor useful; each discovered failure is reproducible from the shrinker's reported seed.
 
 ### Running the test project with a larger iteration count
 
-The nightly job (or an ad-hoc local exploratory run) sets `CsCheck_Iter` before invoking `dotnet test`.
-The env var only scales tests that did not pass an explicit `iter:` argument, so boundary-property tests
-stay at their pinned counts by design.
+The nightly job (or an ad-hoc local run) sets `CsCheck_Iter` before `dotnet test`. It scales tests that use
+`Check.Iter` (the `ReplaySeed` pattern) or omit `iter:`; literal counts such as `20` stay pinned.
 
 **PowerShell (Windows CI agents, local exploration):**
 
@@ -189,7 +225,8 @@ dotnet test -e CsCheck_Iter=1000
 `dotnet test` run. A value of `5` means "each property may run up to 5 seconds"; a suite of 200 properties
 therefore takes up to ~1000 seconds. Use it only when a specific property's per-case cost is highly
 variable and a time budget is more predictable than a fixed iteration count. For typical millisecond-scale
-validation properties, prefer `CsCheck_Iter`.
+validation properties, prefer `CsCheck_Iter`. `CsCheck_Time` overrides `iter:` entirely, so unset it when
+replaying a seed (otherwise random cases keep running after the seeded one).
 
 ```bash
 CsCheck_Time=5 dotnet test   # per property, NOT per suite
@@ -197,13 +234,9 @@ CsCheck_Time=5 dotnet test   # per property, NOT per suite
 
 ## Regression pattern for a discovered failure
 
-When a property-based run fails, CsCheck prints a line like:
-
-```
-Set seed: "0000018ab..." or -e CsCheck_Seed=0000018ab... to reproduce (12 shrinks, 3,456 skipped, 4,000 total).
-```
-
-Two ways to turn that into a durable regression:
+After reproducing and debugging a failure
+([Reproducing a failure](#reproducing-a-failure-paste-the-seed-run-one-test)), turn it into a durable
+regression one of two ways:
 
 - **Preferred: pin the minimized input as an example test.** Copy the shrunken input into a plain `[Fact]`
   with hardcoded values. Names the defect, needs no generator, and never varies:
@@ -225,15 +258,17 @@ Two ways to turn that into a durable regression:
   [Fact]
   public void RejectsHomoglyphEmail_ReplayFromSeed()
   {
+      string? ReplaySeed = "6qoQwbfBvu15";   // labelled regression; deliberately non-null, so no trailing guard
+
       Gen.String[1, 200].Sample(local =>
       {
           var model = BuildModelWithEmail(local);
           Validator.TestValidate(model).ShouldHaveValidationErrorFor(EmailExpression);
-      }, seed: "0000018ab...", iter: 1);
+      }, seed: ReplaySeed, iter: 1);
   }
   ```
 
-Either way, keep the unseeded general property alongside the pinned regression so exploration continues.
+Either way, keep the exploring (`ReplaySeed = null`) general property alongside the pinned regression so exploration continues.
 
 ## Biased character generators (for string/format validation)
 
