@@ -1,7 +1,7 @@
 # [Action or outcome a tester recognizes] (MC-XXX)
 
 <!--
-One authoritative, business-readable manual check (or related checks on one page).
+One authoritative, business-readable manual check (or related checks with application/page variants).
 QA execution results belong outside the repository. Omit inapplicable technical fields.
 Do not invent setup conditions or expected behavior: get reviewer approval when uncertain.
 Write the tester-facing sections as instructions for a person using the application, not
@@ -23,7 +23,7 @@ labels and menu names; if they are unknown, resolve them rather than guessing.
   person/team who will provide it. Use synthetic/non-sensitive test data.
 - [External dependency or alternate account, if required.]
 
-## Steps
+## Steps (MC-XXX-01)
 
 1. [Choose a visible button, link, field, or menu item by its on-screen name.]
 2. [Enter or select the exact test value needed; continue with the next visible action.]
@@ -39,7 +39,8 @@ the relevant step if it matters. Include save/reopen only when persistence is in
 
 | Field | Value |
 |---|---|
-| Scenario ID | `MC-XXX-01`; link to `docs/testing/manual-coverage.md` with the correct relative path |
+| Manual QA area ID | `MC-XXX` |
+| Manual QA index | Link to `docs/testing/manual-coverage.md` with the correct relative path |
 | Status | Draft / Needs decision (omit when current) |
 | Work item | [ID/link when applicable] |
 | Page / route | [Actual relative route when applicable] |
@@ -50,6 +51,10 @@ the relevant step if it matters. Include save/reopen only when persistence is in
 | Representative pages | [For shared UI controls only: chosen pages and why they represent the change] |
 
 <!--
+Scenario IDs belong on the individual check: in the Steps heading for a single check, in each Checks
+table row for multiple short checks, or in each separate multi-step heading. Never list only the first
+scenario ID in the shared Technical details table.
+
 For multiple short, independent checks sharing the same setup, use this form instead of the
 single Steps/Expected result pair (each row has its own stable, unique scenario ID):
 
@@ -61,7 +66,7 @@ single Steps/Expected result pair (each row has its own stable, unique scenario 
 | MC-XXX-02 | [Other on-screen action] | [Other visible outcome] |
 
 For a check requiring several actions, use a separate numbered Steps and Expected result
-subsection with its own scenario ID instead of compressing actions into a table cell.
+subsection headed with its own scenario ID instead of compressing actions into a table cell.
 When checks have different setup or starting pages, give each its own "Before you start".
 When one check has app/page variants, name each variant and its expected result explicitly.
 For shared UI controls, state representative pages and why they were chosen under Technical details.

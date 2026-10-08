@@ -19,8 +19,9 @@ Classify every uncovered behavior as one of the following:
 Do not add a new component-test framework solely for an isolated scenario when the project has explicitly
 decided not to add that framework.
 
-The scenario doc's `Coverage` field/summary (see `templates/scenario-doc-template.md`) reflects this
-classification per scenario ID — link to the `MC-###` entry rather than duplicating its rationale or steps.
+The scenario doc's `Coverage` field/summary (see `templates/scenario-doc-template.md`) classifies each
+feature scenario. Link to the manual QA area (`MC-###`) and its runnable checks (`MC-###-##`) where needed,
+rather than duplicating their rationale or steps.
 Do not record whether QA has executed a scenario in this repository.
 
 ## Workflow
@@ -31,9 +32,11 @@ Do not record whether QA has executed a scenario in this repository.
 3. Classify each behavior using the table above.
 4. Create or update the consuming project's single `docs/testing/manual-coverage.md` browse/release
    index using `templates/manual-coverage-template.md`, adapted to the repository's vocabulary and
-   existing rows. Use one row per linked manual detail document, repeating the area ID for checks in
-   different pages or applications. Show the stable area ID, linked detail, classification, and release
-   trigger. Do not maintain a second hand-written browse index or copy steps into the register.
+   existing rows. Use one row per application/page-specific check link, repeating the area ID and, when
+   variants share a canonical detail document, linking that same document from multiple rows. Give each
+   row a descriptive check link that identifies its application or page. Show the stable area ID,
+   classification, and release trigger. Do not maintain a second hand-written browse index or copy
+   steps into the register.
 5. Create or update linked detail in the owning feature's `manual/` folder. Follow the repository's
    `docs/testing/guides/scenario-organization.md` when present, including group, cross-application,
    and first-use ownership decisions. Otherwise follow the existing project layout, or use
@@ -50,10 +53,10 @@ Do not record whether QA has executed a scenario in this repository.
 7. Revisit entries after refactors, shared-component changes, test-infrastructure changes, or related
    work-item completion.
 
-When an area is retired or equivalent automated coverage is established and passes, remove its detailed
-manual scenario document and index row from the active register. Do not retain one-time execution history
-in repository Markdown; preserve only a current scenario reference when it is still needed to explain a
-coverage decision.
+When a check is retired or equivalent automated coverage is established and passes, remove its index row;
+remove a shared detail document only when no active checks still use it. Do not retain one-time execution
+history in repository Markdown; preserve only a current scenario reference when it is still needed to explain
+a coverage decision.
 
 ## Selecting a representative sample for a shared UI change
 
@@ -83,8 +86,9 @@ Only `Manual-only` and `Deferred automation` behaviors belong in this recurring 
   Do not create an `MC-###` manual-QA entry.
 - **Not implemented:** do not make a coverage claim or create a manual-QA entry until the behavior exists.
 
-Each index row needs an application/category or feature grouping where known, a stable area ID (`MC-XXX`),
-a descriptive link to the runnable detail, classification (per row or shared when uniform), and a
+Each index row represents an application/page-specific check and needs an application/category or feature
+grouping where known, a stable area ID (`MC-XXX`), a descriptive link to the runnable check (the same
+detail document may be linked by multiple rows), classification (per row or shared when uniform), and a
 release/recheck trigger. Keep the work-item reference in the linked detail; existing indexes with a
 work-item column may retain it. Each detail document needs that stable area ID plus stable scenario IDs
 (`MC-XXX-01`, `MC-XXX-02`, ...), related work item, behavior/scope, classification and reason, status
@@ -93,6 +97,9 @@ data state (including status, dates, or relationships when relevant), setup owne
 prepare it, external dependencies when relevant, manual steps, and expected results. For a UI entry
 point, put the user-facing navigation at the top and the actual relative route (for example
 `/admin/users/{id}/edit`) under Technical details.
+Record every `MC-XXX-##` scenario ID on its own check: in the Steps heading for a single or multi-step
+check, or in each Checks table row for short independent checks. Never list only the first scenario ID
+in a shared Technical details table.
 
 Do not assign the same scenario ID to unrelated checks in different documents. If one scenario spans
 pages/applications, label each variant with its page/application and expected result, and keep its area ID
