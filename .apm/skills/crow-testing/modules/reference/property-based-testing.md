@@ -104,7 +104,7 @@ Set seed: "6qoQwbfBvu15" or -e CsCheck_Seed=6qoQwbfBvu15 to reproduce (0 shrinks
 
 Alternative without editing code: `CsCheck_Seed=6qoQwbfBvu15` as an environment variable (or
 `dotnet test -e CsCheck_Seed=...`). It applies to every property in the run, so combine it with a test
-filter; in Test Explorer prefer the in-code constant.
+filter; in Test Explorer prefer the in-code `ReplaySeed` local.
 
 ## What `seed:` does (and does not) do
 
