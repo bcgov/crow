@@ -161,14 +161,16 @@ generic suite instead of copying files — see
   themselves produce a valid object, and that contract deserves its own test — see
   [`reference/test-data-builders.md`](../reference/test-data-builders.md) for the full pattern (generated
   defaults with pinned domain constraints, semantic composite methods, nested composition, thread safety).
-- For CsCheck property-based tests, call `Sample` directly (no wrapper) and by default omit the `seed:`
-  argument so each CI run explores new inputs. The `seed:` argument pins iteration 1 only, not the whole
-  run — reproducibility of failures comes from CsCheck's shrinker reporting a reproducing seed, which you
-  then promote to a pinned regression test. See
-  [`reference/property-based-testing.md`](../reference/property-based-testing.md) for the seed section,
+- For CsCheck property-based tests, call `Sample` directly (no wrapper) and give every test a local
+  `string? ReplaySeed = null;` passed as `seed: ReplaySeed, iter: ReplaySeed is null ? Check.Iter : 1`, with a
+  trailing `Assert.True(ReplaySeed is null, ...)` guard so a forgotten seed fails instead of silently running
+  one case.
+  Committed runs explore new inputs; to debug a failure, paste the seed CsCheck reports into `ReplaySeed`,
+  run just that test in Test Explorer, fix, then promote it to a regression and reset to `null`. See
+  [`reference/property-based-testing.md`](../reference/property-based-testing.md) for the replay steps,
   iteration counts (100 default, 20 for narrow boundary properties), and the two-build (PR + nightly
   `CsCheck_Iter=1000`) strategy. This determinism model is different from the Bogus builders above:
-  builders still use a fixed seed so fixture defaults reproduce; CsCheck properties do not.
+  builders still use a fixed seed so fixture defaults reproduce; CsCheck properties explore until replayed.
 - Group long test classes with `#region` blocks and give each class a short XML doc comment stating its
   purpose — these files are read far more often than they're written.
 
