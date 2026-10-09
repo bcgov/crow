@@ -1,5 +1,5 @@
 name: bcgov-crow-starter-package
-version: 0.12.3
+version: 0.12.4
 description: Crow agents and skills for daily brownfield development and REST/SOAP API modernization
 author:
   name: bcgov
@@ -24,52 +24,52 @@ dependencies:
   apm:
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-architecture-review.agent.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-framework-dependency-update.agent.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-bcgov-ux.agent.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-raven-setup.agent.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-testing.agent.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-framework-updates
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-dependency-updates
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-application-architecture
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-application-development
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-architecture-review
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-bcgov-ux
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-project-context
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-solution-architecture/modules/technology-preferences.md
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-solution-architecture/scripts/technology-preferences.mjs
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-raven-setup
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-security-review
-      ref: v0.12.3
+      ref: v0.12.4
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-testing
-      ref: v0.12.3
+      ref: v0.12.4

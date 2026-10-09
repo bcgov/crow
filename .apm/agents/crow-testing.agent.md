@@ -43,8 +43,13 @@ explicitly asks to remember new pipeline details.
   duplicate it.
 - Detect and follow meaningful project conventions; present defaults as overridable recommendations only
   when no convention exists.
-- For feature-level scenario planning or document organization without a repository guide, load
-  `modules/scenario-organization.md` and confirm boundaries before creating or relocating documents.
+- Read the repository's testing scenario-organization guide when present. Use its application/category
+  ownership and feature homes; do not create empty categories or duplicate manual steps in browse indexes.
+  Confirm first-use category ownership with reviewers when it is not already established in the guide;
+  resolve pending ownership before placing new documents. When feature-level work
+  has no guide, derive a proposed map from existing docs, vertical slices, routes and pages using
+  `modules/scenario-organization.md`; obtain reviewer agreement before creating a repository-specific
+  guide or relocating scenarios.
 - When developing integration tests and repeated setup is slow, automatically evaluate and apply the
   expensive stable SQL Server baseline pattern when its checklist passes: seed the stable baseline once
   per class, use a fresh `DbContext` and one rollback transaction per test, reuse that transaction in
@@ -80,9 +85,11 @@ explicitly asks to remember new pipeline details.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests.
 - Execute HTTP integration tests only against approved non-production targets. Never replay production traffic or include raw payloads, credentials, tokens, cookies, or sensitive headers in test artifacts.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
-- Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked detail
-  documents only in the repository-confirmed feature home, following the routed manual-coverage and
-  scenario-organization guidance.
+- Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked manual
+  detail documents in the repository-guided feature home. Without a guide, follow its existing layout
+  or use the confirmed feature map: `docs/testing/scenarios/<application>/<feature>/manual/` for a
+  known application without an applicable group, and `docs/testing/scenarios/<feature>/manual/`
+  only when no application boundary applies. Resolve pending ownership before new placement.
 - Accept a user-supplied work-item ID/link for reference, but do not search or create external work items in
   this phase. Persist full draft candidates under `docs/testing/drafts/` and index them in `testing-plan.md`.
   If the user later confirms that they manually filed a draft, update the index with the supplied ID/link and

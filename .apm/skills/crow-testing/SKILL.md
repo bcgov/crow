@@ -114,8 +114,17 @@ reference according to that skill.
    reference files are single-decision and independently loadable. A reference file that outgrows its one
    decision should be **split**, not allowed to grow.
 11. Load [`modules/manual-coverage.md`](modules/manual-coverage.md) when a behavior may be manual-only or
-   deferred automation. Follow its classification, review-status, and edit-authority rules; preserve
-   existing documents and scenario IDs.
+   deferred automation. Follow the consuming repository's `docs/testing/guides/scenario-organization.md`
+   and its application/category feature homes when present. Otherwise follow an existing project layout,
+   or create a feature home under `docs/testing/scenarios/<application>/<feature>/` when the application
+   is known and no approved group applies, or `docs/testing/scenarios/<feature>/` only when no
+   application boundary applies. Resolve pending ownership before placing new checks. Use
+   [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md) for the single
+   `docs/testing/manual-coverage.md` browse/release index. Prefer a repository-provided manual template
+   when present, otherwise use
+   [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md) for linked detail
+   under the owning feature's `manual/` folder. Follow the module's classification, review-status,
+   and edit-authority rules; preserve current documents and IDs; do not mass-regenerate.
 12. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
    [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md),

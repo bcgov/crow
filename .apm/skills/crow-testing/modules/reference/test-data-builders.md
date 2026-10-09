@@ -114,7 +114,7 @@ The callback form keeps tests from importing and assembling child builders inlin
   tests that fail once and pass on retry, which trains everyone to ignore failures.
 - Keep the seed a named constant on the builder, not scattered literals.
 - Determinism here is *opposite* to CsCheck property-based testing — builders pin seeds so fixture
-  defaults reproduce; CsCheck properties omit seeds to explore. See
+  defaults reproduce; CsCheck properties explore (`ReplaySeed = null`) until a failure seed is replayed. See
   [`property-based-testing.md`](property-based-testing.md).
 
 ## Localization
