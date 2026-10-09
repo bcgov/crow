@@ -67,7 +67,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.12.2 --global --target copilot
+apm install bcgov/crow#v0.12.3 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -137,7 +137,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.12.2` remains fixed. Installing
+while an exact version tag such as `#v0.12.3` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -200,9 +200,10 @@ package.
   Read-only Crow asset quality and release review.
 - [**crow-release**](.apm/skills/crow-release/SKILL.md) — Versioned package
   preparation, validation, and publication.
-- [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Unit and integration
-  testing, including HTTP characterization and differential testing for
-  REST/SOAP API modernization.
+- [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Reviewed feature
+  scenarios organized by repository features, automated unit/integration tests,
+  and business-readable manual QA coverage; includes HTTP characterization and
+  differential testing for REST/SOAP API modernization.
 
 ## Optional reporting prerequisite
 
@@ -222,7 +223,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.12.2.zip`. See
+The resulting archive is `build/bcgov-crow-0.12.3.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

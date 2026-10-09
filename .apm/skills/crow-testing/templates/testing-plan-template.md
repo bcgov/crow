@@ -40,8 +40,9 @@ documents may be backfilled lazily when next touched; do not mass-rewrite older 
 
 ## Manual QA scope
 
-- `manual-coverage.md` — index of recurring manual QA areas and release triggers; links to detailed
-  scenarios under `manual/`. Execution is tracked outside the repository.
+- `manual-coverage.md` — single manual-only browse/release index by application/category when the
+  repository defines them; links to detail in the owning feature's `manual/` folder.
+  Execution is tracked outside the repository.
 
 ## Work-item candidates
 

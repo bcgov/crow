@@ -17,7 +17,7 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.12.2 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.12.3 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
