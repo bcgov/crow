@@ -31,11 +31,13 @@ redundant nested directory.
 - Give cross-application behavior one owning feature home. Link app-specific manual checks from their
   application/group rows in `docs/testing/manual-coverage.md`; do not copy scenario definitions.
 - Keep runnable manual steps under the owning feature's `manual/` folder. Use
-  `docs/testing/manual-coverage.md` as the single manual browse/release index and the testing README as
-  the feature directory. Update links and indexes when a feature or check moves.
+  `docs/testing/manual-coverage.md` as the single manual browse/release index. Use the testing README
+  (typically `docs/testing/README.md`) as the landing-page index for feature homes, not as a feature
+  directory itself. Update links and indexes when a feature or check moves.
 - Keep stable scenario IDs; link automated coverage to test files or folders, not method names. Distinguish
   automated business-rule checks from rendered UI checks still requiring manual QA.
 - When pending ownership is resolved, update this guide. Relocate existing documents only with approval
-  and update links in the testing README, testing plan and manual index together.
+  and update links in the testing README (typically `docs/testing/README.md`), testing plan and manual
+  index together.
 - List approved future groups without creating empty folders or an unapproved smoke suite. Record QA
   execution outside the repository.

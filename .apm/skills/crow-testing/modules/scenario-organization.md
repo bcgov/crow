@@ -35,13 +35,14 @@ for a simple unit test or replace an established layout without approval.
 After approval, create `docs/testing/guides/scenario-organization.md` using the
 [`scenario-organization-template.md`](../templates/scenario-organization-template.md) shape. Document only
 approved groups, confirmed or pending application ownership, slugs and placement rules. Link it from
-the testing README when present; for a new testing documentation set, make that README the feature
-directory. Maintain the single `manual-coverage.md` browse/release index with links to runnable
-checks under each owning feature.
+the testing README (typically `docs/testing/README.md`) when present. For a new testing documentation
+set, create `docs/testing/README.md` as the landing page that indexes and links to feature homes, not
+as a feature directory itself. Maintain the single `manual-coverage.md` browse/release index with links
+to runnable checks under each owning feature.
 For short single-document features, the group or page folder itself may be the feature home; add a
 child feature folder only when it helps keep related documents together. Do not create empty folders,
 duplicate expected results across indexes, or assume a smoke subset without an agreed selection.
 When a pending owner is confirmed, update the guide and revisit placement; move existing documents
-only with approval, preserving scenario IDs and updating the testing README, plan and manual index links
-together. Flag preexisting duplicate cross-application checks as a consolidation candidate rather than
-silently moving or copying them.
+only with approval, preserving scenario IDs and updating the testing README (typically
+`docs/testing/README.md`), plan and manual index together. Flag preexisting duplicate cross-application
+checks as a consolidation candidate rather than silently moving or copying them.

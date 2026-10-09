@@ -123,7 +123,8 @@ reference according to that skill.
    `docs/testing/manual-coverage.md` browse/release index. Prefer a repository-provided manual template
    when present, otherwise use
    [`templates/manual-scenario-template.md`](templates/manual-scenario-template.md) for linked detail
-   under the owning feature's `manual/` folder. Preserve current documents and IDs; do not mass-regenerate.
+   under the owning feature's `manual/` folder. Follow the module's classification, review-status,
+   and edit-authority rules; preserve current documents and IDs; do not mass-regenerate.
 12. Use [`templates/scenario-doc-template.md`](templates/scenario-doc-template.md),
    [`templates/testing-plan-template.md`](templates/testing-plan-template.md),
    [`templates/manual-coverage-template.md`](templates/manual-coverage-template.md),

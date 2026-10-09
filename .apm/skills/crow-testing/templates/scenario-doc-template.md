@@ -14,7 +14,7 @@ Fill in following a plain-language, table-first pattern:
 | Feature | [Feature name] |
 | Phase/status | Draft - awaiting decision / Approved - implementation pending / Automated / Partial - manual/deferred / Partial - coverage gap / Manual-only / Blocked / Legacy - pending backfill |
 | Automated coverage | Test files or folders; use `None` when not automated |
-| Manual QA required | Scenario IDs or `None`; describe recurring QA scope below |
+| Manual QA required | Manual QA area IDs (`MC-###`) or `None`; describe recurring QA scope below |
 | Open decisions | Short list or `None` |
 | Work-item candidates | `None`, `DRAFT-*` key/path, `Existing - <ID/link>`, or `Created - <provider>:<ID>` |
 
@@ -95,7 +95,7 @@ Recurring manual checks only. QA chooses applicable items based on the release. 
 outside the repository. One-time post-fix checks belong in the related work-item draft, not here.
 -->
 
-- **Scenario IDs:** `MC-###` or `None`
+- **Manual QA area IDs:** `MC-###` or `None` (individual runnable checks use `MC-###-##`)
 - **Manual QA detail:** Link to runnable checks in the owning feature's `manual/` folder
 - **Release trigger:** Every release / when <component or behavior> changes / smoke only
 
