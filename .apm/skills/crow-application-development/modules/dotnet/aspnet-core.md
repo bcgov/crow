@@ -3,7 +3,7 @@
 ## Startup and middleware
 
 - Keep environment-specific developer diagnostics inside an explicit development guard.
-- Use centralized exception handling and RFC 9457 Problem Details. Log the exception once and return no internal detail. Follow [`application-diagnostics.md`](../application-diagnostics.md) for the support reference, correlation, and outbound-call events.
+- Use centralized exception handling and RFC 9457 Problem Details. Log the exception once and return no internal detail. Follow [`diagnostics.md`](diagnostics.md) for what .NET 10 already provides and the support reference, error catalog, and error page additions.
 - Configure forwarded headers only for known proxies/networks and run the middleware before HTTPS/auth decisions.
 - Use HTTPS redirection and HSTS in production where TLS terminates compatibly with the platform.
 - Add security headers centrally. Build a restrictive CSP from actual resource needs; do not normalize `unsafe-inline` or `unsafe-eval`.

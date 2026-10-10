@@ -38,7 +38,7 @@ reference according to that skill.
    applicable fixture reference and evaluate the expensive stable-baseline exception; do not infer it from
    test count.
 5a. When testing error handling, user-visible errors, logging, or outbound-call failures, load [application diagnostics](../crow-application-development/modules/application-diagnostics.md)
-   and derive scenarios from its acceptance checks (400 with distinct causes, 401/403, 503, no-status network failure, null response, cancellation, deadline, pending call, unexpected exception, secret/PII sentinels absent from user output and logs).
+   and derive scenarios from its acceptance checks: baseline (failure found in the deployed sink by reference; correct surface for validation, 401, 403, 404, transient, and unexpected errors; secret sentinels absent with the escape hatch off and expiring after it is on; accessible, persistent, copyable reference) and full assurance only when the application has those boundaries.
 6. When the behavior crosses an identity, device, resource, transaction, privileged, workload, network, API,
    external-decision, or service trust boundary, also load
    [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md)

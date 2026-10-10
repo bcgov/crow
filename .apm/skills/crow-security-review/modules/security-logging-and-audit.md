@@ -41,6 +41,16 @@ Do not require secret values, raw tokens, session IDs, email addresses, display
 names, or unnecessary claim sets. Review structured message templates,
 exception serialization, and diagnostic scopes for PII or credential leakage.
 
+**Diagnostic sensitive-logging switch.** An application may provide a
+time-boxed switch that temporarily logs secret values to diagnose an issue
+that safe stand-ins (presence, length, key ID, thumbprint, keyed fingerprint,
+non-secret claims) cannot resolve. Do not report the switch itself as a
+finding when it is off by default, expires automatically, is narrowly scoped,
+writes only to a restricted short-retention sink, records who enabled it and
+why, excludes end-user passwords and one-time/MFA codes, and is followed by
+credential rotation. Report a finding when any of those controls is missing,
+or when secrets are logged without such a switch.
+
 ## Detection method
 
 1. Inventory security-sensitive methods and policy decisions.
