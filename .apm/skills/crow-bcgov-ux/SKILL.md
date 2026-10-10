@@ -39,6 +39,10 @@ When those states are caused by authentication, step-up, authorization,
 expiry, revocation, or a dependency trust boundary, use the module's
 technology-neutral guidance for clear status, safe continuation, and recourse.
 
+When designing or reviewing an error page, toast, or error summary, apply
+[`../crow-application-development/modules/application-diagnostics.md`](../crow-application-development/modules/application-diagnostics.md)
+for what to show (support reference, UTC time, plain next step, contact; no raw exception, URL, or session detail) and use the accessibility module for presentation.
+
 Load only the matching technology module:
 
 - HTML/CSS, server-rendered templates, CMS themes, or Razor: [`modules/technology/web.md`](modules/technology/web.md)

@@ -6,7 +6,7 @@
 - Authenticate identities and authorize operations/resources independently. Never infer authorization from UI visibility.
 - Propagate cancellation and timeouts to I/O. Retry only transient, idempotent operations and cap every retry policy.
 - Bound concurrency, queues, request/body sizes, pagination, and fan-out. Apply backpressure or load shedding before resource exhaustion.
-- Use structured telemetry with stable event names and correlation. Never log secrets, tokens, full credentials, or unnecessary personal data.
+- Use structured telemetry with stable event names and correlation. Never log secrets, tokens, full credentials, or unnecessary personal data. For error handling, user-visible errors, and incident diagnosis, follow [`application-diagnostics.md`](application-diagnostics.md).
 - Surface failures through the application's established error contract. Do not swallow exceptions or return success-shaped fallbacks.
 - Keep configuration external, typed where supported, and validated before serving traffic.
 - Prefer deterministic builds, pinned/locked dependencies, immutable artifacts, and least-privilege runtime identities.

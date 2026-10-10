@@ -37,6 +37,8 @@ reference according to that skill.
    If test development or an explicit user report identifies slow repeated integration setup, route to the
    applicable fixture reference and evaluate the expensive stable-baseline exception; do not infer it from
    test count.
+5a. When testing error handling, user-visible errors, logging, or outbound-call failures, load [application diagnostics](../crow-application-development/modules/application-diagnostics.md)
+   and derive scenarios from its acceptance checks (400 with distinct causes, 401/403, 503, no-status network failure, null response, cancellation, deadline, pending call, unexpected exception, secret/PII sentinels absent from user output and logs).
 6. When the behavior crosses an identity, device, resource, transaction, privileged, workload, network, API,
    external-decision, or service trust boundary, also load
    [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md)
