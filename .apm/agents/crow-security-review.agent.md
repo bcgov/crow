@@ -302,10 +302,10 @@ Parse lock files and dependency manifests to inventory third-party libraries whi
    - **Java / Go / Other:** Execute native CLI outdated tools or plugin targets (e.g. `mvn versions:display-dependency-updates`, `go list -m -u all`).
 
 3. **Never Mirror Resolved Version to Latest:**
-   - **Strict Disallowance:** Never assume `Installed Version == Latest Version` solely based on lockfile or manifest contents.
-   - Populating the "Latest Version" column requires explicit confirmation from the output of ecosystem CLI outdated commands (e.g. `dotnet list package --outdated`, `npm outdated`) or a direct package registry API query (NuGet, npm, Packagist, PyPI).
-   - **No Wildcards / Range Specifiers:** Non-specific or wildcard version numbers (such as `8.0.x`, `17.x`, `^2.1`, `~1.4`, or `*`) are **STRICTLY FORBIDDEN** for the `Latest Version` column.
-   - **Actual Stable Version Lookup:** You must list exact, fully qualified current stable version releases (e.g. `8.0.12` instead of `8.0.x`, `18.2.0` instead of `18.x`, `4.17.21` instead of `4.x`).
+   - Never infer `Latest Version` from a manifest or lockfile. Confirm it
+     through the ecosystem's outdated CLI or a direct registry query.
+   - Use exact stable versions, not wildcards or ranges (`8.0.x`, `^2.1`,
+     `~1.4`, `*`).
 
 4. **Automated Workflow Verification Check:**
    - **Pre-Write Audit Verification:** Prior to writing or updating the final dependency table in `security-review.md`, verify that CLI outdated scan commands have been executed in the current session.
