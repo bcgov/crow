@@ -24,6 +24,17 @@ labeling, and ticket lifecycle contract.
 
 Load the relevant module(s) below when performing a manual security review or remediating a finding, based on the target repository's tech stack and the vulnerability class in question. Each module documents concrete per-framework patterns (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI, React, Vue, Angular, Svelte, etc.).
 
+## Dependency maintenance signals
+
+When auditing outdated libraries, check registry or maintainer notices for
+explicit deprecation and verify the most recent published release date for
+each inventoried library, even when the outdated CLI reports no newer version.
+Record the evidence source and check date. Flag explicitly deprecated
+libraries; flag those with no release for at least one year as potentially
+abandoned. A release gap does not prove abandonment or a vulnerability:
+consider documented maintenance or a mature/stable library when assessing
+risk. Report unverifiable status or dates as `Unknown`, not maintained.
+
 ## Bundled modules
 
 Located in `modules/`:

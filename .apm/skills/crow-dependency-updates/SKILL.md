@@ -20,12 +20,22 @@ patch/minor releases of those components.
 2. Query the repository's native package manager or an authoritative package
    registry for exact available stable versions. Do not infer current versions
    from lockfiles, silently select prereleases, or change package sources.
+   For each in-scope library, also check registry or maintainer deprecation
+   notices and the date of its most recent published release. Flag a library
+   as deprecated when explicitly marked so, and as potentially abandoned when
+   no release has been published for at least one year as of the check date,
+   even if an outdated command reports it as current. Record the notice or
+   dated release source; if the date or status cannot be verified, report it
+   as unknown rather than treating it as maintained. A release gap alone is
+   not proof of abandonment or a vulnerability.
 3. Classify each candidate by compatibility and change size. In scheduled or
    unattended runs, apply only non-breaking patch/minor updates and defer
    components without a passing relevant baseline build/test; defer major or
    ambiguous changes without prompting. In interactive runs, ask before
    breaking upgrades, dependency replacements, or changes to licensing or
-   package sources.
+   package sources. Do not silently upgrade to another deprecated or
+   potentially abandoned release; propose a maintained replacement for
+   confirmed deprecations and defer replacement decisions in unattended runs.
 4. Update one component-sized batch of scoped declarations and regenerate
    lockfiles with the repository's pinned package manager when the manager or
    repository policy uses or requires them. Otherwise, verify native
@@ -63,3 +73,6 @@ claiming that those findings have been remediated.
   consistent.
 - Advisory checks, builds, and tests were run where available, with failures
   and gaps reported explicitly.
+- Deprecated, potentially abandoned, and unverified library statuses are
+  reported with their evidence and check date, including packages with no
+  newer version available.

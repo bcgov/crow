@@ -311,9 +311,14 @@ Parse lock files and dependency manifests to inventory third-party libraries whi
    - **Pre-Write Audit Verification:** Prior to writing or updating the final dependency table in `security-review.md`, verify that CLI outdated scan commands have been executed in the current session.
    - If a CLI outdated command failed or the CLI tool is absent, explicitly document the attempted command and its result, and verify latest versions via direct package registry / web lookup before writing the document.
 
-5. **Licenses:** Extract license metadata (`MIT`, `Apache-2.0`, `BSD-3-Clause`, `GPL-3.0`, `LGPL`, etc.). Flag restrictive or copyleft licenses.
+5. **Deprecation & Maintenance Check:** Apply the
+   [dependency maintenance signals](../skills/crow-security-review/SKILL.md#dependency-maintenance-signals)
+   check to inventoried libraries, including those with no newer release;
+   record the results in the review template.
 
-6. **Known CVE Assessment:**
+6. **Licenses:** Extract license metadata (`MIT`, `Apache-2.0`, `BSD-3-Clause`, `GPL-3.0`, `LGPL`, etc.). Flag restrictive or copyleft licenses.
+
+7. **Known CVE Assessment:**
    - Check dependency versions against known vulnerability databases or SonarQube SCA findings.
    - Record CVE ID, affected component, severity (`Critical`, `High`, `Medium`, `Low`, `Informational`), fixed version, and remediation status.
 
