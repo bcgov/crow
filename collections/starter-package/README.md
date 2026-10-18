@@ -5,8 +5,8 @@ development. It includes the agents and skills needed to understand an
 existing application, make aligned changes, maintain frameworks and
 dependencies, build accessible interfaces, and verify the result with
 automated tests. Its architecture, application
-development, and testing guidance also supports REST/SOAP API inventory,
-implementation, and HTTP-based modernization comparisons.
+development, testing, and code review guidance also supports REST/SOAP API
+inventory, implementation, and HTTP-based modernization comparisons.
 
 Install it from Crow's release-maintained stable branch:
 
@@ -17,7 +17,7 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.12.6 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.13.0 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -32,6 +32,7 @@ compatible stable releases during setup or maintenance.
 
 - [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
 - [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
+- [Crow Code Review Agent](../../.apm/agents/crow-code-review.agent.md)
 - [Crow Framework & Dependency Update Agent](../../.apm/agents/crow-framework-dependency-update.agent.md)
 - [Crow B.C. Government UX Agent](../../.apm/agents/crow-bcgov-ux.agent.md)
 - [Crow Testing Agent](../../.apm/agents/crow-testing.agent.md)
@@ -44,6 +45,7 @@ compatible stable releases during setup or maintenance.
 - [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
 - [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
 - [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)
+- [crow-code-review](../../.apm/skills/crow-code-review/SKILL.md)
 - [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
 - [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)
 - [crow-bcgov-ux](../../.apm/skills/crow-bcgov-ux/SKILL.md)

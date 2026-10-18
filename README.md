@@ -67,7 +67,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.12.6 --global --target copilot
+apm install bcgov/crow#v0.13.0 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -128,16 +128,16 @@ Use the selected client's normal discovery commands:
 ## Choose a collection
 
 - [Starter Package](collections/starter-package/README.md) — Raven setup,
-  architecture review, application architecture and development, B.C. UX,
-  project context, testing, and framework/dependency maintenance for daily
-  brownfield work.
+  architecture and code review, application architecture and development,
+  B.C. UX, project context, testing, and framework/dependency maintenance
+  for daily brownfield work.
 - [Security Remediation](collections/security-remediation/README.md) —
   Raven setup, architecture review and handoff, project context, security
   review, Sonar scanning, secure architecture, application development,
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.12.6` remains fixed. Installing
+while an exact version tag such as `#v0.13.0` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -154,6 +154,9 @@ package.
 - [Crow Framework & Dependency Update Agent](.apm/agents/crow-framework-dependency-update.agent.md)
 - [Crow Agent & Skill Authoring Agent](.apm/agents/crow-agent-skill-authoring.agent.md)
 - [Crow Agent & Skill Review Agent](.apm/agents/crow-agent-skill-review.agent.md)
+- [Crow Code Review Agent](.apm/agents/crow-code-review.agent.md) — Read-only,
+  evidence-backed reviews of local diffs and hosted changes in GitHub or
+  Azure DevOps, reporting only actionable findings.
 - [Crow Simplification Review Agent](.apm/agents/crow-simplification-review.agent.md)
 - [Crow Testing Agent](.apm/agents/crow-testing.agent.md)
 - [Crow Raven Setup Agent](.apm/agents/crow-raven-setup.agent.md)
@@ -175,6 +178,8 @@ package.
   Production application code, persistence, integrations, and CI.
 - [**crow-architecture-review**](.apm/skills/crow-architecture-review/SKILL.md) —
   Evidence-based architecture documentation.
+- [**crow-code-review**](.apm/skills/crow-code-review/SKILL.md) —
+  Read-only local and hosted code review, also used after application changes.
 - [**crow-business-rules**](.apm/skills/crow-business-rules/SKILL.md) —
   Business-rule extraction, reconciliation, and reporting.
 - [**crow-executive-report**](.apm/skills/crow-executive-report/SKILL.md) —
@@ -223,7 +228,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.12.6.zip`. See
+The resulting archive is `build/bcgov-crow-0.13.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
