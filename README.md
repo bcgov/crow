@@ -67,7 +67,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.13.0 --global --target copilot
+apm install bcgov/crow#v0.14.0 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -137,7 +137,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.13.0` remains fixed. Installing
+while an exact version tag such as `#v0.14.0` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -147,6 +147,10 @@ package.
 - [Crow B.C. Government UX Agent](.apm/agents/crow-bcgov-ux.agent.md)
 - [Crow Solution Architecture Agent](.apm/agents/crow-solution-architecture.agent.md)
 - [Crow Architecture Review Agent](.apm/agents/crow-architecture-review.agent.md)
+- [Crow Legacy Modernization Agent](.apm/agents/crow-legacy-modernization.agent.md) —
+  Guides a legacy application through business and process discovery, portable
+  baseline tests, approved architecture and implementation, and comparison
+  without changing system-facing contracts or the datastore.
 - [Crow Security & Dependency Review Agent](.apm/agents/crow-security-review.agent.md)
 - [Crow Executive Summary Report Agent](.apm/agents/crow-executive-report.agent.md)
 - [Crow Business Rule Documentation Agent](.apm/agents/crow-business-rule-documentation.agent.md)
@@ -178,6 +182,9 @@ package.
   Production application code, persistence, integrations, and CI.
 - [**crow-architecture-review**](.apm/skills/crow-architecture-review/SKILL.md) —
   Evidence-based architecture documentation.
+- [**crow-legacy-modernization**](.apm/skills/crow-legacy-modernization/SKILL.md) —
+  Cross-workflow phase gates for equivalent legacy application replacement.
+  Available in the full Crow package, not the focused collections.
 - [**crow-code-review**](.apm/skills/crow-code-review/SKILL.md) —
   Read-only local and hosted code review, also used after application changes.
 - [**crow-business-rules**](.apm/skills/crow-business-rules/SKILL.md) —
@@ -228,7 +235,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.13.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.14.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
