@@ -1,7 +1,7 @@
 {
   "name": "bcgov-crow",
-  "version": "0.12.6",
-  "description": "CROW agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, REST/SOAP API modernization, framework and dependency updates, security, remediation, business rule documentation, reporting, Crow authoring, review, and releases.",
+  "version": "0.13.0",
+  "description": "CROW agents and skills for Raven setup, accessible B.C. government UX, solution and application architecture, REST/SOAP API modernization, framework and dependency updates, code and security review, remediation, business rule documentation, reporting, Crow authoring, and releases.",
   "author": {
     "name": "bcgov"
   },
@@ -24,6 +24,7 @@
     "crow-executive-report",
     "crow-agent-skill-authoring",
     "crow-agent-skill-review",
+    "crow-code-review",
     "crow-simplification-review",
     "crow-release",
     "crow-testing",
@@ -40,6 +41,7 @@
     ".apm/skills/crow-solution-architecture",
     ".apm/skills/crow-application-development",
     ".apm/skills/crow-architecture-review",
+    ".apm/skills/crow-code-review",
     ".apm/skills/crow-executive-report",
     ".apm/skills/crow-framework-updates",
     ".apm/skills/crow-dependency-updates",

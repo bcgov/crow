@@ -18,7 +18,7 @@ apm install bcgov/crow/collections/security-remediation#stable --global --target
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.12.6 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.13.0 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -45,6 +45,8 @@ updates only after confirmation.
 - [crow-sonar-scan](../../.apm/skills/crow-sonar-scan/README.md)
 - [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
 - [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)
+- [crow-code-review](../../.apm/skills/crow-code-review/SKILL.md) — required by
+  the post-implementation self-review route.
 - [crow-testing](../../.apm/skills/crow-testing/SKILL.md)
 - [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
 - [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
