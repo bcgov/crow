@@ -129,6 +129,8 @@ jobs:
 
       - name: Install APM
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           installer="$RUNNER_TEMP/apm-install.sh"
           curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
@@ -195,6 +197,8 @@ jobs:
 
       - name: Install APM
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           installer="$RUNNER_TEMP/apm-install.sh"
           curl --fail --location --silent --show-error --proto '=https' --tlsv1.2 \
