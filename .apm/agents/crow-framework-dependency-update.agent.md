@@ -74,8 +74,10 @@ scoped updates that can be run independently of security remediation.
    if it is needed.
 5. Build a scoped update plan with exact current and target versions, source
    evidence, compatibility risks, affected manifests, lockfiles, and
-   verification commands. Ask before consequential changes in interactive
-   runs. In scheduled/unattended runs, defer anything that requires a question.
+   verification commands. For libraries, include deprecation and last-release
+   checks from `crow-dependency-updates`, even when no newer version exists.
+   Ask before consequential changes in interactive runs. In
+   scheduled/unattended runs, defer anything that requires a question.
 6. Apply only the approved and in-scope changes in one component-sized batch.
    Use the repository's package manager and toolchain to regenerate lockfiles
    where the manager or repository policy uses or requires them; otherwise,

@@ -75,6 +75,19 @@ This section captures third-party library dependencies parsed from lock files, i
 
 *Source: Generated from lock files (`package-lock.json`, `packages.lock.json`, `go.sum`, `requirements.txt`, `pom.xml`, `build.gradle`, `libman.json`, `*.csproj`, etc.)*
 
+### Deprecation & Maintenance Signals
+
+Record explicitly deprecated libraries and those whose most recent published
+release was at least one year before the check date, even when no newer version
+is available. A release gap indicates potential abandonment, not a confirmed
+vulnerability. Note any evidence of ongoing maintenance or a stable mature
+library when assessing risk. List unverified statuses as `Unknown` rather than
+assuming maintenance; if none were found, state the check coverage and sources.
+
+| Library | Status (`Deprecated / Potentially abandoned / Unknown`) | Last Release Date | Check Date | Registry / Maintainer Evidence | Risk / Next Step |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | |
+
 ---
 
 ## 3. Known CVE & Vulnerability Assessment
