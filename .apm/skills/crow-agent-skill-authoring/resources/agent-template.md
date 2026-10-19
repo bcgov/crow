@@ -1,10 +1,10 @@
 ---
-name: 'Crow Capability Agent'
+name: '<Confirmed Agent Name>'
 description: 'State the action, target, and conditions that should select this agent.'
 tools: ['read', 'search']
 ---
 
-# Crow Capability Agent
+# <Confirmed Agent Name>
 
 State the role and load the owning skill.
 

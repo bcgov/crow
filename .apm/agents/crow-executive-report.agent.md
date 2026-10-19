@@ -114,7 +114,11 @@ Extract and synthesize data from both source documents into plain language:
 
 #### 2. Technical Debt & Platform Currency (from `architecture.md` & `security-review.md`)
 - Identify End-of-Life (EOL) runtimes, frameworks, or base images.
-- Identify severely outdated or abandoned third-party libraries.
+- Identify severely outdated, explicitly deprecated, or potentially abandoned
+  third-party libraries from the source reports. Treat no published release for
+  at least one year as a potential abandonment signal, not a confirmed
+  vulnerability; include the source date and any unknown maintenance status
+  rather than inferring safety from an up-to-date version.
 - Identify architectural bottlenecks, single points of failure, or missing disaster recovery controls.
 - Explain the business impact of technical debt (e.g. "Running on .NET 6 which reaches EOL increases operational vulnerability risk and prevents adoption of modern cloud features").
 

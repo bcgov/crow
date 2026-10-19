@@ -302,18 +302,23 @@ Parse lock files and dependency manifests to inventory third-party libraries whi
    - **Java / Go / Other:** Execute native CLI outdated tools or plugin targets (e.g. `mvn versions:display-dependency-updates`, `go list -m -u all`).
 
 3. **Never Mirror Resolved Version to Latest:**
-   - **Strict Disallowance:** Never assume `Installed Version == Latest Version` solely based on lockfile or manifest contents.
-   - Populating the "Latest Version" column requires explicit confirmation from the output of ecosystem CLI outdated commands (e.g. `dotnet list package --outdated`, `npm outdated`) or a direct package registry API query (NuGet, npm, Packagist, PyPI).
-   - **No Wildcards / Range Specifiers:** Non-specific or wildcard version numbers (such as `8.0.x`, `17.x`, `^2.1`, `~1.4`, or `*`) are **STRICTLY FORBIDDEN** for the `Latest Version` column.
-   - **Actual Stable Version Lookup:** You must list exact, fully qualified current stable version releases (e.g. `8.0.12` instead of `8.0.x`, `18.2.0` instead of `18.x`, `4.17.21` instead of `4.x`).
+   - Never infer `Latest Version` from a manifest or lockfile. Confirm it
+     through the ecosystem's outdated CLI or a direct registry query.
+   - Use exact stable versions, not wildcards or ranges (`8.0.x`, `^2.1`,
+     `~1.4`, `*`).
 
 4. **Automated Workflow Verification Check:**
    - **Pre-Write Audit Verification:** Prior to writing or updating the final dependency table in `security-review.md`, verify that CLI outdated scan commands have been executed in the current session.
    - If a CLI outdated command failed or the CLI tool is absent, explicitly document the attempted command and its result, and verify latest versions via direct package registry / web lookup before writing the document.
 
-5. **Licenses:** Extract license metadata (`MIT`, `Apache-2.0`, `BSD-3-Clause`, `GPL-3.0`, `LGPL`, etc.). Flag restrictive or copyleft licenses.
+5. **Deprecation & Maintenance Check:** Apply the
+   [dependency maintenance signals](../skills/crow-security-review/SKILL.md#dependency-maintenance-signals)
+   check to inventoried libraries, including those with no newer release;
+   record the results in the review template.
 
-6. **Known CVE Assessment:**
+6. **Licenses:** Extract license metadata (`MIT`, `Apache-2.0`, `BSD-3-Clause`, `GPL-3.0`, `LGPL`, etc.). Flag restrictive or copyleft licenses.
+
+7. **Known CVE Assessment:**
    - Check dependency versions against known vulnerability databases or SonarQube SCA findings.
    - Record CVE ID, affected component, severity (`Critical`, `High`, `Medium`, `Low`, `Informational`), fixed version, and remediation status.
 

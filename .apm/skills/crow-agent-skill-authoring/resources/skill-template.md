@@ -1,9 +1,9 @@
 ---
-name: crow-capability
+name: <confirmed-skill-name>
 description: State exactly when this skill should be loaded and what knowledge or workflow it provides.
 ---
 
-# Crow Capability
+# <Confirmed Skill Name>
 
 ## Context-efficient loading
 

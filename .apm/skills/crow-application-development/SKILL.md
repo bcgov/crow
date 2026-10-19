@@ -45,6 +45,13 @@ Use this skill while implementing or changing an application. Data architecture 
 9. Run the repository's existing formatter/linter first, then the smallest relevant tests, then build/package checks.
 10. Run the repository's established security and quality scans. Do not weaken gates to make the change pass.
 11. When service responsibilities are routed, test the affected decision challenge and correction path, derived-copy freshness and propagation, or cross-channel resume behavior as applicable. Do not claim an approval or assisted path that the service owner has not confirmed.
+12. After checks, load [`crow-code-review`](../crow-code-review/SKILL.md)
+    and its common review method for a read-only self-review of this
+    implementation's local diff, including in-scope untracked files. Do not
+    load a hosted-provider module unless reviewing a hosted change. Fix
+    verified, actionable findings, rerun affected checks, and review the
+    fixes before reporting completion. Disclose material coverage gaps rather
+    than claiming the change was fully reviewed.
 
 For routed platform boundaries, confirm shared-service reuse before adding a
 new capability; identify the contract owner and version/compatibility policy;
