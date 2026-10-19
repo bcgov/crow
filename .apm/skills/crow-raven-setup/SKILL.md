@@ -21,8 +21,8 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 
 ## Workflow
 
-1. Inspect prerequisites and existing state with
-   `node scripts/crow-raven-setup.mjs status`, and inspect the optional
+1. Inspect existing state with `node scripts/crow-raven-setup.mjs status`
+   and inspect the optional
    user-level Copilot update-hook decision with
    `node scripts/crow-raven-setup.mjs update-hook status` when the active
    client is Copilot Local, Copilot Agent Host, or Copilot CLI. When its
@@ -32,7 +32,9 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    restore the previously enabled hook. If the decision is `recoverable`, the
    matching hook file exists but its persisted opt-in is missing; ask the user
    to confirm recovery, then run `update-hook install --confirm` before
-   reporting it enabled. The hook checks Crow, plus bundled
+   reporting it enabled. If `conflicting`, preserve the different file; after
+   separate approval, use `update-hook replace --hook-sha256 <status digest>
+   --confirm` and report the backup. The hook checks Crow, plus bundled
    Raven and codebase-memory-mcp when they are recorded in Crow Setup state;
    source-pinned Raven revisions remain covered by the setup freshness check.
    When setup state uses a non-default directory, pass
@@ -43,12 +45,20 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    `sonar-mcp` server. A project's `crow.config.sonar` section alone is not
    evidence that the server is installed. If present, load
    `modules/sonar-scanners.md` and inspect scanner versions, client launch
-   environment, and .NET SDK version. Do not install the SDK implicitly.
-2. Resolve server selection through focused user questions and validate IDs
-   against the bundled catalog. If the user selects `sonar`, load
+   environment, and .NET SDK version once. Do not install the SDK implicitly.
+   Preserve a concise handoff record of client/path, catalog IDs,
+   prerequisite and Sonar inventory, auth status, setup/hook state, approvals,
+   plan digest, and remaining gates; retry only failed checks.
+2. Validate exact requested IDs against the bundled catalog without asking
+   for redundant selection confirmation. Confirm only lists derived from
+   broader groups. If the user selects `sonar`, load
    `modules/sonar-scanners.md` for the new installation even if the server is
    not yet configured in the client. Record an explicit `--no-raven` choice
-   when the user wants only codebase-memory-mcp.
+   when the user wants only codebase-memory-mcp. Run `preflight --delivery
+   release|source|none` (and `--sonar` when selected) once after selection;
+   record paths/versions and GitHub CLI authentication. Stop before planning
+   a release if `gh auth status` fails. Recheck only the changed prerequisite
+   on retry; obtain separate approval before installing any prerequisite.
 3. Use Raven's attested bundled release by default. Use `--delivery source`
    only as an explicit fallback. Generate the exact setup plan, present its
    SHA-256 digest and effects, and obtain confirmation bound to that unchanged
@@ -69,13 +79,27 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    `bcgov/crow/collections/security-remediation#stable` for that collection.
    Do not add the full package to update a collection. Later,
    `apm update --global --target copilot` follows published stable releases.
-5. Configure credentials only through Raven's official user-local mechanism.
+5. When setup adds new servers, point to the verified installed Raven runtime
+   script `scripts/setup-credentials.ps1` (Windows) or
+   `scripts/setup-credentials-mac.mjs` (macOS). If unavailable or on Linux,
+   use Raven's current credential instructions; never collect secrets in chat.
 6. When Sonar MCP is installed or `sonar` is selected in the current setup,
    use `modules/sonar-scanners.md` to set up or update the generic SonarScanner
    CLI and, when a compatible .NET SDK is available, the .NET/MSBuild scanner.
    Execute only the confirmed plan and surface command errors.
-7. Merge generated entries into a client only with confirmation, preserving
-   unrelated entries and stopping on collisions.
+7. Use `config preview` and separately approved `config apply
+   --approval-sha256 <digest> --confirm` to merge into the active supported
+   client. VS Code Copilot sessions and Copilot CLI use the same global
+   `$COPILOT_HOME/mcp-config.json` (`~/.copilot/mcp-config.json` by default)
+   with `mcpServers`; choose `--client copilot`. If VS Code has pending
+   migration of old profile entries, let the editor finish migrating first,
+   then preview global configuration and verify migrated or already installed
+   entries rather than duplicating them. Never write profile `mcp.json` or
+   `settings.json`. A different
+   editor may use `--client portable --config <verified-path>` only when its
+   documented schema is `mcpServers`; otherwise use its own native flow
+   without inventing a write target. Stop on collisions, malformed files,
+   or stale preview. Report backup and verify the result.
 8. Verify selected servers and, when Sonar MCP is installed or selected,
    scanner versions and client PATH configuration. Verify the .NET scanner
    only when the compatible SDK is available. On every subsequent setup or
