@@ -298,6 +298,17 @@ graph LR
 | `/health` or `/healthz` | Liveness | |
 | `/ready` | Readiness | |
 
+### 8.5 Operational Verification
+A configured provider, running app pool, or declared correlation ID does not prove an operator can locate a failed request. For each check, record what was observed or what remains unverified. Cite the source file for code/config evidence, the date and environment for deployed tests/queries, or an owner-confirmed runbook/alert rule. Do not present configuration alone as proof of runtime behavior.
+
+| Check | Evidence / Finding |
+| :--- | :--- |
+| Readiness reflects real dependencies (not only process liveness) | |
+| Alert owner and delivery-failure alert for log sink | |
+| Sink delivery verified in deployed environment | |
+| User-visible support reference → log event → dependency trace lookup | |
+| W3C trace propagation verified across services (or marked missing) | |
+
 ---
 
 ## 9. Resilience & Disaster Recovery

@@ -11,7 +11,7 @@
 
 - Specify connect, read/request, and overall timeouts for outbound calls; propagate interruption and cancellation. Retry only transient operations with bounded attempts and idempotency safeguards.
 - Use virtual threads only where supported and measured for blocking I/O; limit access to constrained downstream systems separately and test context propagation. Do not adopt preview structured concurrency APIs without an explicit compatibility decision.
-- Handle errors once at a delivery boundary with safe, stable contract responses; do not catch broadly and then log-and-continue. Log structured diagnostic context without credentials, tokens, personal data, or high-cardinality metric labels.
+- Handle errors once at a delivery boundary with safe, stable contract responses; do not catch broadly and then log-and-continue. Log structured diagnostic context without credentials, tokens, personal data, or high-cardinality metric labels. For user-visible errors, support references, and outbound-call events, follow the generic [application diagnostics module](../application-diagnostics.md) and the [Java diagnostics companion](diagnostics.md) (intentionally thin; not at parity with .NET).
 - Validate configuration at startup and use an approved secret source instead of literals in source, `application*.yml`, build files, CI variables committed to the repository, or container layers.
 
 ## Text

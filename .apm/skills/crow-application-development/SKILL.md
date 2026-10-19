@@ -29,7 +29,8 @@ Use this skill while implementing or changing an application. Data architecture 
 9. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
 10. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
 11. For changes to decisions affecting people, information stores or derived copies, or cross-channel service flows, load the applicable sections of [`../crow-application-architecture/modules/service-responsibilities.md`](../crow-application-architecture/modules/service-responsibilities.md).
-12. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
+12. For error handling, logging/telemetry, user-visible errors, outbound calls, or incident diagnosis, load [`modules/application-diagnostics.md`](modules/application-diagnostics.md) plus the matching companion: [`modules/dotnet/diagnostics.md`](modules/dotnet/diagnostics.md) for .NET or [`modules/java/diagnostics.md`](modules/java/diagnostics.md) for Java (intentionally thin; the generic module remains the full baseline). Security-event auditing stays in `../crow-security-review/modules/security-logging-and-audit.md`.
+13. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
 
