@@ -64,7 +64,8 @@ native configuration flow. See [VS Code's current MCP configuration reference](h
 Before merging:
 
 1. read the target configuration;
-2. stop on malformed JSON or a selected-name collision with a non-Crow entry;
+2. stop on malformed JSON or a selected-name collision unless the entry
+   exactly matches the verified previous Crow-managed fragment;
 3. show the proposed diff;
 4. obtain a separate confirmation bound to the preview digest and target;
 5. run `config apply --approval-sha256 <digest> --confirm`, preserving unrelated

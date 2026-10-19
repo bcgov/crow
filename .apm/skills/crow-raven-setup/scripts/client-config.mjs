@@ -81,19 +81,25 @@ function previewClientConfig(args) {
   const { bytes, config } = readConfig(target.path, target.key);
   const existing = config[target.key] || {};
   const added = [];
+  const replaced = [];
   const unchanged = [];
   const collisions = [];
   for (const [name, definition] of Object.entries(entries)) {
     if (!Object.hasOwn(existing, name)) added.push(name);
     else if (isDeepStrictEqual(existing[name], definition) ||
       isDeepStrictEqual(existing[name], { type: "stdio", ...definition })) unchanged.push(name);
+    else if (Object.hasOwn(args.previousEntries || {}, name) &&
+      (isDeepStrictEqual(existing[name], args.previousEntries[name]) ||
+       isDeepStrictEqual(existing[name], { type: "stdio", ...args.previousEntries[name] }))) {
+      replaced.push(name);
+    }
     else collisions.push(name);
   }
   if (collisions.length) {
     throw new Error(`MCP server name collision at ${target.path}: ${collisions.join(", ")}. Existing definitions were not changed.`);
   }
   const merged = { ...config, [target.key]: { ...existing } };
-  for (const name of added) {
+  for (const name of [...added, ...replaced]) {
     merged[target.key][name] = entries[name];
   }
   const content = `${JSON.stringify(merged, null, 2)}\n`;
@@ -107,11 +113,12 @@ function previewClientConfig(args) {
     configPath: target.path,
     format: target.key,
     added,
+    replaced,
     unchanged,
-    proposed: Object.fromEntries(added.map((name) => [name, merged[target.key][name]])),
+    proposed: Object.fromEntries([...added, ...replaced].map((name) => [name, merged[target.key][name]])),
     beforeSha256: bytes === null ? null : digest(bytes),
     approvalSha256,
-    backupRequired: added.length > 0 && bytes !== null,
+    backupRequired: (added.length + replaced.length) > 0 && bytes !== null,
     content,
     bytes
   };
@@ -130,7 +137,9 @@ function applyClientConfig(args) {
     if (preview.approvalSha256 !== args["approval-sha256"].toLowerCase()) {
       throw new Error("MCP target, fragment, or configuration changed since preview; review a new preview.");
     }
-    if (!preview.added.length) return { ...preview, content: undefined, bytes: undefined, applied: false, backupPath: null };
+    if (!preview.added.length && !preview.replaced.length) {
+      return { ...preview, content: undefined, bytes: undefined, applied: false, backupPath: null };
+    }
     const temporary = `${target.path}.crow-${randomUUID()}.tmp`;
     const backup = `${target.path}.crow-${randomUUID()}.bak`;
     writeFileSync(temporary, preview.content, { flag: "wx", mode: 0o600 });

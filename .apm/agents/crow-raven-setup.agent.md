@@ -136,8 +136,10 @@ releases, installing an OS scheduler, or automatically applying updates.
    `--client portable --config <path>` only if it supports a top-level
    `mcpServers` object, otherwise provide the fragment for its native
    configuration flow without an unsupported write. Run `config preview`
-   with the chosen client/path and state directory; show target, added and
-   unchanged IDs, proposed content, and digest. Obtain separate client-config
+   with the chosen client/path and state directory; show target, added,
+   replaced, and unchanged IDs, proposed content, and digest. Replace an
+   existing entry only when it matches the verified previous Crow-managed
+   fragment. Obtain separate client-config
    approval, then run `config apply` with that digest and `--confirm`. Stop
    on collisions, concurrent changes, malformed files, or legacy settings;
    report the backup path and verify the resulting client configuration.

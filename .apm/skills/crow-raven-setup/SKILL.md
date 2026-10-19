@@ -99,7 +99,10 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    editor may use `--client portable --config <verified-path>` only when its
    documented schema is `mcpServers`; otherwise use its own native flow
    without inventing a write target. Stop on collisions, malformed files,
-   or stale preview. Report backup and verify the result.
+   or stale preview. A changed selected-name entry may be replaced only
+   when it matches the verified previous Crow-managed fragment; preview
+   replaced IDs and obtain approval for them too. Report backup and verify
+   the result.
 8. Verify selected servers and, when Sonar MCP is installed or selected,
    scanner versions and client PATH configuration. Verify the .NET scanner
    only when the compatible SDK is available. On every subsequent setup or

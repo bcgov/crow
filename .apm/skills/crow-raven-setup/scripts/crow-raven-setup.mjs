@@ -701,6 +701,7 @@ function defaultCrowUpdateState() {
     lastAttemptAt: null,
     lastAttemptStatus: null,
     lastSuccessfulComponents: [],
+    lastCheckedByComponent: { crow: null, raven: null, codebaseMemory: null },
     lastSuccessfulCheckAt: null,
     versions: {
       crow: { current: null, latest: null },
@@ -749,6 +750,14 @@ function isCrowUpdateState(value) {
       (!Array.isArray(value.lastSuccessfulComponents) ||
        value.lastSuccessfulComponents.some((component) => !components.includes(component)) ||
        new Set(value.lastSuccessfulComponents).size !== value.lastSuccessfulComponents.length)) {
+    return false;
+  }
+  if (value.lastCheckedByComponent !== undefined &&
+      (!hasExactObjectKeys(value.lastCheckedByComponent, components) ||
+       components.some((component) => {
+         const timestamp = value.lastCheckedByComponent[component];
+         return timestamp !== null && !isTimestamp(timestamp);
+       }))) {
     return false;
   }
   if (!hasExactObjectKeys(value.versions, components) ||
@@ -819,6 +828,7 @@ function readCrowUpdateState(path) {
       lastAttemptAt: state.lastAttemptAt,
       lastAttemptStatus: state.lastAttemptStatus,
       lastSuccessfulComponents: [],
+      lastCheckedByComponent: { crow: null, raven: null, codebaseMemory: null },
       lastSuccessfulCheckAt: state.lastSuccessfulCheckAt,
       versions: {
         crow: { current: state.currentVersion, latest: state.latestVersion },
@@ -1086,7 +1096,8 @@ function validateCrowUpdateClock(state, now) {
     state.hookDecisionAt,
     state.lastAttemptAt,
     state.lastSuccessfulCheckAt,
-    state.lastNotifiedAt
+    state.lastNotifiedAt,
+    ...Object.values(state.lastCheckedByComponent || {})
   ]) {
     if (value !== null && Date.parse(value) > now) {
       throw new Error("Crow update state contains a future timestamp.");
@@ -1318,7 +1329,6 @@ function findCrowUpdateCandidates(versions, successfulComponents) {
 
 async function runCrowUpdateCheck(statePath, state, now, options) {
   const previousStatus = state.lastAttemptStatus;
-  const previousAttemptAt = state.lastAttemptAt;
   const attemptAt = new Date(now).toISOString();
   state.lastAttemptAt = attemptAt;
   state.lastAttemptStatus = "started";
@@ -1332,18 +1342,36 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
   try {
     const { configured, failure: setupStateFailure } = readCrowManagedUpdateVersions(options);
     const updateChecks = createCrowUpdateChecks(options, configured);
-    const reuse = !options.force && previousStatus === "failed" &&
-      previousAttemptAt !== null &&
-      now - Date.parse(previousAttemptAt) < crowUpdateCheckIntervalMs
-      ? new Set(state.lastSuccessfulComponents || []) : new Set();
-    const pendingChecks = updateChecks.checks.filter((check) =>
-      !reuse.has(check.component) ||
-      (typeof check.current !== "function" &&
-       check.current !== state.versions[check.component].current)
-    );
+    const checkTimes = {
+      crow: null, raven: null, codebaseMemory: null,
+      ...state.lastCheckedByComponent
+    };
+    const reuse = new Set();
+    if (!options.force && previousStatus === "failed") {
+      for (const check of updateChecks.checks) {
+        const checkedAt = checkTimes[check.component];
+        if (!state.lastSuccessfulComponents?.includes(check.component) || !checkedAt ||
+            now - Date.parse(checkedAt) >= crowUpdateCheckIntervalMs) continue;
+        if (check.component !== "crow" &&
+            check.normalize(check.current(), `Installed ${check.name} version`) !==
+              state.versions[check.component].current) continue;
+        reuse.add(check.component);
+      }
+    }
+    const pendingChecks = updateChecks.checks.filter((check) => !reuse.has(check.component));
     const checkedComponents = await Promise.allSettled(
       pendingChecks.map(checkCrowUpdateComponent)
     );
+    for (const component of ["crow", "raven", "codebaseMemory"]) {
+      if (!updateChecks.checks.some((check) => check.component === component)) {
+        checkTimes[component] = null;
+      }
+    }
+    pendingChecks.forEach((check, index) => {
+      checkTimes[check.component] =
+        checkedComponents[index].status === "fulfilled" ? attemptAt : null;
+    });
+    state.lastCheckedByComponent = checkTimes;
     failures = collectCrowUpdateFailures(setupStateFailure, checkedComponents);
     crowSelector = updateChecks.getSelector();
     const merged = mergeCrowUpdateVersions(state, updateChecks.checks, checkedComponents);
@@ -1357,6 +1385,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
     updates = findCrowUpdateCandidates(versions, successfulComponents);
   } catch (error) {
     state.lastAttemptStatus = "failed";
+    state.lastCheckedByComponent = { crow: null, raven: null, codebaseMemory: null };
     writeCrowUpdateState(statePath, state);
     return { checked: false, error: safeUpdateCheckError(error) };
   }
@@ -2654,7 +2683,11 @@ function configCommand(args) {
   const target = paths(args);
   if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
   const state = readState(target);
-  const options = { ...args, managedEntries: state.managedFragment.mcpServers };
+  const options = {
+    ...args,
+    managedEntries: state.managedFragment.mcpServers,
+    previousEntries: state.previous?.managedFragment.mcpServers
+  };
   const result = action === "preview"
     ? previewClientConfig(options)
     : applyClientConfig(options);

@@ -123,6 +123,57 @@ test("already migrated VS Code entries with stdio type are verified, not duplica
   assert.equal(applied.backupPath, null);
 });
 
+test("approved upgrades replace only previous Crow-managed entries and preserve unrelated config", () => {
+  const fixture = configFixture();
+  const previousEntries = JSON.parse(readFileSync(fixture.args.fragment, "utf8")).mcpServers;
+  const managedEntries = {
+    sonar: { command: "node", args: [join(fixture.root, "new-sonar.js")] },
+    "codebase-memory-mcp": { command: "node", args: [join(fixture.root, "new-memory.js")] },
+    jira: { command: "node", args: [join(fixture.root, "jira.js")] }
+  };
+  const args = { ...fixture.args, managedEntries, previousEntries };
+  const before = {
+    mcpServers: {
+      sonar: { type: "stdio", ...previousEntries.sonar },
+      "codebase-memory-mcp": previousEntries["codebase-memory-mcp"],
+      other: { command: "other", args: [] }
+    },
+    inputs: [{ id: "keep" }]
+  };
+  writeFileSync(fixture.config, JSON.stringify(before));
+  const preview = previewClientConfig(args);
+  assert.deepEqual(preview.added, ["jira"]);
+  assert.deepEqual(preview.replaced, ["sonar", "codebase-memory-mcp"]);
+  assert.deepEqual(preview.proposed, managedEntries);
+  assert.equal(preview.backupRequired, true);
+  const applied = applyClientConfig({
+    ...args, "approval-sha256": preview.approvalSha256, confirm: true
+  });
+  assert.equal(applied.applied, true);
+  assert.deepEqual(JSON.parse(readFileSync(applied.backupPath, "utf8")), before);
+  const after = JSON.parse(readFileSync(fixture.config, "utf8"));
+  assert.deepEqual(after.inputs, before.inputs);
+  assert.deepEqual(after.mcpServers.other, before.mcpServers.other);
+  assert.deepEqual(after.mcpServers.sonar, managedEntries.sonar);
+  assert.deepEqual(after.mcpServers["codebase-memory-mcp"], managedEntries["codebase-memory-mcp"]);
+  assert.deepEqual(after.mcpServers.jira, managedEntries.jira);
+  assert.deepEqual(previewClientConfig(args).replaced, []);
+  writeFileSync(fixture.config, JSON.stringify({
+    ...before,
+    mcpServers: { ...before.mcpServers, sonar: { command: "user-custom", args: [] } }
+  }));
+  assert.throws(() => previewClientConfig(args), /collision.*sonar/);
+  writeFileSync(fixture.config, JSON.stringify(before));
+  const stale = previewClientConfig(args);
+  writeFileSync(fixture.config, JSON.stringify({
+    ...before,
+    mcpServers: { ...before.mcpServers, other: { command: "changed", args: [] } }
+  }));
+  assert.throws(() => applyClientConfig({
+    ...args, "approval-sha256": stale.approvalSha256, confirm: true
+  }), /changed since preview/);
+});
+
 test("another editor's verified portable mcp.json preserves unrelated settings", () => {
   const fixture = configFixture("portable");
   fixture.config = join(fixture.root, "mcp.json");
@@ -197,6 +248,74 @@ test("CLI dry-run plans and merges only a temporary client configuration", () =>
   const retry = run(["config", "preview", ...options], undefined, env);
   assert.equal(retry.status, 0, retry.stderr);
   assert.deepEqual(JSON.parse(retry.stdout).unchanged, ["codebase-memory-mcp"]);
+});
+
+test("CLI upgrade and rollback use only verified previous Crow fragments for replacements", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-config-upgrade-"));
+  const stateDir = join(root, "state");
+  mkdirSync(stateDir);
+  const state = codebaseOnlyState(stateDir);
+  const oldSnapshot = {
+    delivery: state.delivery,
+    raven: state.raven,
+    codebaseMemory: state.codebaseMemory,
+    selectedServers: state.selectedServers,
+    serverCatalog: state.serverCatalog,
+    managedFragment: state.managedFragment
+  };
+  const oldDefinition = state.managedFragment.mcpServers["codebase-memory-mcp"];
+  state.previous = oldSnapshot;
+  state.codebaseMemory = {
+    ...state.codebaseMemory,
+    installPath: join(stateDir, "codebase-memory", "0.11.0-11111111-1111-1111-1111-111111111111")
+  };
+  state.managedFragment = createFragment(
+    null, [], state.codebaseMemory.installPath, "codebase-memory-only", false
+  );
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify(state));
+  const config = join(root, "mcp-config.json");
+  writeFileSync(config, JSON.stringify({ mcpServers: { "codebase-memory-mcp": oldDefinition } }));
+  const options = ["--state-dir", stateDir, "--client", "copilot"];
+  const env = { COPILOT_HOME: root };
+  const upgrade = run(["config", "preview", ...options], undefined, env);
+  assert.equal(upgrade.status, 0, upgrade.stderr);
+  const upgradePreview = JSON.parse(upgrade.stdout);
+  assert.deepEqual(upgradePreview.replaced, ["codebase-memory-mcp"]);
+  const upgraded = run([
+    "config", "apply", ...options,
+    "--approval-sha256", upgradePreview.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(upgraded.status, 0, upgraded.stderr);
+  assert.equal(JSON.parse(upgraded.stdout).applied, true);
+  assert.deepEqual(
+    JSON.parse(readFileSync(config, "utf8")).mcpServers["codebase-memory-mcp"],
+    state.managedFragment.mcpServers["codebase-memory-mcp"]
+  );
+
+  const newSnapshot = {
+    delivery: state.delivery,
+    raven: state.raven,
+    codebaseMemory: state.codebaseMemory,
+    selectedServers: state.selectedServers,
+    serverCatalog: state.serverCatalog,
+    managedFragment: state.managedFragment
+  };
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify({
+    ...state, ...oldSnapshot, previous: newSnapshot
+  }));
+  const rollback = run(["config", "preview", ...options], undefined, env);
+  assert.equal(rollback.status, 0, rollback.stderr);
+  const rollbackPreview = JSON.parse(rollback.stdout);
+  assert.deepEqual(rollbackPreview.replaced, ["codebase-memory-mcp"]);
+  const restored = run([
+    "config", "apply", ...options,
+    "--approval-sha256", rollbackPreview.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(restored.status, 0, restored.stderr);
+  assert.deepEqual(
+    JSON.parse(readFileSync(config, "utf8")).mcpServers["codebase-memory-mcp"],
+    oldDefinition
+  );
 });
 
 function run(args, input, env) {
@@ -644,6 +763,93 @@ test("retries a failed managed-component release check after one hour", async ()
   assert.equal(retry.updateAvailable, true);
   assert.deepEqual(retry.updates.map((update) => update.component), ["crow"]);
   assert.equal(retry.notify, false);
+});
+
+test("hourly failures do not extend a successful component's daily cache lifetime", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-fixed-retry-deadline-"));
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-fixed-retry-setup-"));
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(codebaseOnlyState(setupStateDir)));
+  const now = Date.now() + 60_000;
+  let crowChecks = 0;
+  const options = {
+    stateDir,
+    setupStateDir,
+    getCurrentVersion: () => { crowChecks++; return "0.10.2"; },
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { throw new Error("registry unavailable"); }
+  };
+  for (let hour = 0; hour <= 24; hour++) {
+    const result = await checkCrowUpdates({ ...options, now: now + hour * 60 * 60 * 1000 });
+    assert.equal(result.checked, true);
+    assert.match(result.error, /registry unavailable/);
+  }
+  assert.equal(crowChecks, 2);
+  const state = JSON.parse(readFileSync(join(stateDir, "state.json"), "utf8"));
+  assert.equal(state.lastCheckedByComponent.crow, new Date(now + 24 * 60 * 60 * 1000).toISOString());
+  assert.equal(state.lastCheckedByComponent.codebaseMemory, null);
+});
+
+test("changed installed managed versions invalidate successful retry caches", async () => {
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-changed-install-setup-"));
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-changed-install-check-"));
+  const setupState = codebaseOnlyState(setupStateDir);
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(setupState));
+  const now = Date.now() + 60_000;
+  let codebaseLookups = 0;
+  const first = await checkCrowUpdates({
+    stateDir, setupStateDir, now,
+    getCurrentVersion: () => { throw new Error("Crow lookup unavailable"); },
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { codebaseLookups++; return "0.12.1"; }
+  });
+  assert.equal(first.checked, true);
+  assert.deepEqual(first.versions.codebaseMemory, { current: "0.11.0", latest: "0.12.1" });
+  setupState.codebaseMemory = {
+    ...setupState.codebaseMemory,
+    version: "0.12.0",
+    installPath: join(setupStateDir, "codebase-memory", "0.12.0-22222222-2222-2222-2222-222222222222")
+  };
+  setupState.managedFragment = createFragment(
+    null, [], setupState.codebaseMemory.installPath, "codebase-memory-only", false
+  );
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(setupState));
+  const retry = await checkCrowUpdates({
+    stateDir, setupStateDir, now: now + 60 * 60 * 1000,
+    getCurrentVersion: () => "0.11.0",
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { codebaseLookups++; return "0.12.1"; }
+  });
+  assert.equal(retry.checked, true);
+  assert.equal(retry.error, undefined);
+  assert.equal(codebaseLookups, 2);
+  assert.deepEqual(retry.versions.codebaseMemory, { current: "0.12.0", latest: "0.12.1" });
+});
+
+test("older v2 retry state without per-component times rechecks successful components", async () => {
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-old-retry-setup-"));
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-old-retry-check-"));
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(codebaseOnlyState(setupStateDir)));
+  const now = Date.now() + 60_000;
+  await checkCrowUpdates({
+    stateDir, setupStateDir, now,
+    getCurrentVersion: () => "0.10.2",
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { throw new Error("registry unavailable"); }
+  });
+  const path = join(stateDir, "state.json");
+  const legacyState = JSON.parse(readFileSync(path, "utf8"));
+  delete legacyState.lastCheckedByComponent;
+  writeFileSync(path, JSON.stringify(legacyState));
+  let crowLookups = 0;
+  const retry = await checkCrowUpdates({
+    stateDir, setupStateDir, now: now + 60 * 60 * 1000,
+    getCurrentVersion: () => { crowLookups++; return "0.10.2"; },
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => "0.11.0"
+  });
+  assert.equal(retry.checked, true);
+  assert.equal(crowLookups, 1);
+  assert.deepEqual(retry.updates.map((update) => update.component), ["crow"]);
 });
 
 test("migrates Crow-only update state without resetting its daily notice", async () => {
