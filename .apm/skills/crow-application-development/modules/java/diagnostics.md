@@ -1,6 +1,6 @@
 # Java application diagnostics
 
-Load with [`../application-diagnostics.md`](../application-diagnostics.md). Intentionally thin; expand when Java guidance is prioritized.
+Load [`../application-diagnostics.md`](../application-diagnostics.md) in full. This Java companion is intentionally thin, not at parity with .NET.
 
 - Prefer the framework's built-in Problem Details support (Spring `ProblemDetail`) and error boundary (`@RestControllerAdvice`, Servlet error page). Keep `server.error.include-stacktrace` and `include-message` at `never` in production.
 - Put the support reference and business context in MDC at the operation boundary; clear it in `finally`, and copy it across async executors.

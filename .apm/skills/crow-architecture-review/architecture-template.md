@@ -299,7 +299,7 @@ graph LR
 | `/ready` | Readiness | |
 
 ### 8.5 Operational Verification
-A configured provider, running app pool, or declared correlation ID does not prove an operator can locate a failed request. Record evidence for each:
+A configured provider, running app pool, or declared correlation ID does not prove an operator can locate a failed request. Record evidence for each. Acceptable evidence: a repository config/code path (cite file), a deployed-environment test or query result (cite date/environment), or an owner-confirmed runbook/alert rule. Declarations or intent alone are not evidence; mark unverified items `Not verified`.
 
 | Check | Evidence / Status |
 | :--- | :--- |

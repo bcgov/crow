@@ -1,6 +1,6 @@
 # Application diagnostics: error handling and logging
 
-Goal: show the user a **friendly, generic message with a clear next step** and a support reference, while logging **enough restricted detail that anyone on the team can diagnose the failure** from that reference.
+Goal: show a safe message, next step, and support reference; log enough detail to diagnose the failure from that reference.
 
 Scope: error handling, user-visible errors, and incident diagnosis for any user-facing application. Technology specifics live in [`dotnet/diagnostics.md`](dotnet/diagnostics.md) and [`java/diagnostics.md`](java/diagnostics.md); load only the matching one. Security-event auditing (authentication, authorization, privilege, credential changes) stays in [`security-logging-and-audit.md`](../../crow-security-review/modules/security-logging-and-audit.md). Error presentation, focus, and announcements follow the B.C. UX accessibility guidance when a UX skill is available. Examples are synthetic.
 
@@ -11,16 +11,16 @@ Industry anchors: RFC 9457 Problem Details, W3C Trace Context, OpenTelemetry sem
 - **Baseline (every application):** sections marked *(baseline)* and acceptance checks 1–4.
 - **Full assurance (multi-service, external dependencies, or production-critical):** everything, including acceptance checks 5–7.
 
-Start with the baseline; add full-assurance items when the application has the matching boundary. Do not block a baseline change on full-assurance work.
+Do not block baseline work on full-assurance items.
 
 ## Support reference *(baseline)*
 
-- Every user-visible error shows one **support reference** that is also on every log line for that request or job.
-- **Default:** use the server-generated W3C `traceId` (32 hex characters) as the reference, so one ID joins user, logs, and downstream traces.
-- Use a separate opaque, random `supportId` instead when no trace exists (non-HTTP job, legacy host), or when the host accepts `traceparent` from untrusted public callers and the team wants a reference the client cannot choose. Log both.
+- Show one **support reference** on user-visible errors and every log line for the request or job. Default to the W3C `traceId` (32 hex characters) to join logs and downstream traces.
+- Retain a host-generated request ID instead if existing responses, logs, and support lookup use it; log `traceId` separately and verify the join. Never label a request ID `traceId`.
+- Use a random `supportId` when neither a trace nor a usable host request ID exists, or when public callers can set `traceparent` and the reference must not be caller-chosen. Log both IDs when a trace exists.
 - The reference is a lookup key, never authorization. Do not encode account, session, or topology in it.
 - A caller-supplied correlation header is untrusted: length-limit and character-validate it and log it as a separate `correlationId` field.
-- For background jobs and message consumers, the job/message ID plus `traceId` is the reference.
+- For background jobs and message consumers, pair the job/message ID with `traceId` when available.
 - If no response reaches the browser, do not claim a server reference exists; show a client-side attempt reference if the UI generates one, otherwise ask for the time and task.
 
 ## Where to show an error *(baseline)*
@@ -30,7 +30,7 @@ Choose the **least disruptive** surface that still lets the user act. Redirect t
 | Situation | Surface | Notes |
 | --- | --- | --- |
 | Input the user can fix (validation, business rule) | Field-level messages plus an error summary | Keep the input. Usually no support reference needed. |
-| An action failed but the page still works (save failed, transient dependency, conflict, partial failure) | Persistent in-page alert/notification ("toast") near the action or at page top | Keep the input; offer Retry when safe; show the support reference. Error notifications **must not auto-dismiss** and need a close control, so users can read and copy the reference (WCAG 2.2.1, 4.1.3). |
+| An action failed but the page still works (save failed, transient dependency, conflict, partial failure) | Persistent in-page alert/banner (use a toast only if the design system provides a non-auto-dismissing, accessible one) near the action or at page top | Keep the input; offer Retry when safe; show the support reference. Error notifications **must not auto-dismiss** and need a close control, so users can read and copy the reference (WCAG 2.2.1, 4.1.3). |
 | One region/widget failed to load, rest of page is usable | Inline alert in that region | Component-level error boundary; rest of page stays interactive. |
 | Not authenticated or session expired | **Redirect to sign-in**, then return to the task | Not an error page. Validate the return URL as local-only. Preserve unsaved input where practical or warn before it is lost. |
 | Authenticated but not authorized (403) | Full access-denied page (render in place; no redirect loop) | Explain how to request access and who to contact. |
@@ -57,13 +57,13 @@ For APIs and SPAs the client chooses the surface from Problem Details `status` a
 
 ## What to log *(baseline)*
 
-Use structured logging with stable field names. Every error event should answer **what was being attempted, for what, where, and why it failed**:
+Use structured logging with stable fields. Error events should identify the operation, affected resource, failure stage, and cause:
 
 - **Correlation:** support reference, `traceId`/`spanId`, local request ID, job/message ID.
-- **Runtime context:** service, environment, release version or commit, host/instance, UTC timestamp, elapsed ms.
-- **Business context:** operation name, entity type and internal ID (for example permit or file number), tenant/organization, and a safe input summary (counts, enum values, which fields failed validation by **name**, not value). If a business identifier is itself personal (SIN, PHN), log an internal surrogate ID instead.
-- **Failure detail:** catalog `code`, reason category, stage, dependency name, outbound method and route template (plus query **keys**), response status if one was received, stable upstream error code, exception type, message, full stack, and inner-exception chain.
-- **Actor:** verified user/workload ID when authenticated; record initiator and target separately for impersonation. Never invent a user ID before sign-in.
+- **Runtime:** service, environment, release, host/instance, UTC time, elapsed ms.
+- **Business context:** operation, entity type and internal ID, tenant/organization, safe input summary (counts, enums, failed field **names**). Use a surrogate ID for personal identifiers such as SIN or PHN.
+- **Failure:** catalog `code`, reason, stage, dependency, outbound method and route (query **keys**, not values), response status **if received**, upstream error code, exception type, message, stack, and inner causes when an exception exists; never invent a stack.
+- **Actor:** verified user/workload ID; for impersonation, initiator and target separately. Do not invent an ID before sign-in.
 - Attach correlation and business context once with a logging scope/MDC at the operation boundary so every line carries it. Keep high-cardinality values out of metric labels.
 
 ## Log levels *(baseline)*
@@ -71,18 +71,18 @@ Use structured logging with stable field names. Every error event should answer 
 | Level | Use for |
 | --- | --- |
 | Debug/Trace | Developer detail; off in production by default |
-| Information | Normal operation outcomes; expected validation failures (or Debug if noisy); client cancellation |
-| Warning | Handled but abnormal: transient failure that was retried, fallback or degraded mode used, slow call over threshold, unexpected-but-handled input |
-| Error | The operation failed and the user saw an error: unhandled exception, 5xx, retries exhausted |
-| Critical | The application cannot function: startup failure, lost required dependency for all users, data integrity failure |
+| Information | Normal outcomes, expected validation failures (Debug if noisy), client cancellation |
+| Warning | Retried failures, fallback/degradation, calls over the slow threshold, other handled anomalies |
+| Error | Failed operation: unhandled exception, 5xx, retries exhausted |
+| Critical | Unusable application: startup, universal dependency, or data-integrity failure |
 
 Log each failure **once** at Error, at the boundary that handles it; inner layers add context instead of logging the same exception again. Never sample away Error or Critical events.
 
 ## Exceptions that carry diagnostic value *(baseline)*
 
-- Throw with context: the message says what failed and includes the key identifiers ("Failed to load permit 12345 from registry"). Exception messages reach logs, so never put secrets in them.
+- Include safe operation and entity context in exception messages; never secrets.
 - When wrapping, always pass the original as the inner exception/cause. Rethrow without resetting the stack.
-- Do not catch, log, and rethrow (double logging), and do not catch and swallow. Catch only to add meaning, recover, or translate to a contract.
+- Do not catch and swallow or log and rethrow. Catch only to add meaning, recover, or translate to a contract.
 - Use specific exception types or result types for expected failures (validation, not found, conflict) so the catalog can map them; do not use generic exceptions for control flow.
 
 ## Secrets and sensitive values *(baseline)*
@@ -129,21 +129,13 @@ An existing application that logs secrets **without** this switch is a deviation
 ## Outbound calls *(full assurance)*
 
 - Prefer the platform's built-in HTTP client instrumentation (traces, metrics, logs) for start, duration, and status. Add hand-written start and terminal events only where business stage context is needed or the built-in signal is not exported.
-- Record elapsed time even when no response exists. Never manufacture an HTTP status for a connection failure.
+- Record elapsed time even without a response; never invent an HTTP status for a connection failure.
 - Classify DNS, TLS, socket, deadline, client cancellation, provider denial, invalid response, and downstream 4xx/5xx only when evidence supports it. Preserve transport exception types and inner causes.
+- Do not blindly retry non-idempotent actions.
 - Where a call can hang, emit a start event before the await so a missing terminal event is an investigation lead. Logging alone cannot diagnose a hung process; pair with an independent latency/readiness signal.
 - Verify W3C trace propagation in a deployed test; a local request ID is not proof of cross-service propagation. Label missing propagation as missing.
 
-## Failure contracts
-
-| Case | User outcome | Operator outcome |
-| --- | --- | --- |
-| Validation or verified denial | Field guidance or access-denied page; correct 400/401/403 | Stable code, route, stage, status, correlation; no invented stack |
-| Transient dependency, DNS/TLS/socket, database, signing-key failure | "Temporarily unavailable, try again later" in-page alert or 503 page with reference and `Retry-After` when known; never a user-fault 400 | Real dependency, cause, and timing; no status if none received; no blind retry of non-idempotent actions |
-| Unexpected exception | In-page alert for an action, full error page for a page render; reference, UTC time, contact | Full stack and inner chain once at the boundary, with business context and trace |
-| Client cancellation / server deadline | No outage message for deliberate navigation or cancel | Cancelled vs timed-out, which deadline fired, elapsed time |
-| Null/invalid dependency result | Preserve documented meaning; never turn a denial into a fake 503 | Own stage and reason, with trace |
-| Stuck process or background failure | Independent synthetic probe detects it | In-flight start, latency/readiness alert, pre-recycle evidence |
+Preserve documented meaning for null/invalid dependency results; log the stage and reason, not a fabricated 503 or stack. Distinguish client cancellation from server deadline; record which deadline fired and elapsed time.
 
 ## Acceptance checks
 

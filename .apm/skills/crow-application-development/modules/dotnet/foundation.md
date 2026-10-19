@@ -35,7 +35,7 @@
 
 - Throw specific exceptions for exceptional conditions; use typed results for expected domain outcomes rather than exceptions as control flow.
 - Handle exceptions once at the delivery boundary and translate them into the established contract.
-- Use `ILogger<T>` message templates rather than interpolated strings. Redact values before logging. For user-visible errors, support references, and outbound-call events, follow [application diagnostics](diagnostics.md).
+- Use `ILogger<T>` message templates rather than interpolated strings. Redact values before logging. For user-visible errors, support references, and outbound-call events, follow the generic [application diagnostics module](../application-diagnostics.md) and the [.NET diagnostics companion](diagnostics.md).
 - Add metrics/traces around external calls and important operations, but avoid high-cardinality labels such as raw user IDs or URLs.
 - Prefer source-generated serialization and logging where they improve startup/AOT compatibility or hot-path allocations; keep wire contracts explicit and tested.
 

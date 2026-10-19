@@ -1,6 +1,6 @@
 # .NET 10+ application diagnostics
 
-Load with [`../application-diagnostics.md`](../application-diagnostics.md). Assume .NET 10 or later. Use what the framework already does; add code only for the gaps listed here. No NuGet package is required.
+Load with [`../application-diagnostics.md`](../application-diagnostics.md). For .NET 10+, use built-in behavior before adding code.
 
 ## Already handled by .NET 10; do not re-implement
 
@@ -26,30 +26,31 @@ Load with [`../application-diagnostics.md`](../application-diagnostics.md). Assu
 
 ### Shorter user-facing reference
 
-The built-in Problem Details `traceId` and the template `Error` page show `Activity.Id` (`00-<traceId>-<spanId>-01`). For a shorter reference that matches the log scope's `TraceId`, use the same expression in both places:
+Built-in Problem Details and the template `Error` page show `Activity.Id` (`00-<traceId>-<spanId>-01`). For new contracts, show the shorter `TraceId` (matching log scopes), falling back to a separately labeled request ID when no activity exists:
 
 ```csharp
 builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
 {
-    ctx.ProblemDetails.Extensions["traceId"] =
-        Activity.Current?.TraceId.ToString() ?? ctx.HttpContext.TraceIdentifier;
+    if (Activity.Current is { } activity)
+        ctx.ProblemDetails.Extensions["traceId"] = activity.TraceId.ToString();
+    else
+        ctx.ProblemDetails.Extensions["requestId"] = ctx.HttpContext.TraceIdentifier;
     ctx.ProblemDetails.Extensions["timestamp"] = DateTimeOffset.UtcNow;
 });
 ```
 
-Use a separate random `supportId` (middleware + `ILogger.BeginScope`) only in the cases the generic module lists.
+If existing responses and support lookup use `HttpContext.TraceIdentifier`, retain it as the user-facing `requestId` even when an activity exists; log `TraceId` separately and verify the cross-service join.
 
 ### Error catalog via `IExceptionHandler`
 
 - One `IExceptionHandler` maps known exception types to catalog entries `{ status, code, userMessageKey, retryable }`, resolves text through `IStringLocalizer`, logs once with business context, and writes through `IProblemDetailsService.TryWriteAsync` with `code` as an extension and `type` as the catalog's stable docs URI.
 - Unknown exceptions use the generic catalog entry (500). Never put `exception.Message` or `GetType().Name` in `title`, `detail`, or `type`.
 - Return the result of `TryWriteAsync`. It returns `false` when the client does not accept JSON, so HTML requests fall through to the error page below with the same reference.
-- Set `Retry-After` on 503/429 responses when the wait is known.
 
 ### Error page (MVC, Razor Pages, Blazor Web App)
 
 - Use `UseExceptionHandler("/Error")`; for Blazor 404s use `UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true)`.
-- Replace the template `Error` page content: remove the "Development Mode" text, show the catalog message, next step, contact channel, labeled UTC time, and the reference (same expression as above) in a copyable element.
+- Replace the template `Error` page: remove "Development Mode" text; show the catalog message, next step, contact, UTC time, and a copyable reference matching the response and logs.
 - For in-page failures in Blazor, use `ErrorBoundary` around the affected region with a persistent alert; reset it on retry.
 
 ### Business context
@@ -58,7 +59,7 @@ Add one `ILogger.BeginScope` at the operation boundary (handler, service method,
 
 ### Exceptions
 
-`throw;` to rethrow; `throw new XException("Failed to load permit {id}", inner)` to wrap. Do not log and rethrow.
+`throw;` to rethrow; `throw new XException("Failed to load permit {id}", inner)` to wrap.
 
 ## Secrets and the escape hatch in .NET
 
