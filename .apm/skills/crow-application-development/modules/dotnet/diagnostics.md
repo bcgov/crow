@@ -7,14 +7,14 @@ Load with [`../application-diagnostics.md`](../application-diagnostics.md). For 
 | Generic requirement | Built-in behavior | Your only job |
 | --- | --- | --- |
 | Request correlation in application logs | ASP.NET Core request hosting provides a scope with `TraceId`, `SpanId`, `ParentId`, `RequestId`, and `RequestPath` | Include scopes in the formatter (`Logging:Console:FormatterOptions:IncludeScopes = true` or `AddJsonConsole(o => o.IncludeScopes = true)`) or sink; verify the fields are queryable in the deployed sink |
-| Reference in API errors | `AddProblemDetails()` adds a `traceId` extension to every Problem Details response | Nothing, unless you want the shorter 32-hex trace ID (see below) |
+| Reference in API errors | The default writer adds `traceId` from `Activity.Id` or, without an activity, `HttpContext.TraceIdentifier` | For a W3C-only `traceId`, replace or remove the default value as below |
 | Unhandled exceptions → safe 500 Problem Details | `AddProblemDetails()` + `UseExceptionHandler()` | Register both |
 | Exception → status code | `ExceptionHandlerOptions.StatusCodeSelector` | Map known types here or in your `IExceptionHandler` |
 | Non-exception error statuses get a body | `UseStatusCodePages()` writes Problem Details when `AddProblemDetails()` is registered | Register it |
 | Minimal API validation errors | `AddValidation()` returns `ValidationProblemDetails` | Register it; do not hand-roll validation responses |
 | Log the exception once | Exception handler middleware logs unhandled exceptions; when an `IExceptionHandler` returns `true`, .NET 10 **suppresses** the middleware's log, EventSource event, and `error.type` metric tag | Log in your `IExceptionHandler` when it handles the exception. Leave `SuppressDiagnosticsCallback` at its default |
 | Stack and inner-exception chain | `ILogger.LogError(exception, ...)` writes `exception.ToString()` (full stack + inner chain) | Always pass the exception object, not `ex.Message` |
-| Error responses not cached | Exception handler middleware sets `Cache-Control: no-cache,no-store` | Nothing |
+| Exception responses not cached | Exception handler middleware sets `Cache-Control: no-cache,no-store` | Set `Cache-Control: no-store` separately for non-exception error responses (including validation, 403, and 404); verify both paths |
 | Developer exception page only in development | `WebApplication` enables it only in the Development environment | Do not enable it elsewhere |
 | Outbound call start, duration, status | `IHttpClientFactory` logs start/end with elapsed ms and status; `System.Net.Http` emits `Activity` spans and the `http.client.request.duration` metric with `error.type` | Use named/typed clients; add your own events only for business stage context |
 | Outbound URL secrets | .NET 9+ redacts query strings (`*`), user info, and fragments in `HttpClient` logs and events | Log query **keys** yourself if needed |
@@ -31,31 +31,39 @@ Built-in Problem Details and the template `Error` page show `Activity.Id` (`00-<
 ```csharp
 builder.Services.AddProblemDetails(o => o.CustomizeProblemDetails = ctx =>
 {
+    var naming = ctx.HttpContext.RequestServices
+        .GetRequiredService<IOptions<Microsoft.AspNetCore.Http.Json.JsonOptions>>()
+        .Value.SerializerOptions.PropertyNamingPolicy;
+    var traceIdKey = naming?.ConvertName("traceId") ?? "traceId";
     if (Activity.Current is { } activity)
-        ctx.ProblemDetails.Extensions["traceId"] = activity.TraceId.ToString();
+        ctx.ProblemDetails.Extensions[traceIdKey] = activity.TraceId.ToString();
     else
-        ctx.ProblemDetails.Extensions["requestId"] = ctx.HttpContext.TraceIdentifier;
+    {
+        ctx.ProblemDetails.Extensions.Remove(traceIdKey);
+        ctx.ProblemDetails.Extensions[naming?.ConvertName("requestId") ?? "requestId"] =
+            ctx.HttpContext.TraceIdentifier;
+    }
     ctx.ProblemDetails.Extensions["timestamp"] = DateTimeOffset.UtcNow;
 });
 ```
 
-If existing responses and support lookup use `HttpContext.TraceIdentifier`, retain it as the user-facing `requestId` even when an activity exists; log `TraceId` separately and verify the cross-service join.
+The default writer populates `traceId` before this callback using the configured JSON property naming policy; remove that same key when falling back to a request ID. If existing responses and support lookup use `HttpContext.TraceIdentifier`, retain it as the user-facing `requestId` even when an activity exists; log `TraceId` separately and verify the cross-service join.
 
 ### Error catalog via `IExceptionHandler`
 
-- One `IExceptionHandler` maps known exception types to catalog entries `{ status, code, userMessageKey, retryable }`, resolves text through `IStringLocalizer`, logs once with business context, and writes through `IProblemDetailsService.TryWriteAsync` with `code` as an extension and `type` as the catalog's stable docs URI.
+- One `IExceptionHandler` maps known exception types to catalog entries `{ status, code, userMessageKey, retryable }`, resolves text through `IStringLocalizer`, and writes through `IProblemDetailsService.TryWriteAsync` with `code` as an extension and `type` as the catalog's stable docs URI. Log once with business context only if the handler writes the response.
 - Unknown exceptions use the generic catalog entry (500). Never put `exception.Message` or `GetType().Name` in `title`, `detail`, or `type`.
-- Return the result of `TryWriteAsync`. It returns `false` when the client does not accept JSON, so HTML requests fall through to the error page below with the same reference.
+- Return the result of `TryWriteAsync`. It returns `false` when the client does not accept JSON; leave logging to exception handler middleware on fall-through to the HTML error page.
 
 ### Error page (MVC, Razor Pages, Blazor Web App)
 
-- Use `UseExceptionHandler("/Error")`; for Blazor 404s use `UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true)`.
+- Use `UseExceptionHandler("/Error")`. For Blazor 404s, prefer `NavigationManager.NotFound()` and the Router `NotFoundPage`. If using `UseStatusCodePagesWithReExecute` for empty error responses, dispatch by status (including 401, 403, 404, and 5xx); it re-executes for all bodyless 4xx/5xx responses, not just 404s.
 - Replace the template `Error` page: remove "Development Mode" text; show the catalog message, next step, contact, UTC time, and a copyable reference matching the response and logs.
 - For in-page failures in Blazor, use `ErrorBoundary` around the affected region with a persistent alert; reset it on retry.
 
 ### Business context
 
-Add one `ILogger.BeginScope` at the operation boundary (handler, service method, or endpoint filter) with operation name and entity IDs; verify it reaches the deployed sink. Use message templates, not interpolated strings.
+Use `ILogger.BeginScope` for operation logs. Preserve safe operation name and entity IDs in request context or the exception so the exception handler can start its own scope after inner scopes unwind. Verify fields in the deployed sink; use message templates, not interpolated strings.
 
 ### Exceptions
 
@@ -63,14 +71,6 @@ Add one `ILogger.BeginScope` at the operation boundary (handler, service method,
 
 ## Secrets and the escape hatch in .NET
 
-Stand-ins: `SqlConnectionStringBuilder` (remove `Password`), validated claims from `ClaimsPrincipal` or the JWT bearer `OnAuthenticationFailed` exception (never the raw token), `X509Certificate2.Thumbprint`, configuration key names via `IConfiguration` providers.
+Stand-ins: extract only allowlisted `DataSource` and `InitialCatalog` values from `SqlConnectionStringBuilder` (never log the builder), validated claims from `ClaimsPrincipal` or the JWT bearer `OnAuthenticationFailed` exception (never the raw token), `X509Certificate2.Thumbprint`, and configuration key names via `IConfiguration` providers.
 
-Built-in switches to tie to the time-boxed escape hatch (off by default):
-
-| Need | Switch |
-| --- | --- |
-| Full outbound URLs with query values | `DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION=true` (process-wide; prefer the environment variable so it is removable without a build) |
-| EF Core parameter values | `EnableSensitiveDataLogging()` behind the switch |
-| Outbound header values | `IHttpClientFactory` logs headers only at Trace; raise the level for that client's category temporarily, and keep `RedactLoggedHeaders` for `Authorization` and cookies |
-
-Bind the switch with `IOptionsMonitor<T>` (enabled flag + `ExpiresUtc`) so it changes without a deployment, and write sensitive values to a dedicated `ILogger` category routed to the restricted sink.
+Keep runtime URI redaction enabled. Process-wide switches such as `DOTNET_SYSTEM_NET_HTTP_DISABLEURIREDACTION` and broad EF Core sensitive-data or HTTP header logging cannot enforce expiry and restricted-sink isolation per event; do not use them as the generic escape hatch. Where policy permits exceptional diagnostics, check enabled scope and `ExpiresUtc` via `IOptionsMonitor<T>` on each application-controlled write, using a dedicated `ILogger` category routed only to the restricted sink.

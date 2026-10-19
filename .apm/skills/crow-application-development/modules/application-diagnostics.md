@@ -64,7 +64,7 @@ Use structured logging with stable fields. Error events should identify the oper
 - **Business context:** operation, entity type and internal ID, tenant/organization, safe input summary (counts, enums, failed field **names**). Use a surrogate ID for personal identifiers such as SIN or PHN.
 - **Failure:** catalog `code`, reason, stage, dependency, outbound method and route (query **keys**, not values), response status **if received**, upstream error code, exception type, message, stack, and inner causes when an exception exists; never invent a stack.
 - **Actor:** verified user/workload ID; for impersonation, initiator and target separately. Do not invent an ID before sign-in.
-- Attach correlation and business context with a logging scope/MDC at the operation boundary; verify propagation into the deployed sink, including async work. Keep high-cardinality values out of metric labels.
+- Attach correlation and business context with a logging scope/MDC; preserve essential fields for the exception boundary after inner scopes unwind. Verify propagation into the deployed sink, including async work. Keep high-cardinality values out of metric labels.
 
 ## Log levels *(baseline)*
 
@@ -94,9 +94,9 @@ Log each failure **once** at Error, at the boundary that handles it; inner layer
 | Need | Log instead |
 | --- | --- |
 | Was a credential sent or configured? | presence, length, scheme/type (e.g. `Bearer`), configuration **key name** and source (not value) |
-| Is it the right or expected credential? | key ID (`kid`), certificate thumbprint/subject/expiry, last 4 characters, or a keyed fingerprint (truncated HMAC-SHA-256 with a log-fingerprint key; never an unkeyed hash of a low-entropy secret) |
+| Is it the right or expected credential? | non-secret key ID (`kid`), certificate thumbprint/subject/expiry, or a keyed fingerprint (truncated HMAC-SHA-256 with a log-fingerprint key; never an unkeyed hash of a low-entropy secret). Never log a secret suffix |
 | Why was a token rejected? | non-secret claims: `iss`, `aud`, `exp`, `nbf`, `iat`, scopes/roles, client ID; validation failure reason. Never the signature or whole token |
-| Which database/endpoint? | connection string with password removed; host, database, user name |
+| Which database/endpoint? | allowlisted non-secret host and database identifiers extracted from known settings; never log a connection string or the remainder after removing one credential |
 | Which URL failed? | scheme, host, path or route template, query **keys** with values redacted |
 
 ### Step 2: diagnostic escape hatch (when stand-ins do not resolve the issue)
