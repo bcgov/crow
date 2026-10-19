@@ -67,7 +67,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.14.1 --global --target copilot
+apm install bcgov/crow#v0.14.2 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -98,8 +98,15 @@ first:
 
 The guided setup checks prerequisites, lets you choose Raven capability
 groups or [codebase-memory-mcp], pins server versions, verifies attested
-release bundles, and writes a Crow-owned MCP configuration fragment without
-overwriting existing client configuration or collecting credentials. When
+release bundles, and generates a Crow-owned MCP fragment. After a separate
+preview and approval it can merge the selected servers into Copilot Global's
+`mcp-config.json`, also used by VS Code Copilot sessions. VS Code may migrate
+old profile entries there; Crow does not write `mcp.json` or `settings.json`.
+The merge preserves existing entries and backs up changed files.
+For other editors, use the portable configuration only when the editor
+supports its schema; otherwise follow its native MCP setup flow. Setup never
+collects credentials. When new servers are added, it points to Raven's
+installed Windows or macOS credential setup script if available. When
 Sonar MCP is already configured (`sonar` in the Raven catalog or
 `sonar-mcp`) or selected during setup, it also sets up the local SonarScanner
 CLI and .NET/MSBuild scanner when a compatible .NET SDK is available, checks official
@@ -137,7 +144,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.14.1` remains fixed. Installing
+while an exact version tag such as `#v0.14.2` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -235,7 +242,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.14.1.zip`. See
+The resulting archive is `build/bcgov-crow-0.14.2.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

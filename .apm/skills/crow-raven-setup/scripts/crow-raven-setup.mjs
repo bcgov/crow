@@ -25,6 +25,7 @@ import { Readable } from "node:stream";
 import { pipeline } from "node:stream/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { isDeepStrictEqual } from "node:util";
+import { applyClientConfig, previewClientConfig } from "./client-config.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(scriptDir, "..");
@@ -75,7 +76,7 @@ function parseArgs(values) {
       continue;
     }
     const key = value.slice(2);
-    if (["confirm", "force", "no-raven"].includes(key)) {
+    if (["confirm", "force", "no-raven", "sonar"].includes(key)) {
       parsed[key] = true;
       continue;
     }
@@ -86,7 +87,9 @@ function parseArgs(values) {
 }
 
 function run(command, args, options = {}) {
-  const result = spawnSync(command, args, {
+  const executable = ["gh", "tar", "git", "npm"].includes(command)
+    ? findExecutable(command)?.path || command : command;
+  const result = spawnSync(executable, args, {
     cwd: options.cwd,
     encoding: "utf8",
     stdio: options.capture ? "pipe" : "inherit",
@@ -104,8 +107,111 @@ function run(command, args, options = {}) {
   return options.capture ? result.stdout.trim() : "";
 }
 
+function findExecutable(name, env = process.env, platform = process.platform,
+  currentExecutable = process.execPath) {
+  const suffixes = platform === "win32" ? [".exe", ".cmd", ".bat", ""] : [""];
+  const roots = (env.PATH || "").split(platform === "win32" ? ";" : ":").filter(Boolean);
+  const standard = platform === "win32" ? [
+    dirname(currentExecutable),
+    join(env.SystemRoot || String.raw`C:\Windows`, "System32"),
+    join(env.ProgramFiles || String.raw`C:\Program Files`, "nodejs"),
+    join(env.ProgramFiles || String.raw`C:\Program Files`, "Git", "cmd"),
+    join(env.ProgramFiles || String.raw`C:\Program Files`, "GitHub CLI"),
+    join(env.ProgramFiles || String.raw`C:\Program Files`, "dotnet"),
+    join(env["ProgramFiles(x86)"] || String.raw`C:\Program Files (x86)`, "dotnet"),
+    join(env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Programs", "GitHub CLI"),
+    join(env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Programs", "apm", "current"),
+    join(env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Programs", "nodejs"),
+    join(env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), "Programs", "Git", "cmd"),
+    join(env.USERPROFILE || homedir(), ".dotnet")
+  ] : [
+    dirname(currentExecutable), "/usr/bin", "/usr/local/bin", "/opt/homebrew/bin",
+    "/usr/local/share/dotnet", "/usr/share/dotnet", join(homedir(), ".local", "bin"),
+    join(homedir(), ".dotnet")
+  ];
+  for (const directory of [...roots, ...standard]) {
+    for (const suffix of suffixes) {
+      const path = join(directory, `${name}${suffix}`);
+      if (existsSync(path) && statSync(path).isFile()) {
+        return { path, source: roots.includes(directory) ? "PATH" : "standard-location" };
+      }
+    }
+  }
+  return null;
+}
+
+function prerequisiteInvocation(name, path) {
+  if (name === "npm" && npmCli) {
+    return { command: process.execPath, args: [npmCli, "--version"] };
+  }
+  if (process.platform === "win32" && /\.(?:cmd|bat)$/i.test(path)) {
+    return { command: process.env.ComSpec || "cmd.exe",
+      args: ["/d", "/s", "/c", `"${path}" --version`] };
+  }
+  return { command: path, args: [name === "dotnet" ? "--list-sdks" : "--version"] };
+}
+
+function inspectPrerequisite(name, required) {
+  const resolved = name === "node"
+    ? { path: process.execPath, source: "current-process" }
+    : findExecutable(name);
+  if (!resolved) {
+    return { name, required, status: "not-installed-or-unlocated", path: null, version: null };
+  }
+  const invocation = prerequisiteInvocation(name, resolved.path);
+  const checked = spawnSync(invocation.command, invocation.args, {
+    encoding: "utf8", shell: false, windowsHide: true, timeout: 5000
+  });
+  const success = checked.status === 0;
+  const onPath = ["PATH", "current-process"].includes(resolved.source);
+  let status = "installed-but-unavailable";
+  if (success) status = onPath ? "available" : "outside-PATH";
+  return {
+    name, required, status, path: resolved.path,
+    version: success ? checked.stdout.trim() : null,
+    ...(success ? {} : { action: checked.error?.message || checked.stderr?.trim() || `exit ${checked.status}` })
+  };
+}
+
+function preflightCommand(args) {
+  const delivery = args.delivery || "release";
+  if (!["release", "source", "none"].includes(delivery)) {
+    fail("--delivery must be release, source, or none.");
+  }
+  const required = new Set(["node", "npm"]);
+  if (delivery === "release") { required.add("gh"); required.add("tar"); }
+  if (delivery === "source") required.add("git");
+  const inventory = ["node", "npm", "gh", "tar", "git", ...(args.sonar ? ["dotnet", "sonar-scanner"] : [])]
+    .map((name) => inspectPrerequisite(name, required.has(name)));
+  let githubAuth = null;
+  const gh = inventory.find((item) => item.name === "gh");
+  if (delivery === "release" && gh.path) {
+    const result = spawnSync(gh.path, ["auth", "status"], {
+      encoding: "utf8", stdio: "ignore", shell: false, windowsHide: true, timeout: 5000
+    });
+    githubAuth = result.status === 0 ? "authenticated" : "login-required";
+  }
+  let dotnetScanner = null;
+  const dotnet = inventory.find((item) => item.name === "dotnet");
+  if (args.sonar && dotnet?.path && ["available", "outside-PATH"].includes(dotnet.status)) {
+    const tools = spawnSync(dotnet.path, ["tool", "list", "--global"], {
+      encoding: "utf8", shell: false, windowsHide: true, timeout: 5000
+    });
+    if (tools.status === 0) {
+      const match = tools.stdout.match(/^dotnet-sonarscanner\s+(\S+)/im);
+      dotnetScanner = match ? { status: "installed", version: match[1] } :
+        { status: "not-installed", version: null };
+    } else {
+      dotnetScanner = { status: "inventory-failed", action: tools.error?.message || tools.stderr?.trim() || `exit ${tools.status}` };
+    }
+  }
+  console.log(JSON.stringify({ inventory, githubAuth, ...(args.sonar ? { dotnetScanner } : {}) }, null, 2));
+  if (inventory.some((item) => item.required && !["available", "outside-PATH"].includes(item.status)) ||
+      githubAuth === "login-required") process.exitCode = 1;
+}
+
 function runApm(args) {
-  const command = process.platform === "win32" ? "apm.exe" : "apm";
+  const command = findExecutable("apm")?.path || (process.platform === "win32" ? "apm.exe" : "apm");
   const result = spawnSync(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -419,13 +525,13 @@ function readApmInstalledPackageVersion(selector, runCommand = runApm) {
   const metadata = runCommand(["view", selector, "--global"]);
   if (metadata.error) {
     if (metadata.error.code === "ENOENT") {
-      throw new Error("Could not determine the installed Crow version from package metadata or APM.");
+      throw new Error("APM is absent or unavailable on the hook PATH; restore APM or configure its executable path before checking Crow.");
     }
     throw new Error(`Could not read the installed Crow version from APM: ${metadata.error.message}`);
   }
   if (metadata.status !== 0) {
     throw new Error(
-      `Could not read the installed Crow package '${selector}' from APM (exit code ${metadata.status}).`
+      `APM could not look up Crow package '${selector}' (exit code ${metadata.status}); check the installed selector and APM/network access.`
     );
   }
   const version = metadata.stdout.match(/\bVersion:\s+(v?\d+\.\d+\.\d+)\b/i)?.[1];
@@ -594,6 +700,8 @@ function defaultCrowUpdateState() {
     hookDecisionAt: null,
     lastAttemptAt: null,
     lastAttemptStatus: null,
+    lastSuccessfulComponents: [],
+    lastCheckedByComponent: { crow: null, raven: null, codebaseMemory: null },
     lastSuccessfulCheckAt: null,
     versions: {
       crow: { current: null, latest: null },
@@ -638,6 +746,20 @@ function isCrowUpdateState(value) {
     return false;
   }
   const components = ["crow", "raven", "codebaseMemory"];
+  if (value.lastSuccessfulComponents !== undefined &&
+      (!Array.isArray(value.lastSuccessfulComponents) ||
+       value.lastSuccessfulComponents.some((component) => !components.includes(component)) ||
+       new Set(value.lastSuccessfulComponents).size !== value.lastSuccessfulComponents.length)) {
+    return false;
+  }
+  if (value.lastCheckedByComponent !== undefined &&
+      (!hasExactObjectKeys(value.lastCheckedByComponent, components) ||
+       components.some((component) => {
+         const timestamp = value.lastCheckedByComponent[component];
+         return timestamp !== null && !isTimestamp(timestamp);
+       }))) {
+    return false;
+  }
   if (!hasExactObjectKeys(value.versions, components) ||
       !hasExactObjectKeys(value.lastNotifiedVersions, components)) {
     return false;
@@ -705,6 +827,8 @@ function readCrowUpdateState(path) {
       hookDecisionAt: state.hookDecisionAt,
       lastAttemptAt: state.lastAttemptAt,
       lastAttemptStatus: state.lastAttemptStatus,
+      lastSuccessfulComponents: [],
+      lastCheckedByComponent: { crow: null, raven: null, codebaseMemory: null },
       lastSuccessfulCheckAt: state.lastSuccessfulCheckAt,
       versions: {
         crow: { current: state.currentVersion, latest: state.latestVersion },
@@ -794,29 +918,84 @@ function createCrowUpdateHookConfig(scriptPath, stateDir, setupStateDir = defaul
 
 function readExpectedCrowUpdateHook(path, expected) {
   if (!existsSync(path)) return false;
+  const content = readFileSync(path, "utf8");
   let current;
   try {
-    current = JSON.parse(readFileSync(path, "utf8"));
+    current = JSON.parse(content);
   } catch (error) {
-    throw new Error(`The Copilot hook file is malformed and was left unchanged: ${error.message}`);
+    throw Object.assign(
+      new Error(`The Copilot hook file is malformed and was left unchanged: ${error.message}`),
+      { code: "CROW_HOOK_CONFLICT" }
+    );
   }
   if (!isDeepStrictEqual(current, expected)) {
-    throw new Error("The Copilot hook file already exists with different content and was left unchanged.");
+    throw Object.assign(
+      new Error("The Copilot hook file already exists with different content and was left unchanged."),
+      { code: "CROW_HOOK_CONFLICT" }
+    );
   }
   return true;
 }
 
 function statusCrowUpdateHook(target, state, expected) {
-  const hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
+  let hookInstalled = false;
+  let conflict = null;
+  try {
+    hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
+  } catch (error) {
+    if (error.code !== "CROW_HOOK_CONFLICT") throw error;
+    conflict = error.message;
+  }
   let decision = state.hookDecision;
-  if (hookInstalled && decision !== "enabled") decision = "recoverable";
+  if (conflict) decision = "conflicting";
+  else if (hookInstalled && decision !== "enabled") decision = "recoverable";
   else if (!hookInstalled && decision === "enabled") decision = "missing";
   console.log(JSON.stringify({
     decision,
     hookInstalled,
     persistedDecision: state.hookDecision,
-    lastSuccessfulCheckAt: state.lastSuccessfulCheckAt
+    lastSuccessfulCheckAt: state.lastSuccessfulCheckAt,
+    ...(conflict ? {
+      conflict,
+      hookFile: target.hook,
+      hookSha256: createHash("sha256").update(readFileSync(target.hook)).digest("hex")
+    } : {})
   }, null, 2));
+}
+
+function replaceCrowUpdateHook(args, target, state, expected) {
+  if (!args.confirm || !/^[a-f0-9]{64}$/i.test(args["hook-sha256"] || "")) {
+    fail("Replacing a conflicting hook requires --hook-sha256 <status digest> and --confirm after explicit approval.");
+  }
+  if (!existsSync(target.hook)) fail("The conflicting hook is missing; check status again.");
+  const actual = createHash("sha256").update(readFileSync(target.hook)).digest("hex");
+  if (actual !== args["hook-sha256"].toLowerCase()) {
+    fail("The conflicting hook changed since status; review it again before replacement.");
+  }
+  const backup = `${target.hook}.${randomUUID()}.bak`;
+  const replacement = `${JSON.stringify(expected, null, 2)}\n`;
+  renameSync(target.hook, backup);
+  let wrote = false;
+  try {
+    const moved = createHash("sha256").update(readFileSync(backup)).digest("hex");
+    if (moved !== actual) throw new Error("The conflicting hook changed during replacement.");
+    writeFileSync(target.hook, replacement, {
+      encoding: "utf8", flag: "wx", mode: 0o600
+    });
+    wrote = true;
+    state.hookDecision = "enabled";
+    state.hookDecisionAt = new Date().toISOString();
+    writeCrowUpdateState(target.state, state);
+  } catch (error) {
+    if (wrote && existsSync(target.hook) &&
+        readFileSync(target.hook, "utf8") === replacement) {
+      unlinkSync(target.hook);
+    }
+    if (!existsSync(target.hook)) renameSync(backup, target.hook);
+    throw new Error(`Could not replace the hook: ${error.message}. Original backup: ${backup}`);
+  }
+  console.log(JSON.stringify({ decision: "enabled", hookInstalled: true,
+    hookFile: target.hook, backupPath: backup }, null, 2));
 }
 
 function installCrowUpdateHook(args, target, state, expected) {
@@ -898,6 +1077,9 @@ function crowUpdateHookCommand(args) {
     case "install":
       installCrowUpdateHook(args, target, state, expected);
       break;
+    case "replace":
+      replaceCrowUpdateHook(args, target, state, expected);
+      break;
     case "decline":
       declineCrowUpdateHook(target, state, expected);
       break;
@@ -905,7 +1087,7 @@ function crowUpdateHookCommand(args) {
       removeCrowUpdateHook(args, target, state, expected);
       break;
     default:
-      fail(`Unknown update-hook action '${action}'. Use status, install, decline, or remove.`);
+      fail(`Unknown update-hook action '${action}'. Use status, install, replace, decline, or remove.`);
   }
 }
 
@@ -914,7 +1096,8 @@ function validateCrowUpdateClock(state, now) {
     state.hookDecisionAt,
     state.lastAttemptAt,
     state.lastSuccessfulCheckAt,
-    state.lastNotifiedAt
+    state.lastNotifiedAt,
+    ...Object.values(state.lastCheckedByComponent || {})
   ]) {
     if (value !== null && Date.parse(value) > now) {
       throw new Error("Crow update state contains a future timestamp.");
@@ -1145,6 +1328,7 @@ function findCrowUpdateCandidates(versions, successfulComponents) {
 }
 
 async function runCrowUpdateCheck(statePath, state, now, options) {
+  const previousStatus = state.lastAttemptStatus;
   const attemptAt = new Date(now).toISOString();
   state.lastAttemptAt = attemptAt;
   state.lastAttemptStatus = "started";
@@ -1158,17 +1342,50 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
   try {
     const { configured, failure: setupStateFailure } = readCrowManagedUpdateVersions(options);
     const updateChecks = createCrowUpdateChecks(options, configured);
+    const checkTimes = {
+      crow: null, raven: null, codebaseMemory: null,
+      ...state.lastCheckedByComponent
+    };
+    const reuse = new Set();
+    if (!options.force && previousStatus === "failed") {
+      for (const check of updateChecks.checks) {
+        const checkedAt = checkTimes[check.component];
+        if (!state.lastSuccessfulComponents?.includes(check.component) || !checkedAt ||
+            now - Date.parse(checkedAt) >= crowUpdateCheckIntervalMs) continue;
+        if (check.component !== "crow" &&
+            check.normalize(check.current(), `Installed ${check.name} version`) !==
+              state.versions[check.component].current) continue;
+        reuse.add(check.component);
+      }
+    }
+    const pendingChecks = updateChecks.checks.filter((check) => !reuse.has(check.component));
     const checkedComponents = await Promise.allSettled(
-      updateChecks.checks.map(checkCrowUpdateComponent)
+      pendingChecks.map(checkCrowUpdateComponent)
     );
+    for (const component of ["crow", "raven", "codebaseMemory"]) {
+      if (!updateChecks.checks.some((check) => check.component === component)) {
+        checkTimes[component] = null;
+      }
+    }
+    pendingChecks.forEach((check, index) => {
+      checkTimes[check.component] =
+        checkedComponents[index].status === "fulfilled" ? attemptAt : null;
+    });
+    state.lastCheckedByComponent = checkTimes;
     failures = collectCrowUpdateFailures(setupStateFailure, checkedComponents);
     crowSelector = updateChecks.getSelector();
     const merged = mergeCrowUpdateVersions(state, updateChecks.checks, checkedComponents);
     versions = merged.versions;
-    successfulComponents = merged.successfulComponents;
+    successfulComponents = new Set([
+      ...merged.successfulComponents,
+      ...updateChecks.checks.filter((check) =>
+        reuse.has(check.component) && !pendingChecks.includes(check)
+      ).map((check) => check.component)
+    ]);
     updates = findCrowUpdateCandidates(versions, successfulComponents);
   } catch (error) {
     state.lastAttemptStatus = "failed";
+    state.lastCheckedByComponent = { crow: null, raven: null, codebaseMemory: null };
     writeCrowUpdateState(statePath, state);
     return { checked: false, error: safeUpdateCheckError(error) };
   }
@@ -1187,6 +1404,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
   const updateAvailable = updates.length > 0;
   const notify = shouldNotifyCrowUpdate(state, now, updateAvailable);
   state.lastAttemptStatus = failures.length > 0 ? "failed" : "success";
+  state.lastSuccessfulComponents = [...successfulComponents];
   if (failures.length === 0) state.lastSuccessfulCheckAt = attemptAt;
   state.versions = versions;
   if (!updateAvailable && failures.length === 0) {
@@ -1693,6 +1911,10 @@ function selectedServers(args, serverCatalog) {
   return requested.map((id) => known.get(id));
 }
 
+function verifyGitHubAuth(runCommand = run) {
+  runCommand("gh", ["auth", "status"], { capture: true, timeout: networkTimeoutMs });
+}
+
 function assertPrerequisites({
   requiresGit = false,
   requiresReleaseTools = false,
@@ -1710,6 +1932,7 @@ function assertPrerequisites({
   if (requiresGit) run("git", ["--version"], { capture: true });
   if (requiresReleaseTools) {
     run("gh", ["--version"], { capture: true });
+    verifyGitHubAuth();
     run("tar", ["--version"], { capture: true });
   }
   runNpm(["--version"], { capture: true });
@@ -2249,7 +2472,7 @@ function taskkillTerminationError(result, rootPid, processIsRunning = isProcessR
     affectedPids.add(Number(match[1]));
     reportedPid = true;
   }
-  if (new RegExp(`\\bThe process\\s+["']?${rootPid}["']?\\s+not found\\b`, "i").test(detail)) {
+  if (new RegExp(String.raw`\bThe process\s+["']?${rootPid}["']?\s+not found\b`, "i").test(detail)) {
     reportedPid = true;
   }
   if (!reportedPid) return detail;
@@ -2404,22 +2627,30 @@ function printHelp() {
 Commands:
   list [--group <id>]
   status [--state-dir <path>]
+  preflight [--delivery release|source|none] [--sonar]
   plan (--servers <id,...> | --no-raven)
        [--delivery release|source] [--raven-version X.Y.Z]
        [--raven-ref main|vX.Y.Z|sha]
        [--codebase-memory-version X.Y.Z] [--state-dir <path>]
   setup --plan <path> --plan-sha256 <digest> --confirm
+  config preview --client copilot|portable [--config <path>] [--state-dir <path>]
+  config apply --client copilot|portable [--config <path>]
+               [--state-dir <path>] --approval-sha256 <digest> --confirm
   check [--state-dir <path>] [--force]
   rollback [--state-dir <path>] --confirm
   update-check [--state-dir <path>] [--setup-state-dir <path>] [--force]
-  update-hook [status|install|decline|remove] [--state-dir <path>]
-              [--setup-state-dir <path>] [--hook-dir <path>] [--confirm]
+  update-hook [status|install|replace|decline|remove] [--state-dir <path>]
+              [--setup-state-dir <path>] [--hook-dir <path>]
+              [--hook-sha256 <status digest>] [--confirm]
   update-hook-event --state-dir <path> [--setup-state-dir <path>]
 
 Plan resolves every mutable version and writes a reviewable pending-plan.json.
 Raven uses verified bundled releases by default. Source builds require the
-explicit --delivery source fallback. Setup does not merge client configuration
-or collect credentials. The optional Copilot update hook checks at most once
+explicit --delivery source fallback. Config preview/apply merges only the
+reviewed client configuration: VS Code and Copilot use the same user-level
+mcp-config.json, never profile mcp.json or settings.json. Setup does not
+collect credentials.
+The optional Copilot update hook checks at most once
 per day during agent use and never installs updates.`);
 }
 
@@ -2441,8 +2672,27 @@ function statusCommand(args) {
     console.log(JSON.stringify({ configured: false, stateDir: target.stateDir }, null, 2));
     return;
   }
+
   const state = readState(target);
   console.log(JSON.stringify({ configured: true, ...state, stateDir: target.stateDir }, null, 2));
+}
+
+function configCommand(args) {
+  const action = args._[1];
+  if (!["preview", "apply"].includes(action)) fail("Use config preview or config apply.");
+  const target = paths(args);
+  if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
+  const state = readState(target);
+  const options = {
+    ...args,
+    managedEntries: state.managedFragment.mcpServers,
+    previousEntries: state.previous?.managedFragment.mcpServers
+  };
+  const result = action === "preview"
+    ? previewClientConfig(options)
+    : applyClientConfig(options);
+  const { bytes, content, ...output } = result;
+  console.log(JSON.stringify(output, null, 2));
 }
 
 function planAssurance(raven) {
@@ -2505,7 +2755,8 @@ async function planCommand(args) {
   }
   assertPrerequisites({
     requiresGit: includesRaven && requestedDelivery === "source",
-    requiresSourceNode: includesRaven && requestedDelivery === "source"
+    requiresSourceNode: includesRaven && requestedDelivery === "source",
+    requiresReleaseTools: includesRaven && requestedDelivery === "release"
   });
   let raven = null;
   if (includesRaven && requestedDelivery === "release") {
@@ -2639,6 +2890,25 @@ function ensureGenerationAvailable(plan, priorState) {
       protectedCodebasePaths.includes(plan.codebaseMemory.installPath)) {
     fail("This setup plan is already active or retained as a rollback target.");
   }
+}
+
+function credentialSetupResult(state, priorState) {
+  const addedServers = state.selectedServers.filter((id) =>
+    !priorState?.selectedServers.includes(id));
+  if (addedServers.length === 0) return { addedServers, credentialSetup: null };
+  let credentialScriptName = null;
+  if (process.platform === "win32") credentialScriptName = "setup-credentials.ps1";
+  if (process.platform === "darwin") credentialScriptName = "setup-credentials-mac.mjs";
+  const candidate = credentialScriptName && state.raven?.runtimePath
+    ? join(state.raven.runtimePath, "scripts", credentialScriptName) : null;
+  const script = candidate && existsSync(candidate) ? candidate : null;
+  return {
+    addedServers,
+    credentialSetup: {
+      script,
+      documentation: `${ravenRepositoryUrl}#2-configure-authentication`
+    }
+  };
 }
 
 async function stageRavenRuntime(plan, target, servers, runtimeStagingPath) {
@@ -2791,7 +3061,10 @@ async function setupCommand(args) {
     reconcilePromotion(target);
     fail(`Could not promote the verified setup: ${error.message}`);
   }
-  console.log(JSON.stringify({ statePath: target.state, fragmentPath: target.fragment, ...state }, null, 2));
+  console.log(JSON.stringify({
+    statePath: target.state, fragmentPath: target.fragment, ...state,
+    ...credentialSetupResult(state, priorState)
+  }, null, 2));
 }
 
 async function checkCommand(args) {
@@ -2922,6 +3195,7 @@ export {
   latestCrowVersion,
   latestRavenVersion,
   fetchLatestCodebaseVersion,
+  findExecutable,
   markCrowUpdateNotified,
   parseCrowOutdatedOutput,
   resolveInstalledCrowPackage,
@@ -2933,7 +3207,8 @@ export {
   taskkillTerminationError,
   validateReleaseCatalog,
   validateReleaseManifest,
-  verifyStartup
+  verifyStartup,
+  verifyGitHubAuth
 };
 
 if (import.meta.url === pathToFileURL(resolve(process.argv[1] || "")).href) {
@@ -2943,6 +3218,8 @@ if (import.meta.url === pathToFileURL(resolve(process.argv[1] || "")).href) {
     case "help": printHelp(); break;
     case "list": listCommand(args); break;
     case "status": statusCommand(args); break;
+    case "preflight": preflightCommand(args); break;
+    case "config": configCommand(args); break;
     case "plan": await planCommand(args); break;
     case "setup": await setupCommand(args); break;
     case "check": await checkCommand(args); break;

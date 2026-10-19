@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { applyClientConfig, previewClientConfig } from "./client-config.mjs";
 import {
   checkCrowApmUpdate,
   checkCrowUpdates,
@@ -20,6 +21,7 @@ import {
   createCrowUpdateHookConfig,
   handleUpdateHookEvent,
   fetchLatestCodebaseVersion,
+  findExecutable,
   latestCrowVersion,
   latestRavenVersion,
   markCrowUpdateNotified,
@@ -33,12 +35,288 @@ import {
   taskkillTerminationError,
   validateReleaseCatalog,
   validateReleaseManifest,
-  verifyStartup
+  verifyStartup,
+  verifyGitHubAuth
 } from "./crow-raven-setup.mjs";
 
 const script = fileURLToPath(new URL("./crow-raven-setup.mjs", import.meta.url));
 
 const noManagedUpdateVersions = () => ({ raven: null, codebaseMemory: null });
+
+function configFixture(client = "copilot") {
+  const root = mkdtempSync(join(tmpdir(), "crow-config-fixture-"));
+  const fragment = join(root, "mcp-fragment.json");
+  const config = join(root, "mcp-config.json");
+  writeFileSync(fragment, JSON.stringify({
+    mcpServers: {
+      sonar: { command: "node", args: [join(root, "sonar.js")] },
+      "codebase-memory-mcp": { command: "node", args: [join(root, "memory.js")] }
+    }
+  }));
+  return { root, config, args: { client, config, fragment } };
+}
+
+test("VS Code and Copilot merge into the global mcp-config.json and remain idempotent", () => {
+  const fixture = configFixture();
+  const unrelated = { mcpServers: { existing: { command: "tool", args: [] } }, inputs: [{ id: "keep" }] };
+  writeFileSync(fixture.config, JSON.stringify(unrelated));
+  const preview = previewClientConfig(fixture.args);
+  assert.equal(preview.configPath, fixture.config);
+  assert.deepEqual(preview.added, ["sonar", "codebase-memory-mcp"]);
+  assert.deepEqual(preview.proposed.sonar, {
+    command: "node", args: [join(fixture.root, "sonar.js")]
+  });
+  assert.throws(() => applyClientConfig(fixture.args), /requires --approval-sha256/);
+  const applied = applyClientConfig({
+    ...fixture.args, "approval-sha256": preview.approvalSha256, confirm: true
+  });
+  assert.equal(applied.applied, true);
+  assert.deepEqual(JSON.parse(readFileSync(applied.backupPath, "utf8")), unrelated);
+  const merged = JSON.parse(readFileSync(fixture.config, "utf8"));
+  assert.deepEqual(merged.inputs, unrelated.inputs);
+  assert.deepEqual(merged.mcpServers.existing, unrelated.mcpServers.existing);
+  assert.deepEqual(Object.keys(merged.mcpServers), ["existing", "sonar", "codebase-memory-mcp"]);
+  const repeat = previewClientConfig(fixture.args);
+  assert.deepEqual(repeat.added, []);
+  assert.equal(applyClientConfig({
+    ...fixture.args, "approval-sha256": repeat.approvalSha256, confirm: true
+  }).applied, false);
+});
+
+test("config merge rejects stale previews, collisions, malformed and wrong-schema files", () => {
+  const fixture = configFixture();
+  const preview = previewClientConfig(fixture.args);
+  writeFileSync(fixture.config, JSON.stringify({ mcpServers: { other: { command: "other" } } }));
+  assert.throws(() => applyClientConfig({
+    ...fixture.args, "approval-sha256": preview.approvalSha256, confirm: true
+  }), /changed since preview/);
+  assert.equal(existsSync(`${fixture.config}.crow.lock`), false);
+  writeFileSync(fixture.config, JSON.stringify({ mcpServers: { sonar: { command: "not-crow" } } }));
+  assert.throws(() => previewClientConfig(fixture.args), /collision/);
+  writeFileSync(fixture.config, "{");
+  assert.throws(() => previewClientConfig(fixture.args), /malformed/);
+  writeFileSync(fixture.config, JSON.stringify({ servers: {} }));
+  assert.throws(() => previewClientConfig(fixture.args), /not the selected client's mcpServers format/);
+  unlinkSync(fixture.config);
+  assert.throws(() => previewClientConfig({ ...fixture.args, config: join(fixture.root, "settings.json") }), /unsupported configuration file/);
+  assert.throws(() => previewClientConfig({ ...fixture.args, config: join(fixture.root, "mcp.json") }), /unsupported configuration file/);
+  assert.throws(() => previewClientConfig({ ...fixture.args, client: "vscode" }), /Choose --client copilot/);
+  assert.equal(existsSync(join(fixture.root, "mcp.json")), false);
+});
+
+test("already migrated VS Code entries with stdio type are verified, not duplicated", () => {
+  const fixture = configFixture();
+  const fragment = JSON.parse(readFileSync(fixture.args.fragment, "utf8"));
+  writeFileSync(fixture.config, JSON.stringify({
+    mcpServers: {
+      sonar: { type: "stdio", ...fragment.mcpServers.sonar },
+      "codebase-memory-mcp": fragment.mcpServers["codebase-memory-mcp"]
+    }
+  }));
+  const preview = previewClientConfig(fixture.args);
+  assert.deepEqual(preview.added, []);
+  assert.deepEqual(preview.unchanged, ["sonar", "codebase-memory-mcp"]);
+  const applied = applyClientConfig({
+    ...fixture.args, "approval-sha256": preview.approvalSha256, confirm: true
+  });
+  assert.equal(applied.applied, false);
+  assert.equal(applied.backupPath, null);
+});
+
+test("approved upgrades replace only previous Crow-managed entries and preserve unrelated config", () => {
+  const fixture = configFixture();
+  const previousEntries = JSON.parse(readFileSync(fixture.args.fragment, "utf8")).mcpServers;
+  const managedEntries = {
+    sonar: { command: "node", args: [join(fixture.root, "new-sonar.js")] },
+    "codebase-memory-mcp": { command: "node", args: [join(fixture.root, "new-memory.js")] },
+    jira: { command: "node", args: [join(fixture.root, "jira.js")] }
+  };
+  const args = { ...fixture.args, managedEntries, previousEntries };
+  const before = {
+    mcpServers: {
+      sonar: { type: "stdio", ...previousEntries.sonar },
+      "codebase-memory-mcp": previousEntries["codebase-memory-mcp"],
+      other: { command: "other", args: [] }
+    },
+    inputs: [{ id: "keep" }]
+  };
+  writeFileSync(fixture.config, JSON.stringify(before));
+  const preview = previewClientConfig(args);
+  assert.deepEqual(preview.added, ["jira"]);
+  assert.deepEqual(preview.replaced, ["sonar", "codebase-memory-mcp"]);
+  assert.deepEqual(preview.proposed, managedEntries);
+  assert.equal(preview.backupRequired, true);
+  const applied = applyClientConfig({
+    ...args, "approval-sha256": preview.approvalSha256, confirm: true
+  });
+  assert.equal(applied.applied, true);
+  assert.deepEqual(JSON.parse(readFileSync(applied.backupPath, "utf8")), before);
+  const after = JSON.parse(readFileSync(fixture.config, "utf8"));
+  assert.deepEqual(after.inputs, before.inputs);
+  assert.deepEqual(after.mcpServers.other, before.mcpServers.other);
+  assert.deepEqual(after.mcpServers.sonar, managedEntries.sonar);
+  assert.deepEqual(after.mcpServers["codebase-memory-mcp"], managedEntries["codebase-memory-mcp"]);
+  assert.deepEqual(after.mcpServers.jira, managedEntries.jira);
+  assert.deepEqual(previewClientConfig(args).replaced, []);
+  writeFileSync(fixture.config, JSON.stringify({
+    ...before,
+    mcpServers: { ...before.mcpServers, sonar: { command: "user-custom", args: [] } }
+  }));
+  assert.throws(() => previewClientConfig(args), /collision.*sonar/);
+  writeFileSync(fixture.config, JSON.stringify(before));
+  const stale = previewClientConfig(args);
+  writeFileSync(fixture.config, JSON.stringify({
+    ...before,
+    mcpServers: { ...before.mcpServers, other: { command: "changed", args: [] } }
+  }));
+  assert.throws(() => applyClientConfig({
+    ...args, "approval-sha256": stale.approvalSha256, confirm: true
+  }), /changed since preview/);
+});
+
+test("another editor's verified portable mcp.json preserves unrelated settings", () => {
+  const fixture = configFixture("portable");
+  fixture.config = join(fixture.root, "mcp.json");
+  fixture.args.config = fixture.config;
+  writeFileSync(fixture.config, JSON.stringify({ mcpServers: { keep: { command: "keep" } }, other: true }));
+  const preview = previewClientConfig(fixture.args);
+  const applied = applyClientConfig({
+    ...fixture.args, "approval-sha256": preview.approvalSha256, confirm: true
+  });
+  assert.equal(applied.applied, true);
+  const merged = JSON.parse(readFileSync(fixture.config, "utf8"));
+  assert.equal(merged.other, true);
+  assert.equal(merged.mcpServers.keep.command, "keep");
+  assert.equal(merged.mcpServers.sonar.command, "node");
+});
+
+test("findExecutable distinguishes a PATH entry from a standard Windows location", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-prerequisite-"));
+  const nodeDir = join(root, "nodejs");
+  mkdirSync(nodeDir);
+  writeFileSync(join(nodeDir, "node.exe"), "");
+  const env = { PATH: "", ProgramFiles: root, LOCALAPPDATA: root, USERPROFILE: root };
+  assert.deepEqual(findExecutable("node", env, "win32", join(root, "unknown.exe")), {
+    path: join(nodeDir, "node.exe"), source: "standard-location"
+  });
+  assert.deepEqual(findExecutable("node", { ...env, PATH: nodeDir }, "win32", join(root, "unknown.exe")), {
+    path: join(nodeDir, "node.exe"), source: "PATH"
+  });
+});
+
+test("GitHub authentication must succeed before Raven release planning", () => {
+  assert.throws(
+    () => verifyGitHubAuth((command, args) => {
+      assert.equal(command, "gh");
+      assert.deepEqual(args, ["auth", "status"]);
+      throw new Error("GitHub CLI is not authenticated");
+    }),
+    /not authenticated/
+  );
+});
+
+test("CLI dry-run plans and merges only a temporary client configuration", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-config-cli-"));
+  const stateDir = join(root, "state");
+  mkdirSync(stateDir);
+  const plan = run([
+    "plan", "--no-raven", "--state-dir", stateDir,
+    "--codebase-memory-version", "0.11.0"
+  ]);
+  assert.equal(plan.status, 0, plan.stderr);
+  assert.match(JSON.parse(plan.stdout).planSha256, /^[a-f0-9]{64}$/);
+  const state = codebaseOnlyState(stateDir);
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify(state));
+  writeFileSync(join(stateDir, "mcp-fragment.json"), JSON.stringify(state.managedFragment));
+  const config = join(root, "mcp-config.json");
+  const options = ["--state-dir", stateDir, "--client", "copilot"];
+  const env = { COPILOT_HOME: root };
+  const preview = run(["config", "preview", ...options], undefined, env);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.equal(reviewed.configPath, config);
+  assert.deepEqual(reviewed.added, ["codebase-memory-mcp"]);
+  assert.equal(Object.hasOwn(reviewed, "content"), false);
+  assert.equal(existsSync(config), false);
+  const apply = run(["config", "apply", ...options, "--approval-sha256", reviewed.approvalSha256, "--confirm"], undefined, env);
+  assert.equal(apply.status, 0, apply.stderr);
+  assert.equal(JSON.parse(apply.stdout).applied, true);
+  assert.deepEqual(
+    Object.keys(JSON.parse(readFileSync(config, "utf8")).mcpServers),
+    ["codebase-memory-mcp"]
+  );
+  const retry = run(["config", "preview", ...options], undefined, env);
+  assert.equal(retry.status, 0, retry.stderr);
+  assert.deepEqual(JSON.parse(retry.stdout).unchanged, ["codebase-memory-mcp"]);
+});
+
+test("CLI upgrade and rollback use only verified previous Crow fragments for replacements", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-config-upgrade-"));
+  const stateDir = join(root, "state");
+  mkdirSync(stateDir);
+  const state = codebaseOnlyState(stateDir);
+  const oldSnapshot = {
+    delivery: state.delivery,
+    raven: state.raven,
+    codebaseMemory: state.codebaseMemory,
+    selectedServers: state.selectedServers,
+    serverCatalog: state.serverCatalog,
+    managedFragment: state.managedFragment
+  };
+  const oldDefinition = state.managedFragment.mcpServers["codebase-memory-mcp"];
+  state.previous = oldSnapshot;
+  state.codebaseMemory = {
+    ...state.codebaseMemory,
+    installPath: join(stateDir, "codebase-memory", "0.11.0-11111111-1111-1111-1111-111111111111")
+  };
+  state.managedFragment = createFragment(
+    null, [], state.codebaseMemory.installPath, "codebase-memory-only", false
+  );
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify(state));
+  const config = join(root, "mcp-config.json");
+  writeFileSync(config, JSON.stringify({ mcpServers: { "codebase-memory-mcp": oldDefinition } }));
+  const options = ["--state-dir", stateDir, "--client", "copilot"];
+  const env = { COPILOT_HOME: root };
+  const upgrade = run(["config", "preview", ...options], undefined, env);
+  assert.equal(upgrade.status, 0, upgrade.stderr);
+  const upgradePreview = JSON.parse(upgrade.stdout);
+  assert.deepEqual(upgradePreview.replaced, ["codebase-memory-mcp"]);
+  const upgraded = run([
+    "config", "apply", ...options,
+    "--approval-sha256", upgradePreview.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(upgraded.status, 0, upgraded.stderr);
+  assert.equal(JSON.parse(upgraded.stdout).applied, true);
+  assert.deepEqual(
+    JSON.parse(readFileSync(config, "utf8")).mcpServers["codebase-memory-mcp"],
+    state.managedFragment.mcpServers["codebase-memory-mcp"]
+  );
+
+  const newSnapshot = {
+    delivery: state.delivery,
+    raven: state.raven,
+    codebaseMemory: state.codebaseMemory,
+    selectedServers: state.selectedServers,
+    serverCatalog: state.serverCatalog,
+    managedFragment: state.managedFragment
+  };
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify({
+    ...state, ...oldSnapshot, previous: newSnapshot
+  }));
+  const rollback = run(["config", "preview", ...options], undefined, env);
+  assert.equal(rollback.status, 0, rollback.stderr);
+  const rollbackPreview = JSON.parse(rollback.stdout);
+  assert.deepEqual(rollbackPreview.replaced, ["codebase-memory-mcp"]);
+  const restored = run([
+    "config", "apply", ...options,
+    "--approval-sha256", rollbackPreview.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(restored.status, 0, restored.stderr);
+  assert.deepEqual(
+    JSON.parse(readFileSync(config, "utf8")).mcpServers["codebase-memory-mcp"],
+    oldDefinition
+  );
+});
 
 function run(args, input, env) {
   return spawnSync(process.execPath, [script, ...args], {
@@ -477,12 +755,101 @@ test("retries a failed managed-component release check after one hour", async ()
     stateDir,
     setupStateDir,
     now: now + 60 * 60 * 1000,
+    getCurrentVersion: () => { throw new Error("Crow should not be rechecked on component retry"); },
+    getLatestVersion: () => { throw new Error("Crow should not be rechecked on component retry"); },
+    getLatestCodebaseVersion: () => "0.11.0"
+  });
+  assert.equal(retry.checked, true);
+  assert.equal(retry.updateAvailable, true);
+  assert.deepEqual(retry.updates.map((update) => update.component), ["crow"]);
+  assert.equal(retry.notify, false);
+});
+
+test("hourly failures do not extend a successful component's daily cache lifetime", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-fixed-retry-deadline-"));
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-fixed-retry-setup-"));
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(codebaseOnlyState(setupStateDir)));
+  const now = Date.now() + 60_000;
+  let crowChecks = 0;
+  const options = {
+    stateDir,
+    setupStateDir,
+    getCurrentVersion: () => { crowChecks++; return "0.10.2"; },
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { throw new Error("registry unavailable"); }
+  };
+  for (let hour = 0; hour <= 24; hour++) {
+    const result = await checkCrowUpdates({ ...options, now: now + hour * 60 * 60 * 1000 });
+    assert.equal(result.checked, true);
+    assert.match(result.error, /registry unavailable/);
+  }
+  assert.equal(crowChecks, 2);
+  const state = JSON.parse(readFileSync(join(stateDir, "state.json"), "utf8"));
+  assert.equal(state.lastCheckedByComponent.crow, new Date(now + 24 * 60 * 60 * 1000).toISOString());
+  assert.equal(state.lastCheckedByComponent.codebaseMemory, null);
+});
+
+test("changed installed managed versions invalidate successful retry caches", async () => {
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-changed-install-setup-"));
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-changed-install-check-"));
+  const setupState = codebaseOnlyState(setupStateDir);
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(setupState));
+  const now = Date.now() + 60_000;
+  let codebaseLookups = 0;
+  const first = await checkCrowUpdates({
+    stateDir, setupStateDir, now,
+    getCurrentVersion: () => { throw new Error("Crow lookup unavailable"); },
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { codebaseLookups++; return "0.12.1"; }
+  });
+  assert.equal(first.checked, true);
+  assert.deepEqual(first.versions.codebaseMemory, { current: "0.11.0", latest: "0.12.1" });
+  setupState.codebaseMemory = {
+    ...setupState.codebaseMemory,
+    version: "0.12.0",
+    installPath: join(setupStateDir, "codebase-memory", "0.12.0-22222222-2222-2222-2222-222222222222")
+  };
+  setupState.managedFragment = createFragment(
+    null, [], setupState.codebaseMemory.installPath, "codebase-memory-only", false
+  );
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(setupState));
+  const retry = await checkCrowUpdates({
+    stateDir, setupStateDir, now: now + 60 * 60 * 1000,
     getCurrentVersion: () => "0.11.0",
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { codebaseLookups++; return "0.12.1"; }
+  });
+  assert.equal(retry.checked, true);
+  assert.equal(retry.error, undefined);
+  assert.equal(codebaseLookups, 2);
+  assert.deepEqual(retry.versions.codebaseMemory, { current: "0.12.0", latest: "0.12.1" });
+});
+
+test("older v2 retry state without per-component times rechecks successful components", async () => {
+  const setupStateDir = mkdtempSync(join(tmpdir(), "crow-old-retry-setup-"));
+  const stateDir = mkdtempSync(join(tmpdir(), "crow-old-retry-check-"));
+  writeFileSync(join(setupStateDir, "state.json"), JSON.stringify(codebaseOnlyState(setupStateDir)));
+  const now = Date.now() + 60_000;
+  await checkCrowUpdates({
+    stateDir, setupStateDir, now,
+    getCurrentVersion: () => "0.10.2",
+    getLatestVersion: () => "0.11.0",
+    getLatestCodebaseVersion: () => { throw new Error("registry unavailable"); }
+  });
+  const path = join(stateDir, "state.json");
+  const legacyState = JSON.parse(readFileSync(path, "utf8"));
+  delete legacyState.lastCheckedByComponent;
+  writeFileSync(path, JSON.stringify(legacyState));
+  let crowLookups = 0;
+  const retry = await checkCrowUpdates({
+    stateDir, setupStateDir, now: now + 60 * 60 * 1000,
+    getCurrentVersion: () => { crowLookups++; return "0.10.2"; },
     getLatestVersion: () => "0.11.0",
     getLatestCodebaseVersion: () => "0.11.0"
   });
   assert.equal(retry.checked, true);
-  assert.equal(retry.updateAvailable, false);
+  assert.equal(crowLookups, 1);
+  assert.deepEqual(retry.updates.map((update) => update.component), ["crow"]);
 });
 
 test("migrates Crow-only update state without resetting its daily notice", async () => {
@@ -684,6 +1051,24 @@ test("refuses to overwrite a conflicting Copilot hook file", () => {
   mkdirSync(hookDir, { recursive: true });
   writeFileSync(hookPath, original);
 
+  const status = run(["update-hook", "status", "--state-dir", stateDir, "--hook-dir", hookDir]);
+  assert.equal(status.status, 0, status.stderr);
+  const conflict = JSON.parse(status.stdout);
+  assert.equal(conflict.decision, "conflicting");
+  assert.equal(conflict.hookInstalled, false);
+  const unapproved = run([
+    "update-hook", "replace", "--state-dir", stateDir, "--hook-dir", hookDir,
+    "--hook-sha256", conflict.hookSha256
+  ]);
+  assert.notEqual(unapproved.status, 0);
+  assert.equal(readFileSync(hookPath, "utf8"), original);
+  const stale = run([
+    "update-hook", "replace", "--state-dir", stateDir, "--hook-dir", hookDir,
+    "--hook-sha256", "a".repeat(64), "--confirm"
+  ]);
+  assert.notEqual(stale.status, 0);
+  assert.equal(readFileSync(hookPath, "utf8"), original);
+
   const result = run([
     "update-hook", "install",
     "--state-dir", stateDir,
@@ -693,6 +1078,26 @@ test("refuses to overwrite a conflicting Copilot hook file", () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /different content and was left unchanged/);
   assert.equal(readFileSync(hookPath, "utf8"), original);
+
+  const replaced = run([
+    "update-hook", "replace", "--state-dir", stateDir, "--hook-dir", hookDir,
+    "--hook-sha256", conflict.hookSha256, "--confirm"
+  ]);
+  assert.equal(replaced.status, 0, replaced.stderr);
+  assert.equal(readFileSync(JSON.parse(replaced.stdout).backupPath, "utf8"), original);
+  assert.equal(JSON.parse(run([
+    "update-hook", "status", "--state-dir", stateDir, "--hook-dir", hookDir
+  ]).stdout).decision, "enabled");
+});
+
+test("hook status surfaces read errors rather than reporting a conflict", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-unreadable-hook-"));
+  const hookDir = join(root, "hooks");
+  mkdirSync(join(hookDir, "crow-update-notification.json"), { recursive: true });
+  const result = run(["update-hook", "status", "--state-dir", join(root, "state"), "--hook-dir", hookDir]);
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /EISDIR|illegal operation on a directory|permission denied/i);
+  assert.doesNotMatch(result.stdout, /"decision": "conflicting"/);
 });
 
 test("delivers update reminders using Local and Copilot CLI hook output formats", async () => {

@@ -24,7 +24,10 @@ Inspect both scanner tools independently:
   `Get-Command sonar-scanner.bat` on Windows, and `command -v sonar-scanner`
   on macOS or Linux. Run `sonar-scanner --version` (or
   `sonar-scanner.bat --version` on Windows).
-- Check the SDK with `dotnet --version` and `dotnet --list-sdks`, then compare
+- Resolve `dotnet` from PATH or the platform's expected user/system SDK
+  directories; invoke the resolved executable directly when it is outside
+  this process's PATH. Check the SDK with `dotnet --version` and
+  `dotnet --list-sdks`, then compare
   the installed SDKs with the selected scanner release's documented
   requirements. Use `dotnet tool list --global` to identify an installed
   global tool and verify its exact package version. Only when a compatible SDK
@@ -32,6 +35,10 @@ Inspect both scanner tools independently:
   command starts and prints its usage; do not run `begin` or `end` as a setup
   check. Do not use `dotnet sonarscanner --version`: it is not a supported
   version-query command and exits with a usage error.
+  Record this inventory once in the setup handoff. After an SDK installation,
+  refresh only SDK/tool availability and compatibility, not unrelated
+  Raven or client discovery. A process-local PATH change is not proof of
+  visibility to the MCP server.
 
 MCP does not expose another process's `PATH`. Inspect an explicit `env.PATH`
 in the selected client's server configuration when present; otherwise compare
