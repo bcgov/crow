@@ -1,12 +1,12 @@
 # .NET 10+ application diagnostics
 
-Load with [`../application-diagnostics.md`](../application-diagnostics.md). For .NET 10+, use built-in behavior before adding code.
+Load with [`../application-diagnostics.md`](../application-diagnostics.md). For .NET 10+, use built-in behavior before adding code. Logging scopes and diagnostics vary by host, formatter, and sink; verify the deployed sink rather than assuming local defaults.
 
 ## Already handled by .NET 10; do not re-implement
 
 | Generic requirement | Built-in behavior | Your only job |
 | --- | --- | --- |
-| Support reference on every log line | Hosting creates a request logging scope with `TraceId`, `SpanId`, `ParentId`, `RequestId`, and `RequestPath` | Turn scopes on in the formatter (`Logging:Console:FormatterOptions:IncludeScopes = true`, or `AddJsonConsole(o => o.IncludeScopes = true)`) or the configured sink, and verify the fields appear in the deployed sink |
+| Request correlation in application logs | ASP.NET Core request hosting provides a scope with `TraceId`, `SpanId`, `ParentId`, `RequestId`, and `RequestPath` | Include scopes in the formatter (`Logging:Console:FormatterOptions:IncludeScopes = true` or `AddJsonConsole(o => o.IncludeScopes = true)`) or sink; verify the fields are queryable in the deployed sink |
 | Reference in API errors | `AddProblemDetails()` adds a `traceId` extension to every Problem Details response | Nothing, unless you want the shorter 32-hex trace ID (see below) |
 | Unhandled exceptions → safe 500 Problem Details | `AddProblemDetails()` + `UseExceptionHandler()` | Register both |
 | Exception → status code | `ExceptionHandlerOptions.StatusCodeSelector` | Map known types here or in your `IExceptionHandler` |
@@ -55,7 +55,7 @@ If existing responses and support lookup use `HttpContext.TraceIdentifier`, reta
 
 ### Business context
 
-Add one `ILogger.BeginScope` at the operation boundary (handler, service method, or endpoint filter) with operation name and entity IDs, so every line in that operation carries them. Use message templates, not interpolated strings.
+Add one `ILogger.BeginScope` at the operation boundary (handler, service method, or endpoint filter) with operation name and entity IDs; verify it reaches the deployed sink. Use message templates, not interpolated strings.
 
 ### Exceptions
 

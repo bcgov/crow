@@ -15,7 +15,7 @@ Do not block baseline work on full-assurance items.
 
 ## Support reference *(baseline)*
 
-- Show one **support reference** on user-visible errors and every log line for the request or job. Default to the W3C `traceId` (32 hex characters) to join logs and downstream traces.
+- Show one **support reference** on user-visible errors. Attach a correlatable reference to request/job-scoped application logs and verify it is queryable in the deployed sink; do not assume platform logs or every emitted line carry it. Default to the W3C `traceId` (32 hex characters) to join logs and downstream traces.
 - Retain a host-generated request ID instead if existing responses, logs, and support lookup use it; log `traceId` separately and verify the join. Never label a request ID `traceId`.
 - Use a random `supportId` when neither a trace nor a usable host request ID exists, or when public callers can set `traceparent` and the reference must not be caller-chosen. Log both IDs when a trace exists.
 - The reference is a lookup key, never authorization. Do not encode account, session, or topology in it.
@@ -30,7 +30,7 @@ Choose the **least disruptive** surface that still lets the user act. Redirect t
 | Situation | Surface | Notes |
 | --- | --- | --- |
 | Input the user can fix (validation, business rule) | Field-level messages plus an error summary | Keep the input. Usually no support reference needed. |
-| An action failed but the page still works (save failed, transient dependency, conflict, partial failure) | Persistent in-page alert/banner (use a toast only if the design system provides a non-auto-dismissing, accessible one) near the action or at page top | Keep the input; offer Retry when safe; show the support reference. Error notifications **must not auto-dismiss** and need a close control, so users can read and copy the reference (WCAG 2.2.1, 4.1.3). |
+| An action failed but the page still works (save failed, transient dependency, conflict, partial failure) | Persistent in-page alert/banner (use a toast only if the design system provides a non-auto-dismissing, accessible one) near the action or at page top | Keep the input; offer Retry when safe; show the support reference. Actionable or reference-bearing error alerts **must not auto-dismiss** and need a close control so users can read and copy the reference (WCAG 2.2.1, 4.1.3). |
 | One region/widget failed to load, rest of page is usable | Inline alert in that region | Component-level error boundary; rest of page stays interactive. |
 | Not authenticated or session expired | **Redirect to sign-in**, then return to the task | Not an error page. Validate the return URL as local-only. Preserve unsaved input where practical or warn before it is lost. |
 | Authenticated but not authorized (403) | Full access-denied page (render in place; no redirect loop) | Explain how to request access and who to contact. |
@@ -64,7 +64,7 @@ Use structured logging with stable fields. Error events should identify the oper
 - **Business context:** operation, entity type and internal ID, tenant/organization, safe input summary (counts, enums, failed field **names**). Use a surrogate ID for personal identifiers such as SIN or PHN.
 - **Failure:** catalog `code`, reason, stage, dependency, outbound method and route (query **keys**, not values), response status **if received**, upstream error code, exception type, message, stack, and inner causes when an exception exists; never invent a stack.
 - **Actor:** verified user/workload ID; for impersonation, initiator and target separately. Do not invent an ID before sign-in.
-- Attach correlation and business context once with a logging scope/MDC at the operation boundary so every line carries it. Keep high-cardinality values out of metric labels.
+- Attach correlation and business context with a logging scope/MDC at the operation boundary; verify propagation into the deployed sink, including async work. Keep high-cardinality values out of metric labels.
 
 ## Log levels *(baseline)*
 
@@ -101,12 +101,12 @@ Log each failure **once** at Error, at the boundary that handles it; inner layer
 
 ### Step 2: diagnostic escape hatch (when stand-ins do not resolve the issue)
 
-Allowed in any environment, including production. Keep it lightweight; it must not slow down diagnosis:
+Only as a time-boxed, incident-scoped diagnostic exception after safe stand-ins fail, and only where platform and organizational policy permit (including in production). Apply any stricter controls:
 
 - A configuration switch that is **off by default** and carries an **expiry time**; code ignores it after expiry. Changing it needs no code deployment.
 - Scope it as narrowly as practical: one dependency, endpoint, log category, or user/support reference.
 - Write sensitive values to a **dedicated log category or sink** with restricted access and short retention.
-- Record one line when enabling: who, why (incident or support reference), scope, and expiry. Notify the owning team. No approval board is required.
+- Record who enabled it, why (incident or support reference), scope, and expiry; follow required approvals and notify the owning team.
 - Afterwards: switch off, purge the restricted entries when no longer needed, and **rotate any credential that was logged**, since it is now exposed.
 - End-user passwords and one-time/MFA codes are excluded: they are never needed for diagnosis and cannot be rotated by the team. Use stand-ins.
 - Application log filters do not control proxy, IIS, or platform access logs; check those sinks separately.
@@ -144,7 +144,7 @@ Baseline:
 1. Trigger a synthetic failure on each deployable host and find it in the **actual deployed log sink** (not just local console) using the support reference shown in the UI or API response. Confirm business context, stack, and inner chain are present.
 2. Exercise a fixable validation error, a 403, a 401/expired session, a 404, a transient dependency failure, and an unexpected exception. Assert the surface (inline, in-page alert, redirect to sign-in, or full page), status, catalog text, reference, `no-store`, and that input is preserved where expected.
 3. With **synthetic** credential and personal-data sentinels (never real secrets), assert they are absent from user responses and all log sinks while the escape hatch is off; present only in the restricted sink while it is on; and absent again after expiry.
-4. Check accessible announcement, focus, persistence (no auto-dismiss), and copy of the reference on the real UI.
+4. Check accessible announcement and focus; verify actionable or reference-bearing alerts persist (no auto-dismiss) and the reference can be copied on the real UI.
 
 Full assurance:
 

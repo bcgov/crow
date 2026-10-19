@@ -299,9 +299,9 @@ graph LR
 | `/ready` | Readiness | |
 
 ### 8.5 Operational Verification
-A configured provider, running app pool, or declared correlation ID does not prove an operator can locate a failed request. Record evidence for each. Acceptable evidence: a repository config/code path (cite file), a deployed-environment test or query result (cite date/environment), or an owner-confirmed runbook/alert rule. Declarations or intent alone are not evidence; mark unverified items `Not verified`.
+A configured provider, running app pool, or declared correlation ID does not prove an operator can locate a failed request. For each check, record what was observed or what remains unverified. Cite the source file for code/config evidence, the date and environment for deployed tests/queries, or an owner-confirmed runbook/alert rule. Do not present configuration alone as proof of runtime behavior.
 
-| Check | Evidence / Status |
+| Check | Evidence / Finding |
 | :--- | :--- |
 | Readiness reflects real dependencies (not only process liveness) | |
 | Alert owner and delivery-failure alert for log sink | |
