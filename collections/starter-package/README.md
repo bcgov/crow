@@ -4,7 +4,8 @@ The Starter Package is the focused Crow installation for daily brownfield
 development. It includes the agents and skills needed to understand an
 existing application, make aligned changes, maintain frameworks and
 dependencies, build accessible interfaces, and verify the result with
-automated tests. Its architecture, application
+automated tests. It also supports Java and .NET CI across GitHub Actions,
+Azure Pipelines, and Jenkins. Its architecture, application
 development, testing, and code review guidance also supports REST/SOAP API
 inventory, implementation, and HTTP-based modernization comparisons.
 
@@ -17,7 +18,7 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.14.2 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.15.0 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -30,6 +31,7 @@ compatible stable releases during setup or maintenance.
 
 ## Included agents
 
+- [Crow CI Pipeline Agent](../../.apm/agents/crow-ci-pipelines.agent.md)
 - [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
 - [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
 - [Crow Code Review Agent](../../.apm/agents/crow-code-review.agent.md)
@@ -39,6 +41,10 @@ compatible stable releases during setup or maintenance.
 
 ## Included skills
 
+- [crow-ci-pipelines](../../.apm/skills/crow-ci-pipelines/SKILL.md)
+- [crow-sonar-scan](../../.apm/skills/crow-sonar-scan/SKILL.md) —
+  CI uses its [application-version guide](../../.apm/skills/crow-sonar-scan/modules/project-version.md)
+  only when the pipeline includes a Sonar scan.
 - [crow-raven-setup](../../.apm/skills/crow-raven-setup/SKILL.md)
 - [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
 - [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)

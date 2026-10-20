@@ -42,27 +42,10 @@ user's protected Raven/provider connection.
 
 Always read the repository root `.gitignore` as well. Resolve each non-comment `.gitignore` entry against the target repository and add it to the SonarQube exclusion configuration (`sonar.exclusions`) only when the entry matches at least one file or folder that actually exists in that repository. Do not add unmatched patterns from generic or default `.gitignore` files. Preserve configured exclusions and merge all sources; translate `.gitignore` patterns to equivalent SonarQube glob patterns where their syntax differs.
 
-### 2. Version Resolution Fallback Chain
-If no version is specified in `crow.config`, the legacy `sonar.config`, or if
-both files are absent, determine the version using the following hierarchical
-fallback chain:
-
-1. **`version.txt`**: Look for a file named `version.txt` in:
-   - The repository root
-   - Any project-specific subfolders/roots within the repository.
-   If present, use its content as the version.
-
-2. **`apm.yml`**: If `version.txt` is missing or empty, look for a file named `apm.yml` in the repository root.
-   - Look for the `version` field.
-   - Use its value as the version.
-   
-3. **`AssemblyInfo.cs`**: If neither of the above options yields a version, search for an `AssemblyInfo.cs` file under the main project's root folder.
-   - Look for the `AssemblyVersion` or `AssemblyFileVersion` attribute (e.g., `[assembly: AssemblyVersion("1.0.0.0")]`).
-   - Extract the version number within the quotes.
-
-4. **`*.csproj`**: If none of the above options yields a version, search for a `.csproj` file in the main project's root folder.
-   - Look for the `<Version>` or `<AssemblyVersion>` XML element.
-   - Extract the inner text as the version.
+### 2. Version resolution
+Use the [project-version module](modules/project-version.md) for the existing
+version-source precedence and the exact `sonar_run_scan` `extraArgs` format.
+The same module also covers version discovery when a CI pipeline runs Sonar.
 
 ### 3. Project Key & Name Fallbacks
 If the project key or project name cannot be resolved from the resolved Sonar

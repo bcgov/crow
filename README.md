@@ -2,6 +2,7 @@
 
 CROW is a public package of agents and skills for agentic software
 development. It supports brownfield architecture, application development,
+Java and .NET CI across GitHub Actions, Azure Pipelines, and Jenkins,
 framework and dependency maintenance, accessible B.C. government UX, testing,
 security review and remediation, and the project setup needed to use those
 capabilities across repositories.
@@ -67,7 +68,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.14.2 --global --target copilot
+apm install bcgov/crow#v0.15.0 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -136,7 +137,7 @@ Use the selected client's normal discovery commands:
 
 - [Starter Package](collections/starter-package/README.md) — Raven setup,
   architecture and code review, application architecture and development,
-  B.C. UX, project context, testing, and framework/dependency maintenance
+  B.C. UX, application CI, project context, testing, and framework/dependency maintenance
   for daily brownfield work.
 - [Security Remediation](collections/security-remediation/README.md) —
   Raven setup, architecture review and handoff, project context, security
@@ -144,13 +145,17 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.14.2` remains fixed. Installing
+while an exact version tag such as `#v0.15.0` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
 
 ## Agents
 
+- [Crow CI Pipeline Agent](.apm/agents/crow-ci-pipelines.agent.md) — Assesses
+  and builds Java/.NET CI across GitHub Actions, Azure Pipelines, and
+  Jenkins. Inventories classic Azure builds and releases, analyzes supplied
+  definition details, and creates Azure YAML and Declarative Jenkinsfiles.
 - [Crow B.C. Government UX Agent](.apm/agents/crow-bcgov-ux.agent.md)
 - [Crow Solution Architecture Agent](.apm/agents/crow-solution-architecture.agent.md)
 - [Crow Architecture Review Agent](.apm/agents/crow-architecture-review.agent.md)
@@ -174,6 +179,13 @@ package.
 
 ## Skills
 
+- [**crow-ci-pipelines**](.apm/skills/crow-ci-pipelines/SKILL.md) —
+  Java/.NET CI assessment, troubleshooting, and authoring with conditional
+  [GitHub Actions](.apm/skills/crow-ci-pipelines/modules/github-actions.md),
+  [Azure Pipelines](.apm/skills/crow-ci-pipelines/modules/azure-pipelines.md),
+  and [Jenkins](.apm/skills/crow-ci-pipelines/modules/jenkins.md) guidance.
+  Includes existing automated tests, applicable database-change artifacts,
+  and application-version discovery when Sonar runs as part of CI.
 - [**crow-bcgov-ux**](.apm/skills/crow-bcgov-ux/SKILL.md) — B.C. Design
   System and WCAG 2.2 AA UX guidance.
 - [**crow-solution-architecture**](.apm/skills/crow-solution-architecture/SKILL.md) —
@@ -242,7 +254,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.14.2.zip`. See
+The resulting archive is `build/bcgov-crow-0.15.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

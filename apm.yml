@@ -1,12 +1,13 @@
 name: bcgov-crow
-version: 0.14.2
-description: Global agents and skills for legacy application modernization, Raven setup, accessible B.C. government UX, solution and application architecture, REST/SOAP API modernization, framework and dependency updates, secure development, code, architecture and security review, remediation, business rule documentation, executive reporting, Crow authoring, and releases.
+version: 0.15.0
+description: Global agents and skills for application CI, legacy modernization, Raven setup, accessible B.C. government UX, architecture, REST/SOAP API modernization, framework and dependency updates, secure development, review, remediation, documentation, reporting, Crow authoring, and releases.
 type: hybrid
 author:
   name: bcgov
 license: MIT
 repository: https://github.com/bcgov/crow
 keywords:
+  - crow-ci-pipelines
   - crow-bcgov-ux
   - crow-application-architecture
   - crow-solution-architecture
@@ -37,6 +38,7 @@ targets:
   - cursor
 includes:
   - .apm/agents
+  - .apm/skills/crow-ci-pipelines
   - .apm/skills/crow-application-architecture/SKILL.md
   - .apm/skills/crow-application-architecture/modules
   - .apm/skills/crow-solution-architecture
