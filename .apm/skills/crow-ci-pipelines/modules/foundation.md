@@ -12,7 +12,7 @@ not a success-shaped warning.
 - Inventory every existing unit, integration, and automated UI suite using
   test projects, build targets, test scripts, current CI, and test docs.
   Confirm which commands actually execute each suite; `mvn verify`,
-  `gradle check`, or `dotnet test` alone may omit separately configured
+  `gradle check`, `dotnet test`, or `composer test` alone may omit separately configured
   integration or UI tests. Include **all** existing runnable suites by
   default, even when separate jobs or test services are required. Provision
   only approved disposable dependencies and test accounts. Never aim tests
@@ -24,8 +24,8 @@ not a success-shaped warning.
   pipeline complete with that suite unverified. Do not invent new tests or
   treat manual UI QA as an executable suite.
 - Check for source-controlled database changes used by the application:
-  EF Core migrations, Flyway/Liquibase changelogs, DACPAC/sqlproj outputs,
-  or versioned SQL scripts. When present, include their ordered migration
+  EF Core migrations, Flyway/Liquibase changelogs, PHP framework migrations,
+  DACPAC/sqlproj outputs, or versioned SQL scripts. When present, include their ordered migration
   files and any required manifests or generated deployment artifact in the
   verified build package using the repository's established tooling.
   Verify the artifact contains the intended files and excludes connection
@@ -73,7 +73,9 @@ not a success-shaped warning.
    approved trusted revisions with an isolated agent and read-scoped
    connection. Do not grant fork code internal network access for a scan.
 4. For .NET, wrap the actual build with SonarScanner for .NET begin/build/end.
-   For Java, use the supported Maven or Gradle scanner after confirming the
+   For Java, use the supported Maven or Gradle scanner; for PHP use an approved
+   SonarScanner CLI or provider integration and import a generated Clover XML
+   coverage report through `sonar.php.coverage.reportPaths` when coverage is required, after confirming the
    build, tests, and coverage tasks actually ran. Successful scan upload is
    not a passing quality gate: when the gate must block CI, configure the
    scanner's `sonar.qualitygate.wait=true` and a bounded

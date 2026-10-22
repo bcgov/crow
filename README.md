@@ -2,7 +2,7 @@
 
 CROW is a public package of agents and skills for agentic software
 development. It supports brownfield architecture, application development,
-Java and .NET CI across GitHub Actions, Azure Pipelines, and Jenkins,
+Java, .NET, and PHP CI across GitHub Actions, Azure Pipelines, and Jenkins,
 framework and dependency maintenance, accessible B.C. government UX, testing,
 security review and remediation, and the project setup needed to use those
 capabilities across repositories.
@@ -68,7 +68,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.15.0 --global --target copilot
+apm install bcgov/crow#v0.15.1 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -145,7 +145,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.15.0` remains fixed. Installing
+while an exact version tag such as `#v0.15.1` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -153,7 +153,7 @@ package.
 ## Agents
 
 - [Crow CI Pipeline Agent](.apm/agents/crow-ci-pipelines.agent.md) — Assesses
-  and builds Java/.NET CI across GitHub Actions, Azure Pipelines, and
+  and builds Java/.NET/PHP CI across GitHub Actions, Azure Pipelines, and
   Jenkins. Inventories classic Azure builds and releases, analyzes supplied
   definition details, and creates Azure YAML and Declarative Jenkinsfiles.
 - [Crow B.C. Government UX Agent](.apm/agents/crow-bcgov-ux.agent.md)
@@ -180,7 +180,7 @@ package.
 ## Skills
 
 - [**crow-ci-pipelines**](.apm/skills/crow-ci-pipelines/SKILL.md) —
-  Java/.NET CI assessment, troubleshooting, and authoring with conditional
+  Java/.NET/PHP CI assessment, troubleshooting, and authoring with conditional
   [GitHub Actions](.apm/skills/crow-ci-pipelines/modules/github-actions.md),
   [Azure Pipelines](.apm/skills/crow-ci-pipelines/modules/azure-pipelines.md),
   and [Jenkins](.apm/skills/crow-ci-pipelines/modules/jenkins.md) guidance.
@@ -196,9 +196,11 @@ package.
   [technology preferences guide](.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
   for review, removal, and supported categories.
 - [**crow-application-architecture**](.apm/skills/crow-application-architecture/SKILL.md) —
-  Application boundaries, dependencies, platforms, and Zero Trust.
+  Application boundaries, dependencies, platforms, and Zero Trust; technology
+  modules include .NET, Java, and PHP.
 - [**crow-application-development**](.apm/skills/crow-application-development/SKILL.md) —
-  Production application code, persistence, integrations, and CI.
+  Production application code, persistence, integrations, and CI with .NET,
+  Java, and PHP modules.
 - [**crow-architecture-review**](.apm/skills/crow-architecture-review/SKILL.md) —
   Evidence-based architecture documentation.
 - [**crow-legacy-modernization**](.apm/skills/crow-legacy-modernization/SKILL.md) —
@@ -215,7 +217,8 @@ package.
 - [**crow-raven-setup**](.apm/skills/crow-raven-setup/SKILL.md) — Selective
   Raven and codebase-memory-mcp setup and maintenance.
 - [**crow-security-review**](.apm/skills/crow-security-review/SKILL.md) —
-  Manual security, dependency, data-flow, and issue-publication guidance.
+  Manual security, dependency, data-flow, PHP runtime, and issue-publication
+  guidance.
 - [**crow-framework-updates**](.apm/skills/crow-framework-updates/SKILL.md) —
   Supported runtime, SDK, and primary framework upgrades.
 - [**crow-dependency-updates**](.apm/skills/crow-dependency-updates/SKILL.md) —
@@ -232,9 +235,9 @@ package.
 - [**crow-release**](.apm/skills/crow-release/SKILL.md) — Versioned package
   preparation, validation, and publication.
 - [**crow-testing**](.apm/skills/crow-testing/SKILL.md) — Reviewed feature
-  scenarios organized by repository features, automated unit/integration tests,
-  and business-readable manual QA coverage; includes HTTP characterization and
-  differential testing for REST/SOAP API modernization.
+  scenarios organized by repository features, automated unit/integration tests
+  (including PHP), and business-readable manual QA coverage; includes HTTP
+  characterization and differential testing for REST/SOAP API modernization.
 
 ## Optional reporting prerequisite
 
@@ -254,7 +257,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.15.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.15.1.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

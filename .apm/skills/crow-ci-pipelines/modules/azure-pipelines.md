@@ -1,7 +1,7 @@
 # Azure Pipelines CI
 
 Use when the [CI router](../SKILL.md) selects Azure. Apply the
-[shared gate](foundation.md) and the routed Java or .NET CI module.
+[shared gate](foundation.md) and the routed Java, .NET, or PHP CI module.
 
 1. Confirm Azure DevOps Services vs. Server version, source provider,
    available agent pool/OS/tools, approved service connections, and
@@ -24,7 +24,8 @@ Use when the [CI router](../SKILL.md) selects Azure. Apply the
    Review provider-level fork build settings: disable automatic fork runs
    on internal agents or use an isolated agent with no internal access.
 4. For Java choose the existing wrapper and verified JDK; for .NET choose
-   the verified SDK and solution/project. Restore, lint, build, run every
+   the verified SDK and solution/project; for PHP choose the verified PHP
+   runtime/extensions and Composer with the project's lockfile policy. Restore, lint, build, run every
    discovered unit, integration, and UI test suite, publish actual reports,
    and enforce audit/coverage/quality gates before artifact publication.
    Package database changes under the common artifact rule, not as an

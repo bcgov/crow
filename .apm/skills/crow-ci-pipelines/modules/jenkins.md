@@ -1,11 +1,12 @@
 # Jenkins CI
 
 Use when the [CI router](../SKILL.md) selects Jenkins. Read the
-[shared boundaries](foundation.md) and the routed Java or .NET CI module.
+[shared boundaries](foundation.md) and the routed Java, .NET, or PHP CI module.
 
 1. Inspect the existing `Jenkinsfile`, supported Jenkins/plugins, source
    checkout, triggers, shared libraries, agent labels and tools. Ask for
-   the actual agent image or installed JDK/.NET SDK and OS when they cannot
+   the actual agent image or installed JDK/.NET SDK/PHP and Composer with
+   required extensions and OS when they cannot
    be verified. Do not assume `agent any` has the required toolchain or
    copy internal node labels into distributable examples.
 2. Write a repository-owned **Declarative Groovy** `Jenkinsfile` with

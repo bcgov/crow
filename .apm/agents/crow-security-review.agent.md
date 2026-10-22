@@ -187,6 +187,7 @@ Available modules:
 - `auth-and-access-control.md` — Authorization gaps, IDOR, privilege escalation
 - `framework-security-config.md` — Per-framework secure defaults and misconfigurations
 - `java-containers.md` — Java web container security (Tomcat, Jetty, Undertow, Jakarta EE)
+- `php-runtime.md` — PHP runtime, Composer, front-controller, and upload configuration (PHP applications only)
 - `data-flow-sinks.md` — Cross-file entry-to-sink patterns for trace_path verification
 - `secrets-and-credentials.md` — Non-code secret locations, rotation gaps
 - `deserialization-and-integrity.md` — Type confusion, gadget chains, unsigned data
@@ -214,7 +215,7 @@ During Step 7 (Security Scope Analysis), read the relevant module files for the 
 
 ### Step 2: Monorepo Detection & Scope Resolution
 
-Determine whether the repository is a monorepo by inspecting workspace boundaries (`package.json`, `.csproj`, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`, etc.), workspace files, solution files, container/orchestration manifests, and independently deployable entry points.
+Determine whether the repository is a monorepo by inspecting workspace boundaries (`package.json`, `composer.json`, `.csproj`, `go.mod`, `pom.xml`, `build.gradle`, `Cargo.toml`, etc.), workspace files, solution files, container/orchestration manifests, and independently deployable entry points.
 
 **If monorepo is detected:**
 - Build and retain a complete service inventory before continuing. For every independently deployable service, record a stable service name, repository-relative source subtree, manifest/build file, deployment entry point, and output path `docs/<service-name>/security-review.md`.

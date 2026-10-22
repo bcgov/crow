@@ -618,6 +618,8 @@ jobs:
     steps:
       - name: Collect coverage
         run: dotnet test --collect:"XPlat Code Coverage"
+      - name: Audit PHP dependencies
+        run: composer audit --locked
       - name: Verify Code Coverage Threshold
         run: Write-Output "Code coverage verified successfully; threshold documented only."
 '@, $utf8)
@@ -637,12 +639,13 @@ jobs:
     & $ciScanner -RepoRoot $ciRoot -OutputPath $ciOutput | Out-Null
     $ciResult = [System.IO.File]::ReadAllText($ciOutput) | ConvertFrom-Json
     if (-not $ciResult.gates.coverageCollection.candidateObserved -or
+        -not $ciResult.gates.sca.candidateObserved -or
         $ciResult.gates.coverageEnforcement.candidateObserved -or
         $ciResult.gates.sast.candidateObserved -or
         $ciResult.gates.coverageCollection.scope -ne 'TrackedPipelineFiles' -or
         @($ciResult.inspectedFiles).Count -ne 1 -or
         @($ciResult.candidates.noOpCoverage).Count -ne 1) {
-        throw "CI gate candidate scan mismatch: collection=$($ciResult.gates.coverageCollection.candidateObserved), enforcement=$($ciResult.gates.coverageEnforcement.candidateObserved), sast=$($ciResult.gates.sast.candidateObserved), scope=$($ciResult.gates.coverageCollection.scope), files=$(@($ciResult.inspectedFiles).Count), candidates=$(@($ciResult.candidates.noOpCoverage).Count)."
+        throw "CI gate candidate scan mismatch: collection=$($ciResult.gates.coverageCollection.candidateObserved), sca=$($ciResult.gates.sca.candidateObserved), enforcement=$($ciResult.gates.coverageEnforcement.candidateObserved), sast=$($ciResult.gates.sast.candidateObserved), scope=$($ciResult.gates.coverageCollection.scope), files=$(@($ciResult.inspectedFiles).Count), candidates=$(@($ciResult.candidates.noOpCoverage).Count)."
     }
 
     Write-Output 'Crow security synthesis tests passed.'

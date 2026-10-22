@@ -22,6 +22,10 @@ performs Sonar analysis.
      Resolve inherited or property-substituted versions using the
      project's own build tooling; do not submit literal `${...}` or
      `unspecified` as a version.
+   - for a PHP application, an explicit `version` in the target
+     `composer.json` when it actually versions that application. Composer
+     packages commonly omit this field; do not invent it from a dependency
+     constraint or an unrelated repository package.
 3. For a CI pipeline targeting one application in a multi-project
    repository, confirm that each candidate actually versions that
    application. In particular, use the root `apm.yml` only if it describes
