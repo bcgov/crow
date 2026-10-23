@@ -1,6 +1,6 @@
 ---
 name: crow-application-architecture
-description: Design or review application architecture using technology-routed guidance. Use for application boundaries, project structure, deployment, and cross-cutting concerns; includes .NET, Java, and web-container guidance.
+description: Design or review application architecture using technology-routed guidance. Use for application boundaries, project structure, deployment, and cross-cutting concerns; includes .NET, Java, and PHP web guidance.
 ---
 
 # Application Architecture
@@ -18,6 +18,7 @@ Use this skill when designing a new application or making a structural change to
 7. Load [`modules/aspnet-core.md`](modules/aspnet-core.md) only for ASP.NET Core web, API, Razor, Blazor, or hosted SPA projects.
 8. Load [`modules/java.md`](modules/java.md) for Java source or Maven/Gradle Java manifests (`pom.xml`, `build.gradle`, `build.gradle.kts`); verify the module is Java rather than Kotlin-only or another JVM language.
 9. Load [`modules/java-web.md`](modules/java-web.md) for Java HTTP/Servlet, Spring MVC, Jakarta EE web, embedded server, or WAR deployments. Inspect the actual container and packaging before applying container-specific advice.
+9a. Load [`modules/php.md`](modules/php.md) for PHP source or a PHP `composer.json`; verify the affected component is PHP in a mixed repository. Add [`modules/php-web.md`](modules/php-web.md) only for PHP HTTP, API, or server-rendered web workloads.
 10. Load [`modules/platform-alignment.md`](modules/platform-alignment.md) only when the application provides or consumes a shared capability, canonical register, public service, integration adapter, or other one-to-many dependency.
 11. Load [`modules/zero-trust.md`](modules/zero-trust.md) only when the application has a meaningful identity, device, workload, resource, transaction, privileged, network, API, external-decision, or cross-service trust boundary.
 12. Load [`modules/service-responsibilities.md`](modules/service-responsibilities.md) when software affects a person's outcome, information stores or derived copies are in scope, or a service spans multiple channels. Apply only the relevant sections.
@@ -42,7 +43,7 @@ If the application uses multiple technologies, load only the modules for compone
 
 ## Security integration
 
-Security is an architectural input. For .NET and Java web applications, load only the relevant modules from `../crow-security-review/modules/`:
+Security is an architectural input. For .NET, Java, and PHP web applications, load only the relevant modules from `../crow-security-review/modules/`:
 
 - Always consider `auth-and-access-control.md`, `framework-security-config.md`, and `secrets-and-credentials.md`.
 - Add `api-and-session-security.md` for HTTP APIs, browser sessions, cookies, CORS, JWT, or rate limiting.
@@ -51,5 +52,6 @@ Security is an architectural input. For .NET and Java web applications, load onl
 - Add `deserialization-and-integrity.md` for external payloads, webhooks, artifact integrity, or polymorphic serialization.
 - Add `frontend-spa-security.md` only when a SPA is present.
 - Add `java-containers.md` for an embedded or external Java web container, including Tomcat, Jetty, Undertow, or a Jakarta EE server.
+- Add `php-runtime.md` for PHP web runtime, Composer, or deployment configuration.
 
 Treat these modules as design acceptance criteria, not a post-build checklist.

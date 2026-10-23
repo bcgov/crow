@@ -1,6 +1,6 @@
 ---
 name: crow-ci-pipelines
-description: Assess, troubleshoot, and author Java or .NET CI in GitHub Actions, Azure Pipelines, or Jenkins, including existing tests, database-change artifacts, and Sonar version discovery when scanning.
+description: Assess, troubleshoot, and author Java, .NET, or PHP CI in GitHub Actions, Azure Pipelines, or Jenkins, including existing tests, database-change artifacts, and Sonar version discovery when scanning.
 ---
 
 # CI Pipelines
@@ -28,7 +28,9 @@ their existing approval and data-handling boundaries.
    For a Java Maven/Gradle project, load the existing
    [Java CI module](../crow-application-development/modules/java/testing-ci.md);
    confirm it builds Java rather than assuming all JVM builds do. In a
-   polyglot repository, load both only when both are in scope.
+   PHP project, load the
+   [PHP CI module](../crow-application-development/modules/php/testing-ci.md).
+   In a polyglot repository, load only the languages in scope.
 4. Add future languages by routing their application-development CI module,
    without weakening the common gate or duplicating provider guidance.
    Unknown technologies require discovery, not invented commands.

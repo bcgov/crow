@@ -1,6 +1,6 @@
 ---
 name: crow-application-development
-description: Implement and evolve applications with technology-routed engineering practices. Use for production code, APIs, tests, persistence, containers, and CI; includes .NET and Java secure-by-default guidance.
+description: Implement and evolve applications with technology-routed engineering practices. Use for production code, APIs, tests, persistence, containers, and CI; includes .NET, Java, and PHP secure-by-default guidance.
 ---
 
 # Application Development
@@ -26,10 +26,15 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/java/testing-ci.md`](modules/java/testing-ci.md) for tests, builds, dependencies, images, or pipelines.
    - [`modules/java/containers.md`](modules/java/containers.md) for embedded or external Tomcat, Jetty, Undertow, or a Jakarta EE server.
    - [`modules/api-contracts.md`](modules/api-contracts.md) for REST/SOAP contract changes.
+8a. For PHP source or a PHP `composer.json`, load [`modules/php/foundation.md`](modules/php/foundation.md); confirm the affected component is PHP in a mixed repository. Add only the affected modules:
+   - [`modules/php/web.md`](modules/php/web.md) for HTTP, API, templates, authentication, sessions, or uploads.
+   - [`modules/php/persistence.md`](modules/php/persistence.md) for PDO, ORM, SQL, migrations, or transactions.
+   - [`modules/php/testing-ci.md`](modules/php/testing-ci.md) for tests, Composer, builds, images, or pipelines.
+   - [`modules/api-contracts.md`](modules/api-contracts.md) for REST/SOAP contract changes.
 9. When the change consumes or provides a shared capability, canonical register, public service, or integration adapter, also load [`../crow-application-architecture/modules/platform-alignment.md`](../crow-application-architecture/modules/platform-alignment.md).
 10. When the change crosses an identity, device, resource, transaction, privileged, workload, network, API, external-decision, or service trust boundary, also load [`../crow-application-architecture/modules/zero-trust.md`](../crow-application-architecture/modules/zero-trust.md).
 11. For changes to decisions affecting people, information stores or derived copies, or cross-channel service flows, load the applicable sections of [`../crow-application-architecture/modules/service-responsibilities.md`](../crow-application-architecture/modules/service-responsibilities.md).
-12. For error handling, logging/telemetry, user-visible errors, outbound calls, or incident diagnosis, load [`modules/application-diagnostics.md`](modules/application-diagnostics.md) plus the matching companion: [`modules/dotnet/diagnostics.md`](modules/dotnet/diagnostics.md) for .NET or [`modules/java/diagnostics.md`](modules/java/diagnostics.md) for Java (intentionally thin; the generic module remains the full baseline). Security-event auditing stays in `../crow-security-review/modules/security-logging-and-audit.md`.
+12. For error handling, logging/telemetry, user-visible errors, outbound calls, or incident diagnosis, load [`modules/application-diagnostics.md`](modules/application-diagnostics.md) plus the matching companion: [`modules/dotnet/diagnostics.md`](modules/dotnet/diagnostics.md) for .NET, [`modules/java/diagnostics.md`](modules/java/diagnostics.md) for Java, or [`modules/php/diagnostics.md`](modules/php/diagnostics.md) for PHP (the generic module remains the full baseline). Security-event auditing stays in `../crow-security-review/modules/security-logging-and-audit.md`.
 13. Add future technologies as sibling folders under `modules/` and update this router. Never load unrelated technology modules.
 
 ## Implementation loop
@@ -64,8 +69,9 @@ behavior; define a safe, visible fallback; and plan migration and rollback.
 Load the relevant `../crow-security-review/modules/` files before implementing the affected surface:
 
 - endpoint or permission change: `auth-and-access-control.md`;
-- ASP.NET Core or Java web bootstrap/configuration: `framework-security-config.md`;
+- ASP.NET Core, Java, or PHP web bootstrap/configuration: `framework-security-config.md`;
 - Java servlet or Jakarta EE container deployment: `java-containers.md`;
+- PHP runtime, Composer, or web deployment configuration: `php-runtime.md`;
 - API, cookie, token, CORS, antiforgery, or rate limit: `api-and-session-security.md`;
 - SQL, file, process, redirect, or outbound URL: `data-flow-sinks.md`;
 - secrets or deployment configuration: `secrets-and-credentials.md`;

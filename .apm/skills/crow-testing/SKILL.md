@@ -66,6 +66,9 @@ reference according to that skill.
 9. For Java source or Maven/Gradle Java manifests (`pom.xml`, `build.gradle`, `build.gradle.kts`), confirm the target is Java rather than Kotlin-only or another JVM language, then load:
    - [`modules/java/unit-tests.md`](modules/java/unit-tests.md) for unit-level work.
    - [`modules/java/integration-tests.md`](modules/java/integration-tests.md) for HTTP, container, persistence, or external-boundary work.
+9a. For PHP source or a PHP `composer.json`, confirm the affected component is PHP, then load:
+   - [`modules/php/unit-tests.md`](modules/php/unit-tests.md) for unit-level work.
+   - [`modules/php/integration-tests.md`](modules/php/integration-tests.md) for HTTP, runtime, persistence, or external-boundary work.
 10. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
    for the situation at hand. Available reference material, and its trigger:
    - `property-based-testing.md` — writing a property-based test or its generators.

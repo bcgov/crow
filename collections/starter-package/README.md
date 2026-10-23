@@ -4,7 +4,7 @@ The Starter Package is the focused Crow installation for daily brownfield
 development. It includes the agents and skills needed to understand an
 existing application, make aligned changes, maintain frameworks and
 dependencies, build accessible interfaces, and verify the result with
-automated tests. It also supports Java and .NET CI across GitHub Actions,
+automated tests. It also supports Java, .NET, and PHP CI across GitHub Actions,
 Azure Pipelines, and Jenkins. Its architecture, application
 development, testing, and code review guidance also supports REST/SOAP API
 inventory, implementation, and HTTP-based modernization comparisons.
@@ -18,7 +18,7 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.15.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.15.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)

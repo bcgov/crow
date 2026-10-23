@@ -2,7 +2,7 @@
 
 Goal: show a safe message, next step, and support reference; log enough detail to diagnose the failure from that reference.
 
-Scope: error handling, user-visible errors, and incident diagnosis for any user-facing application. Technology specifics live in [`dotnet/diagnostics.md`](dotnet/diagnostics.md) and [`java/diagnostics.md`](java/diagnostics.md); load only the matching one. Security-event auditing (authentication, authorization, privilege, credential changes) stays in [`security-logging-and-audit.md`](../../crow-security-review/modules/security-logging-and-audit.md). Error presentation, focus, and announcements follow the B.C. UX accessibility guidance when a UX skill is available. Examples are synthetic.
+Scope: error handling, user-visible errors, and incident diagnosis for any user-facing application. Technology specifics live in [`dotnet/diagnostics.md`](dotnet/diagnostics.md), [`java/diagnostics.md`](java/diagnostics.md), and [`php/diagnostics.md`](php/diagnostics.md); load only the matching one. Security-event auditing (authentication, authorization, privilege, credential changes) stays in [`security-logging-and-audit.md`](../../crow-security-review/modules/security-logging-and-audit.md). Error presentation, focus, and announcements follow the B.C. UX accessibility guidance when a UX skill is available. Examples are synthetic.
 
 Industry anchors: RFC 9457 Problem Details, W3C Trace Context, OpenTelemetry semantic conventions, OWASP Logging and Error Handling cheat sheets.
 

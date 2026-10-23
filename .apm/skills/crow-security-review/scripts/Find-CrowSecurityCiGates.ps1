@@ -107,7 +107,7 @@ $content = @($executableByPath.Values) -join [Environment]::NewLine
 
 $gatePatterns = [ordered]@{
     sast = '(?i)\b(codeql|semgrep|sonar(?:qube|cloud)?|sast)\b'
-    sca = '(?i)\b(dependency-check|dotnet\s+list\s+.+--vulnerable|npm\s+audit|pnpm\s+audit|yarn\s+audit|snyk\s+test|osv-scanner)\b'
+    sca = '(?i)\b(dependency-check|dotnet\s+list\s+.+--vulnerable|npm\s+audit|pnpm\s+audit|yarn\s+audit|composer\s+audit|snyk\s+test|osv-scanner)\b'
     secretScanning = '(?i)\b(gitleaks|trufflehog|detect-secrets|secret[- ]scann(?:er|ing))\b'
     containerScanning = '(?i)\b(trivy|grype|docker\s+scout|snyk\s+container)\b'
     coverageCollection = '(?i)\b(coverlet|cobertura|jacoco|opencover|nyc|istanbul|c8|codecov|pytest-cov|coverage\.py|xplat code coverage|phpunit)\b'
