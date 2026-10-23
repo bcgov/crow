@@ -105,6 +105,13 @@ workflow are:
   gap;
 - choose which surfaces are worth extracting and how coverage limits are
   reported;
+- when consequential `documented-only` or `conflicting` classifications
+  remain, request one bounded read-only independent challenge of their
+  citations, documentation references, and searched implementation surfaces
+  if a reviewer is available. Verify proposed enforcing locations or
+  scope/environment explanations in source before changing a classification.
+  If unavailable, perform the check yourself and report that it was not
+  independent. Never let the challenger decide the intended rule for an owner;
 - decide whether a rule is new, unchanged, or retired before the ledger check
   confirms it deterministically;
 - decide whether a diagram explains rule interaction better than prose;

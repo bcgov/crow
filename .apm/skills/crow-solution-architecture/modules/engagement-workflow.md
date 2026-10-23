@@ -82,6 +82,17 @@ conflict and ask which source governs.
 6. Produce one recommended design. Keep alternatives only when a pending
    decision genuinely prevents convergence.
 
+Before presenting a recommendation that changes a trust boundary, legal
+obligation, recovery objective, or committed external contract, or departs
+materially from the preferred default, privately steelman the strongest
+feasible rejected option using the same evidence and constraints. Test the
+chosen option's weakest assumption and whether its fallback trigger is
+observable. Present a material counterargument and its disposition to the
+stakeholder; correct unsupported rationale, and leave an unresolved
+architecture-significant decision `Provisional` or `Blocked` as appropriate.
+Do not turn this internal pass into a second approval, a repeated interview,
+or permission to override an accountable stakeholder.
+
 ## Step 4: Review and write
 
 Before writing, recap the recommendation and material deviations for user

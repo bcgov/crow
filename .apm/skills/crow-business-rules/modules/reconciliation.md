@@ -57,6 +57,19 @@ Rules:
 - Use `unverifiable` rather than guessing when indexing coverage was partial,
   source was unreadable, or behaviour depends on data you cannot see.
 
+Before validating consequential `documented-only` or `conflicting` rules,
+ask an available read-only independent reviewer to challenge the bounded
+source and documentation evidence once; otherwise check it yourself and
+disclose that no independent challenge ran. For
+`documented-only`, check the searched configuration, migrations, jobs, and
+in-scope services for an overlooked enforcing path; record unavailable
+surfaces rather than claiming absence. For `conflicting`, test whether scope,
+feature flags, versions, or environments account for the different outcomes.
+Verify any proposed correction in source and update the classification and
+note if warranted. A challenger does not decide which behavior is intended;
+keep unresolved conflicts and insufficient evidence as open questions for a
+human owner. Identifier continuity remains the ledger validator's job.
+
 ## Open questions
 
 Every `conflicting` or `unverifiable` rule should produce an open question that

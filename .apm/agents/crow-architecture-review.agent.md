@@ -51,6 +51,11 @@ public-reference-only update policy.
    evidence once and reference it by ID. Do not copy the full architecture
    document, dependency inventories, vulnerability conclusions, or code
    snippets into either sidecar.
+   Before assigning `Verified` API completeness, follow the routed
+   API-inventory module's bounded challenge with an available read-only
+   independent reviewer. Verify its objections against source; if none is
+   available, perform the challenge yourself and disclose that it was not
+   independent.
 9. Complete every item in Section 11 of the architecture template, including conditional platform-alignment and Zero Trust items. Check an item only when evidence verifies it and always fill its confidence annotation; use `Unknown` or `N/A` with a reason when the condition or evidence is absent.
 10. Run the architecture-output validator in `PostWrite` phase with
     `-RequireSecurityHandoff`; also require the API inventory when applicable.
