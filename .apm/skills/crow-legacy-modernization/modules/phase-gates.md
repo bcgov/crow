@@ -93,3 +93,11 @@ an approval. Treat each phase as blocked until its prerequisites are met.
   provide evidence and confirmation; the agent cannot self-attest. Do not
   mark equivalence or cutover readiness while evidence, approvals, build
   verification, comparison, or rollback validation remains pending.
+- Before proposing equivalence or cutover readiness, challenge the bounded
+  contract-to-scenario mapping and difference dispositions in the plan once.
+  Seek missing consumers, untested jobs, messages, files, or externally
+  consumed data, and differences called cosmetic without an owner's evidence.
+  An independent reviewer can surface gaps but cannot certify parity; verify
+  each objection against the inventory and pinned runs. Resolve material gaps
+  through the existing test and owner gates. If independent review was
+  unavailable, say so without weakening those gates.

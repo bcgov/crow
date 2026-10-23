@@ -310,6 +310,19 @@ aggregate coverage goal as an independent reason to add tests.
    - Confirm **100% test pass rate** (zero failing tests).
 2. If tests fail:
    - Diagnose root cause, fix code/test logic, and re-run until all tests pass cleanly.
+3. For a `Critical` or `High` vulnerability fix, challenge the changed control
+   before declaring it resolved: trace the original attacker path through the
+   changed enforcement point and relevant callers, look for a plausible bypass
+   or an unaffected entry point, and run a negative regression test with
+   isolated fixtures in the local test suite where reproducible. Do not probe
+   a deployed service without separate, specific authorization. When an
+   independent read-only reviewer is available, give it the bounded finding,
+   patch, affected callers, and test evidence to challenge; otherwise perform
+   this adversarial pass yourself and state that no independent review ran.
+   Verify objections against current source and tests; fix and retest confirmed
+   bypasses. A scanner clearing the original finding is not proof that every
+   entry point is protected. Do not send payloads to production or treat the
+   challenger as a substitute for the security re-review in Step 11.
 
 ---
 

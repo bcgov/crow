@@ -65,6 +65,15 @@ integration boundaries before proceeding.
    review each slice. Exercise the same approved scenarios on the candidate
    with matching isolated state. Compare interfaces, rules, processes,
    errors, and side effects; route manual checks to human testers.
+   Before proposing equivalence or cutover readiness, request one bounded,
+   read-only independent challenge of the modernization plan when a reviewer
+   is available. Provide the contract inventory, scenario-to-interface
+   traceability, pinned run references, and difference dispositions; ask it
+   to seek omitted consumers, untested non-HTTP interfaces, and differences
+   dismissed as non-contractual without evidence. Verify its objections
+   against the ledger and source. If no reviewer is available, perform the
+   same gap check and disclose that it was not independent. The challenge
+   cannot approve a difference or attest equivalence for the owner or testers.
 6. Stop at failed checks, unapproved changes, unperformed manual checks,
    incomplete inventory, or unexplained differences. Report the verified
    scope, evidence references, residual gaps, and cutover prerequisites.

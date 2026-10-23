@@ -46,7 +46,15 @@ Use when the [CI router](../SKILL.md) selects Azure. Apply the
 6. Validate YAML locally, preview/validate it against the target Azure
    version when authorized, then run the relevant build and tests. State
    which trigger, service-connection, gate, and migration behaviors remain
-   unverified without a provider-side run.
+   unverified without a provider-side run. For a classic migration, request
+   one bounded read-only independent challenge of the observed definition
+   and proposed YAML when a reviewer is available; otherwise check the
+   mapping yourself and disclose that no independent review ran. Seek
+   omitted triggers, tasks, artifacts, checks, or broader service-connection,
+   secret, job, fork, and runner privileges. Verify objections against source,
+   correct any unmapped approval or broader privilege with owner review, and
+   retain the original for rollback. Reviewer agreement does not establish
+   provider-side parity or authorize cutover.
 
 See [Azure Pipelines security](https://learn.microsoft.com/azure/devops/pipelines/security/overview),
 [YAML templates](https://learn.microsoft.com/azure/devops/pipelines/process/templates),

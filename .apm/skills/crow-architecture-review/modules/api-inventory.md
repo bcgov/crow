@@ -51,6 +51,17 @@ while the operation boundary is partial or unknown. `Verified` completeness is
 an evidence-backed reviewer judgment, not something the JSON validator can
 prove.
 
+Before declaring `Verified`, make one bounded challenge of the reconciled
+route, contract, service-definition, stub, and configuration sources against
+the inventory's operation IDs and evidence. Ask an independent read-only
+reviewer to seek an omitted operation when available; otherwise do the check
+yourself and disclose that it was not independent. Verify each candidate in
+source rather than accepting a reviewer's assertion. If an operation is
+missing, add it and reassess the boundary; if a source remains uninspected,
+use `Partial`, with `blocksCompleteness: true` for any unresolved question
+that could hide an operation. This challenge does not establish unknown
+external consumers or deployment configuration.
+
 ## Output and validation
 
 Write `api-inventory.json` beside the architecture document, starting from
