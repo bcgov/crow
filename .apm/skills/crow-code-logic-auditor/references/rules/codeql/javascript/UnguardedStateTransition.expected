@@ -1,0 +1,5 @@
+# CodeQL CLI test oracle for UnguardedStateTransition.ql
+# Target fixture: evals/fixtures/codeql-js/routes.js
+| routes.js:6:3 | order.status = req.body.status | routes.js:6:18 | req.body.status | Lifecycle state is set from remote input without a valid entity transition guard. |
+| routes.js:12:7 | status: req.body.status | routes.js:12:15 | req.body.status | Lifecycle state is set from remote input without a valid entity transition guard. |
+| routes.js:48:5 | orderB.status = next | routes.js:46:18 | req.body.status | Lifecycle state is set from remote input without a valid entity transition guard. |

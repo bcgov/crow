@@ -1,0 +1,30 @@
+rules:
+  # Autonomous transactions are legitimate for audit/error logging. The logic risk is
+  # business DML (UPDATE/DELETE/MERGE, or non-audit INSERT) committed independently of the caller's transaction.
+  - id: plsql-autonomous-transaction-business-dml
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      PRAGMA AUTONOMOUS_TRANSACTION unit performs business DML (UPDATE, DELETE, MERGE, or non-audit INSERT)
+      and COMMITs on its own. If the caller rolls back, this change stays committed (partial state).
+      Exempt tables matching *_log, *_audit, *_hist; otherwise move the DML into the caller's transaction.
+    metadata:
+      classification: TRANSACTION-DEMARCATION
+      confidence: MEDIUM
+    # Heuristic: bounded to one CREATE unit. Flags actual DML statements: UPDATE table SET, DELETE FROM, MERGE INTO,
+    # or INSERT INTO business tables (exempting schema-qualified tables ending in _log, _audit, _hist, etc.).
+    pattern-regex: (?is)CREATE\s+(?:OR\s+REPLACE\s+)?(?:PROCEDURE|FUNCTION|TRIGGER)\b(?:(?!\bCREATE\s).)*?PRAGMA\s+AUTONOMOUS_TRANSACTION\s*;(?:(?!\bCREATE\s).)*?\b(?:(?:UPDATE\s+(?!\bSET\b)[a-zA-Z0-9_.]+\s+SET\b)|(?:DELETE\s+(?:FROM\s+)?[a-zA-Z0-9_.]+\b)|(?:MERGE\s+INTO\s+[a-zA-Z0-9_.]+\b)|(?:INSERT\s+INTO\s+(?:[a-zA-Z0-9_]+\.)?(?![a-zA-Z0-9_]*_(?:log|audit|hist|trace|journal)\b)[a-zA-Z0-9_]+))(?:(?!\bCREATE\s).)*?\bCOMMIT\b
+
+  # Autonomous transaction inside a trigger is the classic way to dodge ORA-04091
+  # (mutating table). It reads/writes data the triggering statement has not committed.
+  - id: plsql-autonomous-transaction-in-trigger
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      Trigger declares PRAGMA AUTONOMOUS_TRANSACTION. Usually used to suppress ORA-04091;
+      the trigger cannot see the triggering row's uncommitted changes and its own writes
+      survive a rollback of the triggering statement.
+    metadata:
+      classification: TRANSACTION-DEMARCATION
+      confidence: HIGH
+    pattern-regex: (?is)CREATE\s+(OR\s+REPLACE\s+)?TRIGGER\b(?:(?!\bCREATE\s).)*?PRAGMA\s+AUTONOMOUS_TRANSACTION

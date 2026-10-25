@@ -1,0 +1,35 @@
+rules:
+  # Prefer @typescript-eslint/no-floating-promises (type-aware, no name heuristics).
+  # This is the fallback for repos without type-checked linting.
+  - id: ts-floating-mutation-promise
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: >-
+      '$OBJ.$METHOD(...)' looks like an async state mutation started without await, return,
+      .catch(), or explicit 'void'. Its failure is unobserved and the handler may respond
+      before the write lands.
+    metadata:
+      classification: ERROR-SWALLOW
+      confidence: LOW
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              async function $F(...) { ... }
+          - pattern-inside: |
+              async (...) => { ... }
+          - pattern-inside: |
+              async $M(...) { ... }
+      - pattern: $OBJ.$METHOD(...);
+      # Statement patterns also match sub-expressions; drop every "handled" shape.
+      - pattern-not-inside: await $OBJ.$METHOD(...);
+      - pattern-not-inside: void $OBJ.$METHOD(...);
+      - pattern-not-inside: return $OBJ.$METHOD(...);
+      - pattern-not-inside: $OBJ.$METHOD(...).$HANDLE(...);
+      - pattern-not-inside: $V = $OBJ.$METHOD(...);
+      - pattern-not-inside: const $V = $OBJ.$METHOD(...);
+      - pattern-not-inside: let $V = $OBJ.$METHOD(...);
+      - pattern-not-inside: $CALLEE(..., $OBJ.$METHOD(...), ...)
+      - pattern-not-inside: "[..., $OBJ.$METHOD(...), ...]"
+      - metavariable-regex:
+          metavariable: $METHOD
+          regex: ^(save|update|delete|remove|insert|create|upsert|charge|debit|credit|refund|transfer|publish|enqueue|commit)\w*$

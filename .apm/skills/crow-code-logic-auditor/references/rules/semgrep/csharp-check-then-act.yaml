@@ -1,0 +1,46 @@
+rules:
+  - id: csharp-check-then-act-balance
+    languages: [csharp]
+    severity: WARNING
+    message: >-
+      Balance/stock is read, compared, then mutated in a separate call. Two concurrent requests
+      can both pass the check (lost update / double spend). Prefer one atomic conditional
+      statement (UPDATE ... SET bal = bal - @amt WHERE id = @id AND bal >= @amt; check rows
+      affected) or an explicit row lock. A TransactionScope only helps at Serializable/
+      RepeatableRead isolation and then fails by deadlock, so the caller must retry.
+    metadata:
+      classification: TOCTOU-RACE
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: if ($C) { ... $Y.$MUT(...); ... }
+              - metavariable-pattern:
+                  metavariable: $C
+                  pattern-either:
+                    - pattern: $X.$GET(...) >= $AMT
+                    - pattern: $X.$GET(...) > $AMT
+                    - pattern: $AMT <= $X.$GET(...)
+                    - pattern: $AMT < $X.$GET(...)
+          - pattern: |
+              var $V = $X.$GET(...);
+              ...
+              if ($V >= $AMT) { ... $Y.$MUT(...); ... }
+          - pattern: |
+              var $V = $X.$GET(...);
+              ...
+              if ($V > $AMT) { ... $Y.$MUT(...); ... }
+          - pattern: |
+              $T $V = $X.$GET(...);
+              ...
+              if ($V >= $AMT) { ... $Y.$MUT(...); ... }
+          - pattern: |
+              $T $V = $X.$GET(...);
+              ...
+              if ($V > $AMT) { ... $Y.$MUT(...); ... }
+      - metavariable-regex:
+          metavariable: $GET
+          regex: (?i)^(get|read|fetch|load|check)?(balance|available|stock|quantity|qty|remaining|credit|limit|inventory)\w*$
+      - metavariable-regex:
+          metavariable: $MUT
+          regex: (?i)^(deduct|debit|withdraw|decrement|reserve|consume|redeem|charge|subtract|allocate)\w*$

@@ -1,0 +1,106 @@
+rules:
+  - id: fail-open-authorization-handler
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      Authorization check catch-block returns 'true', an allow string, or calls next() without error,
+      causing a fail-open access control vulnerability when the database or auth service fails.
+    metadata:
+      classification: FAIL-OPEN-AUTH
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: |
+              catch ($E) {
+                ...
+                return true;
+              }
+          - pattern: |
+              catch {
+                ...
+                return true;
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return { ..., allowed: true, ... };
+              }
+          - pattern: |
+              catch {
+                ...
+                return { ..., allowed: true, ... };
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return { ..., authorized: true, ... };
+              }
+          - pattern: |
+              catch {
+                ...
+                return { ..., authorized: true, ... };
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return { ..., isAuthorized: true, ... };
+              }
+          - pattern: |
+              catch {
+                ...
+                return { ..., isAuthorized: true, ... };
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return "ALLOW";
+              }
+          - pattern: |
+              catch {
+                ...
+                return "ALLOW";
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return "allow";
+              }
+          - pattern: |
+              catch {
+                ...
+                return "allow";
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                return "authorized";
+              }
+          - pattern: |
+              catch {
+                ...
+                return "authorized";
+              }
+          - pattern: |
+              catch ($E) {
+                ...
+                next();
+              }
+          - pattern: |
+              catch {
+                ...
+                next();
+              }
+      - pattern-either:
+          - pattern-inside: |
+              function $CHECK(...) { ... }
+          - pattern-inside: |
+              const $CHECK = (...) => { ... }
+          - pattern-inside: |
+              class $C {
+                ...
+                $CHECK(...) { ... }
+                ...
+              }
+      - metavariable-regex:
+          metavariable: $CHECK
+          regex: '(?i).*(auth|check|perm|role|access|can|allow|privilege|guard|security).*'

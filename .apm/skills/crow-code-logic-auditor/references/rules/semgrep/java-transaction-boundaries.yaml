@@ -1,0 +1,53 @@
+rules:
+  - id: java-requires-new-partial-commit
+    languages: [java]
+    severity: INFO
+    message: >-
+      REQUIRES_NEW suspends the caller's transaction and commits independently. Fine for audit
+      logging or sequence allocation; for business state it leaves committed changes behind
+      when the caller rolls back. Confirm intent.
+    metadata:
+      classification: TRANSACTION-DEMARCATION
+      confidence: LOW
+    pattern-either:
+      - pattern: |
+          @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+          $RET $M(...) { ... }
+      - pattern: |
+          @TransactionAttribute(REQUIRES_NEW)
+          $RET $M(...) { ... }
+      - pattern: |
+          @Transactional(..., propagation = Propagation.REQUIRES_NEW, ...)
+          $RET $M(...) { ... }
+      - pattern: |
+          @Transactional(..., propagation = REQUIRES_NEW, ...)
+          $RET $M(...) { ... }
+
+  # Spring (and EJB local this-calls) apply transaction attributes through a proxy.
+  # Calling the annotated method from the same instance skips the proxy entirely.
+  - id: java-transactional-self-invocation
+    languages: [java]
+    severity: WARNING
+    message: >-
+      '$M' is @Transactional but is called on 'this' from '$CALLER', which is not. Proxy-based
+      transactions are not applied to self-invocation, so '$M' runs with no transaction (or the
+      caller's), and its propagation/rollback rules are ignored.
+    metadata:
+      classification: TRANSACTION-DEMARCATION
+      confidence: MEDIUM
+    patterns:
+      - pattern-inside: |
+          class $C {
+            ...
+            @Transactional(...)
+            $R $M(...) { ... }
+            ...
+          }
+      - pattern-inside: |
+          $R2 $CALLER(...) { ... }
+      - pattern-not-inside: |
+          @Transactional(...)
+          $R2 $CALLER(...) { ... }
+      - pattern-either:
+          - pattern: this.$M(...)
+          - pattern: $M(...)

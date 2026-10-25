@@ -1,0 +1,37 @@
+rules:
+  # transaction.atomic() alone does NOT prevent this under READ COMMITTED (Postgres/Oracle
+  # default) or MySQL REPEATABLE READ: both transactions read the same value, both write.
+  - id: python-django-read-modify-write
+    languages: [python]
+    severity: WARNING
+    message: >-
+      '$O.$F' is read, modified in Python, and saved back. Concurrent requests overwrite each
+      other (lost update / double spend), even inside transaction.atomic(). Use
+      $M.objects.filter(pk=..., $F__gte=amt).update($F=F('$F') - amt) and check the row
+      count, or select_for_update() inside atomic().
+    metadata:
+      classification: LOST-UPDATE
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $O = $M.objects.get(...)
+              ...
+              $O.$F -= $AMT
+              ...
+              $O.save(...)
+          - pattern: |
+              $O = $M.objects.get(...)
+              ...
+              $O.$F += $AMT
+              ...
+              $O.save(...)
+          - pattern: |
+              $O = $M.objects.get(...)
+              ...
+              $O.$F = $O.$F - $AMT
+              ...
+              $O.save(...)
+      - metavariable-regex:
+          metavariable: $F
+          regex: '(?i).*(balance|credit|stock|quantity|qty|remaining|available|count|points|uses|seats).*'

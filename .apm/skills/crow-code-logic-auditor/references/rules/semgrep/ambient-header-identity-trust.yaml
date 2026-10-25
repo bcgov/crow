@@ -1,0 +1,124 @@
+rules:
+  - id: ambient-header-identity-trust
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      User identity or tenant ID is extracted directly from an ambient proxy header ('x-forwarded-user', 'sm_user',
+      'x-user-id', 'x-ms-client-principal', 'remote_user', 'x-auth-request-user') without verifying cryptographic
+      signature or gateway context on this specific request.
+    metadata:
+      classification: PERIMETER-BYPASS
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $REQ.headers['x-forwarded-user']
+          - pattern: $REQ.headers['sm_user']
+          - pattern: $REQ.headers['x-user-id']
+          - pattern: $REQ.headers['x-ms-client-principal']
+          - pattern: $REQ.headers['remote_user']
+          - pattern: $REQ.headers['x-auth-request-user']
+          - pattern: $REQ.headers.get('x-forwarded-user')
+          - pattern: $REQ.headers.get('sm_user')
+          - pattern: $REQ.headers.get('x-user-id')
+          - pattern: $REQ.headers.get('x-ms-client-principal')
+          - pattern: $REQ.headers.get('remote_user')
+          - pattern: $REQ.headers.get('x-auth-request-user')
+          - pattern: $REQ.header('x-forwarded-user')
+          - pattern: $REQ.header('sm_user')
+          - pattern: $REQ.header('x-user-id')
+          - pattern: $REQ.header('x-ms-client-principal')
+          - pattern: $REQ.header('remote_user')
+          - pattern: $REQ.header('x-auth-request-user')
+          - pattern: $REQ.get('x-forwarded-user')
+          - pattern: $REQ.get('sm_user')
+          - pattern: $REQ.get('x-user-id')
+          - pattern: $REQ.get('x-ms-client-principal')
+          - pattern: $REQ.get('remote_user')
+          - pattern: $REQ.get('x-auth-request-user')
+          - pattern: |
+              const { ..., 'x-forwarded-user': $U, ... } = $REQ.headers
+          - pattern: |
+              const { ..., 'sm_user': $U, ... } = $REQ.headers
+          - pattern: |
+              const { ..., 'x-user-id': $U, ... } = $REQ.headers
+          - pattern: |
+              const { ..., 'x-ms-client-principal': $U, ... } = $REQ.headers
+          - pattern: |
+              const { ..., 'remote_user': $U, ... } = $REQ.headers
+          - pattern: |
+              const { ..., 'x-auth-request-user': $U, ... } = $REQ.headers
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... return ...; }
+          ...
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... throw ...; }
+          ...
+      - pattern-not-inside: |
+          if (!verifyGatewayToken($REQ, ...)) { ... return ...; }
+          ...
+      - pattern-not-inside: |
+          if (!verifyGatewayToken($REQ, ...)) { ... throw ...; }
+          ...
+      - pattern-not-inside: |
+          if (verifySignature($REQ, ...)) {
+            ...
+          }
+      - pattern-not-inside: |
+          if (verifyGatewayToken($REQ, ...)) {
+            ...
+          }
+
+  - id: php-ambient-header-identity-trust
+    languages: [php]
+    severity: ERROR
+    message: >-
+      User identity or tenant ID is extracted directly from ambient server/proxy headers ($_SERVER['HTTP_SM_USER'],
+      $_SERVER['REMOTE_USER'], $_SERVER['HTTP_X_MS_CLIENT_PRINCIPAL'], or PSR-7 header getters) without cryptographic attestation.
+    metadata:
+      classification: PERIMETER-BYPASS
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $_SERVER['HTTP_SM_USER']
+          - pattern: $_SERVER['HTTP_X_FORWARDED_USER']
+          - pattern: $_SERVER['HTTP_X_USER_ID']
+          - pattern: $_SERVER['HTTP_X_MS_CLIENT_PRINCIPAL']
+          - pattern: $_SERVER['REMOTE_USER']
+          - pattern: $_SERVER['HTTP_X_AUTH_REQUEST_USER']
+          - pattern: $REQ->headers->get('sm_user')
+          - pattern: $REQ->headers->get('x-user-id')
+          - pattern: $REQ->header('sm_user')
+          - pattern: $REQ->header('x-user-id')
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... return ...; }
+          ...
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... throw ...; }
+          ...
+
+  - id: java-ambient-header-identity-trust
+    languages: [java]
+    severity: ERROR
+    message: >-
+      User identity is extracted from ambient proxy headers (request.getHeader("SM_USER"), request.getRemoteUser(),
+      or "x-ms-client-principal") without origin signature or mTLS attestation.
+    metadata:
+      classification: PERIMETER-BYPASS
+      confidence: MEDIUM
+    patterns:
+      - pattern-either:
+          - pattern: $REQ.getHeader("SM_USER")
+          - pattern: $REQ.getHeader("sm_user")
+          - pattern: $REQ.getHeader("X-Forwarded-User")
+          - pattern: $REQ.getHeader("x-forwarded-user")
+          - pattern: $REQ.getHeader("x-user-id")
+          - pattern: $REQ.getHeader("x-ms-client-principal")
+          - pattern: $REQ.getHeader("remote_user")
+          - pattern: $REQ.getHeader("x-auth-request-user")
+          - pattern: $REQ.getRemoteUser()
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... return ...; }
+          ...
+      - pattern-not-inside: |
+          if (!verifySignature($REQ, ...)) { ... throw ...; }
+          ...

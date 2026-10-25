@@ -1,0 +1,18 @@
+date	tool	version	target	result	notes
+2026-10-24	semgrep	1.182.1	rules/semgrep/ambient-header-identity-trust.yaml:ambient-header-identity-trust	pass --test	verified signature check binds req; unverified and throw/return branches match ruleid/ok in TS/JS
+2026-10-24	semgrep	1.182.1	rules/semgrep/ambient-header-identity-trust.yaml:php-ambient-header-identity-trust	pass --test	catches $_SERVER HTTP_SM_USER, HTTP_X_MS_CLIENT_PRINCIPAL, and PSR-7 headers without signature
+2026-10-24	semgrep	1.182.1	rules/semgrep/ambient-header-identity-trust.yaml:java-ambient-header-identity-trust	pass --test	catches request.getHeader for SM_USER, x-ms-client-principal, and getRemoteUser without signature
+2026-10-24	semgrep	1.182.1	rules/semgrep/csharp-check-then-act.yaml:csharp-check-then-act-balance	pass --test	catches balance check followed by deduct across multi-connection or outside serializable lock
+2026-10-24	semgrep	1.182.1	rules/semgrep/fail-open-authorization-handler.yaml:fail-open-authorization-handler	pass --test	catches catch-blocks returning allow/true/authorized, arrow functions, object returns, and next() bypass
+2026-10-24	semgrep	1.182.1	rules/semgrep/java-transaction-boundaries.yaml:java-transactional-self-invocation	pass --test	catches Spring @Transactional proxy self-invocation bypasses on this
+2026-10-24	semgrep	1.182.1	rules/semgrep/java-transaction-boundaries.yaml:java-requires-new-partial-commit	pass --test	catches EJB/Spring REQUIRES_NEW transaction demarcation causing non-atomic partial commits
+2026-10-24	semgrep	1.182.1	rules/semgrep/php-unscoped-object-lookup.yaml:php-sql-by-id-without-tenant-predicate	pass --test	catches find/findBy or SELECT by ID (id, invoice_id) lacking organizational scope parameter
+2026-10-24	semgrep	1.182.1	rules/semgrep/plsql-autonomous-transaction.yaml:plsql-autonomous-transaction-business-dml	pass --test	catches autonomous transactions executing business DML (UPDATE/DELETE/MERGE or non-audit INSERT into catalog)
+2026-10-24	semgrep	1.182.1	rules/semgrep/plsql-autonomous-transaction.yaml:plsql-autonomous-transaction-in-trigger	pass --test	catches PRAGMA AUTONOMOUS_TRANSACTION inside trigger bodies mutating database state
+2026-10-24	semgrep	1.182.1	rules/semgrep/plsql-fail-open-authorization.yaml:plsql-auth-function-when-others-allow	pass --test	catches WHEN OTHERS/NO_DATA_FOUND THEN RETURN TRUE/Y exception swallows in authorization functions
+2026-10-24	semgrep	1.182.1	rules/semgrep/plsql-fail-open-authorization.yaml:plsql-vpd-policy-empty-predicate	pass --test	catches Oracle Virtual Private Database (VPD) policy functions returning NULL or empty string
+2026-10-24	semgrep	1.182.1	rules/semgrep/plsql-fail-open-authorization.yaml:plsql-null-expands-scope-filter	pass --test	catches (:param IS NULL OR col = :param), NVL, or DECODE anti-patterns expanding tenant scope on null bind
+2026-10-24	semgrep	1.182.1	rules/semgrep/python-django-lost-update.yaml:python-django-read-modify-write	pass --test	catches read-modify-save on balance/account_balance without select_for_update or F() expression (LOST-UPDATE)
+2026-10-24	semgrep	1.182.1	rules/semgrep/ts-floating-mutation.yaml:ts-floating-mutation-promise	pass --test	catches un-awaited async mutation promises in express route handlers
+2026-10-24	codeql	2.27.3	codeql/python/UnscopedTenantLookup.ql:UnscopedTenantLookup	test pass (paired .expected)	3 hits in views.py (lines 6, 11, and attacker-controlled tenant on line 17); principal-anchored lookups sanitized
+2026-10-24	codeql	2.27.3	codeql/javascript/UnguardedStateTransition.ql:UnguardedStateTransition	test pass (paired .expected)	3 hits in routes.js (lines 6, 12, and wrong-object guard bypass on line 48); local & property guards verified

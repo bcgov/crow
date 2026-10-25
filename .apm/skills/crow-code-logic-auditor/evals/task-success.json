@@ -1,0 +1,52 @@
+[
+  {
+    "id": "b01",
+    "fixture": "evals/fixtures/behavior/billing_service.py",
+    "query": "Audit billing_service.py for logic, concurrency, and authorization flaws.",
+    "expected_behavior": [
+      "Identifies redeem_coupon lost-update / TOCTOU race under READ COMMITTED isolation",
+      "Identifies get_invoice tenant leak missing tenant scoping predicate",
+      "Identifies update_order_status FSM transition bypass from client-controlled status",
+      "Identifies refund check-then-act race where concurrent requests both pass status check and trigger duplicate payment_gateway.refund calls",
+      "Identifies refund error-swallowing dual-write where gateway failure marks order REFUNDED",
+      "Evaluates payment_webhook with nuanced precision: confirms duplicate delivery idempotency via unique constraint on provider_id, but identifies unhandled partial failure (affected-row count unchecked on Wallet.objects.update and broad IntegrityError swallow)",
+      "Correctly rules out ship_order and debit_wallet as verified protected by atomic conditional updates"
+    ]
+  },
+  {
+    "id": "b02",
+    "fixture": "evals/fixtures/codeql-js/routes.js",
+    "query": "Audit Express and Prisma order routes in routes.js for state machine bypasses.",
+    "expected_behavior": [
+      "Identifies direct assignment of client-controlled status to order.status on line 6 without transition validator",
+      "Identifies Prisma order update with unvalidated req.body.status on line 12",
+      "Identifies status-wrong-object endpoint validating orderA transition while mutating orderB",
+      "Distinguishes syntactic taint barrier from verified lifecycle safety: issues NON LIQUET on status-guarded and status-throw endpoints pending inspection of transition table rules and check-to-save concurrency atomicity",
+      "Evaluates cancel endpoint as outside remote taint flow, but notes it is SUSPECTED/NON LIQUET for business logic bypass if invoked on terminal or already-shipped orders"
+    ]
+  },
+  {
+    "id": "b03",
+    "fixture": "evals/fixtures/codeql-py/app/views.py",
+    "query": "Review Django invoice views for cross-tenant isolation and authorization leaks.",
+    "expected_behavior": [
+      "Identifies invoice_unscoped looking up Invoice by pk without tenant filter",
+      "Identifies invoice_query_param filtering by unvalidated GET parameter without tenant constraint",
+      "Identifies invoice_attacker_tenant where scoping keyword is present but populated from untrusted request.GET (CONFIRMED when routed in urls.py; would be SUSPECTED/unreachable if unrouted)",
+      "Correctly verifies invoice_scoped_kw restricts lookup by authenticated request.user.tenant_id",
+      "Correctly verifies invoice_scoped_relation traverses relation anchored to authenticated user tenant"
+    ]
+  },
+  {
+    "id": "b04",
+    "fixture": "evals/fixtures/behavior/pkg_security_auth.sql",
+    "query": "Audit pkg_security_auth.sql for enterprise PL/SQL authorization, VPD policy, and scoping flaws.",
+    "expected_behavior": [
+      "Identifies check_document_access fail-open flaw returning TRUE inside WHEN OTHERS exception handler",
+      "Identifies vpd_document_scoping policy returning NULL on missing session context, disabling row-level security for all documents",
+      "Identifies query_permits_unscoped tenant leak where (p_org_id IS NULL OR organization_id = p_org_id) expands query across all organizations",
+      "Correctly verifies verify_admin_status safe decoy fails closed on error (returns FALSE)",
+      "Correctly verifies vpd_permit_scoping safe decoy returns restrictive '1=0' predicate when context is missing"
+    ]
+  }
+]

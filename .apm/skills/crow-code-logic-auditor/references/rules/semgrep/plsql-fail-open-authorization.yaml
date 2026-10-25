@@ -1,0 +1,40 @@
+rules:
+  # Oracle PL/SQL & Forms: Auth check function fails open on unhandled error or missing grant
+  - id: plsql-auth-function-when-others-allow
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      Authorization or permission-check function returns TRUE, 'Y', or sets an allow flag inside
+      an exception handler (WHEN OTHERS or WHEN NO_DATA_FOUND). When underlying tables, views, or
+      directory lookups fail, access is granted by default (fail-open access control).
+    metadata:
+      classification: FAIL-OPEN-AUTH
+      confidence: MEDIUM
+    pattern-regex: (?is)\bFUNCTION\s+(?:\w+\.)?\w*(?:auth|perm|priv|access|secur|role|allow)\w*\s*(?:\([^)]*\))?\s*RETURN\s+(?:BOOLEAN|VARCHAR2|NUMBER)\b(?:(?!\bFUNCTION\b).)*?\bWHEN\s+(?:OTHERS|NO_DATA_FOUND)\s+THEN\s*(?:(?:NULL\s*;|DBMS_OUTPUT\.[^;]+;|ROLLBACK\s*;)\s*)*(?:RETURN\s+(?:TRUE|'Y'|'TRUE'|1)\s*;|\w+\s*:=\s*(?:TRUE|'Y'|'TRUE'|1)\s*;(?:(?!\bFUNCTION\b).)*?RETURN\s+\w+\s*;)
+
+  # Virtual Private Database (VPD / DBMS_RLS) policy function returns empty predicate
+  - id: plsql-vpd-policy-empty-predicate
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      Oracle VPD / FGAC policy function (matching two-VARCHAR2 signature) returns NULL or empty string (''),
+      disabling row-level security filtering on normal or exception paths and exposing all table rows.
+    metadata:
+      classification: FAIL-OPEN-AUTH
+      confidence: MEDIUM
+    pattern-regex: (?is)\bFUNCTION\s+\w+\s*\(\s*\w+\s+(?:IN\s+)?VARCHAR2\s*,\s*\w+\s+(?:IN\s+)?VARCHAR2\s*\)\s*RETURN\s+VARCHAR2\b(?:(?!\bFUNCTION\b).)*?(?:(?:IF\s+.*?SYS_CONTEXT\s*\(.*?\)\s+IS\s+NULL\s+THEN\s*RETURN\s+(?:NULL|''|'1=1')\s*;)|(?:WHEN\s+(?:OTHERS|NO_DATA_FOUND)\s+THEN\s*(?:(?:NULL\s*;|DBMS_OUTPUT\.[^;]+;)\s*)*RETURN\s+(?:NULL|''|'1=1')\s*;))
+
+  # Null-expands-scope pattern: NULL bind parameter or parameter disables scoping filter
+  - id: plsql-null-expands-scope-filter
+    languages: [generic]
+    severity: WARNING
+    message: >-
+      SQL filter uses '(:PARAM IS NULL OR col = :PARAM)', 'col = NVL(:PARAM, col)', or DECODE equivalent.
+      Passing a NULL parameter bypasses the scoping predicate and matches all records across organizations.
+    metadata:
+      classification: TENANT-LEAK
+      confidence: MEDIUM
+    pattern-either:
+      - pattern-regex: (?i):?([a-zA-Z0-9_.]+)\s+IS\s+NULL\s+OR\s+[a-zA-Z0-9_.]+\s*=\s*:?\1\b
+      - pattern-regex: (?i)[a-zA-Z0-9_.]+\s*=\s*NVL\s*\(\s*:?([a-zA-Z0-9_.]+)\s*,\s*[a-zA-Z0-9_.]+\s*\)
+      - pattern-regex: (?i)[a-zA-Z0-9_.]+\s*=\s*DECODE\s*\(\s*:?([a-zA-Z0-9_.]+)\s*,\s*NULL\s*,\s*[a-zA-Z0-9_.]+\s*,\s*:?\1\s*\)

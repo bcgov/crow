@@ -1,0 +1,88 @@
+%%{
+  init: {
+    'theme': 'base',
+    'themeVariables': {
+      'primaryColor': '#1e293b',
+      'primaryTextColor': '#f8fafc',
+      'primaryBorderColor': '#475569',
+      'lineColor': '#64748b',
+      'secondaryColor': '#0f172a',
+      'tertiaryColor': '#090d16',
+      'altBackground': '#1e293b'
+    }
+  }
+}%%
+
+stateDiagram-v2
+    classDef neutral fill:#1e293b,stroke:#475569,stroke-width:1.5px,color:#f8fafc
+    classDef gate fill:#312e81,stroke:#6366f1,stroke-width:2px,color:#e0e7ff
+    classDef confirmed fill:#450a0a,stroke:#dc2626,stroke-width:1.5px,color:#fecaca
+    classDef nonliquet fill:#451a03,stroke:#d97706,stroke-width:1.5px,color:#fef3c7
+    classDef refuted fill:#064e3b,stroke:#059669,stroke-width:1.5px,color:#a7f3d0
+    classDef deliverable fill:#172554,stroke:#2563eb,stroke-width:2px,color:#bfdbfe
+
+    [*] --> ScopeTriage
+    ScopeTriage: <b>Step 0: Scope & Triage</b><br/><i>Pick What Matters Most First:</i><br/>Inventory all entry doors and rank by danger<br/>(Money movement > State updates > Reads)
+    
+    ScopeTriage --> PickCandidate: Candidate Pool
+    PickCandidate: <b>Candidate Selection</b><br/><i>Pick:</i> Grab highest-risk feature or scanner alert
+
+    state AuditProcedure {
+        [*] --> Facts
+        Facts: <b>Step 1: Observed Facts</b><br/><i>Trace the Pipeline:</i><br/>Map path from user click to database save<br/>Record exact files, lines, and database tables
+        
+        Facts --> Boundaries
+        Boundaries: <b>Step 2: Hard Boundaries</b><br/><i>Inspect the Guardrails:</i><br/>Is it all-or-nothing in a single transaction?<br/>Can concurrent clicks break balance?
+        
+        Boundaries --> Reconstruct
+        Reconstruct: <b>Step 3: Competing Paths</b><br/><i>Imagine Worst-Case Reality:</i><br/>Stress-test duplicate clicks, network drops,<br/>crashes mid-checkout, and out-of-order retries
+        
+        Reconstruct --> Degradation
+        Degradation: <b>Step 4: Degradation Check</b><br/><i>Unmask Hidden Failures:</i><br/>Find errors swept under the rug<br/>(swallowed exceptions, un-awaited tasks, fallbacks)
+        
+        Degradation --> Trust
+        Trust: <b>Step 5: Trust Dynamics</b><br/><i>Assume Caller Is Hostile:</i><br/>Does code blindly trust IDs, prices, or headers?<br/>Can users edit prices or peek at other accounts?
+        
+        Trust --> FailurePoint
+        FailurePoint: <b>Step 6: Failure Mapping</b><br/><i>Find the Exact Crime Scene:</i><br/>Pinpoint the line of code where logic breaks<br/>(e.g., line 42 double-spend via missing lock)
+    }
+
+    PickCandidate --> AuditProcedure: Begin Investigation
+    AuditProcedure --> EvidenceGate: Decision Gate
+    
+    EvidenceGate: <b>Step 7: The Verdict Gate</b><br/><i>Refuse to Guess:</i><br/>Sort findings into 3 strict proof categories
+
+    EvidenceGate --> ConfirmedProof: Provable Breach
+    EvidenceGate --> NonLiquet: Indeterminate Path
+    EvidenceGate --> RuledOut: Defense Discovered
+
+    ConfirmedProof: <b>CONFIRMED (Real Bug)</b><br/>Reachable flaw - zero blocking defenses exist
+    NonLiquet: <b>NON LIQUET (Need More Data)</b><br/>Code is tangled or hidden by external services
+    RuledOut: <b>REFUTED (False Alarm)</b><br/>Looks risky, but underlying DB constraint keeps it safe
+
+    ConfirmedProof --> FindingArtifact: Generate Reproducer
+    NonLiquet --> TelemetrySpec: Specify Logs
+    RuledOut --> CoverageNote: Mark Protected
+
+    FindingArtifact: <b>Proof Dossier</b><br/>Write runnable test exploiting the bug<br/>Emit formal [FINDING-XXX] report
+    TelemetrySpec: <b>Telemetry Spec</b><br/>Request exact log lines or metrics needed<br/>Emit formal [NON-LIQUET-XXX] spec
+    CoverageNote: <b>Coverage Record</b><br/>Document verified defense so team knows it is safe
+
+    FindingArtifact --> LoopCheck
+    TelemetrySpec --> LoopCheck
+    CoverageNote --> LoopCheck
+
+    LoopCheck: <b>Scope Inspection Gate</b><br/><i>Check Backlog:</i> Unchecked entry points left?
+
+    LoopCheck --> PickCandidate: More Features in Queue
+    LoopCheck --> ReportDeliverable: All Code Audited
+    
+    ReportDeliverable: <b>Final Forensic Deliverable</b><br/>Hand engineering the complete dossier:<br/>What broke, proof scripts, and proven safe zones
+    ReportDeliverable --> [*]
+
+    class ScopeTriage,PickCandidate,LoopCheck neutral
+    class EvidenceGate gate
+    class ConfirmedProof,FindingArtifact confirmed
+    class NonLiquet,TelemetrySpec nonliquet
+    class RuledOut,CoverageNote refuted
+    class ReportDeliverable deliverable

@@ -1,0 +1,4 @@
+name: code-logic-auditor/python-queries
+version: 0.1.0
+dependencies:
+  codeql/python-all: "^1.0.0"

@@ -1,0 +1,33 @@
+rules:
+  # Tenant-scoping heuristic, not a SQL-injection rule (leave SQLi to standard SAST).
+  # Flags SQL or ORM lookups by primary key with no tenant discriminator in the call.
+  - id: php-sql-by-id-without-tenant-predicate
+    languages: [php]
+    severity: INFO
+    message: >-
+      Query or ORM lookup resolves an entity by primary key (id, invoice_id, etc.) without an
+      organizational or tenant discriminator. If the identifier is client-supplied, verify whether
+      scoping is enforced in session middleware or storage-level policies.
+    metadata:
+      classification: TENANT-LEAK
+      confidence: LOW
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern: $DB->$METHOD($Q, ...)
+              - metavariable-regex:
+                  metavariable: $METHOD
+                  regex: ^(query|prepare|exec|execute|get_row|get_results|fetchAll|fetchRow)$
+              - metavariable-regex:
+                  metavariable: $Q
+                  regex: (?is)^(?!.*\b(tenant|org|organization|company|client|customer|account)_?id\b).*\b(select|update|delete)\b.*\bwhere\b.*(?:\b|[a-zA-Z0-9_]*_)id\s*=
+          - patterns:
+              - pattern: $FN($CONN, $Q, ...)
+              - metavariable-regex:
+                  metavariable: $FN
+                  regex: ^(mysqli_query|pg_query|pg_query_params|oci_parse)$
+              - metavariable-regex:
+                  metavariable: $Q
+                  regex: (?is)^(?!.*\b(tenant|org|organization|company|client|customer|account)_?id\b).*\b(select|update|delete)\b.*\bwhere\b.*(?:\b|[a-zA-Z0-9_]*_)id\s*=
+          - pattern: $REPO->find($ID, ...)
+          - pattern: $REPO->findOneBy(['id' => $ID])
