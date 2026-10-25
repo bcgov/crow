@@ -22,6 +22,7 @@ class OrderService {
   @Transactional
   public void placeOrder(Order o) { repo.save(o); stock.decrement(o); }
 
+  // ruleid: java-requires-new-partial-commit
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void auditRecord(Order o) { auditRepo.save(o); }
 
@@ -43,7 +44,8 @@ class OrderService {
 
   @Transactional
   public void batch(Order o) {
-    // ok: java-transactional-self-invocation (callee uses Propagation.REQUIRED and caller has active @Transactional)
+    // Callee uses Propagation.REQUIRED and caller has active @Transactional.
+    // ok: java-transactional-self-invocation
     placeOrder(o);
   }
 

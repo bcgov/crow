@@ -61,6 +61,7 @@ semgrep --test references/rules/semgrep                  # Test triage rules
 ```bash
 # Test Semgrep AST logic rules against annotated test fixtures
 semgrep --test .apm/skills/crow-code-logic-auditor/references/rules/semgrep
+python3 .apm/skills/crow-code-logic-auditor/evals/test_codeql.py
 
 # Audit Crow assets against authoring and context thresholds
 pwsh .apm/skills/crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1 -StrictContext
@@ -72,6 +73,6 @@ pwsh .apm/skills/crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1 -StrictC
 - Invariants Taxonomy: [references/logic_invariants_taxonomy.md](./references/logic_invariants_taxonomy.md)
 - Game Simulation & RL Auditing: [references/game_simulation_rl_auditing.md](./references/game_simulation_rl_auditing.md)
 - Tested Semgrep Rules Index: [references/semgrep_logic_rules.md](./references/semgrep_logic_rules.md)
-- Tested CodeQL Query Packs: [references/codeql_taint_recipes.md](./references/codeql_taint_recipes.md)
+- CodeQL Query Packs & Regression: [references/codeql_taint_recipes.md](./references/codeql_taint_recipes.md)
 - Inspection Prompts: [FSM](references/prompts/state_machine_audit.md) • [Multi-Tenant](references/prompts/multi_tenant_context_audit.md) • [TOCTOU](references/prompts/concurrency_toctou_audit.md) • [Idempotency](references/prompts/idempotency_replay_audit.md) • [Perimeter & Auth](references/prompts/authorization_perimeter_audit.md) • [Forms & PL/SQL](references/prompts/legacy_forms_authorization_audit.md) • [Agentic & MCP](references/prompts/agentic_tool_boundary_audit.md)
 - Persona Standard: [agents/forensic_systems_analyst.md](agents/forensic_systems_analyst.md)

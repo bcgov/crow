@@ -47,6 +47,12 @@ rules:
               const { ..., 'remote_user': $U, ... } = $REQ.headers
           - pattern: |
               const { ..., 'x-auth-request-user': $U, ... } = $REQ.headers
+      # Do not also interpret req.headers.get(...) as req.get(...): that
+      # alternative binds $REQ to req.headers and defeats request-bound guards.
+      - metavariable-pattern:
+          metavariable: $REQ
+          patterns:
+            - pattern-not: $X.headers
       - pattern-not-inside: |
           if (!verifySignature($REQ, ...)) { ... return ...; }
           ...

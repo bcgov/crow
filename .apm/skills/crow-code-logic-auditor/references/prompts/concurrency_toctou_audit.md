@@ -21,7 +21,7 @@ Execute this inspection when auditing shared resources, balance updates, token r
 
 ## 3. Discriminating Race Simulation (Isolated DB Connections & Barrier)
 
-To prove a real database-level TOCTOU or lost-update race condition across transactions, threads must NOT share an in-memory ORM instance or single test transaction. Use `TransactionTestCase` and explicitly cycle or isolate database connections per worker thread:
+To prove a real database-level TOCTOU or lost-update race condition across transactions, threads must NOT share an in-memory ORM instance or single test transaction. Use `TransactionTestCase` and explicitly cycle or isolate database connections per worker thread. The launch barrier below is a stress-test skeleton, not a deterministic proof: instrument a test-only seam inside `debit_account` after the vulnerable read/check and before the write to force both workers through the race window. Do not put a blocking barrier after acquiring an exclusive row lock. A passing launch-only test cannot refute a race.
 
 > [!WARNING]
 > **Database Engine Warning**: SQLite uses database-level locks and serializes all write operations, artificially masking race windows and producing false `REFUTED` outcomes. Dynamic concurrency tests and barriers MUST run against client-server database engines with multi-connection concurrency (e.g. PostgreSQL, Oracle, MySQL).
@@ -48,8 +48,8 @@ class ConcurrentDebitRaceTest(TransactionTestCase):
             # Close inherited connection so thread creates its own isolated DB connection
             connections.close_all()
             try:
-                # Synchronize thread execution at the exact check-then-act window
-                barrier.wait()
+                # Synchronize launch; use an in-service seam for deterministic proof.
+                barrier.wait(timeout=10)
                 success = debit_account(acct.pk, debit_amount)
                 results.append(success)
             except Exception as e:
@@ -66,6 +66,7 @@ class ConcurrentDebitRaceTest(TransactionTestCase):
         successes = sum(1 for r in results if r is True)
         acct.refresh_from_db()
 
+        assert not errors, f"Worker errors invalidate this result: {errors}"
         # Invariant: exactly one debit succeeds; balance must never drop below 0
         assert successes == 1, f"Double-spend detected! Successful debits: {successes}"
         assert acct.balance == 0, f"Balance invariant breached: {acct.balance}"

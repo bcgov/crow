@@ -63,6 +63,8 @@ SET SERVEROUTPUT ON;
 DECLARE
   v_permit_id NUMBER := 999999;
   v_status_after VARCHAR2(50);
+  -- Replace with the application's verified authorization-denial error code.
+  expected_auth_denial CONSTANT PLS_INTEGER := -20001;
 BEGIN
   SAVEPOINT test_start;
 
@@ -75,15 +77,21 @@ BEGIN
 
   -- If the update succeeds, the invariant is enforced ONLY in Forms UI, breaching storage integrity:
   IF v_status_after = 'APPROVED' THEN
-    DBMS_OUTPUT.PUT_LINE('FAILURE: Direct API/SQL caller bypassed Forms UI authorization guard!');
+    RAISE_APPLICATION_ERROR(-20999, 'Direct caller bypassed authorization guard');
   END IF;
 
   -- Mandatory: Always rollback test mutations
   ROLLBACK TO test_start;
 EXCEPTION
   WHEN OTHERS THEN
-    DBMS_OUTPUT.PUT_LINE('SUCCESS: Database storage engine enforced invariant: ' || SQLERRM);
     ROLLBACK TO test_start;
+    IF SQLCODE = expected_auth_denial THEN
+      DBMS_OUTPUT.PUT_LINE('Expected authorization denial observed');
+    ELSE
+      -- Missing test rows, connection errors, and unrelated constraint failures
+      -- do not prove authorization. Fail the test rather than declare REFUTED.
+      RAISE;
+    END IF;
 END;
 /
 ```

@@ -32,9 +32,9 @@
     "expected_behavior": [
       "Identifies invoice_unscoped looking up Invoice by pk without tenant filter",
       "Identifies invoice_query_param filtering by unvalidated GET parameter without tenant constraint",
-      "Identifies invoice_attacker_tenant where scoping keyword is present but populated from untrusted request.GET (CONFIRMED when routed in urls.py; would be SUSPECTED/unreachable if unrouted)",
+      "Identifies invoice_attacker_tenant where scoping keyword is present but populated from untrusted request.GET; routing in urls.py proves ingress reachability, but CONFIRMED additionally requires verification that middleware, scoped managers, or storage policies do not enforce tenant isolation",
       "Correctly verifies invoice_scoped_kw restricts lookup by authenticated request.user.tenant_id",
-      "Correctly verifies invoice_scoped_relation traverses relation anchored to authenticated user tenant"
+      "Recognizes invoice_scoped_relation as principal-anchored, while labeling its runtime behavior NON LIQUET until the user/tenant reverse relation and authentication configuration are supplied"
     ]
   },
   {

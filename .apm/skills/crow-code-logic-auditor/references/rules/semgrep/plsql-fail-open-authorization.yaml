@@ -22,7 +22,7 @@ rules:
     metadata:
       classification: FAIL-OPEN-AUTH
       confidence: MEDIUM
-    pattern-regex: (?is)\bFUNCTION\s+\w+\s*\(\s*\w+\s+(?:IN\s+)?VARCHAR2\s*,\s*\w+\s+(?:IN\s+)?VARCHAR2\s*\)\s*RETURN\s+VARCHAR2\b(?:(?!\bFUNCTION\b).)*?(?:(?:IF\s+.*?SYS_CONTEXT\s*\(.*?\)\s+IS\s+NULL\s+THEN\s*RETURN\s+(?:NULL|''|'1=1')\s*;)|(?:WHEN\s+(?:OTHERS|NO_DATA_FOUND)\s+THEN\s*(?:(?:NULL\s*;|DBMS_OUTPUT\.[^;]+;)\s*)*RETURN\s+(?:NULL|''|'1=1')\s*;))
+    pattern-regex: (?is)\bFUNCTION\s+\w+\s*\(\s*\w+\s+(?:IN\s+)?VARCHAR2\s*,\s*\w+\s+(?:IN\s+)?VARCHAR2\s*\)\s*RETURN\s+VARCHAR2\b(?:(?!\b(?:FUNCTION|PROCEDURE)\b).)*?\bRETURN\s+(?:NULL|''|'1=1')\s*;
 
   # Null-expands-scope pattern: NULL bind parameter or parameter disables scoping filter
   - id: plsql-null-expands-scope-filter

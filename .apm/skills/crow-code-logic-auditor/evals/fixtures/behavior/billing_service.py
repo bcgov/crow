@@ -1,4 +1,4 @@
-"""Behavior-eval fixture. Contains planted flaws and decoys; see evals/evals.json.
+"""Behavior-eval fixture. Contains planted flaws and decoys; see evals/task-success.json.
 
 Do not "fix" this file: the evals depend on it as written.
 """

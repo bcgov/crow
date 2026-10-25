@@ -64,7 +64,7 @@ To align the auditor with the **Four Evidence Levels** and **First-Principles Ep
 
 | Objective / Action | Points | Invariant & Evidence Criteria |
 | :--- | :--- | :--- |
-| **Confirmed Invariant Breach** | `+100` | Sourced invariant cited; exact state reachability path proven; reproducible property test or dynamic exploit vector generated (`CONFIRMED`). |
+| **Confirmed Invariant Breach** | `+100` | Sourced invariant cited; reachable violation established by an executed reproducer or complete verified static call chain; discriminating test supplied (`CONFIRMED`). |
 | **Rigorous Refutation of Plausible Defect** | `+50` | Identifying an apparent vulnerability, rigorously inspecting alternative defenses (e.g. DB check constraints, Postgres RLS, or serializable locks), and proving the invariant is preserved (`REFUTED`). *(Scored only when resolving an automated rule hit or ranked entry point; capped at max 3 findings / +150 pts per audit pass.)* |
 | **High-Value Uncertainty Resolution** | `+30` | Identifying ambiguous boundary conditions, issuing `NON LIQUET`, and formulating an actionable telemetry specification or logging hook to resolve it. *(Scored only when resolving an automated rule hit or ranked entry point; capped at max 3 findings / +90 pts per audit pass.)* |
 | **Coverage Expansion** | `+10` | Systematic mapping of previously un-audited state transitions, background worker handlers, or MCP tool dispatchers. |

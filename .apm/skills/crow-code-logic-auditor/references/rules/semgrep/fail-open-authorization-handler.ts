@@ -1,8 +1,8 @@
 function checkUserAccess(req, resourceId) {
   try {
     return queryDatabaseAcl(req.user, resourceId);
-  } catch (err) {
     // ruleid: fail-open-authorization-handler
+  } catch (err) {
     return true;
   }
 }
@@ -10,8 +10,8 @@ function checkUserAccess(req, resourceId) {
 const isAllowedArrow = (user, op) => {
   try {
     return evaluatePolicy(user, op);
-  } catch (e) {
     // ruleid: fail-open-authorization-handler
+  } catch (e) {
     return { allowed: true };
   }
 };
@@ -20,8 +20,8 @@ class AccessController {
   hasPrivilege(user, role) {
     try {
       return lookupLdap(user, role);
-    } catch (err) {
       // ruleid: fail-open-authorization-handler
+    } catch (err) {
       return "ALLOW";
     }
   }
@@ -29,8 +29,8 @@ class AccessController {
   isAuthorized(user, perm) {
     try {
       return verifyPerm(user, perm);
-    } catch (err) {
       // ruleid: fail-open-authorization-handler
+    } catch (err) {
       return "authorized";
     }
   }
@@ -40,8 +40,8 @@ function authMiddlewareGuard(req, res, next) {
   try {
     verifySessionToken(req);
     next();
-  } catch (err) {
     // ruleid: fail-open-authorization-handler
+  } catch (err) {
     next();
   }
 }

@@ -133,7 +133,7 @@ $$\text{Severity} = \text{Impact} \times \text{Reachability}$$
 ## 6. Adversarial Game Simulation & Epistemic Scoring
 
 To prevent passive pattern-matching and reward rigorous verification, the auditor operates under the epistemic scoring matrix detailed in [references/game_simulation_rl_auditing.md](./references/game_simulation_rl_auditing.md):
-- **+100 pts (`CONFIRMED`)**: Sourced invariant cited; reachable path proven; runnable reproducer generated.
+- **+100 pts (`CONFIRMED`)**: Sourced invariant cited; reachable path established by an executed reproducer or complete verified static call chain; discriminating test supplied.
 - **+50 pts (`REFUTED`)**: Plausible defect identified, alternative defense (e.g., DB constraint, RLS, atomic conditional `UPDATE`) verified, and invariant proven safe. *(Scored only when resolving an automated rule hit or ranked entry point; capped at max 3 findings / +150 pts per audit pass.)*
 - **+30 pts (`NON LIQUET`)**: Indeterminate runtime boundary identified and paired with a concrete Required Telemetry Specification. *(Scored only when resolving an automated rule hit or ranked entry point; capped at max 3 findings / +90 pts per audit pass.)*
 - **+10 pts (Coverage)**: Systematic mapping of un-audited entry points, triggers, or MCP tool handlers.

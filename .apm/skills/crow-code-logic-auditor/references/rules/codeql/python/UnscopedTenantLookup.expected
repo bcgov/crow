@@ -1,5 +1,0 @@
-# CodeQL CLI test oracle for UnscopedTenantLookup.ql
-# Target fixture: evals/fixtures/codeql-py/app/views.py
-| views.py:6:14 | pk | views.py:5:24 | pk | Request-controlled value reaches an ORM lookup lacking verified principal tenant scoping. |
-| views.py:11:14 | pk | views.py:11:32 | request.GET["id"] | Request-controlled value reaches an ORM lookup lacking verified principal tenant scoping. |
-| views.py:17:14 | tenant_id | views.py:19:19 | request.GET["tenant_id"] | Request-controlled value reaches an ORM lookup lacking verified principal tenant scoping. |

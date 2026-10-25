@@ -50,39 +50,44 @@ stateDiagram-v2
     PickCandidate --> AuditProcedure: Begin Investigation
     AuditProcedure --> EvidenceGate: Decision Gate
     
-    EvidenceGate: <b>Step 7: The Verdict Gate</b><br/><i>Refuse to Guess:</i><br/>Sort findings into 3 strict proof categories
+    EvidenceGate: <b>Step 7: The Verdict Gate</b><br/><i>Refuse to Guess:</i><br/>Sort observations into four evidence levels
 
     EvidenceGate --> ConfirmedProof: Provable Breach
+    EvidenceGate --> Suspected: Runtime Prerequisites Unverified
     EvidenceGate --> NonLiquet: Indeterminate Path
     EvidenceGate --> RuledOut: Defense Discovered
 
     ConfirmedProof: <b>CONFIRMED (Real Bug)</b><br/>Reachable flaw - zero blocking defenses exist
+    Suspected: <b>SUSPECTED (Conditional Finding)</b><br/>Failure mechanism established<br/>List every unverified runtime assumption
     NonLiquet: <b>NON LIQUET (Need More Data)</b><br/>Code is tangled or hidden by external services
     RuledOut: <b>REFUTED (False Alarm)</b><br/>Looks risky, but underlying DB constraint keeps it safe
 
     ConfirmedProof --> FindingArtifact: Generate Reproducer
+    Suspected --> SuspectedArtifact: Document Assumptions
     NonLiquet --> TelemetrySpec: Specify Logs
     RuledOut --> CoverageNote: Mark Protected
 
     FindingArtifact: <b>Proof Dossier</b><br/>Write runnable test exploiting the bug<br/>Emit formal [FINDING-XXX] report
+    SuspectedArtifact: <b>Conditional Dossier</b><br/>Emit [FINDING-XXX] with SUSPECTED evidence<br/>Specify tests that resolve the assumptions
     TelemetrySpec: <b>Telemetry Spec</b><br/>Request exact log lines or metrics needed<br/>Emit formal [NON-LIQUET-XXX] spec
     CoverageNote: <b>Coverage Record</b><br/>Document verified defense so team knows it is safe
 
     FindingArtifact --> LoopCheck
+    SuspectedArtifact --> LoopCheck
     TelemetrySpec --> LoopCheck
     CoverageNote --> LoopCheck
 
     LoopCheck: <b>Scope Inspection Gate</b><br/><i>Check Backlog:</i> Unchecked entry points left?
 
     LoopCheck --> PickCandidate: More Features in Queue
-    LoopCheck --> ReportDeliverable: All Code Audited
+    LoopCheck --> ReportDeliverable: Scope Complete or Capacity Ceiling Reached
     
-    ReportDeliverable: <b>Final Forensic Deliverable</b><br/>Hand engineering the complete dossier:<br/>What broke, proof scripts, and proven safe zones
+    ReportDeliverable: <b>Final Forensic Deliverable</b><br/>Findings, assumptions, proof scripts, and verified defenses<br/>Explicitly list unreviewed entry points and boundaries
     ReportDeliverable --> [*]
 
     class ScopeTriage,PickCandidate,LoopCheck neutral
     class EvidenceGate gate
     class ConfirmedProof,FindingArtifact confirmed
-    class NonLiquet,TelemetrySpec nonliquet
+    class Suspected,SuspectedArtifact,NonLiquet,TelemetrySpec nonliquet
     class RuledOut,CoverageNote refuted
     class ReportDeliverable deliverable

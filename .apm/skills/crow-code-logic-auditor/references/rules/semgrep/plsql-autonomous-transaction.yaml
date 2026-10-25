@@ -13,7 +13,7 @@ rules:
       confidence: MEDIUM
     # Heuristic: bounded to one CREATE unit. Flags actual DML statements: UPDATE table SET, DELETE FROM, MERGE INTO,
     # or INSERT INTO business tables (exempting schema-qualified tables ending in _log, _audit, _hist, etc.).
-    pattern-regex: (?is)CREATE\s+(?:OR\s+REPLACE\s+)?(?:PROCEDURE|FUNCTION|TRIGGER)\b(?:(?!\bCREATE\s).)*?PRAGMA\s+AUTONOMOUS_TRANSACTION\s*;(?:(?!\bCREATE\s).)*?\b(?:(?:UPDATE\s+(?!\bSET\b)[a-zA-Z0-9_.]+\s+SET\b)|(?:DELETE\s+(?:FROM\s+)?[a-zA-Z0-9_.]+\b)|(?:MERGE\s+INTO\s+[a-zA-Z0-9_.]+\b)|(?:INSERT\s+INTO\s+(?:[a-zA-Z0-9_]+\.)?(?![a-zA-Z0-9_]*_(?:log|audit|hist|trace|journal)\b)[a-zA-Z0-9_]+))(?:(?!\bCREATE\s).)*?\bCOMMIT\b
+    pattern-regex: (?is)CREATE\s+(?:OR\s+REPLACE\s+)?(?:PROCEDURE|FUNCTION|TRIGGER)\b(?:(?!\bCREATE\s).)*?PRAGMA\s+AUTONOMOUS_TRANSACTION\s*;(?:(?!\bCREATE\s).)*?\b(?:(?:UPDATE\s+(?!\bSET\b)[a-zA-Z0-9_.]+\s+SET\b)|(?:DELETE\s+(?:FROM\s+)?[a-zA-Z0-9_.]+\b)|(?:MERGE\s+INTO\s+[a-zA-Z0-9_.]+\b)|(?:INSERT\s+INTO\s+(?:[a-zA-Z0-9_]+\.)?(?![a-zA-Z0-9_]*_(?:log|audit|hist|trace|journal)\b)[a-zA-Z0-9_]+\b(?!\.)))(?:(?!\bCREATE\s).)*?\bCOMMIT\b
 
   # Autonomous transaction inside a trigger is the classic way to dodge ORA-04091
   # (mutating table). It reads/writes data the triggering statement has not committed.

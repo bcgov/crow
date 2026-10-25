@@ -1,0 +1,18 @@
+[
+  {
+    "language": "javascript",
+    "fixture": "evals/fixtures/codeql-js",
+    "query": "UnguardedStateTransition.ql",
+    "rule_id": "code-logic-auditor/js/unguarded-state-transition",
+    "file": "routes.js",
+    "lines": [6, 12, 48]
+  },
+  {
+    "language": "python",
+    "fixture": "evals/fixtures/codeql-py",
+    "query": "UnscopedTenantLookup.ql",
+    "rule_id": "code-logic-auditor/python/unscoped-tenant-lookup",
+    "file": "app/views.py",
+    "lines": [6, 11, 19]
+  }
+]

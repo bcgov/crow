@@ -58,6 +58,25 @@ BEGIN
 END;
 /
 
+// ruleid: plsql-vpd-policy-empty-predicate
+FUNCTION vpd_local_context(p_schema IN VARCHAR2, p_object IN VARCHAR2) RETURN VARCHAR2 IS
+  v_org_id VARCHAR2(50);
+BEGIN
+  v_org_id := SYS_CONTEXT('APP_SESSION_CTX', 'ORGANIZATION_ID');
+  IF v_org_id IS NULL THEN
+    RETURN NULL;
+  END IF;
+  RETURN 'organization_id = ''' || v_org_id || '''';
+END;
+/
+
+// ruleid: plsql-vpd-policy-empty-predicate
+FUNCTION vpd_unconditional(p_schema VARCHAR2, p_object VARCHAR2) RETURN VARCHAR2 IS
+BEGIN
+  RETURN NULL;
+END;
+/
+
 // ok: plsql-vpd-policy-empty-predicate
 FUNCTION vpd_tenant_policy_safe(p_schema VARCHAR2, p_tab VARCHAR2) RETURN VARCHAR2 IS
 BEGIN
