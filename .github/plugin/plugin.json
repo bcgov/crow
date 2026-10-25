@@ -31,7 +31,8 @@
     "crow-release",
     "crow-testing",
     "crow-project-context",
-    "crow-raven-setup"
+    "crow-raven-setup",
+    "crow-workflow-coordinator"
   ],
   "agents": [
     ".apm/agents"
@@ -57,6 +58,7 @@
     ".apm/skills/crow-release",
     ".apm/skills/crow-testing",
     ".apm/skills/crow-project-context",
-    ".apm/skills/crow-raven-setup"
+    ".apm/skills/crow-raven-setup",
+    ".apm/skills/crow-workflow-coordinator"
   ]
 }

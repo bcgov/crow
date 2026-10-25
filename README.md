@@ -238,6 +238,9 @@ package.
   scenarios organized by repository features, automated unit/integration tests
   (including PHP), and business-readable manual QA coverage; includes HTTP
   characterization and differential testing for REST/SOAP API modernization.
+- [**crow-workflow-coordinator**](.apm/skills/crow-workflow-coordinator/SKILL.md) —
+  Interactive guided workflow coordination, topological DAG scheduling, and
+  parallel worktree isolation for complex multi-agent engineering tasks.
 
 ## Optional reporting prerequisite
 
