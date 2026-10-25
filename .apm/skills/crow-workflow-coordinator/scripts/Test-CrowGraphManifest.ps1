@@ -35,6 +35,13 @@ catch {
     exit 1
 }
 
+# Validate the same schema published for manifest authors before inspecting topology.
+$schemaPath = Join-Path $PSScriptRoot '../references/graph-manifest-schema.json'
+if (-not (Test-Json -Json $content -SchemaFile $schemaPath -ErrorAction SilentlyContinue)) {
+    Write-Warning 'Manifest does not conform to graph-manifest-schema.json.'
+    exit 1
+}
+
 # 1. Required top-level fields
 $requiredFields = @('version', 'graph_id', 'title')
 foreach ($field in $requiredFields) {
@@ -76,6 +83,22 @@ foreach ($node in $manifestNodes) {
         $errors.Add("Node '$($node.id)' has invalid type '$($node.type)'. Must be read_only, mutation, verification, or barrier.")
     }
 
+    $assetRoot = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+    $agentRoot = Join-Path (Split-Path $assetRoot -Parent) 'agents'
+    if ($node.asset -notmatch '^crow-[a-z0-9-]+$' -or
+        (-not (Test-Path -LiteralPath (Join-Path $assetRoot "$($node.asset)/SKILL.md") -PathType Leaf) -and
+         -not (Test-Path -LiteralPath (Join-Path $agentRoot "$($node.asset).agent.md") -PathType Leaf))) {
+        $errors.Add("Node '$($node.id)' references unknown Crow asset '$($node.asset)'.")
+    }
+    if ($node.type -eq 'mutation' -and ($null -eq $node.mutation_targets -or @($node.mutation_targets).Count -eq 0)) {
+        $errors.Add("Mutation node '$($node.id)' must declare mutation_targets.")
+    }
+    foreach ($path in @($node.mutation_targets) + @($node.forbidden_paths)) {
+        if ($null -ne $path -and ($path -notmatch '^[^:*?\\]+$' -or
+            [IO.Path]::IsPathRooted($path) -or $path -match '(^|/)\.\.(/|$)|(^|/)\.git(/|$)|^\./|//|^$')) {
+            $errors.Add("Node '$($node.id)' has unsafe scope path '$path'; use repository-relative literal paths.")
+        }
+    }
     $nodeMap[$node.id] = $node
 }
 

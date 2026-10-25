@@ -23,6 +23,7 @@ param(
     [Parameter(Mandatory = $true)]
     [string]$TaskDescription,
 
+    [ValidateRange(1, 2147483647)]
     [int]$EstimatedFiles = 1,
 
     [switch]$HasPrerequisites,
@@ -38,12 +39,17 @@ $strategy = 'direct'
 $reason = 'Localized change without multi-agent dependencies.'
 $artifact = 'Implementation notes'
 
-if ($IsBatch) {
+if ($HasPrerequisites) {
+    $strategy = 'graph'
+    $reason = 'Prerequisite dependencies require ordered execution.'
+    $artifact = 'graph-manifest.json'
+}
+elseif ($IsBatch) {
     $strategy = 'parallel-batch'
     $reason = 'Identical independent tasks partitioned across multiple items.'
     $artifact = 'Batch job list'
 }
-elseif ($HasPrerequisites -or $EstimatedFiles -gt 5) {
+elseif ($EstimatedFiles -gt 2) {
     $strategy = 'graph'
     $reason = 'Multi-phase workflow with prerequisite dependencies or ordering barriers.'
     $artifact = 'graph-manifest.json'

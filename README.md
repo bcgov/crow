@@ -240,7 +240,7 @@ package.
   characterization and differential testing for REST/SOAP API modernization.
 - [**crow-workflow-coordinator**](.apm/skills/crow-workflow-coordinator/SKILL.md) —
   Interactive guided workflow coordination, topological DAG scheduling, and
-  parallel worktree isolation for complex multi-agent engineering tasks.
+  approved command execution in isolated worktrees for complex engineering tasks.
 
 ## Optional reporting prerequisite
 

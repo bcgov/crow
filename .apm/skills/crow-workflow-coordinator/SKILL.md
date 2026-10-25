@@ -12,7 +12,7 @@ Coordinate multi-step tasks involving Crow's skills and agents. Analyzes the tas
 1. Read [`references/strategy-selection.md`](references/strategy-selection.md) to evaluate task topology.
 2. Read [`references/crow-asset-catalog.md`](references/crow-asset-catalog.md) to inspect Crow's skills, agents, inputs, and outputs.
 3. Read [`references/topology-rules.md`](references/topology-rules.md) and [`references/graph-manifest-schema.json`](references/graph-manifest-schema.json) when constructing dependency graph manifests.
-4. Consult [`references/canonical-workflows.md`](references/canonical-workflows.md) for standard security, modernization, and architecture sequences.
+4. Consult [`references/canonical-workflows.md`](references/canonical-workflows.md) for standard security, modernization, and implementation sequences.
 5. Do not load unrelated modules until a node specifically invokes them.
 
 ## Workflow coordination loop
@@ -39,17 +39,20 @@ For Graph (DAG) strategies:
   - Strictly acyclic (zero circular dependencies).
   - Single-writer mutation rule: two mutation nodes never run in parallel.
   - Read-only nodes run concurrently up to `max_concurrency`.
-  - Mutating nodes execute in an isolated Git worktree (`.worktrees/task-<id>`).
+  - Mutating nodes execute in a pre-created, clean linked Git worktree (`.worktrees/task-<id>`).
 - Present the planned execution graph and strategy to the human operator for confirmation.
 
 ### 4. Safe execution supervision
-- Run `Invoke-CrowGraphRunner.ps1 -ManifestPath graph-manifest.json`.
+- Run `Invoke-CrowGraphRunner.ps1 -ManifestPath graph-manifest.json -WorktreePath <linked-worktree>` after creating the isolated worktree.
+- Supply explicit commands for each non-barrier node: asset names are routing metadata and do not dispatch agents.
+- Review the manifest and approve via the prompt or `-ApprovedManifestHash <SHA256>`. Read-only graphs may opt into `approval_mode: "none"`.
+- Treat commands as trusted operator code; scope checks detect changes after execution and are not an operating-system sandbox.
 - For each node:
-  - Execute independent read-only nodes concurrently.
+  - Execute independent read-only nodes in bounded parallel batches.
   - Pause at join barriers until all prerequisite dependencies succeed.
   - Run mutations sequentially in the isolated worktree.
-  - Require explicit operator approval before irreversible actions.
-  - Fail closed: if a prerequisite fails without an explicit fallback, abort downstream execution immediately.
+  - Require separate explicit operator approval before irreversible actions; do not embed them in graph commands.
+  - Fail closed: if execution or verification fails, block pending nodes, write a failure receipt, and return a non-zero exit code. Only the abort fallback is currently supported.
 
 ### 5. Verification & closure
 - Execute deterministic node verifiers (test suites, build checks, diff audits).
@@ -60,4 +63,4 @@ For Graph (DAG) strategies:
 
 - [`scripts/Select-CrowStrategy.ps1`](scripts/Select-CrowStrategy.ps1): Evaluates task briefs and returns recommended execution strategy.
 - [`scripts/Test-CrowGraphManifest.ps1`](scripts/Test-CrowGraphManifest.ps1): Validates manifest schema, detects cycles, duplicate IDs, and unsafe concurrent mutations.
-- [`scripts/Invoke-CrowGraphRunner.ps1`](scripts/Invoke-CrowGraphRunner.ps1): Schedules and executes graph nodes with worktree isolation and receipt recording.
+- [`scripts/Invoke-CrowGraphRunner.ps1`](scripts/Invoke-CrowGraphRunner.ps1): Schedules and executes graph nodes with linked-worktree checks, mutation scope verification, and receipt recording.

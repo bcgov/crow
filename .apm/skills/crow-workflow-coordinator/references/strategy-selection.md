@@ -11,6 +11,8 @@ The workflow coordinator selects an execution pattern before any agent or skill 
 | **Bounded Loop** | Single bounded task requiring iterative test-fix cycles with a locked verifier. | Task packet (`handoffs/task_<id>.md`) | Inner worker agent with supervisor verification |
 | **Parallel Batch** | Many similarly shaped, completely independent tasks partitioned across files or services. | Batch job list | Parallel worker dispatch |
 
+The selector prioritizes prerequisites over batch dispatch. Without prerequisites it selects an independent batch, then a graph for more than two files, then a bounded loop for iterative feedback, otherwise direct execution. File count must be positive.
+
 ## Diagnostic Selection Matrix
 
 ```mermaid

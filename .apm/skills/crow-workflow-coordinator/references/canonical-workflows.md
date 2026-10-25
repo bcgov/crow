@@ -16,17 +16,17 @@ Audit an enterprise application for security vulnerabilities, synthesize finding
 3. **Node `sec_review` (Read-only)**: Invoke `crow-security-review` across the 17 security modules (auth, data-flow sinks, deserialization).
    - Depends on: `ctx`.
    - Concurrency: Runs concurrently with `sonar`.
-4. **Node `barrier_synthesis` (Join Barrier)**: Converge scan and review findings; run `ConvertTo-CrowSecurityIssues.ps1` to produce unified `issues.sarif`.
+4. **Node `barrier_synthesis` (Join Barrier)**: Converge scan and review findings; run [`ConvertTo-CrowSecurityIssues.ps1`](../../crow-security-review/scripts/ConvertTo-CrowSecurityIssues.ps1) to produce unified `issues.sarif`.
    - Depends on: `sonar`, `sec_review`.
-5. **Node `remediate` (Mutation)**: Invoke `crow-security-remediation` in an isolated worktree (`.worktrees/task-sec-remediate`) to patch verified vulnerabilities.
+5. **Node `remediate` (Mutation)**: Invoke the [crow-security-remediation agent](../../../agents/crow-security-remediation.agent.md) in an isolated worktree (`.worktrees/task-sec-remediate`) to patch verified vulnerabilities.
    - Depends on: `barrier_synthesis`.
    - Constraints: Must not commit to `main`; modifies only files listed in `mutation_targets`.
-6. **Node `verify_tests` (Verification)**: Run project unit tests and `Test-CrowSecurityRemediationScopes.Tests.ps1`.
+6. **Node `verify_tests` (Verification)**: Run project unit tests and [`Test-CrowSecurityRemediationScopes.Tests.ps1`](../../crow-agent-skill-authoring/scripts/Test-CrowSecurityRemediationScopes.Tests.ps1).
    - Depends on: `remediate`.
    - Verifier: `mvn test` / `dotnet test` / `npm test` exit code 0.
 7. **Node `audit_diff` (Verification)**: Run `crow-code-review` on git diff between worktree and base.
    - Depends on: `verify_tests`.
-8. **Node `report` (Read-only)**: Run `crow-executive-report` (`render-report.ps1`) to publish the final HTML executive summary.
+8. **Node `report` (Read-only)**: Run `crow-executive-report` ([`render-report.ps1`](../../crow-executive-report/render-report.ps1)) to publish the final HTML executive summary.
    - Depends on: `audit_diff`.
 
 ---
