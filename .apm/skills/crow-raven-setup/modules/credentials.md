@@ -35,10 +35,15 @@ Collect the non-secret values in chat, then keep the token out of chat.
      required).
 3. **Ask for the account email** used on that Atlassian site. Email is not a
    secret, so chat is fine.
-4. **Warn on vanity domains** such as `*.gov.bc.ca` (for example
-   `wiki.justice.gov.bc.ca`). They sit behind SiteMinder and reject API
-   tokens with 403 ("caller cannot access Confluence"). Ask for the tenant
-   URL instead.
+4. **Validate the host before using it.** For the Cloud path it must end in
+   `.atlassian.net`. Anything else, for example
+   `https://wiki.justice.gov.bc.ca/wiki` or any `*.gov.bc.ca` host, is
+   wrong: those sit behind SiteMinder and reject API tokens with 403
+   ("caller cannot access Confluence"), and adding `/wiki` does not fix it.
+   Say so plainly, do not accept the value, and ask for the
+   `https://<tenant>.atlassian.net` address instead. Also strip a trailing
+   path the user typed (such as `/wiki` or `/jira`) before deriving the two
+   endpoints.
 5. **Token type:** create a **Classic (non-scoped)** API token at
    `https://id.atlassian.com/manage-profile/security/api-tokens`. Do not use
    the Granular/Scoped wizard: scoped tokens return 401 on tenant URLs
