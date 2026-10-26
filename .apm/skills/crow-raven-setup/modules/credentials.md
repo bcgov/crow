@@ -25,7 +25,9 @@ Script by OS, under `<raven path>/scripts/`:
 - macOS: `setup-credentials-mac.mjs`
 - Linux, or script absent: manual `~/.raven/.env` below.
 
-Give the user the exact command with their real path, and what the prompts
+Give the command as a fenced code block of two lines, `cd <raven path>` then
+`node scripts/<script>`, never as one long inline path: copying an inline path
+can add a trailing space and fail with MODULE_NOT_FOUND. Say what the prompts
 will ask. Enter keeps a stored value; `:clear` erases one.
 
 ## Manual fallback (all OS, required on Linux)
