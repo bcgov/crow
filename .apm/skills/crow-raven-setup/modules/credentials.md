@@ -5,15 +5,28 @@ in chat and never write one into the client config or Crow state.
 
 ## Locate the credential tool
 
-Resolve the script inside the installed Raven runtime (path from
-`node scripts/crow-raven-setup.mjs status`, under `scripts/`):
+The credential scripts live in the Raven repo (`scripts/`), so the user needs
+a copy of it. Ask in this order, one question per turn:
+
+1. **"Have you already cloned the Raven repo?"**
+   - **Yes:** ask for the path to the clone (not a secret). Check that
+     `<path>/scripts/<script>` exists before continuing; if not, ask again.
+   - **No:** tell them to open a terminal in the folder where they want it and
+     run `git clone https://github.com/bcgov/raven`, then share the path of
+     the new `raven` folder. Needs access to the repo; if clone fails, stop
+     and check `gh auth status` rather than guessing.
+2. If setup already installed a Raven runtime (path from
+   `node scripts/crow-raven-setup.mjs status`), offer that path as the
+   default instead of asking for a clone.
+
+Script by OS, under `<raven path>/scripts/`:
 
 - Windows: `setup-credentials.ps1`
 - macOS: `setup-credentials-mac.mjs`
 - Linux, or script absent: manual `~/.raven/.env` below.
 
-Tell the user the exact command to run in their own terminal and what the
-prompts will ask. Enter keeps a stored value; `:clear` erases one.
+Give the user the exact command with their real path, and what the prompts
+will ask. Enter keeps a stored value; `:clear` erases one.
 
 ## Manual fallback (all OS, required on Linux)
 
