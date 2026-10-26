@@ -1,3 +1,36 @@
+/**
+ * client-config.mjs (library)
+ * =====================================
+ *
+ * Purpose:
+ *     Previews and applies Crow's MCP server fragment to a supported client
+ *     configuration file (Copilot's mcp-config.json or a verified portable
+ *     mcpServers file). Preview computes the change and an approval digest;
+ *     apply re-checks that digest, locks, backs up, writes atomically, verifies
+ *     the result, and rolls back on failure. It never writes credentials.
+ *
+ * Layer: Crow Raven Setup skill, client configuration
+ *
+ * Usage Examples:
+ *     import { previewClientConfig, applyClientConfig } from "./client-config.mjs";
+ *     const preview = previewClientConfig({ client: "copilot", fragment: "mcp-fragment.json" });
+ *
+ * Key Input Dependencies:
+ *     Node fs, path, os and crypto; COPILOT_HOME (optional) for the default
+ *     Copilot config location; a Crow-generated MCP fragment file.
+ *
+ * Key Functions:
+ *     digest()              SHA-256 hex of a value.
+ *     configTarget()        Resolves and validates the client config path.
+ *     readConfig()          Reads and validates an existing config file.
+ *     readFragment()        Reads and validates the Crow MCP fragment.
+ *     previewClientConfig() Computes added, replaced, unchanged, collisions and digest.
+ *     applyClientConfig()   Applies an approved preview with lock, backup and rollback.
+ *
+ * Consumed by:
+ *     crow-raven-setup.mjs (config preview and config apply commands).
+ */
+
 import { createHash, randomUUID } from "node:crypto";
 import {
   existsSync,
@@ -13,10 +46,19 @@ import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 
+/** Returns the SHA-256 hex digest of a string or buffer. */
 function digest(value) {
   return createHash("sha256").update(value).digest("hex");
 }
 
+/**
+ * Resolves which client configuration file to touch.
+ * Accepts only --client copilot or portable (portable needs an explicit
+ * --config path) and refuses unsupported targets such as settings.json.
+ *
+ * @param {object} args - Parsed CLI arguments (client, config).
+ * @returns {{client: string, path: string, key: string}} The validated target.
+ */
 function configTarget(args) {
   const client = args.client;
   if (!["copilot", "portable"].includes(client)) {
@@ -36,6 +78,15 @@ function configTarget(args) {
   return { client, path, key: "mcpServers" };
 }
 
+/**
+ * Reads an existing client config and validates its shape.
+ * A missing file yields an empty config. Rejects non-files, malformed JSON,
+ * a non-object top-level key, and the wrong "servers" format.
+ *
+ * @param {string} path - Config file path.
+ * @param {string} key - Top-level key holding servers (mcpServers).
+ * @returns {{bytes: Buffer|null, config: object}} Raw bytes and parsed config.
+ */
 function readConfig(path, key) {
   if (!existsSync(path)) return { bytes: null, config: { [key]: {} } };
   if (!lstatSync(path).isFile()) throw new Error(`Configuration is not a regular file: ${path}`);
@@ -57,6 +108,13 @@ function readConfig(path, key) {
   return { bytes, config };
 }
 
+/**
+ * Reads and validates the Crow-generated MCP fragment.
+ * Each server must have a string command and a string-array args list.
+ *
+ * @param {string} fragmentPath - Path of the fragment JSON file.
+ * @returns {object} The mcpServers map.
+ */
 function readFragment(fragmentPath) {
   let fragment;
   try {
@@ -75,6 +133,15 @@ function readFragment(fragmentPath) {
   return fragment.mcpServers;
 }
 
+/**
+ * Computes the change a config apply would make, without writing anything.
+ * Classifies each server as added, replaced (only when it still equals the
+ * previous Crow-managed entry), unchanged, or a collision (which throws).
+ * The approval digest binds client, path, current bytes and proposed content.
+ *
+ * @param {object} args - Parsed CLI arguments plus optional managedEntries and previousEntries.
+ * @returns {object} Preview with changes, proposed content and approvalSha256.
+ */
 function previewClientConfig(args) {
   const target = configTarget(args);
   const entries = args.managedEntries || readFragment(resolve(args.fragment));
@@ -124,6 +191,16 @@ function previewClientConfig(args) {
   };
 }
 
+/**
+ * Applies an approved preview to the client configuration.
+ * Requires --confirm and the reviewed digest, takes an exclusive lock,
+ * re-previews to detect drift, writes via a temporary file and hard link,
+ * keeps a backup of the original, verifies the result, and restores the
+ * original if anything fails.
+ *
+ * @param {object} args - Parsed CLI arguments including confirm and approval-sha256.
+ * @returns {object} The preview fields plus applied and backupPath.
+ */
 function applyClientConfig(args) {
   if (!args.confirm || !/^[a-f0-9]{64}$/i.test(args["approval-sha256"] || "")) {
     throw new Error("Config apply requires --approval-sha256 <reviewed digest> and --confirm after separate client configuration approval.");

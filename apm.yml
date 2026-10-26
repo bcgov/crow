@@ -1,5 +1,5 @@
 name: bcgov-crow
-version: 0.15.2
+version: 0.18.0
 description: Global agents and skills for application CI, legacy modernization, Raven setup, accessible B.C. government UX, architecture, REST/SOAP API modernization, framework and dependency updates, secure development, review, remediation, documentation, reporting, Crow authoring, and releases.
 type: hybrid
 author:
@@ -61,9 +61,12 @@ includes:
   - .apm/skills/crow-testing
   - .apm/skills/crow-project-context
   - .apm/skills/crow-raven-setup/SKILL.md
-  - .apm/skills/crow-raven-setup/modules
-  - .apm/skills/crow-raven-setup/resources
+  - .apm/skills/crow-raven-setup/references
+  - .apm/skills/crow-raven-setup/assets
   - .apm/skills/crow-raven-setup/scripts/crow-raven-setup.mjs
   - .apm/skills/crow-raven-setup/scripts/client-config.mjs
   - .apm/skills/crow-raven-setup/scripts/crow-raven-setup.test.mjs
+  - .apm/skills/crow-raven-setup/scripts/setup-credentials-mac.mjs
+  - .apm/skills/crow-raven-setup/scripts/setup-credentials-mac.lib.mjs
+  - .apm/skills/crow-raven-setup/scripts/setup-credentials.ps1
 dependencies: {}
