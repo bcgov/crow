@@ -103,11 +103,9 @@ function createPrompter() {
           return;
         }
         pending = resolve;
-        if (sensitive) {
-          process.stdout.write(`${question}: `);
-          muted = true;
-        }
-        rl.question(sensitive ? "" : `${question}: `, (answer) => {
+        // Let readline print the prompt itself, then mute echo for secrets; writing the label
+        // separately gets erased by readline's line refresh on a real terminal.
+        rl.question(`${question}: `, (answer) => {
           if (sensitive) {
             muted = false;
             process.stdout.write("\n");
@@ -115,6 +113,7 @@ function createPrompter() {
           pending = null;
           resolve(normalizeAnswer(answer, { sensitive }));
         });
+        if (sensitive) muted = true;
       });
     },
     close() {
