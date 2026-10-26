@@ -5,30 +5,23 @@ in chat and never write one into the client config or Crow state.
 
 ## Locate the credential tool
 
-The credential scripts live in the Raven repo (`scripts/`), so the user needs
-a copy of it. Ask in this order, one question per turn:
+The credential scripts ship in this skill's `scripts/` folder (copied from
+Raven; see `scripts/RAVEN-CREDENTIAL-SCRIPTS.md`). No Raven clone is needed.
 
-1. **"Have you already cloned the Raven repo?"**
-   - **Yes:** ask for the path to the clone (not a secret). Check that
-     `<path>/scripts/<script>` exists before continuing; if not, ask again.
-   - **No:** tell them to open a terminal in the folder where they want it and
-     run `git clone https://github.com/bcgov/raven`, then share the path of
-     the new `raven` folder. Needs access to the repo; if clone fails, stop
-     and check `gh auth status` rather than guessing.
-2. If setup already installed a Raven runtime (path from
-   `node scripts/crow-raven-setup.mjs status`), offer that path as the
-   default instead of asking for a clone.
+Script by OS:
 
-Script by OS, under `<raven path>/scripts/`:
+- Windows: `scripts/setup-credentials.ps1`
+- macOS: `scripts/setup-credentials-mac.mjs` (needs `setup-credentials-mac.lib.mjs`
+  beside it)
+- Linux: no interactive script; use the manual `~/.raven/.env` fallback below.
 
-- Windows: `setup-credentials.ps1`
-- macOS: `setup-credentials-mac.mjs`
-- Linux, or script absent: manual `~/.raven/.env` below.
-
-Give the command as a fenced code block of two lines, `cd <raven path>` then
-`node scripts/<script>`, never as one long inline path: copying an inline path
-can add a trailing space and fail with MODULE_NOT_FOUND. Say what the prompts
-will ask. Enter keeps a stored value; `:clear` erases one.
+Resolve the skill's absolute `scripts/` path from where this skill is
+installed, check the file exists, then give the command as a fenced code block
+of two lines, `cd <skill scripts path>` then `node setup-credentials-mac.mjs`,
+never one long inline path: copying an inline path can add a trailing space and
+fail with MODULE_NOT_FOUND. Say what the prompts will ask. Enter keeps a stored
+value; `:clear` erases one. If the installed Raven runtime has a newer copy of
+the script, mention it rather than switching silently.
 
 ## Manual fallback (all OS, required on Linux)
 
