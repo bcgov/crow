@@ -44,13 +44,20 @@ Collect the non-secret values in chat, then keep the token out of chat.
    `https://<tenant>.atlassian.net` address instead. Also strip a trailing
    path the user typed (such as `/wiki` or `/jira`) before deriving the two
    endpoints.
-5. **Token type:** create a **Classic (non-scoped)** API token at
-   `https://id.atlassian.com/manage-profile/security/api-tokens`. Do not use
-   the Granular/Scoped wizard: scoped tokens return 401 on tenant URLs
-   because they need the `api.atlassian.com` gateway, which Raven does not
-   support.
+5. **Ask one short question: "To do this you'll need an Atlassian API token.
+   Do you already have a Classic API token?"** Do not show the how-to up front.
+   - **Yes:** do not ask for it. Say it goes into the credential tool, not
+     chat, and give the one command to run (step 6).
+   - **No, or unsure:** ask "Want me to walk you through creating one?" and
+     if yes, give one step per turn, waiting for "done" between steps:
+     open `https://id.atlassian.com/manage-profile/security/api-tokens`;
+     choose a **Classic (non-scoped)** token, not the Granular wizard (scoped
+     tokens return 401 because they need the `api.atlassian.com` gateway,
+     which Raven does not support); name it and copy it; then continue to
+     step 6.
 6. **Enter the token only through the credential tool**, never in chat. Give
-   the user the URL and email to type into its prompts.
+   the single command, and tell the user the URL and email to type at its
+   prompts.
 
 A real first-time failure sequence to teach from: 404 on an internal path,
 403 on the vanity host, 401 with a scoped token, success on the tenant URL
