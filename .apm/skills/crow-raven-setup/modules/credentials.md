@@ -23,20 +23,29 @@ README for the variable names per server.
 
 ## Atlassian Cloud (verified path)
 
-Use canonical tenant URLs and a Classic API token. Walk the user through it:
+Collect the non-secret values in chat, then keep the token out of chat.
 
-1. **Base URLs:** `https://<tenant>.atlassian.net` for Jira and
-   `https://<tenant>.atlassian.net/wiki` for Confluence. Confluence needs
-   `/wiki`.
-2. **Warn on vanity domains** such as `*.gov.bc.ca`. They sit behind
-   SiteMinder and reject API tokens with 403 ("caller cannot access
-   Confluence"). Ask for the tenant URL instead.
-3. **Token type:** create a **Classic (non-scoped)** API token at
+1. **Ask first: "Do you know your Atlassian Cloud URL?"** Example:
+   `https://ag-isb.atlassian.net`. If not, tell the user to open Jira in a
+   browser and copy the `https://<tenant>.atlassian.net` part of the address.
+2. **Derive and echo back** both endpoints for confirmation, using the tenant
+   URL the user gave:
+   - Jira: `https://<tenant>.atlassian.net`
+   - Confluence: `https://<tenant>.atlassian.net/wiki` (the `/wiki` suffix is
+     required).
+3. **Ask for the account email** used on that Atlassian site. Email is not a
+   secret, so chat is fine.
+4. **Warn on vanity domains** such as `*.gov.bc.ca` (for example
+   `wiki.justice.gov.bc.ca`). They sit behind SiteMinder and reject API
+   tokens with 403 ("caller cannot access Confluence"). Ask for the tenant
+   URL instead.
+5. **Token type:** create a **Classic (non-scoped)** API token at
    `https://id.atlassian.com/manage-profile/security/api-tokens`. Do not use
    the Granular/Scoped wizard: scoped tokens return 401 on tenant URLs
    because they need the `api.atlassian.com` gateway, which Raven does not
    support.
-4. Enter the token only through the credential tool, never in chat.
+6. **Enter the token only through the credential tool**, never in chat. Give
+   the user the URL and email to type into its prompts.
 
 A real first-time failure sequence to teach from: 404 on an internal path,
 403 on the vanity host, 401 with a scoped token, success on the tenant URL
