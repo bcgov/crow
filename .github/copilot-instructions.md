@@ -11,10 +11,8 @@ Model cost limits are mandatory, not optimization guidance. If a requested speci
   "default": "gpt-6-luna",
   "0 - low": [
     "claude-haiku-4.5",
-    "gemini-3.7-flash",
+    "claude-haiku-5.5",
     "gemini-3.8-flash",
-    "gpt-5-mini",
-    "gpt-5.4-mini",
     "gpt-5.4-nano",
     "gpt-5.6-luna",
     "gpt-6-luna",
@@ -24,8 +22,8 @@ Model cost limits are mandatory, not optimization guidance. If a requested speci
     "claude-sonnet-4.6",
     "claude-sonnet-5",
     "claude-sonnet-5.5",
+    "gemini-4-argon",
     "gpt-5.3-codex",
-    "gpt-5.4",
     "gpt-5.6-terra",
     "gpt-6-sol",
     "gpt-6.1-sol",
@@ -41,7 +39,6 @@ Model cost limits are mandatory, not optimization guidance. If a requested speci
     "gpt-5.6-sol"
   ],
   "3 - premium": [
-    "gpt-5.5",
     "gpt-6-astra",
     "claude-fable-5",
     "claude-fable-5.1"
