@@ -16,7 +16,7 @@ as the setup intent and have the user confirm it before planning.
    ambiguous. Clients are listed in [`client-targets.md`](client-targets.md).
 3. **Role** (path B only). Developer, QA, project manager or product owner,
    security, operations, data or analyst. Map the role to a starter server
-   set with `starterSets` in `resources/raven-servers.json`. Present it as
+   set with `starterSets` in `assets/raven-servers.json`. Present it as
    a proposal; the user edits it.
 
 ## Path A: learn first

@@ -10,20 +10,21 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 
 ## Context-efficient loading
 
-1. Load [`modules/foundation.md`](modules/foundation.md) for every use.
+1. Load [`references/foundation.md`](references/foundation.md) for every use.
    For a new user, no recorded setup state, or a request to learn or be guided,
-   also load [`modules/guided-onboarding.md`](modules/guided-onboarding.md)
+   also load [`references/guided-onboarding.md`](references/guided-onboarding.md)
    and follow its interview before the workflow below.
-2. Load [`resources/raven-servers.json`](resources/raven-servers.json) only
+2. Load [`assets/raven-servers.json`](assets/raven-servers.json) only
    when presenting or validating Raven server choices.
-3. Load [`modules/delivery-and-updates.md`](modules/delivery-and-updates.md)
+3. Load [`references/delivery-and-updates.md`](references/delivery-and-updates.md)
    when selecting a Raven distribution, checking freshness, or rolling back.
-4. Load [`modules/client-targets.md`](modules/client-targets.md) when choosing
-   or applying a client target, [`modules/credentials.md`](modules/credentials.md)
-   when selected servers need authentication, and
-   [`modules/verify-and-troubleshoot.md`](modules/verify-and-troubleshoot.md)
+4. Load [`references/client-targets.md`](references/client-targets.md) when choosing
+   or applying a client target, [`references/credentials.md`](references/credentials.md)
+   when selected servers need authentication (it routes to the per-server
+   guides in `references/servers/`), and
+   [`references/verify-and-troubleshoot.md`](references/verify-and-troubleshoot.md)
    after applying configuration or on any connection or authentication error.
-5. Load [`modules/sonar-scanners.md`](modules/sonar-scanners.md) only when
+5. Load [`references/sonar-scanners.md`](references/sonar-scanners.md) only when
    Sonar MCP is active/configured or the `sonar` server is selected for the
    current setup, and scanner setup or maintenance is in scope.
 
@@ -52,7 +53,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    selected client's configured `sonar` (Crow/Raven catalog ID) or
    `sonar-mcp` server. A project's `crow.config.sonar` section alone is not
    evidence that the server is installed. If present, load
-   `modules/sonar-scanners.md` and inspect scanner versions, client launch
+   `references/sonar-scanners.md` and inspect scanner versions, client launch
    environment, and .NET SDK version once. Do not install the SDK implicitly.
    Preserve a concise handoff record of client/path, catalog IDs,
    prerequisite and Sonar inventory, auth status, setup/hook state, approvals,
@@ -60,7 +61,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 2. Validate exact requested IDs against the bundled catalog without asking
    for redundant selection confirmation. Confirm only lists derived from
    broader groups. If the user selects `sonar`, load
-   `modules/sonar-scanners.md` for the new installation even if the server is
+   `references/sonar-scanners.md` for the new installation even if the server is
    not yet configured in the client. Record an explicit `--no-raven` choice
    when the user wants only codebase-memory-mcp. Run `preflight --delivery
    release|source|none` (and `--sonar` when selected) once after selection;
@@ -75,7 +76,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    resolution, state, or fragment-generation logic in model-authored commands.
    This script manages Raven and codebase-memory-mcp only. The setup agent
    executes Sonar scanner commands with `execute` using
-   `modules/sonar-scanners.md`; keep its preview, confirmation, state, and
+   `references/sonar-scanners.md`; keep its preview, confirmation, state, and
    rollback separate from the script's plan.
    Its `check` command also reports an outstanding global APM update for Crow
    when Crow is APM-managed; it never applies that update. If `apm outdated`
@@ -88,7 +89,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    Do not add the full package to update a collection. Later,
    `apm update --global --target copilot` follows published stable releases.
 5. When setup adds servers that need authentication, follow
-   `modules/credentials.md`. Pass its preconditions gate first: Raven must be
+   `references/credentials.md`. Pass its preconditions gate first: Raven must be
    installed with a usable runtime (`status`), and if not, run the install step
    before any credential script. Then pick the credential path (Atlassian Cloud
    versus gov SiteMinder), collect non-secret values in chat, and run the
@@ -96,7 +97,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    The user types only secrets into the hidden prompt; never collect secrets
    in chat.
 6. When Sonar MCP is installed or `sonar` is selected in the current setup,
-   use `modules/sonar-scanners.md` to set up or update the generic SonarScanner
+   use `references/sonar-scanners.md` to set up or update the generic SonarScanner
    CLI and, when a compatible .NET SDK is available, the .NET/MSBuild scanner.
    Execute only the confirmed plan and surface command errors.
 7. Use `config preview` and separately approved `config apply
@@ -115,7 +116,7 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    when it matches the verified previous Crow-managed fragment; preview
    replaced IDs and obtain approval for them too. Report backup and verify
    the result.
-8. Verify per `modules/verify-and-troubleshoot.md` in three levels
+8. Verify per `references/verify-and-troubleshoot.md` in three levels
    (installed, configured, authenticated with a read-only call). Report
    authentication failures as failures. Verify selected servers and, when Sonar MCP is installed or selected,
    scanner versions and client PATH configuration. Verify the .NET scanner

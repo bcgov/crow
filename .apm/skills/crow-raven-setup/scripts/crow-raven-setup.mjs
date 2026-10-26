@@ -1,5 +1,95 @@
 #!/usr/bin/env node
 
+/**
+ * Purpose:
+ *   Plans, installs, verifies, updates and rolls back Crow's managed Raven
+ *   MCP servers and codebase-memory-mcp, and runs the optional daily update
+ *   check. Nothing is installed without a reviewed plan, its digest and
+ *   --confirm. Credentials are never collected here.
+ *
+ * Layer: Skill script (crow-raven-setup), Node.js ESM, no third-party deps.
+ *
+ * Usage Examples:
+ *   node crow-raven-setup.mjs list [--group <id>]
+ *   node crow-raven-setup.mjs preflight [--delivery release|source|none]
+ *   node crow-raven-setup.mjs plan --servers <id,...> | --no-raven
+ *   node crow-raven-setup.mjs setup --plan <path> --plan-sha256 <digest> --confirm
+ *   node crow-raven-setup.mjs config preview|apply --client copilot|portable
+ *   node crow-raven-setup.mjs check [--force]
+ *   node crow-raven-setup.mjs rollback --confirm
+ *   node crow-raven-setup.mjs help   (full command reference)
+ *
+ * CLI Arguments:
+ *   Commands: help, list, status, preflight, plan, setup, config, check,
+ *   rollback, update-check, update-hook, update-hook-event.
+ *   Common: --state-dir, --servers, --no-raven, --delivery, --raven-version,
+ *   --raven-ref, --codebase-memory-version, --plan, --plan-sha256, --confirm,
+ *   --force, --client, --config, --approval-sha256.
+ *
+ * Key Input Dependencies:
+ *   - ../assets/raven-servers.json (reviewed server catalog)
+ *   - ./client-config.mjs (client config preview and apply)
+ *   - External tools: node, npm, git, gh (authenticated), tar, apm
+ *   - Network: GitHub releases API, npm registry
+ *   - State directory (default per user) holding state.json,
+ *     mcp-fragment.json, pending-plan.json and versions/
+ *
+ * Key Functions:
+ *   Core helpers: fail, parseArgs, run, findExecutable, npmInvocation, runNpm,
+ *     writeJsonAtomic, readJson, paths, catalog, selectedServers
+ *   Prerequisites: prerequisiteInvocation, inspectPrerequisite,
+ *     preflightCommand, assertPrerequisites, verifyGitHubAuth
+ *   State validation: isRecord, isTimestamp, isRavenState, isCodebaseState,
+ *     isServerCatalogSnapshot, isManagedFragment, isStateSnapshot, readState,
+ *     reconcilePromotion, readConfiguredUpdateVersions
+ *   Release and version resolution: resolveRavenRevision, resolveRavenRelease,
+ *     fetchLatestCodebaseVersion, latestCodebaseVersion, fetchJson,
+ *     validateReleaseManifest, validateReleaseCatalog, releasedServers,
+ *     validateExactVersion, validateUpstreamConfig
+ *   Plan: planCommand, validatePlan, validatePlannedServers, planDigest,
+ *     catalogSnapshot, planAssurance, ravenPlanEffects, ravenPlanCommands,
+ *     isValidRavenPlan, ensureGenerationAvailable
+ *   Install: setupCommand, stageRavenRuntime, stageRavenBundle,
+ *     stageCodebaseMemory, codebaseInstallArgs, runCodebaseWindowsInstaller,
+ *     validateCodebaseInstall, createFragment, downloadFile, sha256File,
+ *     sha256Tree, credentialSetupResult
+ *   Verify and process control: verifyStartup, verifyFragment, startupInvocation,
+ *     validateInstalledSnapshot, isProcessRunning, taskkillTerminationError,
+ *     terminateProcessTree
+ *   Commands: printHelp, listCommand, statusCommand, configCommand,
+ *     checkCommand, rollbackCommand
+ *   Crow update check, APM: runApm, parseCrowOutdatedOutput, checkCrowApmUpdate,
+ *     removeApmInlineComment, removeApmQuotes, normalizeCrowApmSelector,
+ *     readCrowApmYamlValue, parseInlineCrowApmSelectors, parseCrowApmDependency,
+ *     appendCrowApmDependency, parseGlobalApmCrowSelectors,
+ *     readGlobalCrowApmSelectors, readApmInstalledPackageVersion,
+ *     resolveInstalledCrowPackage, readCrowPackageVersion, crowUpdateInstallCommand
+ *   Crow update check, versions: normalizeCrowVersion, compareCrowVersions,
+ *     latestCrowVersion, latestRavenVersion, normalizeUpdateReleaseVersion,
+ *     compareNumericPrereleaseIdentifiers, compareUpdatePrereleaseIdentifiers,
+ *     compareUpdatePrereleaseVersions, compareUpdateReleaseVersions,
+ *     isUpdateReleaseVersion, normalizeCrowVersionOrNull
+ *   Crow update check, state and locking: defaultCrowUpdateState,
+ *     hasExactObjectKeys, isCrowUpdateState, readCrowUpdateState,
+ *     writeCrowUpdateState, getCrowUpdatePaths, validateCrowUpdateClock,
+ *     crowUpdateSkipReason, crowUpdateCheckSkipReason, acquireCrowUpdateLock,
+ *     releaseCrowUpdateLock, safeUpdateCheckError, shouldNotifyCrowUpdate,
+ *     readCrowManagedUpdateVersions, createCrowUpdateChecks,
+ *     checkCrowUpdateComponent, collectCrowUpdateFailures,
+ *     mergeCrowUpdateVersions, findCrowUpdateCandidates, runCrowUpdateCheck,
+ *     checkCrowUpdates, markCrowUpdateNotified, persistSuccessfulFreshnessCheck
+ *   Update hook and notices: quoteBashArgument, quotePowerShellArgument,
+ *     createCrowUpdateHookConfig, readExpectedCrowUpdateHook,
+ *     statusCrowUpdateHook, replaceCrowUpdateHook, installCrowUpdateHook,
+ *     declineCrowUpdateHook, removeCrowUpdateHook, crowUpdateHookCommand,
+ *     updateReminder, handleUpdateHookEvent, updateCheckCommand,
+ *     updateHookEventCommand
+ *
+ * Consumed by:
+ *   SKILL.md and .apm/agents/crow-raven-setup.agent.md; tested by
+ *   crow-raven-setup.test.mjs.
+ */
+
 import { spawn, spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -29,7 +119,7 @@ import { applyClientConfig, previewClientConfig } from "./client-config.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(scriptDir, "..");
-const catalogPath = join(skillDir, "resources", "raven-servers.json");
+const catalogPath = join(skillDir, "assets", "raven-servers.json");
 const ravenRepository = "bcgov/raven";
 const ravenRepositoryUrl = `https://github.com/${ravenRepository}`;
 const ravenUrl = `${ravenRepositoryUrl}.git`;
@@ -57,11 +147,20 @@ const networkTimeoutMs = 10000;
 const codebaseWindowsCandidateTimeoutMs = 120000;
 const ravenPlatform = `${process.platform}-${process.arch}`;
 
+/** Prints an ERROR line to stderr and exits the process with the given code. */
 function fail(message, code = 1) {
   console.error(`ERROR: ${message}`);
   process.exit(code);
 }
 
+/**
+ * Parses command-line tokens into positional words (`_`) and `--key value`
+ * options. The flags confirm, force, no-raven and sonar are booleans; any
+ * other option consumes the next token, and a missing value is a hard error.
+ *
+ * @param {string[]} values - Raw argv tokens after the script name.
+ * @returns {object} Parsed options with positional arguments in `_`.
+ */
 function parseArgs(values) {
   const parsed = { _: [] };
   let pendingKey = null;
@@ -86,6 +185,16 @@ function parseArgs(values) {
   return parsed;
 }
 
+/**
+ * Runs an external command synchronously without a shell and fails the whole
+ * process on timeout, spawn error or non-zero exit. gh, tar, git and npm are
+ * resolved through findExecutable so standard install locations are found.
+ *
+ * @param {string} command - Executable name.
+ * @param {string[]} args - Arguments, passed without shell interpretation.
+ * @param {{cwd?: string, capture?: boolean, timeout?: number}} options - Run options.
+ * @returns {string} Trimmed stdout when capture is set, otherwise "".
+ */
 function run(command, args, options = {}) {
   const executable = ["gh", "tar", "git", "npm"].includes(command)
     ? findExecutable(command)?.path || command : command;
@@ -107,6 +216,14 @@ function run(command, args, options = {}) {
   return options.capture ? result.stdout.trim() : "";
 }
 
+/**
+ * Finds an executable on PATH and in well-known per-platform install
+ * directories, so tools installed outside the client's PATH are still located.
+ *
+ * @param {string} name - Executable name without extension.
+ * @returns {{path: string, source: string}|null} Location and whether it came
+ *   from PATH or a standard location, or null when not found.
+ */
 function findExecutable(name, env = process.env, platform = process.platform,
   currentExecutable = process.execPath) {
   const suffixes = platform === "win32" ? [".exe", ".cmd", ".bat", ""] : [""];
@@ -140,6 +257,7 @@ function findExecutable(name, env = process.env, platform = process.platform,
   return null;
 }
 
+/** Builds the command and arguments that print a prerequisite's version, handling npm's CLI script and Windows .cmd/.bat shims. */
 function prerequisiteInvocation(name, path) {
   if (name === "npm" && npmCli) {
     return { command: process.execPath, args: [npmCli, "--version"] };
@@ -151,6 +269,15 @@ function prerequisiteInvocation(name, path) {
   return { command: path, args: [name === "dotnet" ? "--list-sdks" : "--version"] };
 }
 
+/**
+ * Inspects one prerequisite tool: locates it, runs its version command, and
+ * reports status as available, outside-PATH, installed-but-unavailable or
+ * not-installed-or-unlocated.
+ *
+ * @param {string} name - Tool name (node, npm, gh, tar, git, dotnet, sonar-scanner).
+ * @param {boolean} required - Whether the chosen delivery mode requires it.
+ * @returns {object} Inventory entry with path, version and any action text.
+ */
 function inspectPrerequisite(name, required) {
   const resolved = name === "node"
     ? { path: process.execPath, source: "current-process" }
@@ -173,6 +300,12 @@ function inspectPrerequisite(name, required) {
   };
 }
 
+/**
+ * The `preflight` command: prints a JSON inventory of prerequisites for the
+ * chosen --delivery (release, source or none), GitHub CLI authentication for
+ * release delivery, and the .NET SonarScanner global tool when --sonar is set.
+ * Sets a failing exit code when a required tool or GitHub login is missing.
+ */
 function preflightCommand(args) {
   const delivery = args.delivery || "release";
   if (!["release", "source", "none"].includes(delivery)) {
@@ -210,6 +343,7 @@ function preflightCommand(args) {
       githubAuth === "login-required") process.exitCode = 1;
 }
 
+/** Runs the APM CLI with a network timeout and returns status, trimmed stdout/stderr and any spawn error instead of exiting. */
 function runApm(args) {
   const command = findExecutable("apm")?.path || (process.platform === "win32" ? "apm.exe" : "apm");
   const result = spawnSync(command, args, {
@@ -227,6 +361,7 @@ function runApm(args) {
   };
 }
 
+/** Parses `apm outdated` output (ANSI codes stripped) for the bcgov/crow row and reports whether it is up-to-date, outdated or unknown. */
 function parseCrowOutdatedOutput(output) {
   const ansiEscape = String.fromCodePoint(27);
   const normalized = output.replaceAll(
@@ -244,6 +379,15 @@ function parseCrowOutdatedOutput(output) {
   };
 }
 
+/**
+ * Checks whether APM has a newer global Crow release. Looks the package up
+ * with `apm view`, then `apm outdated --global`. Never applies an update, and
+ * reports each failure mode (APM missing, Crow not APM-installed, command
+ * error, unresolved version) as data instead of throwing.
+ *
+ * @param {Function} runCommand - Injectable APM runner, defaults to runApm.
+ * @returns {object} checked, configured, current version and updateAvailable.
+ */
 function checkCrowApmUpdate(runCommand = runApm) {
   const metadata = runCommand(["view", "bcgov/crow", "--global"]);
   const metadataOutput = `${metadata.stdout}\n${metadata.stderr}`.trim();
@@ -321,6 +465,7 @@ function checkCrowApmUpdate(runCommand = runApm) {
   };
 }
 
+/** Validates a stable x.y.z version (optional leading v) within the safe-integer range and returns it without the v; throws otherwise. */
 function normalizeCrowVersion(value, label = "Crow version") {
   const match = typeof value === "string"
     ? /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.exec(value)
@@ -333,6 +478,7 @@ function normalizeCrowVersion(value, label = "Crow version") {
   return parts.join(".");
 }
 
+/** Compares two stable Crow versions numerically; returns -1, 0 or 1. */
 function compareCrowVersions(left, right) {
   const leftParts = normalizeCrowVersion(left).split(".").map(Number);
   const rightParts = normalizeCrowVersion(right).split(".").map(Number);
@@ -344,6 +490,7 @@ function compareCrowVersions(left, right) {
   return 0;
 }
 
+/** Walks up from this script (at most 8 levels) to the bcgov-crow plugin.json and returns its version, or null when not running inside Crow. */
 function readCrowPackageVersion(scriptPath = fileURLToPath(import.meta.url)) {
   let directory = dirname(resolve(scriptPath));
   for (let depth = 0; depth < 8; depth++) {
@@ -366,6 +513,7 @@ function readCrowPackageVersion(scriptPath = fileURLToPath(import.meta.url)) {
   return null;
 }
 
+/** Strips a trailing YAML `# comment` (one preceded by whitespace) from an apm.yml value. */
 function removeApmInlineComment(value) {
   for (let index = 1; index < value.length; index++) {
     if (value[index] === "#" && value[index - 1].trim() === "") {
@@ -375,6 +523,7 @@ function removeApmInlineComment(value) {
   return value.trim();
 }
 
+/** Removes one matching pair of single or double quotes around a YAML scalar. */
 function removeApmQuotes(value) {
   if (value.length >= 2 &&
       ((value[0] === "'" && value.at(-1) === "'") ||
@@ -384,6 +533,12 @@ function removeApmQuotes(value) {
   return value;
 }
 
+/**
+ * Normalizes an APM dependency string (comment, quotes, GitHub URL prefix,
+ * `#ref` and `.git` removed) and returns it only when it is one of the three
+ * Crow selectors: the full package or the starter-package or
+ * security-remediation collection. Returns null for anything else.
+ */
 function normalizeCrowApmSelector(value) {
   if (typeof value !== "string") return null;
   const unquoted = removeApmQuotes(removeApmInlineComment(value.trim()));
@@ -406,12 +561,14 @@ function normalizeCrowApmSelector(value) {
   return null;
 }
 
+/** Reads the value of `key: value` from one YAML line, or null when the line has a different key. */
 function readCrowApmYamlValue(content, key) {
   const separator = content.indexOf(":");
   if (separator < 0 || content.slice(0, separator).trim() !== key) return null;
   return removeApmInlineComment(content.slice(separator + 1).trim());
 }
 
+/** Parses an inline apm list value (`[a, b]` or a single value) into the Crow selectors it contains. */
 function parseInlineCrowApmSelectors(inlineValue) {
   if (!inlineValue || inlineValue === "[]") return [];
   const values = inlineValue.startsWith("[") && inlineValue.endsWith("]")
@@ -425,6 +582,11 @@ function parseInlineCrowApmSelectors(inlineValue) {
   return selectors;
 }
 
+/**
+ * Converts one multi-line apm dependency item into a Crow selector. Handles
+ * the string form and the object form (git or repo_url plus an optional
+ * `collections/...` path); returns null when it is not a Crow package.
+ */
 function parseCrowApmDependency(itemLines) {
   const firstLine = itemLines[0] || "";
   const separator = firstLine.indexOf(":");
@@ -459,12 +621,20 @@ function parseCrowApmDependency(itemLines) {
   return null;
 }
 
+/** Parses a pending dependency item and, when it is a Crow package, pushes its selector onto the list. */
 function appendCrowApmDependency(itemLines, selectors) {
   if (itemLines === null) return;
   const selector = parseCrowApmDependency(itemLines);
   if (selector) selectors.push(selector);
 }
 
+/**
+ * Scans a global apm.yml line by line for Crow entries under
+ * `dependencies: apm:`, supporting inline lists, string items and object items.
+ *
+ * @param {string} manifest - apm.yml text.
+ * @returns {string[]} Unique Crow selectors found.
+ */
 function parseGlobalApmCrowSelectors(manifest) {
   const selectors = [];
   let inDependencies = false;
@@ -507,6 +677,7 @@ function parseGlobalApmCrowSelectors(manifest) {
   return [...new Set(selectors)];
 }
 
+/** Reads the global APM manifest ($APM_HOME or ~/.apm) and returns whether it exists plus the Crow selectors it lists. */
 function readGlobalCrowApmSelectors(manifestPath = join(
   process.env.APM_HOME || join(homedir(), ".apm"),
   "apm.yml"
@@ -521,6 +692,7 @@ function readGlobalCrowApmSelectors(manifestPath = join(
   return { exists: true, selectors: parseGlobalApmCrowSelectors(manifest) };
 }
 
+/** Asks APM for the installed version of a Crow selector and returns it normalized; throws with a specific cause when APM is absent or the lookup fails. */
 function readApmInstalledPackageVersion(selector, runCommand = runApm) {
   const metadata = runCommand(["view", selector, "--global"]);
   if (metadata.error) {
@@ -538,6 +710,14 @@ function readApmInstalledPackageVersion(selector, runCommand = runApm) {
   return normalizeCrowVersion(version, `APM ${selector} package version`);
 }
 
+/**
+ * Identifies the installed Crow package and its version. Uses the plugin
+ * metadata for the full package, otherwise asks APM for the single installed
+ * selector. Throws when several selectors are installed and none can be
+ * chosen, or when no selector can be identified.
+ *
+ * @returns {{version: string, selector: string|null}} Installed version and selector.
+ */
 function resolveInstalledCrowPackage(options = {}) {
   const pluginVersion = readCrowPackageVersion(options.scriptPath);
   const apmManifest = readGlobalCrowApmSelectors(options.manifestPath);
@@ -575,6 +755,7 @@ function resolveInstalledCrowPackage(options = {}) {
   );
 }
 
+/** Fetches the latest stable (non-draft, non-prerelease) bcgov/crow release from GitHub and returns its normalized version; throws on network, HTTP or shape errors. */
 async function latestCrowVersion(fetcher = fetch) {
   let response;
   try {
@@ -604,6 +785,7 @@ async function latestCrowVersion(fetcher = fetch) {
   return normalizeCrowVersion(release.tag_name, "GitHub Crow release tag");
 }
 
+/** Fetches the latest stable bcgov/raven release from GitHub and returns its version without the v prefix; throws on network, HTTP or tag errors. */
 async function latestRavenVersion(fetcher = fetch) {
   let response;
   try {
@@ -636,6 +818,7 @@ async function latestRavenVersion(fetcher = fetch) {
   return version;
 }
 
+/** Strips a leading v and validates a release version, throwing an error naming `label` when it is invalid. */
 function normalizeUpdateReleaseVersion(value, label) {
   const version = typeof value === "string" ? value.replace(/^v/, "") : "";
   if (!isUpdateReleaseVersion(version)) {
@@ -644,6 +827,7 @@ function normalizeUpdateReleaseVersion(value, label) {
   return version;
 }
 
+/** Compares two numeric semver prerelease identifiers by length then text, so large values need no integer parsing. */
 function compareNumericPrereleaseIdentifiers(left, right) {
   if (left.length < right.length) return -1;
   if (left.length > right.length) return 1;
@@ -651,6 +835,7 @@ function compareNumericPrereleaseIdentifiers(left, right) {
   return left < right ? -1 : 1;
 }
 
+/** Compares one prerelease identifier pair per semver: numeric sorts below alphanumeric, numerics numerically, others lexically. */
 function compareUpdatePrereleaseIdentifiers(left, right) {
   const leftIsNumeric = /^\d+$/.test(left);
   const rightIsNumeric = /^\d+$/.test(right);
@@ -662,6 +847,7 @@ function compareUpdatePrereleaseIdentifiers(left, right) {
   return left < right ? -1 : 1;
 }
 
+/** Compares dot-separated prerelease strings per semver: a release outranks any prerelease, and a shorter list sorts first when all shared identifiers match. */
 function compareUpdatePrereleaseVersions(left, right) {
   const leftIdentifiers = left ? left.split(".") : [];
   const rightIdentifiers = right ? right.split(".") : [];
@@ -681,6 +867,7 @@ function compareUpdatePrereleaseVersions(left, right) {
   return leftIdentifiers.length < rightIdentifiers.length ? -1 : 1;
 }
 
+/** Compares two valid release versions by major, minor, patch, then prerelease; returns -1, 0 or 1. Build metadata is ignored. */
 function compareUpdateReleaseVersions(left, right) {
   const leftMatch = updateReleaseVersionPattern.exec(left);
   const rightMatch = updateReleaseVersionPattern.exec(right);
@@ -693,6 +880,7 @@ function compareUpdateReleaseVersions(left, right) {
   return compareUpdatePrereleaseVersions(leftMatch[4], rightMatch[4]);
 }
 
+/** Returns a fresh schema-2 update-check state: hook decision pending and no versions, attempts or notifications recorded. */
 function defaultCrowUpdateState() {
   return {
     schemaVersion: 2,
@@ -717,6 +905,7 @@ function defaultCrowUpdateState() {
   };
 }
 
+/** True when the value is a valid semantic version: safe-integer parts, no leading-zero numeric prerelease identifiers, and no empty identifiers. */
 function isUpdateReleaseVersion(value) {
   if (typeof value !== "string") return false;
   const match = updateReleaseVersionPattern.exec(value);
@@ -731,6 +920,7 @@ function isUpdateReleaseVersion(value) {
   ) && buildIdentifiers.every((identifier) => identifier.length > 0);
 }
 
+/** True when the value is a plain object whose own keys are exactly the expected set. */
 function hasExactObjectKeys(record, expectedKeys) {
   if (!isRecord(record)) return false;
   const actualKeys = Object.keys(record);
@@ -738,6 +928,12 @@ function hasExactObjectKeys(record, expectedKeys) {
     expectedKeys.every((key) => Object.hasOwn(record, key));
 }
 
+/**
+ * Strictly validates a schema-2 update-check state: hook decision, attempt
+ * status, timestamps, per-component versions and notification records, and
+ * the cross-field rules between them (for example current and latest are set
+ * together). Returns false instead of throwing so callers choose the error.
+ */
 function isCrowUpdateState(value) {
   if (!isRecord(value) ||
       value.schemaVersion !== 2 ||
@@ -804,6 +1000,7 @@ function isCrowUpdateState(value) {
   return true;
 }
 
+/** Like normalizeCrowVersion but returns null for an invalid value instead of throwing. */
 function normalizeCrowVersionOrNull(value) {
   try {
     return normalizeCrowVersion(value);
@@ -812,6 +1009,7 @@ function normalizeCrowVersionOrNull(value) {
   }
 }
 
+/** Reads the update-check state file, returning defaults when absent, upgrading a schema-1 file to schema 2, and throwing when it is malformed or invalid. */
 function readCrowUpdateState(path) {
   if (!existsSync(path)) return defaultCrowUpdateState();
   let state;
@@ -849,6 +1047,7 @@ function readCrowUpdateState(path) {
   return state;
 }
 
+/** Validates then atomically writes the update-check state (private directory); refuses to write an invalid state. */
 function writeCrowUpdateState(path, state) {
   if (!isCrowUpdateState(state)) {
     throw new Error("Refusing to write invalid Crow update state.");
@@ -857,6 +1056,7 @@ function writeCrowUpdateState(path, state) {
   writeJsonAtomic(path, state, { throwOnError: true });
 }
 
+/** Resolves the update-check state file, lock file and Copilot hook file paths from --state-dir, --setup-state-dir, --hook-dir and COPILOT_HOME. */
 function getCrowUpdatePaths(args = {}) {
   const stateDir = resolve(args["state-dir"] || defaultCrowUpdateStateDir);
   const setupStateDir = resolve(args["setup-state-dir"] || defaultStateDir);
@@ -878,6 +1078,7 @@ function getCrowUpdatePaths(args = {}) {
   };
 }
 
+/** Wraps a value in double quotes for bash, escaping backslash, double quote, dollar and backtick. */
 function quoteBashArgument(value) {
   const backslash = String.fromCodePoint(92);
   const escapable = new Set([backslash, '"', "$", "`"]);
@@ -886,10 +1087,12 @@ function quoteBashArgument(value) {
   ).join("")}"`;
 }
 
+/** Wraps a value in single quotes for PowerShell, doubling embedded single quotes. */
 function quotePowerShellArgument(value) {
   return `'${value.replaceAll("'", "''")}'`;
 }
 
+/** Builds the Copilot hook file content: bash and PowerShell commands that run `update-hook-event` on prompt submission, with quoted paths and an optional --setup-state-dir. */
 function createCrowUpdateHookConfig(scriptPath, stateDir, setupStateDir = defaultStateDir) {
   const resolvedScript = resolve(scriptPath);
   const resolvedStateDir = resolve(stateDir);
@@ -916,6 +1119,7 @@ function createCrowUpdateHookConfig(scriptPath, stateDir, setupStateDir = defaul
   };
 }
 
+/** Returns true when the hook file exists and equals the expected content, false when absent, and throws a CROW_HOOK_CONFLICT error when it is malformed or different. */
 function readExpectedCrowUpdateHook(path, expected) {
   if (!existsSync(path)) return false;
   const content = readFileSync(path, "utf8");
@@ -937,6 +1141,7 @@ function readExpectedCrowUpdateHook(path, expected) {
   return true;
 }
 
+/** Prints the update-hook status as JSON: decision (pending, enabled, declined, missing, recoverable or conflicting), whether the hook file is installed, and the last check time. */
 function statusCrowUpdateHook(target, state, expected) {
   let hookInstalled = false;
   let conflict = null;
@@ -963,6 +1168,7 @@ function statusCrowUpdateHook(target, state, expected) {
   }, null, 2));
 }
 
+/** Replaces a conflicting hook file after explicit approval: verifies the status digest, backs up the original, writes the expected hook and records the enabled decision, restoring the original if any step fails. */
 function replaceCrowUpdateHook(args, target, state, expected) {
   if (!args.confirm || !/^[a-f0-9]{64}$/i.test(args["hook-sha256"] || "")) {
     fail("Replacing a conflicting hook requires --hook-sha256 <status digest> and --confirm after explicit approval.");
@@ -998,6 +1204,7 @@ function replaceCrowUpdateHook(args, target, state, expected) {
     hookFile: target.hook, backupPath: backup }, null, 2));
 }
 
+/** Installs the user-level Copilot hook after the user opts in (--confirm) and records the enabled decision; removes a file it just created if the state write fails. */
 function installCrowUpdateHook(args, target, state, expected) {
   if (!args.confirm) fail("Installing the user-level Copilot hook requires --confirm after the user opts in.");
   const alreadyInstalled = readExpectedCrowUpdateHook(target.hook, expected);
@@ -1027,6 +1234,7 @@ function installCrowUpdateHook(args, target, state, expected) {
   }, null, 2));
 }
 
+/** Records that the user declined the update hook; fails if a hook file is installed, since removal must be explicit. */
 function declineCrowUpdateHook(target, state, expected) {
   if (existsSync(target.hook)) {
     readExpectedCrowUpdateHook(target.hook, expected);
@@ -1040,6 +1248,7 @@ function declineCrowUpdateHook(target, state, expected) {
   console.log(JSON.stringify({ hookInstalled: false, decision: "declined" }, null, 2));
 }
 
+/** Removes the Crow-managed hook file (--confirm required) and records a decline; restores the file if the state write fails. */
 function removeCrowUpdateHook(args, target, state, expected) {
   if (!args.confirm) fail("Removing the user-level Copilot hook requires --confirm.");
   const hookInstalled = readExpectedCrowUpdateHook(target.hook, expected);
@@ -1061,6 +1270,7 @@ function removeCrowUpdateHook(args, target, state, expected) {
   console.log(JSON.stringify({ hookInstalled: false, decision: "declined" }, null, 2));
 }
 
+/** The `update-hook` command: dispatches status, install, replace, decline or remove against the expected hook content and persisted update state. */
 function crowUpdateHookCommand(args) {
   const action = args._[1] || "status";
   const target = getCrowUpdatePaths(args);
@@ -1091,6 +1301,7 @@ function crowUpdateHookCommand(args) {
   }
 }
 
+/** Throws when any recorded timestamp in the update state is later than `now`, which signals clock tampering or a bad state file. */
 function validateCrowUpdateClock(state, now) {
   for (const value of [
     state.hookDecisionAt,
@@ -1105,6 +1316,7 @@ function validateCrowUpdateClock(state, now) {
   }
 }
 
+/** Decides whether the last attempt is recent enough to skip: "fresh" within 24 hours of a success, "retry-backoff" within an hour of a failure, otherwise null (run). --force never skips. */
 function crowUpdateSkipReason(state, now, force) {
   if (force || state.lastAttemptAt === null) return null;
   const elapsed = now - Date.parse(state.lastAttemptAt);
@@ -1116,6 +1328,7 @@ function crowUpdateSkipReason(state, now, force) {
   return state.lastAttemptStatus === "success" ? "fresh" : "retry-backoff";
 }
 
+/** Returns why a check should be skipped ("hook-disabled", "fresh" or "retry-backoff") or null when it should run; validates the clock first. */
 function crowUpdateCheckSkipReason(state, now, options) {
   validateCrowUpdateClock(state, now);
   if (options.requireEnabledHook && state.hookDecision !== "enabled") {
@@ -1124,6 +1337,7 @@ function crowUpdateCheckSkipReason(state, now, options) {
   return crowUpdateSkipReason(state, now, options.force === true);
 }
 
+/** Takes the update-check lock (a directory), reclaiming one older than 30 seconds; returns false when another live check holds it. */
 function acquireCrowUpdateLock(path) {
   mkdirSync(dirname(path), { recursive: true });
   const createLock = () => {
@@ -1153,6 +1367,7 @@ function acquireCrowUpdateLock(path) {
   return createLock();
 }
 
+/** Releases the update-check lock; a lock that is already gone is not an error. */
 function releaseCrowUpdateLock(path) {
   try {
     rmdirSync(path);
@@ -1161,11 +1376,13 @@ function releaseCrowUpdateLock(path) {
   }
 }
 
+/** Reduces an error to a single-line message of at most 240 characters so it is safe to store and print. */
 function safeUpdateCheckError(error) {
   const message = error instanceof Error ? error.message : "Unknown update check failure.";
   return message.replaceAll(/[\r\n\t]+/g, " ").slice(0, 240);
 }
 
+/** True when an update exists and the last notice was more than 24 hours ago (or never), so reminders are rate limited. */
 function shouldNotifyCrowUpdate(state, now, updateAvailable) {
   if (!updateAvailable) return false;
   const sinceLastNotice = state.lastNotifiedAt === null
@@ -1177,6 +1394,7 @@ function shouldNotifyCrowUpdate(state, now, updateAvailable) {
   return sinceLastNotice >= crowUpdateCheckIntervalMs;
 }
 
+/** Reads the Raven and codebase-memory-mcp versions recorded by Crow setup; on any failure returns null versions plus a safe failure message instead of throwing. */
 function readCrowManagedUpdateVersions(options) {
   try {
     const configured = (options.getConfiguredUpdateVersions || readConfiguredUpdateVersions)(
@@ -1196,6 +1414,14 @@ function readCrowManagedUpdateVersions(options) {
   }
 }
 
+/**
+ * Builds the list of components to check: Crow always, plus Raven and
+ * codebase-memory-mcp when setup state records them. Each entry has a current
+ * and latest version provider and a version normalizer, and every provider can
+ * be replaced through `options` for tests.
+ *
+ * @returns {{checks: object[], getSelector: Function}} Checks and a lazy Crow selector lookup.
+ */
 function createCrowUpdateChecks(options, configured) {
   const ravenCurrent = configured.raven === null
     ? null
@@ -1247,6 +1473,7 @@ function createCrowUpdateChecks(options, configured) {
   };
 }
 
+/** Resolves one component's current and latest versions in parallel; throws a combined error if either fails, otherwise returns both normalized. */
 async function checkCrowUpdateComponent(check) {
   const values = await Promise.allSettled([
     Promise.resolve().then(() => check.current()),
@@ -1265,6 +1492,7 @@ async function checkCrowUpdateComponent(check) {
   };
 }
 
+/** Gathers safe error messages from a setup-state failure and any rejected component checks. */
 function collectCrowUpdateFailures(setupStateFailure, checkedComponents) {
   const failures = [];
   if (setupStateFailure) failures.push(setupStateFailure);
@@ -1275,6 +1503,7 @@ function collectCrowUpdateFailures(setupStateFailure, checkedComponents) {
   return failures;
 }
 
+/** Overlays fulfilled component checks onto the stored versions, clearing versions for components no longer managed; returns the merged versions and the set of components checked successfully. */
 function mergeCrowUpdateVersions(state, checks, checkedComponents) {
   const versions = Object.fromEntries(
     ["crow", "raven", "codebaseMemory"].map((component) => [
@@ -1300,6 +1529,7 @@ function mergeCrowUpdateVersions(state, checks, checkedComponents) {
   return { versions, successfulComponents };
 }
 
+/** Lists components whose current version is older than the latest, considering only components checked successfully. */
 function findCrowUpdateCandidates(versions, successfulComponents) {
   const updates = [];
   const comparisons = {
@@ -1327,6 +1557,14 @@ function findCrowUpdateCandidates(versions, successfulComponents) {
   return updates;
 }
 
+/**
+ * Runs one update check and persists its outcome. Records the attempt first,
+ * reuses recent successful component results after a partial failure, checks
+ * the remaining components, then stores versions, status and notification
+ * state. Failures are returned as data, never thrown.
+ *
+ * @returns {Promise<object>} checked flag, updates found, selector and error text.
+ */
 async function runCrowUpdateCheck(statePath, state, now, options) {
   const previousStatus = state.lastAttemptStatus;
   const attemptAt = new Date(now).toISOString();
@@ -1430,6 +1668,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
   };
 }
 
+/** Runs a Crow, Raven and codebase-memory-mcp update check under a lock, skipping when fresh, backing off after a failure, or when another check is running; returns the result object. */
 async function checkCrowUpdates(options = {}) {
   const stateDir = resolve(options.stateDir || defaultCrowUpdateStateDir);
   const statePath = join(stateDir, "state.json");
@@ -1454,6 +1693,7 @@ async function checkCrowUpdates(options = {}) {
   }
 }
 
+/** Records that a reminder was shown, but only if the state still matches the check result that produced it; returns whether anything was written. */
 function markCrowUpdateNotified(stateDir, result, now = Date.now()) {
   if (!result.checked || !result.updateAvailable || !result.notify) return false;
   if (!Number.isFinite(now)) throw new Error("Crow update notification time is invalid.");
@@ -1476,6 +1716,7 @@ function markCrowUpdateNotified(stateDir, result, now = Date.now()) {
   return true;
 }
 
+/** Builds the `apm install '<selector>#stable' --global --target copilot` command for a supported Crow selector; throws for any other selector. */
 function crowUpdateInstallCommand(selector) {
   if (![
     "bcgov/crow",
@@ -1487,6 +1728,7 @@ function crowUpdateInstallCommand(selector) {
   return `apm install '${selector}#stable' --global --target copilot`;
 }
 
+/** Builds the user-facing update notice (or failure notice) from a check result, with the right update instructions per component; returns null when there is nothing to say. Never installs anything. */
 function updateReminder(result) {
   if (result.checked && result.updateAvailable && result.notify) {
     const updates = result.updates;
@@ -1525,6 +1767,12 @@ function updateReminder(result) {
   return null;
 }
 
+/**
+ * Handles a Copilot prompt hook event. Ignores prompt-only events, runs the
+ * update check (hook must be enabled), and returns hook output carrying the
+ * notice: system message and context for local VS Code, or a modified prompt
+ * plus progress line for Copilot CLI.
+ */
 async function handleUpdateHookEvent(event, options = {}) {
   if (!isRecord(event)) throw new Error("Copilot sent an invalid Crow update-hook event.");
   if (typeof event.sessionId === "string" &&
@@ -1568,6 +1816,7 @@ async function handleUpdateHookEvent(event, options = {}) {
   };
 }
 
+/** The `update-check` command: prints the check result as JSON, records the notice, and exits 1 on error or 10 when an update is available. */
 async function updateCheckCommand(args) {
   const result = await checkCrowUpdates({
     stateDir: args["state-dir"],
@@ -1583,6 +1832,7 @@ async function updateCheckCommand(args) {
   }
 }
 
+/** The `update-hook-event` command: reads the hook event JSON from stdin, handles it, and writes the hook response to stdout. */
 async function updateHookEventCommand(args) {
   let event;
   try {
@@ -1602,6 +1852,7 @@ async function updateHookEventCommand(args) {
   }
 }
 
+/** Stamps the setup state's lastCheckedAt after a freshness check, unless the APM lookup reported an error; returns whether it was written. */
 function persistSuccessfulFreshnessCheck(target, state, result, now = new Date()) {
   if (!isRecord(result.crowPackage)) {
     throw new Error("Crow Raven freshness check did not return APM status.");
@@ -1612,17 +1863,20 @@ function persistSuccessfulFreshnessCheck(target, state, result, now = new Date()
   return true;
 }
 
+/** Builds the npm command, running npm-cli.js through node on Windows to avoid shell shims. */
 function npmInvocation(args) {
   return npmCli
     ? { command: process.execPath, args: [npmCli, ...args] }
     : { command: "npm", args };
 }
 
+/** Runs npm through run(), failing the process on error. */
 function runNpm(args, options = {}) {
   const invocation = npmInvocation(args);
   return run(invocation.command, invocation.args, options);
 }
 
+/** Writes JSON through a temporary file and rename, keeping a backup until the swap succeeds and restoring it on failure; fails the process unless options.throwOnError is set. */
 function writeJsonAtomic(path, value, options = {}) {
   mkdirSync(dirname(path), { recursive: true });
   const temporary = `${path}.${process.pid}.tmp`;
@@ -1642,6 +1896,7 @@ function writeJsonAtomic(path, value, options = {}) {
   }
 }
 
+/** Reads and parses a JSON file, failing the process with `label` in the message when it is malformed. */
 function readJson(path, label) {
   try {
     return JSON.parse(readFileSync(path, "utf8"));
@@ -1650,14 +1905,17 @@ function readJson(path, label) {
   }
 }
 
+/** True for a non-null, non-array object. */
 function isRecord(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** True for a string that parses as a date. */
 function isTimestamp(value) {
   return typeof value === "string" && Number.isFinite(Date.parse(value));
 }
 
+/** Validates the recorded Raven install: null, a pinned-source install (ref, 40-hex revision, freshness track) or a bundled release (suite version, matching platform, commit and archive digests). */
 function isRavenState(value) {
   return value === null ||
     (isRecord(value) &&
@@ -1679,6 +1937,7 @@ function isRavenState(value) {
       ));
 }
 
+/** Validates the recorded codebase-memory-mcp install: version, install path, sha512 integrity and entrypoint digest. */
 function isCodebaseState(value) {
   return isRecord(value) &&
     /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.version || "") &&
@@ -1687,6 +1946,7 @@ function isCodebaseState(value) {
     /^[0-9a-f]{64}$/.test(value.entrypointSha256 || "");
 }
 
+/** Validates a stored server-catalog snapshot, including that its recorded SHA-256 matches its content. */
 function isServerCatalogSnapshot(value) {
   if (!isRecord(value) ||
       value.schemaVersion !== 1 ||
@@ -1700,6 +1960,7 @@ function isServerCatalogSnapshot(value) {
     .digest("hex");
 }
 
+/** Validates the managed MCP fragment: codebase-memory-mcp plus exactly the selected servers, each with a command and string arguments. */
 function isManagedFragment(value, selectedServers) {
   const isCommand = (entry) => isRecord(entry) &&
     typeof entry.command === "string" &&
@@ -1718,6 +1979,7 @@ function isManagedFragment(value, selectedServers) {
     selectedServers.every((id) => isCommand(value.mcpServers[id]));
 }
 
+/** Validates one setup-state snapshot as a whole: delivery mode, Raven and codebase-memory records, selected servers, catalog snapshot and managed fragment must agree with each other. */
 function isStateSnapshot(value) {
   if (!isRecord(value) ||
       !["bundled-release", "pinned-source", "codebase-memory-only"].includes(value.delivery) ||
@@ -1739,6 +2001,7 @@ function isStateSnapshot(value) {
     JSON.stringify(value.selectedServers);
 }
 
+/** Reads installed Raven (bundled release only) and codebase-memory-mcp versions from Crow setup state; nulls when no state exists, and throws when it is malformed. */
 function readConfiguredUpdateVersions(stateDir = defaultStateDir) {
   const statePath = join(resolve(stateDir), "state.json");
   if (!existsSync(statePath)) {
@@ -1766,6 +2029,12 @@ function readConfiguredUpdateVersions(stateDir = defaultStateDir) {
   };
 }
 
+/**
+ * Reads and strictly validates Crow Raven setup state (current and previous
+ * snapshots), checks that paths and fragment commands are Crow-managed, and
+ * rewrites the fragment file if it drifted from the recorded one. Fails the
+ * process when anything is malformed or unmanaged.
+ */
 function readState(target) {
   const state = readJson(target.state, "Crow Raven setup state");
   const snapshots = [state, state.previous].filter(Boolean);
@@ -1810,6 +2079,7 @@ function readState(target) {
   return state;
 }
 
+/** Resolves every Crow Raven state path (state, fragment, pending plan, promotion journal, versions, codebase-memory) from --state-dir or the default. */
 function paths(args) {
   const stateDir = resolve(args["state-dir"] || defaultStateDir);
   return {
@@ -1823,6 +2093,7 @@ function paths(args) {
   };
 }
 
+/** Recovers from an interrupted install: validates the promotion journal's paths are Crow-managed, then removes staging and temporary paths (and unactivated finals), and deletes the journal. */
 function reconcilePromotion(target) {
   if (!existsSync(target.promotion)) return;
   const promotion = readJson(target.promotion, "Crow Raven promotion journal");
@@ -1884,6 +2155,7 @@ function reconcilePromotion(target) {
   rmSync(target.promotion, { force: true });
 }
 
+/** Loads Crow's bundled Raven server catalog (assets/raven-servers.json) and fails if its schema is unsupported. */
 function catalog() {
   const value = readJson(catalogPath, "Bundled Raven server catalog");
   if (value.schemaVersion !== 1 || !Array.isArray(value.servers)) {
@@ -1892,6 +2164,7 @@ function catalog() {
   return value;
 }
 
+/** Resolves --servers IDs to catalog entries, rejecting duplicates and unknown IDs; --no-raven returns an empty list and cannot be combined with --servers. */
 function selectedServers(args, serverCatalog) {
   if (args["no-raven"]) {
     if (args.servers) fail("--no-raven cannot be combined with --servers.");
@@ -1911,10 +2184,12 @@ function selectedServers(args, serverCatalog) {
   return requested.map((id) => known.get(id));
 }
 
+/** Fails the process unless the GitHub CLI is authenticated (`gh auth status`). */
 function verifyGitHubAuth(runCommand = run) {
   runCommand("gh", ["auth", "status"], { capture: true, timeout: networkTimeoutMs });
 }
 
+/** Fails the process when a tool needed for the chosen delivery is missing or unsupported: Node version, npm, and git or gh (authenticated) and tar as required. */
 function assertPrerequisites({
   requiresGit = false,
   requiresReleaseTools = false,
@@ -1938,6 +2213,7 @@ function assertPrerequisites({
   runNpm(["--version"], { capture: true });
 }
 
+/** Resolves a Raven ref (main, tag or 40-hex commit) to an exact commit SHA with `git ls-remote`; fails when the ref is not found. */
 function resolveRavenRevision(ref) {
   if (/^[0-9a-f]{40}$/i.test(ref)) return ref.toLowerCase();
   const candidates = ref === "main"
@@ -1955,6 +2231,7 @@ function resolveRavenRevision(ref) {
   fail(`Raven ref '${ref}' was not found.`);
 }
 
+/** Queries the npm registry for the latest codebase-memory-mcp version; throws a descriptive error on network, HTTP or version-shape problems. */
 async function fetchLatestCodebaseVersion(fetcher = fetch, timeoutMs = networkTimeoutMs) {
   let response;
   try {
@@ -1977,6 +2254,7 @@ async function fetchLatestCodebaseVersion(fetcher = fetch, timeoutMs = networkTi
   return metadata.version;
 }
 
+/** Setup-time wrapper over fetchLatestCodebaseVersion that fails the process instead of throwing. */
 async function latestCodebaseVersion() {
   try {
     return await fetchLatestCodebaseVersion();
@@ -1985,6 +2263,7 @@ async function latestCodebaseVersion() {
   }
 }
 
+/** Fetches a URL and returns its raw bytes with the parsed JSON, so callers can hash the exact content; fails the process on network, HTTP or JSON errors. */
 async function fetchJson(url, label) {
   let response;
   try {
@@ -2004,6 +2283,7 @@ async function fetchJson(url, label) {
   }
 }
 
+/** Checks a Raven release manifest matches the expected version, platform, source repository, archive name, digests and passed smoke tests; fails otherwise. */
 function validateReleaseManifest(manifest, version, platform) {
   const bundleName = `raven-${version}-${platform}`;
   if (manifest.schemaVersion !== 1 ||
@@ -2023,6 +2303,7 @@ function validateReleaseManifest(manifest, version, platform) {
   }
 }
 
+/** Checks a released server catalog agrees with its manifest (version, Node version, protocol, platform, server count); fails otherwise. */
 function validateReleaseCatalog(releaseCatalog, manifest) {
   if (releaseCatalog.schemaVersion !== 1 ||
       releaseCatalog.suiteVersion !== manifest.suiteVersion ||
@@ -2035,6 +2316,12 @@ function validateReleaseCatalog(releaseCatalog, manifest) {
   }
 }
 
+/**
+ * Resolves a Raven bundled release (a given version or the latest stable)
+ * for this platform. Downloads and cross-checks the release metadata,
+ * manifest and catalog digests, and returns the verified release record used
+ * in the setup plan. Fails on any mismatch or missing asset.
+ */
 async function resolveRavenRelease(version) {
   if (!["darwin-x64", "linux-x64", "win32-x64"].includes(ravenPlatform)) {
     fail(`Raven bundled releases do not support '${ravenPlatform}'. Use --delivery source.`);
@@ -2092,12 +2379,14 @@ async function resolveRavenRelease(version) {
   };
 }
 
+/** Fails unless the version is an exact semantic version (no ranges or tags). */
 function validateExactVersion(version) {
   if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(version || "")) {
     fail("--codebase-memory-version must be an exact semantic version.");
   }
 }
 
+/** Checks Raven's own .mcp.json launches each selected server with the entrypoint Crow's reviewed catalog expects; fails on any difference. */
 function validateUpstreamConfig(runtimePath, servers) {
   const upstream = readJson(join(runtimePath, ".mcp.json"), "Raven .mcp.json");
   for (const server of servers) {
@@ -2111,6 +2400,12 @@ function validateUpstreamConfig(runtimePath, servers) {
   }
 }
 
+/**
+ * Builds the managed MCP fragment: codebase-memory-mcp plus one entry per
+ * selected Raven server, launched through the release launcher (bundled
+ * release) or node with the built entrypoint (pinned source). With
+ * validatePaths set, fails when a referenced file is missing.
+ */
 function createFragment(
   runtimePath,
   servers,
@@ -2151,6 +2446,7 @@ function createFragment(
   return { mcpServers };
 }
 
+/** Returns the command and arguments to start a server for verification, routing Windows .cmd launchers through ComSpec (and refusing extra arguments for them). */
 function startupInvocation(command, args) {
   if (process.platform !== "win32" || !command.toLowerCase().endsWith(".cmd")) {
     return { command, args };
@@ -2166,6 +2462,7 @@ function startupInvocation(command, args) {
   };
 }
 
+/** True when the plan's Raven record fits its delivery mode: absent for codebase-memory-only, an exact revision for pinned source, or a fully consistent release record (version, tag, platform, digests, archive URL) for a bundled release. */
 function isValidRavenPlan(plan) {
   if (plan.selectedServers.length === 0) {
     return plan.raven === null && plan.delivery === "codebase-memory-only";
@@ -2187,6 +2484,7 @@ function isValidRavenPlan(plan) {
     /^[0-9a-f]{64}$/.test(plan.raven.catalogSha256 || "");
 }
 
+/** Validates a pending setup plan's shape, Crow-managed install paths and 24-hour confirmation window; fails the process when anything is invalid or expired. */
 function validatePlan(plan, planPath) {
   if (plan.schemaVersion !== 1 ||
       plan.action !== "setup" ||
@@ -2228,10 +2526,12 @@ function validatePlan(plan, planPath) {
   }
 }
 
+/** SHA-256 of the plan's JSON, the digest the user approves. */
 function planDigest(plan) {
   return createHash("sha256").update(JSON.stringify(plan)).digest("hex");
 }
 
+/** Builds a hashed snapshot of the selected catalog entries so later steps can detect catalog changes. */
 function catalogSnapshot(serverCatalog, servers) {
   const snapshot = {
     schemaVersion: serverCatalog.schemaVersion,
@@ -2245,6 +2545,7 @@ function catalogSnapshot(serverCatalog, servers) {
   };
 }
 
+/** Verifies an installed codebase-memory-mcp matches the requested version in its package and lock file, and returns the entrypoint path, integrity and entrypoint digest. */
 function validateCodebaseInstall(installPath, version) {
   const packagePath = join(installPath, "node_modules", "codebase-memory-mcp", "package.json");
   const lockPath = join(installPath, "package-lock.json");
@@ -2268,6 +2569,7 @@ function validateCodebaseInstall(installPath, version) {
   };
 }
 
+/** Builds the npm install arguments for an exact, production-only codebase-memory-mcp install, skipping scripts on Windows. */
 function codebaseInstallArgs(stagingPath, version) {
   return [
     "install",
@@ -2281,6 +2583,7 @@ function codebaseInstallArgs(stagingPath, version) {
   ];
 }
 
+/** Runs codebase-memory-mcp's own Windows installer with a longer candidate timeout (patched temporarily, then restored) and a 10-minute overall limit; fails the process on error. */
 function runCodebaseWindowsInstaller(stagingPath) {
   const packagePath = join(stagingPath, "node_modules", "codebase-memory-mcp");
   const installerPath = join(packagePath, "install.js");
@@ -2312,6 +2615,7 @@ function runCodebaseWindowsInstaller(stagingPath) {
   }
 }
 
+/** Installs codebase-memory-mcp into a staging directory next to the final path and validates it; promotion happens later. */
 function stageCodebaseMemory(installPath, version) {
   const stagingPath = `${installPath}.staging-${process.pid}`;
   if (existsSync(stagingPath)) rmSync(stagingPath, { recursive: true, force: true });
@@ -2322,6 +2626,7 @@ function stageCodebaseMemory(installPath, version) {
   return { stagingPath, ...validateCodebaseInstall(stagingPath, version) };
 }
 
+/** Streams a download to a private file with a 5-minute timeout; fails the process on network or HTTP errors. */
 async function downloadFile(url, path, label) {
   let response;
   try {
@@ -2339,12 +2644,14 @@ async function downloadFile(url, path, label) {
   await pipeline(Readable.fromWeb(response.body), createWriteStream(path, { mode: 0o600 }));
 }
 
+/** Streams a file and returns its SHA-256 hex digest. */
 async function sha256File(path) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
   return hash.digest("hex");
 }
 
+/** Computes one SHA-256 over a directory tree (sorted names, types, modes, sizes, link targets and contents), optionally excluding .git, and fails on unsupported entry types. */
 async function sha256Tree(root, excludeGit = false) {
   const hash = createHash("sha256");
   const visit = async (directory, relativeDirectory = "") => {
@@ -2377,6 +2684,7 @@ async function sha256Tree(root, excludeGit = false) {
   return hash.digest("hex");
 }
 
+/** Matches selected catalog servers against the released catalog (entrypoint, version, access, launcher) and returns them with package and launcher added; fails on any difference. */
 function releasedServers(selected, releasedCatalog) {
   const released = new Map(releasedCatalog.servers.map((server) => [server.id, server]));
   return selected.map((server) => {
@@ -2393,6 +2701,12 @@ function releasedServers(selected, releasedCatalog) {
   });
 }
 
+/**
+ * Downloads and stages a Raven release bundle: checks the archive SHA-256,
+ * verifies the GitHub build attestation, extracts it, and validates the
+ * embedded metadata and catalog digest. Returns the staging path; removes
+ * partial files and fails the process on any mismatch.
+ */
 async function stageRavenBundle(raven) {
   const stagingRoot = `${raven.runtimePath}.staging-${process.pid}`;
   const extractionRoot = `${raven.runtimePath}.extract-${process.pid}`;
@@ -2451,6 +2765,7 @@ async function stageRavenBundle(raven) {
   return stagingRoot;
 }
 
+/** True if a process with this ID exists (signal 0 probe); a permission error counts as running. */
 function isProcessRunning(pid) {
   try {
     process.kill(pid, 0);
@@ -2462,6 +2777,7 @@ function isProcessRunning(pid) {
   }
 }
 
+/** Interprets a taskkill result: null when it succeeded or every reported process is gone, otherwise the error detail. */
 function taskkillTerminationError(result, rootPid, processIsRunning = isProcessRunning) {
   if (result.status === 0) return null;
   const output = [result.stderr, result.stdout].filter(Boolean).join("\n").trim();
@@ -2482,6 +2798,7 @@ function taskkillTerminationError(result, rootPid, processIsRunning = isProcessR
   return null;
 }
 
+/** Stops a child and its descendants (taskkill /T /F on Windows, SIGTERM or SIGKILL elsewhere); returns null on success or a reason string. */
 function terminateProcessTree(child, force = false) {
   if (process.platform === "win32") {
     if (!Number.isInteger(child.pid)) return "child process ID is unavailable";
@@ -2500,6 +2817,7 @@ function terminateProcessTree(child, force = false) {
   return "the process did not accept the termination signal";
 }
 
+/** Starts a server and requires it to stay alive for the startup grace period, then stops it; rejects if it fails to start, exits early, or cannot be stopped. */
 async function verifyStartup(name, command, args, cwd) {
   const invocation = startupInvocation(command, args);
   await new Promise((resolvePromise, rejectPromise) => {
@@ -2557,6 +2875,7 @@ async function verifyStartup(name, command, args, cwd) {
   });
 }
 
+/** Re-verifies an installed snapshot against recorded state: codebase-memory integrity, Raven tree digest, bundle metadata or source revision, and that the managed fragment still matches. Fails on any drift. */
 async function validateInstalledSnapshot(snapshot) {
   const codebase = validateCodebaseInstall(
     snapshot.codebaseMemory.installPath,
@@ -2612,6 +2931,7 @@ async function validateInstalledSnapshot(snapshot) {
   }
 }
 
+/** Startup-checks codebase-memory-mcp and every selected Raven server in a fragment. */
 async function verifyFragment(fragment, runtimePath, servers) {
   const codebase = fragment.mcpServers["codebase-memory-mcp"];
   await verifyStartup("codebase-memory-mcp", codebase.command, codebase.args);
@@ -2621,6 +2941,7 @@ async function verifyFragment(fragment, runtimePath, servers) {
   }
 }
 
+/** Prints the command reference. */
 function printHelp() {
   console.log(`Crow Raven setup
 
@@ -2654,6 +2975,7 @@ The optional Copilot update hook checks at most once
 per day during agent use and never installs updates.`);
 }
 
+/** The `list` command: prints catalog servers (id, group, description), optionally for one --group. */
 function listCommand(args) {
   const serverCatalog = catalog();
   const servers = args.group
@@ -2665,6 +2987,7 @@ function listCommand(args) {
   }
 }
 
+/** The `status` command: reconciles any interrupted install, then prints recorded setup state as JSON. */
 function statusCommand(args) {
   const target = paths(args);
   reconcilePromotion(target);
@@ -2677,6 +3000,7 @@ function statusCommand(args) {
   console.log(JSON.stringify({ configured: true, ...state, stateDir: target.stateDir }, null, 2));
 }
 
+/** The `config preview|apply` command: previews or applies the managed fragment to the chosen client config and prints the result without file bytes. */
 function configCommand(args) {
   const action = args._[1];
   if (!["preview", "apply"].includes(action)) fail("Use config preview or config apply.");
@@ -2695,6 +3019,7 @@ function configCommand(args) {
   console.log(JSON.stringify(output, null, 2));
 }
 
+/** Describes the supply-chain assurance level of the plan's delivery mode. */
 function planAssurance(raven) {
   if (!raven) return "registry-package";
   return raven.delivery === "bundled-release"
@@ -2702,6 +3027,7 @@ function planAssurance(raven) {
     : "transitional-source-build";
 }
 
+/** Plain-language list of what setup will do for the Raven part of a plan. */
 function ravenPlanEffects(raven) {
   if (!raven) return [];
   if (raven.delivery === "bundled-release") {
@@ -2717,6 +3043,7 @@ function ravenPlanEffects(raven) {
   ];
 }
 
+/** The exact commands setup will run for the Raven part of a plan, for user review. */
 function ravenPlanCommands(raven, npmCi, npmBuild) {
   if (!raven) return [];
   if (raven.delivery === "bundled-release") {
@@ -2736,6 +3063,12 @@ function ravenPlanCommands(raven, npmCi, npmBuild) {
   ];
 }
 
+/**
+ * The `plan` command: validates the option combination and prerequisites,
+ * resolves the Raven release or pinned revision and the codebase-memory
+ * version, and writes a reviewable pending plan with its digest. Changes
+ * nothing else.
+ */
 async function planCommand(args) {
   const serverCatalog = catalog();
   let servers = selectedServers(args, serverCatalog);
@@ -2852,6 +3185,7 @@ async function planCommand(args) {
   console.log(JSON.stringify({ planPath: target.plan, planSha256: planDigest(plan), ...plan }, null, 2));
 }
 
+/** Re-checks each planned server's metadata against Crow's reviewed catalog (ignoring release-only package and launcher fields) and returns the planned servers. */
 function validatePlannedServers(plan) {
   const serverCatalog = catalog();
   const servers = selectedServers(
@@ -2876,6 +3210,7 @@ function validatePlannedServers(plan) {
   return plan.selectedServers;
 }
 
+/** Fails when the plan's runtime or codebase-memory path is already active or kept as the rollback target. */
 function ensureGenerationAvailable(plan, priorState) {
   const protectedRuntimePaths = [
     priorState?.raven?.runtimePath,
@@ -2892,6 +3227,7 @@ function ensureGenerationAvailable(plan, priorState) {
   }
 }
 
+/** Lists newly added servers and, when there are any, the platform's Raven credential script (if present in the runtime) and documentation link for the next step. */
 function credentialSetupResult(state, priorState) {
   const addedServers = state.selectedServers.filter((id) =>
     !priorState?.selectedServers.includes(id));
@@ -2911,6 +3247,7 @@ function credentialSetupResult(state, priorState) {
   };
 }
 
+/** Stages the Raven runtime for a plan: downloads and verifies the bundle, or clones, builds and checks the pinned source revision. No-op without Raven. */
 async function stageRavenRuntime(plan, target, servers, runtimeStagingPath) {
   if (!runtimeStagingPath) return;
   mkdirSync(target.versions, { recursive: true });
@@ -2933,6 +3270,12 @@ async function stageRavenRuntime(plan, target, servers, runtimeStagingPath) {
   validateUpstreamConfig(runtimeStagingPath, servers);
 }
 
+/**
+ * The `setup` command: requires --confirm and the reviewed plan digest, then
+ * stages Raven and codebase-memory under a promotion journal, startup-tests
+ * the staged fragment, and only then promotes the new generation and writes
+ * state and fragment. Any failure restores the previous state.
+ */
 async function setupCommand(args) {
   if (!args.confirm) fail("Setup requires --confirm after the user reviews the resolved plan.");
   if (!args.plan) fail("Setup requires --plan <path> from the plan command.");
@@ -3067,6 +3410,7 @@ async function setupCommand(args) {
   }, null, 2));
 }
 
+/** The `check` command: re-validates the installation, then (at most daily unless --force) compares Raven, codebase-memory and Crow against their latest versions; exits 10 when an update is available. */
 async function checkCommand(args) {
   const target = paths(args);
   reconcilePromotion(target);
@@ -3133,6 +3477,7 @@ async function checkCommand(args) {
   }
 }
 
+/** The `rollback` command: requires --confirm, re-validates and startup-tests the retained previous setup, then swaps it with the current one in state and fragment. */
 async function rollbackCommand(args) {
   if (!args.confirm) fail("Rollback requires --confirm after the user reviews the target.");
   const target = paths(args);

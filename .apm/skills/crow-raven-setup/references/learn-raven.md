@@ -13,7 +13,7 @@ Each server runs locally over stdio; the client launches it.
 
 ## How it is organised
 
-Read `resources/raven-servers.json` and group servers by `group`:
+Read `assets/raven-servers.json` and group servers by `group`:
 
 - **Atlassian group** (Jira, Confluence, Bitbucket, Assets, Overview, Health,
   Bug Classifier): one shared authentication session; log in once.

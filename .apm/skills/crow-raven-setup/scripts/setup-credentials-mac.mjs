@@ -1,28 +1,51 @@
 #!/usr/bin/env node
-// setup-credentials-mac.mjs
-// CROW-MODIFIED copy of bcgov/raven scripts/setup-credentials-mac.mjs. Crow
-// additions: --set KEY=VALUE for non-secret values supplied by the guided
-// setup agent, --sections to prompt only for selected integrations, and
-// --raven-runtime to locate Raven's auth module. Secrets are still typed by
-// the user into hidden prompts and are never accepted as arguments.
-// Stores RAVEN credentials in the macOS login keychain as a single
-// generic-password item (service "raven", account "credentials") holding a
-// base64-encoded JSON blob — the macOS counterpart of setup-credentials.ps1's
-// DPAPI file. The keychain encrypts the blob at rest and scopes it to your
-// macOS user; loadEnv() reads it back at server startup.
-//
-// Usage (from repo root, after `npm run build`):
-//   node scripts/setup-credentials-mac.mjs            # create/update
-//   node scripts/setup-credentials-mac.mjs --verify   # list stored keys, masked
-//
-// To delete stored credentials:
-//   security delete-generic-password -s raven -a credentials
-//
-// Set RAVEN_KEYCHAIN_SERVICE to use a scratch service name when testing.
-//
-// The whole credential record is written in a single `security -i` command;
-// `security -i` reads stdin in ~4095-byte chunks, so the encoded record has
-// a hard ceiling around that size. writeKeychainRecord() enforces it.
+/**
+ * setup-credentials-mac.mjs (CLI)
+ * =====================================
+ *
+ * Purpose:
+ *     Stores RAVEN MCP credentials in the macOS login keychain as a single
+ *     generic-password item (service "raven", account "credentials") holding a
+ *     base64-encoded JSON blob, the macOS counterpart of setup-credentials.ps1's
+ *     DPAPI file. The keychain encrypts the blob at rest and scopes it to the
+ *     macOS user; Raven's loadEnv() reads it back at server startup. Secrets
+ *     are typed into hidden prompts and are never accepted as arguments.
+ *     CROW-MODIFIED copy of bcgov/raven scripts/setup-credentials-mac.mjs. Crow
+ *     additions: --set KEY=VALUE for non-secret values supplied by the guided
+ *     setup agent, --sections to prompt only for selected integrations, and
+ *     --raven-runtime to locate Raven's auth module.
+ *
+ * Layer: Crow Raven Setup skill, credential entry (macOS)
+ *
+ * Usage Examples:
+ *     node setup-credentials-mac.mjs --raven-runtime <runtimePath>
+ *     node setup-credentials-mac.mjs --raven-runtime <runtimePath> --sections atlassian --set ATLASSIAN_BASE_URL=<url> --set ATLASSIAN_EMAIL=<email>
+ *     node setup-credentials-mac.mjs --raven-runtime <runtimePath> --verify
+ *     security delete-generic-password -s raven -a credentials   (delete stored credentials)
+ *
+ * CLI Arguments:
+ *     --raven-runtime <path>  Installed Raven runtime (or RAVEN_RUNTIME env var).
+ *     --sections <ids>       Comma-separated integrations to prompt for.
+ *     --set KEY=VALUE        Non-secret value; repeatable; secret keys are refused.
+ *     --verify               List stored keys, masked, and exit.
+ *     RAVEN_KEYCHAIN_SERVICE  Env var selecting a scratch service name for tests.
+ *
+ * Key Input Dependencies:
+ *     Raven's built auth module (load-env.js) and its dotenv package; the macOS
+ *     `security` tool. The whole record is written in one `security -i`
+ *     command that reads stdin in ~4095-byte chunks, so the encoded record has
+ *     a hard size ceiling that writeKeychainRecord() enforces.
+ *
+ * Key Functions:
+ *     argValues()        Collects every value of a repeatable CLI flag.
+ *     readEnvFile()      Reads ~/.raven/.env values as first-run defaults.
+ *     createPrompter()   One readline session with hidden secret prompts.
+ *     The rest is top-level flow: auth-module lookup, --verify mode, --set and
+ *     --sections handling, prompting by SECTIONS, validation, keychain write.
+ *
+ * Consumed by:
+ *     The Crow Raven Setup agent (references/credentials.md and servers/*.md).
+ */
 
 import { createInterface } from "node:readline";
 import { existsSync, readFileSync } from "node:fs";
@@ -30,6 +53,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { createRequire } from "node:module";
+
+/** Collects every value given for a repeatable CLI flag (`--flag v` or `--flag=v`). */
 const argValues = (flag) => {
   const out = [];
   process.argv.forEach((a, i) => {
@@ -38,6 +63,8 @@ const argValues = (flag) => {
   });
   return out;
 };
+// Locate Raven's built auth module: --raven-runtime or RAVEN_RUNTIME first,
+// then the repo layout relative to this script.
 const runtimeRoot = argValues("--raven-runtime")[0] ?? process.env.RAVEN_RUNTIME;
 const authCandidates = [
   ...(runtimeRoot
@@ -181,14 +208,14 @@ const SECTIONS = [
     fields: [
       ["ATLASSIAN_BASE_URL", "Atlassian base URL (e.g. https://apps.example.gov.bc.ca)", false],
       ["ATLASSIAN_EMAIL", "IDIR email (e.g. Jane.Smith@gov.bc.ca)", false],
-      ["ATLASSIAN_PASSWORD", "Atlassian API token (Classic token for Cloud; IDIR password for internal Basic Auth)", true],
+      ["ATLASSIAN_PASSWORD", "Atlassian API token (Classic token, not scoped)", true],
     ],
   },
   {
     id: "server-monitor",
     header: "Server Monitor (leave blank to skip)",
     fields: [
-      ["SERVER_A_PASSWORD", "_A account password (leave blank to skip)", true],
+      ["SERVER_A_PASSWORD", "_A account password", true],
     ],
   },
   {
@@ -233,7 +260,7 @@ const SECTIONS = [
     fields: [
       ["ARTIFACTORY_URL", "Internal Artifactory HTTPS base URL", false],
       ["ARTIFACTORY_EMAIL", "Artifactory IDIR email", false],
-      ["ARTIFACTORY_PASSWORD", "Artifactory IDIR password", true],
+      ["ARTIFACTORY_PASSWORD", "Artifactory IDIR password (your account password, not a token)", true],
     ],
   },
   {
@@ -243,7 +270,7 @@ const SECTIONS = [
       ["JENKINS_URL", "Jenkins HTTPS base URL (e.g. https://jenkins.example.gov.bc.ca/jenkins)", false],
       ["JENKINS_USER", "Jenkins username", false],
       ["JENKINS_TOKEN", "Jenkins API token", true],
-      ["JENKINS_PASSWORD", "Jenkins password (leave blank when using an API token)", true],
+      ["JENKINS_PASSWORD", "Jenkins password (press Enter if you use an API token)", true],
     ],
   },
   {
@@ -306,12 +333,12 @@ for (const section of targetSections) {
   for (const [name, label, sensitive] of section.fields) {
     if (name in provided) {
       applyAnswer(record, name, provided[name]);
-      console.log(`${name}: set`);
+      console.log(`${name}: ${provided[name]}`);
       continue;
     }
     // Guided mode: non-secret fields already stored or defaulted are kept without asking again.
     if (scoped && !sensitive && record[name]) continue;
-    if (!headerShown && section.header) {
+    if (!headerShown && section.header && !scoped) {
       console.log("");
       console.log(section.header);
       if (section.note) console.log(section.note);

@@ -1,5 +1,31 @@
-// Pure helpers for setup-credentials-mac.mjs, split out for unit testing
-// (same pattern as gen-inventory.lib.mjs).
+/**
+ * setup-credentials-mac.lib.mjs (library)
+ * =====================================
+ *
+ * Purpose:
+ *     Pure helpers for setup-credentials-mac.mjs, split out for unit testing
+ *     (same pattern as gen-inventory.lib.mjs). Masks secrets for display,
+ *     seeds prompt defaults, normalizes answers, and validates dependent
+ *     credential settings. No I/O, so it is safe to import anywhere.
+ *
+ * Layer: Crow Raven Setup skill, credential entry (macOS) helpers
+ *
+ * Usage Examples:
+ *     import { mask, validateRecord } from "./setup-credentials-mac.lib.mjs";
+ *
+ * Key Input Dependencies:
+ *     None. Takes plain objects and strings.
+ *
+ * Key Functions:
+ *     mask()             Masks a secret for display.
+ *     seedDefaults()     Builds prompt defaults from .env and keychain values.
+ *     normalizeAnswer()  Normalizes one prompt answer before storing it.
+ *     applyAnswer()      Stores, keeps, or clears one record value.
+ *     validateRecord()   Reports missing dependent settings.
+ *
+ * Consumed by:
+ *     setup-credentials-mac.mjs
+ */
 
 /** Mask a secret for display: first/last two chars, or **** when short. */
 export function mask(value) {
@@ -36,6 +62,11 @@ export function normalizeAnswer(answer, { sensitive = false } = {}) {
   return answer.trim();
 }
 
+/**
+ * Applies one prompt answer to the credential record in place.
+ * ":clear" deletes the key, a non-empty answer sets it, and a blank answer
+ * keeps whatever value is already there.
+ */
 export function applyAnswer(record, name, answer) {
   if (answer === ":clear") delete record[name];
   else if (answer) record[name] = answer;

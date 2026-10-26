@@ -1,62 +1,15 @@
-# Credentials
+# Atlassian (Jira and Confluence)
 
-Load when setup adds servers that need authentication. Never collect a secret
-in chat and never write one into the client config or Crow state.
+Load when the user selects `jira`, `confluence`, or both. They share one set
+of credentials, so one run of the credential tool covers both. Run the
+preconditions and command shape in [credentials.md](../credentials.md) first.
 
-## Preconditions (hard gate)
-
-Do not run any credential script until both are true. Check with
-`node scripts/crow-raven-setup.mjs status`:
-
-1. **Raven source is present.** Crow setup obtains it (attested release bundle,
-   or a pinned source clone as fallback). If `status` shows no Raven install,
-   do not ask the user to clone anything: run the setup install step first,
-   with the user's approval of the plan digest.
-2. **The Raven runtime is installed and usable.** `raven.runtimePath` exists
-   and contains `packages/auth/dist/load-env.js` (or
-   `runtime/node_modules/@nrs/auth/dist/load-env.js`) and `dotenv`. If it is
-   missing or incomplete, repair through setup (`check`, then the install
-   step); never run the script and let it fail.
-
-Tell the user why you are pausing: the credential script needs Raven's
-runtime. Then continue the order: non-secret values and token creation can be
-done while waiting for install approval; token entry, client config apply,
-restart, and verification follow the install.
-
-## Run the credential tool
-
-The credential scripts ship in this skill's `scripts/` folder as Crow-modified
-copies (see `scripts/RAVEN-CREDENTIAL-SCRIPTS.md`). They need Raven's built auth
-module, so always pass the installed runtime path from
-`node scripts/crow-raven-setup.mjs status` (`raven.runtimePath`).
-
-The agent supplies everything that is not a secret. The user is never asked
-for a URL or email a second time and types only the token, into a hidden
-prompt the agent never reads.
-
-macOS, as a fenced block with `cd` first (never one long inline path: copying
-an inline path can add a trailing space and fail with MODULE_NOT_FOUND):
-
-```
-cd <skill scripts path>
-node setup-credentials-mac.mjs --raven-runtime <runtimePath> --sections atlassian --set ATLASSIAN_BASE_URL=<tenant url> --set ATLASSIAN_EMAIL=<email>
-```
-
-- `--sections` takes only the selected integrations (`atlassian`, `github`,
-  `sonar`, `jenkins`, and so on) so no unrelated prompts appear.
-- `--set` accepts non-secret fields only; the script refuses a secret passed
-  as an argument.
-- A blank Enter at the token prompt keeps the stored value, so tell the user
-  to paste the token and then press Enter once.
-- Windows: `scripts/setup-credentials.ps1` is still Raven's unmodified,
-  fully interactive script; it has no `--set` or `--sections` yet.
-- Linux: no interactive script; use the manual `~/.raven/.env` fallback below.
-
-## Manual fallback (all OS, required on Linux)
-
-Create `~/.raven/` with mode 700 and `~/.raven/.env` with mode 600. Quote any
-value containing `#`, or it is silently truncated. Point the user to Raven's
-README for the variable names per server.
+| Item | Value |
+|---|---|
+| `--sections` | `atlassian` |
+| Non-secret (`--set`) | `ATLASSIAN_BASE_URL`, `ATLASSIAN_EMAIL` |
+| Secret (hidden prompt) | Atlassian API token (Classic, not scoped) |
+| Verify (read-only) | Jira `read_issue` on a known key; Confluence `list_spaces` |
 
 ## Atlassian Cloud (verified path)
 
@@ -103,10 +56,23 @@ Collect the non-secret values in chat, then keep the token out of chat.
    the single command, and tell the user the URL and email to type at its
    prompts.
 
+```
+cd <skill scripts path>
+node setup-credentials-mac.mjs --raven-runtime <runtimePath> --sections atlassian --set ATLASSIAN_BASE_URL=<tenant url> --set ATLASSIAN_EMAIL=<email>
+```
+
+Tell the user to paste the token, then press Enter once.
+
 A real first-time failure sequence to teach from: 404 on an internal path,
 403 on the vanity host, 401 with a scoped token, success on the tenant URL
 with `/wiki` and a Classic token. Each is a URL or token-type problem, not a
 bad password.
+
+## Verify
+
+Restart the client first; servers read credentials once at startup. Then make
+read-only calls: Jira `read_issue` on a key the user knows, and Confluence
+`list_spaces`.
 
 ## Atlassian behind SiteMinder (internal)
 
@@ -115,8 +81,3 @@ bypasses SiteMinder, or an SMSESSION browser fallback (Playwright Chromium,
 session cached about 25 minutes). Direct the user to their team lead or the
 Raven maintainer for the host; never guess one. Prefer the Cloud path when
 the user has a tenant.
-
-## Other servers
-
-Introduce one at a time, only for servers the user selected. Point to the
-server's section in Raven's README for the variables it needs.

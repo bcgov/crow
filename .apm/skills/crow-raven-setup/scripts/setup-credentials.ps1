@@ -1,16 +1,30 @@
-# setup-credentials.ps1
-# Stores RAVEN credentials in a DPAPI-encrypted file (~/.raven/.env.dpapi).
-# DPAPI binds encryption to the current Windows user account on this machine -
-# the resulting file cannot be decrypted by other users or on other machines.
-#
-# Usage (from repo root):
-#   powershell -ExecutionPolicy Bypass -File scripts\setup-credentials.ps1
-#
-# To verify stored credentials:
-#   powershell -ExecutionPolicy Bypass -File scripts\setup-credentials.ps1 -Verify
-#
-# To delete stored credentials:
-#   Remove-Item "$env:USERPROFILE\.raven\.env.dpapi"
+<#
+.SYNOPSIS
+    setup-credentials.ps1 - stores RAVEN credentials in a DPAPI-encrypted file.
+
+.DESCRIPTION
+    Purpose: stores RAVEN credentials in ~/.raven/.env.dpapi. DPAPI binds
+    encryption to the current Windows user account on this machine, so the
+    file cannot be decrypted by other users or on other machines.
+    Layer: Crow Raven Setup skill, credential entry (Windows).
+    Key Input Dependencies: Windows PowerShell with DPAPI (ConvertFrom-SecureString).
+    Key Functions: Protect-String (encrypt), Unprotect-String (decrypt).
+    Consumed by: the Crow Raven Setup agent (references/credentials.md).
+    Unmodified copy of bcgov/raven scripts/setup-credentials.ps1; it has no
+    --set or --sections support.
+
+.PARAMETER Verify
+    Lists stored credential keys, masked, and exits.
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File scripts\setup-credentials.ps1
+
+.EXAMPLE
+    powershell -ExecutionPolicy Bypass -File scripts\setup-credentials.ps1 -Verify
+
+.NOTES
+    To delete stored credentials: Remove-Item "$env:USERPROFILE\.raven\.env.dpapi"
+#>
 
 [CmdletBinding()]
 param(
@@ -20,11 +34,13 @@ param(
 $CredFile = Join-Path $env:USERPROFILE ".raven\.env.dpapi"
 $CredDir  = Split-Path $CredFile
 
+# Encrypts plain text with DPAPI and returns the base64 blob.
 function Protect-String([string]$plain) {
     $secStr = ConvertTo-SecureString $plain -AsPlainText -Force
     return ConvertFrom-SecureString $secStr   # DPAPI-encrypts, returns base64 blob
 }
 
+# Decrypts a DPAPI blob back to plain text and zeroes the temporary buffer.
 function Unprotect-String([string]$encrypted) {
     $secStr = ConvertTo-SecureString $encrypted
     $bstr   = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($secStr)

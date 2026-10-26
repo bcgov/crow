@@ -1,3 +1,27 @@
+/**
+ * Purpose:
+ *   Tests for crow-raven-setup.mjs: argument handling, release and catalog
+ *   validation, plan and setup safety gates, state and rollback, the update
+ *   check and hook, and the bundled server catalog.
+ *
+ * Layer: Skill script tests (node:test).
+ *
+ * Usage Examples:
+ *   node --test crow-raven-setup.test.mjs
+ *
+ * Key Input Dependencies:
+ *   - ./crow-raven-setup.mjs and ./client-config.mjs (code under test)
+ *   - ../assets/raven-servers.json (catalog checks)
+ *   - Temporary directories and stub executables; no network or real installs
+ *
+ * Key Functions:
+ *   Test cases are grouped by node:test describe/test blocks, one per
+ *   behaviour of crow-raven-setup.mjs.
+ *
+ * Consumed by:
+ *   Developers and CI.
+ */
+
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { spawnSync } from "node:child_process";
@@ -1619,7 +1643,7 @@ test("Raven release metadata reconciles reviewed servers and native launchers", 
 });
 
 test("Crow's reviewed catalog matches Raven v0.2.0 contracts", () => {
-  const catalog = JSON.parse(readFileSync(new URL("../resources/raven-servers.json", import.meta.url), "utf8"));
+  const catalog = JSON.parse(readFileSync(new URL("../assets/raven-servers.json", import.meta.url), "utf8"));
   for (const server of catalog.servers) {
     assert.equal(server.packageVersion, "0.2.0", server.id);
   }
@@ -1747,7 +1771,7 @@ test("setup rejects a future-dated plan", () => {
 });
 
 test("catalog has unique IDs, safe entrypoints, and selection metadata", () => {
-  const catalog = JSON.parse(readFileSync(new URL("../resources/raven-servers.json", import.meta.url), "utf8"));
+  const catalog = JSON.parse(readFileSync(new URL("../assets/raven-servers.json", import.meta.url), "utf8"));
   const ids = catalog.servers.map((server) => server.id);
   assert.equal(new Set(ids).size, ids.length);
   for (const server of catalog.servers) {
