@@ -21,21 +21,35 @@ Create `~/.raven/` with mode 700 and `~/.raven/.env` with mode 600. Quote any
 value containing `#`, or it is silently truncated. Point the user to Raven's
 README for the variable names per server.
 
-## Atlassian: choose the right path first
+## Atlassian Cloud (verified path)
 
-Ask which kind of site the user has before asking for any value.
+Use canonical tenant URLs and a Classic API token. Walk the user through it:
 
-| Site | Typical base URL | Credential |
-|---|---|---|
-| Atlassian Cloud | `https://<org>.atlassian.net`; Confluence needs the `/wiki` suffix | Account email plus API token |
-| BC Gov SiteMinder-protected | Internal host, sometimes with a path such as `/int/...` | IDIR email and password through the internal Basic Auth host, or the SMSESSION browser fallback (Playwright Chromium, session cached about 25 minutes) |
-
-Raven's README says the internal Basic Auth hostname is not public; direct the
-user to their team lead or the Raven maintainer rather than guessing a URL.
+1. **Base URLs:** `https://<tenant>.atlassian.net` for Jira and
+   `https://<tenant>.atlassian.net/wiki` for Confluence. Confluence needs
+   `/wiki`.
+2. **Warn on vanity domains** such as `*.gov.bc.ca`. They sit behind
+   SiteMinder and reject API tokens with 403 ("caller cannot access
+   Confluence"). Ask for the tenant URL instead.
+3. **Token type:** create a **Classic (non-scoped)** API token at
+   `https://id.atlassian.com/manage-profile/security/api-tokens`. Do not use
+   the Granular/Scoped wizard: scoped tokens return 401 on tenant URLs
+   because they need the `api.atlassian.com` gateway, which Raven does not
+   support.
+4. Enter the token only through the credential tool, never in chat.
 
 A real first-time failure sequence to teach from: 404 on an internal path,
-403 on the site root, success on the Cloud URL with `/wiki`. Each is a URL or
-site-type problem, not a bad password.
+403 on the vanity host, 401 with a scoped token, success on the tenant URL
+with `/wiki` and a Classic token. Each is a URL or token-type problem, not a
+bad password.
+
+## Atlassian behind SiteMinder (internal)
+
+Raven's README describes an internal Basic Auth host, not public, that
+bypasses SiteMinder, or an SMSESSION browser fallback (Playwright Chromium,
+session cached about 25 minutes). Direct the user to their team lead or the
+Raven maintainer for the host; never guess one. Prefer the Cloud path when
+the user has a tenant.
 
 ## Other servers
 

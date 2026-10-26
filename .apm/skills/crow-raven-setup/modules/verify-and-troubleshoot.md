@@ -21,8 +21,8 @@ setup complete; authentication failures remain failures.
 | Symptom | Likely cause | Next step |
 |---|---|---|
 | 404 on Confluence or Jira | Wrong base URL or missing path (Cloud Confluence needs `/wiki`) | Recheck the site type and URL in `credentials.md` |
-| 401 | Wrong credential type or value (password versus API token) | Re-run the credential tool; do not retry in a loop |
-| 403 | Account lacks access, or a different site or gateway than the credential was issued for | Confirm the site with the user; check access outside Raven |
+| 401 | Wrong credential type: a scoped/Granular token instead of a Classic one, or a wrong value | Re-run the credential tool; do not retry in a loop |
+| 403 | Vanity `*.gov.bc.ca` URL used with an API token, account lacks access, or a different site or gateway than the credential was issued for | Confirm the site with the user; check access outside Raven |
 | 410 on a search call | Endpoint removed on that Atlassian Cloud version | Report to the Raven maintainers; do not work around it silently |
 | "No valid SMSESSION" | SMSESSION fallback expired or Playwright Chromium missing | `npx playwright install chromium`, then retry |
 | Tools absent in client | Client not restarted, or config written to a different file | Restart; confirm the config path for the chosen client |
