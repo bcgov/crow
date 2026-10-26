@@ -3,6 +3,14 @@
   "source": "https://github.com/bcgov/raven",
   "protocolCompatibility": "MCP over stdio",
   "dependencySemantics": "Launchers use shared workspace packages but do not require another MCP server process to be selected.",
+  "starterSets": {
+    "developer": ["jira", "confluence", "bitbucket", "github", "sonar", "jenkins"],
+    "qa": ["jira", "confluence", "bug-classifier"],
+    "project-manager": ["jira", "confluence", "overview", "health"],
+    "security": ["github", "sonar", "jira"],
+    "operations": ["server-monitor", "jenkins", "jira", "confluence"],
+    "analyst": ["jira", "confluence", "sharepoint"]
+  },
   "servers": [
     { "id": "jira", "group": "atlassian", "description": "Jira work items and sprint operations", "entrypoint": "packages/jira-mcp/dist/index.js", "packageVersion": "0.2.0", "access": "read-write", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
     { "id": "confluence", "group": "atlassian", "description": "Confluence search and content operations", "entrypoint": "packages/confluence-mcp/dist/index.js", "packageVersion": "0.2.0", "access": "read-write", "authentication": "shared-atlassian-session", "securityStatus": "pre-stable" },
