@@ -50,11 +50,18 @@ Collect the non-secret values in chat, then keep the token out of chat.
      chat, and give the one command to run (step 6).
    - **No, or unsure:** ask "Want me to walk you through creating one?" and
      if yes, give one step per turn, waiting for "done" between steps:
-     open `https://id.atlassian.com/manage-profile/security/api-tokens`;
-     choose a **Classic (non-scoped)** token, not the Granular wizard (scoped
-     tokens return 401 because they need the `api.atlassian.com` gateway,
-     which Raven does not support); name it and copy it; then continue to
-     step 6.
+     1. Open `https://id.atlassian.com/manage-profile/security/api-tokens`
+        and sign in with the account email.
+     2. Click **Create API token**. Do **not** click "Create API token with
+        scopes": scoped tokens return 401 because they need the
+        `api.atlassian.com` gateway, which Raven does not support.
+     3. On the next page, give the token a name (for example `raven-mcp`) and
+        an expiration date. Recommend 1 year.
+     4. Click **Create**, then **Copy**. Atlassian shows the token only once.
+     5. Save it in a password manager now. Warn that it is a secret: it acts
+        as the user, must not be shared with anyone, pasted into chat, email
+        or tickets, or committed to a repository. If it leaks, revoke it on
+        the same page.
 6. **Enter the token only through the credential tool**, never in chat. Give
    the single command, and tell the user the URL and email to type at its
    prompts.
