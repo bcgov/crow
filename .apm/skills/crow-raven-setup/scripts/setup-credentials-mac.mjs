@@ -1,5 +1,10 @@
 #!/usr/bin/env node
 // setup-credentials-mac.mjs
+// CROW-MODIFIED copy of bcgov/raven scripts/setup-credentials-mac.mjs. Crow
+// additions: --set KEY=VALUE for non-secret values supplied by the guided
+// setup agent, --sections to prompt only for selected integrations, and
+// --raven-runtime to locate Raven's auth module. Secrets are still typed by
+// the user into hidden prompts and are never accepted as arguments.
 // Stores RAVEN credentials in the macOS login keychain as a single
 // generic-password item (service "raven", account "credentials") holding a
 // base64-encoded JSON blob — the macOS counterpart of setup-credentials.ps1's
@@ -22,11 +27,35 @@
 import { createInterface } from "node:readline";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { homedir } from "node:os";
 import { createRequire } from "node:module";
-const authModule = new URL("../packages/auth/dist/load-env.js", import.meta.url);
-const bundledAuthModule = new URL("../runtime/node_modules/@nrs/auth/dist/load-env.js", import.meta.url);
-const loadEnvModule = existsSync(authModule) ? authModule : bundledAuthModule;
+const argValues = (flag) => {
+  const out = [];
+  process.argv.forEach((a, i) => {
+    if (a === flag && process.argv[i + 1]) out.push(process.argv[i + 1]);
+    else if (a.startsWith(`${flag}=`)) out.push(a.slice(flag.length + 1));
+  });
+  return out;
+};
+const runtimeRoot = argValues("--raven-runtime")[0] ?? process.env.RAVEN_RUNTIME;
+const authCandidates = [
+  ...(runtimeRoot
+    ? [
+        join(runtimeRoot, "packages", "auth", "dist", "load-env.js"),
+        join(runtimeRoot, "runtime", "node_modules", "@nrs", "auth", "dist", "load-env.js"),
+      ]
+    : []),
+  new URL("../packages/auth/dist/load-env.js", import.meta.url).pathname,
+  new URL("../runtime/node_modules/@nrs/auth/dist/load-env.js", import.meta.url).pathname,
+];
+const authPath = authCandidates.find((c) => existsSync(c));
+if (!authPath) {
+  console.error("Cannot find Raven's auth module. Pass --raven-runtime <installed Raven runtime path>");
+  console.error("(the runtimePath shown by `node crow-raven-setup.mjs status`).");
+  process.exit(1);
+}
+const loadEnvModule = pathToFileURL(authPath);
 const { parse: parseDotenv } = createRequire(loadEnvModule)("dotenv");
 const {
   readKeychainRecord,
@@ -148,15 +177,23 @@ try {
 // Same variables, sections, and order as setup-credentials.ps1.
 const SECTIONS = [
   {
+    id: "atlassian",
     header: "Atlassian (leave blank to skip)",
     fields: [
       ["ATLASSIAN_BASE_URL", "Atlassian base URL (e.g. https://apps.example.gov.bc.ca)", false],
       ["ATLASSIAN_EMAIL", "IDIR email (e.g. Jane.Smith@gov.bc.ca)", false],
-      ["ATLASSIAN_PASSWORD", "IDIR password", true],
+      ["ATLASSIAN_PASSWORD", "Atlassian API token (Classic token for Cloud; IDIR password for internal Basic Auth)", true],
+    ],
+  },
+  {
+    id: "server-monitor",
+    header: "Server Monitor (leave blank to skip)",
+    fields: [
       ["SERVER_A_PASSWORD", "_A account password (leave blank to skip)", true],
     ],
   },
   {
+    id: "ado",
     header: "Azure DevOps (leave blank to skip)",
     fields: [
       ["ADO_BASE_URL", "ADO HTTPS base URL (required with PAT; Cloud: https://dev.azure.com)", false],
@@ -167,6 +204,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "jarvis",
     header: "Jarvis API (leave blank to skip)",
     fields: [
       ["JARVIS_TOKEN", "Jarvis Authorization Token", true],
@@ -174,6 +212,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "sonar",
     header: "SonarQube (leave blank to skip)",
     fields: [
       ["SONARQUBE_URL", "SonarQube HTTPS base URL (required with token; Cloud: https://sonarcloud.io)", false],
@@ -182,6 +221,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "rfcbuddy",
     header: "RFC Buddy (leave blank to skip)",
     fields: [
       ["RFCBUDDY_URL", "RFC Buddy base URL (e.g. https://rfcbuddy.example.com/api/v1/)", false],
@@ -189,6 +229,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "artifactory",
     header: "Artifactory (leave blank to skip)",
     fields: [
       ["ARTIFACTORY_URL", "Internal Artifactory HTTPS base URL", false],
@@ -197,6 +238,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "jenkins",
     header: "Jenkins (leave blank to skip; API token is recommended for writes)",
     fields: [
       ["JENKINS_URL", "Jenkins HTTPS base URL (e.g. https://jenkins.example.gov.bc.ca/jenkins)", false],
@@ -206,6 +248,7 @@ const SECTIONS = [
     ],
   },
   {
+    id: "github",
     header: "GitHub (leave blank to skip)",
     note: "Required token scopes: security_events, issues, pull_requests, contents, metadata",
     fields: [
@@ -235,13 +278,46 @@ if (promptedKeys.some((k) => !existing[k] && defaults[k])) {
   console.log("");
 }
 
-for (const section of SECTIONS) {
-  if (section.header) {
-    console.log("");
-    console.log(section.header);
-    if (section.note) console.log(section.note);
+const secretKeys = new Set(SECTIONS.flatMap((sec) => sec.fields.filter((f) => f[2]).map((f) => f[0])));
+const provided = {};
+for (const pair of argValues("--set")) {
+  const eq = pair.indexOf("=");
+  const key = eq > 0 ? pair.slice(0, eq) : "";
+  if (!promptedKeys.includes(key)) {
+    console.error(`Error: --set key "${pair.slice(0, Math.max(eq, 0))}" is not a known credential field.`);
+    process.exit(1);
   }
+  if (secretKeys.has(key)) {
+    console.error(`Error: ${key} is a secret and cannot be passed as an argument. It is entered at the hidden prompt.`);
+    process.exit(1);
+  }
+  provided[key] = pair.slice(eq + 1);
+}
+const sectionFilter = argValues("--sections").flatMap((v) => v.split(",")).map((v) => v.trim()).filter(Boolean);
+const unknownSections = sectionFilter.filter((id) => !SECTIONS.some((sec) => sec.id === id));
+if (unknownSections.length > 0) {
+  console.error(`Error: unknown section(s): ${unknownSections.join(", ")}. Valid: ${SECTIONS.map((sec) => sec.id).join(", ")}.`);
+  process.exit(1);
+}
+const targetSections = sectionFilter.length > 0 ? SECTIONS.filter((sec) => sectionFilter.includes(sec.id)) : SECTIONS;
+const scoped = sectionFilter.length > 0;
+
+for (const section of targetSections) {
+  let headerShown = false;
   for (const [name, label, sensitive] of section.fields) {
+    if (name in provided) {
+      applyAnswer(record, name, provided[name]);
+      console.log(`${name}: set`);
+      continue;
+    }
+    // Guided mode: non-secret fields already stored or defaulted are kept without asking again.
+    if (scoped && !sensitive && record[name]) continue;
+    if (!headerShown && section.header) {
+      console.log("");
+      console.log(section.header);
+      if (section.note) console.log(section.note);
+      headerShown = true;
+    }
     const hint = existing[name] ? " [Enter to keep; :clear to erase]" : defaults[name] ? " [import from .env; :clear to erase]" : "";
     const answer = await prompter.ask(`${label}${hint}`, { sensitive });
     applyAnswer(record, name, answer);

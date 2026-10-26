@@ -88,9 +88,13 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    Do not add the full package to update a collection. Later,
    `apm update --global --target copilot` follows published stable releases.
 5. When setup adds servers that need authentication, follow
-   `modules/credentials.md`: pick the credential path (Atlassian Cloud versus
-   gov SiteMinder), point the user to the runtime's credential script or the
-   Linux `~/.raven/.env` fallback, and never collect secrets in chat.
+   `modules/credentials.md`. Pass its preconditions gate first: Raven must be
+   installed with a usable runtime (`status`), and if not, run the install step
+   before any credential script. Then pick the credential path (Atlassian Cloud
+   versus gov SiteMinder), collect non-secret values in chat, and run the
+   skill's credential script with `--raven-runtime`, `--sections`, and `--set`.
+   The user types only secrets into the hidden prompt; never collect secrets
+   in chat.
 6. When Sonar MCP is installed or `sonar` is selected in the current setup,
    use `modules/sonar-scanners.md` to set up or update the generic SonarScanner
    CLI and, when a compatible .NET SDK is available, the .NET/MSBuild scanner.
