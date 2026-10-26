@@ -68,7 +68,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.17.1 --global --target copilot
+apm install bcgov/crow#v0.18.0 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -145,7 +145,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.17.1` remains fixed. Installing
+while an exact version tag such as `#v0.18.0` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -257,7 +257,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.17.1.zip`. See
+The resulting archive is `build/bcgov-crow-0.18.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
