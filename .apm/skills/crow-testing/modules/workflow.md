@@ -172,7 +172,7 @@ property-based tests, the Unit Test Organization Guide must document:
   Literal `iter:` counts (e.g. `20`) on narrow boundary properties intentionally do not scale. Include one local
   example for each supported shell (for example, `$env:CsCheck_Iter = "1000"; dotnet test` on Windows or
   `CsCheck_Iter=1000 dotnet test` on Linux/macOS), and note the `dotnet test -e CsCheck_Iter=1000`
-  passthrough form.
+  passthrough form. CsCheck now throws on invalid `CsCheck_*` values, so use a positive integer.
 - **The failure-pin regression workflow.** When CsCheck reports a reproduction seed, prefer pinning the
   shrunken minimized input as a hardcoded `[Fact]`; use a labelled `ReplaySeed = "reported"` (with `iter: 1`)
   replay only when the minimized input is generator-shaped. Keep a `ReplaySeed = null` general property alongside so

@@ -102,10 +102,10 @@ namespace YourProject.Tests.Generators
                 (25, Gen.Char['\u00C0', '\u00FF']),
 
                 // The "Nasty" Stuff - specifically targeted edge cases
-                (5, Gen.OneOfConst(_homoglyphs)),
-                (5, Gen.OneOfConst(_normalizationHazards)),
-                (5, Gen.OneOfConst(_rtlChars)),
-                (5, Gen.OneOfConst(_wideChars)),
+                (5, Gen.OneOf(_homoglyphs)),
+                (5, Gen.OneOf(_normalizationHazards)),
+                (5, Gen.OneOf(_rtlChars)),
+                (5, Gen.OneOf(_wideChars)),
 
                 // General coverage of Greek/Cyrillic blocks for good measure
                 (5, Gen.Char['\u0370', '\u04FF'])
@@ -149,7 +149,7 @@ namespace YourProject.Tests.Generators
         /// </summary>
         public static Gen<char> UnicodeWhitespace()
         {
-            return Gen.OneOfConst(_smartWhitespace);
+            return Gen.OneOf(_smartWhitespace);
         }
 
         /// <summary>
