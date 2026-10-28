@@ -68,7 +68,7 @@ to this update stream, run the full-package command above once; future
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.15.2 --global --target copilot
+apm install bcgov/crow#v0.15.3 --global --target copilot
 ```
 
 ### Direct Copilot CLI plugin
@@ -145,7 +145,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.15.2` remains fixed. Installing
+while an exact version tag such as `#v0.15.3` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -196,11 +196,11 @@ package.
   [technology preferences guide](.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
   for review, removal, and supported categories.
 - [**crow-application-architecture**](.apm/skills/crow-application-architecture/SKILL.md) —
-  Application boundaries, dependencies, platforms, and Zero Trust; technology
-  modules include .NET, Java, and PHP.
+  Application boundaries, dependencies, platforms, Zero Trust, and stateful
+  invariants; technology modules include .NET, Java, and PHP.
 - [**crow-application-development**](.apm/skills/crow-application-development/SKILL.md) —
-  Production application code, persistence, integrations, and CI with .NET,
-  Java, and PHP modules.
+  Production application code, stateful operations, persistence, integrations,
+  and CI with .NET, Java, and PHP modules.
 - [**crow-architecture-review**](.apm/skills/crow-architecture-review/SKILL.md) —
   Evidence-based architecture documentation.
 - [**crow-legacy-modernization**](.apm/skills/crow-legacy-modernization/SKILL.md) —
@@ -217,8 +217,8 @@ package.
 - [**crow-raven-setup**](.apm/skills/crow-raven-setup/SKILL.md) — Selective
   Raven and codebase-memory-mcp setup and maintenance.
 - [**crow-security-review**](.apm/skills/crow-security-review/SKILL.md) —
-  Manual security, dependency, data-flow, PHP runtime, and issue-publication
-  guidance.
+  Manual security, invariant-driven logic review, dependency, data-flow, PHP
+  runtime, and issue-publication guidance.
 - [**crow-framework-updates**](.apm/skills/crow-framework-updates/SKILL.md) —
   Supported runtime, SDK, and primary framework upgrades.
 - [**crow-dependency-updates**](.apm/skills/crow-dependency-updates/SKILL.md) —
@@ -257,7 +257,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.15.2.zip`. See
+The resulting archive is `build/bcgov-crow-0.15.3.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

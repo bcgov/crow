@@ -185,6 +185,7 @@ The `crow-security-review` skill bundles the detection modules and the `security
 
 Available modules:
 - `auth-and-access-control.md` — Authorization gaps, IDOR, privilege escalation
+- `stateful-logic-review.md` — Conditional stateful invariant review
 - `framework-security-config.md` — Per-framework secure defaults and misconfigurations
 - `java-containers.md` — Java web container security (Tomcat, Jetty, Undertow, Jakarta EE)
 - `php-runtime.md` — PHP runtime, Composer, front-controller, and upload configuration (PHP applications only)
@@ -361,14 +362,15 @@ Analyze all security domains defined in the template scope. Leverage knowledge g
 
 **Before beginning analysis:** Read the detection pattern module files relevant to the detected tech stack (from Step 4). Use these patterns to guide manual code inspection for vulnerabilities that SonarQube does not effectively detect.
 
-When the coverage baseline identifies a shared service, canonical register,
-external eligibility/decision source, digital proof, or identity-assurance
-boundary, also read `platform-data-and-proofs.md`. Route it only to the
-affected paths. Verify over-fetching/minimal disclosure, purpose and subject
-scoping, pairwise correlation risk, proof audience/expiry/revocation/replay
-resistance, assurance level and safe downgrade/fallback, and audit context
-where observable. Do not promote a policy-unknown design gap to a confirmed
-finding.
+For shared services, canonical data, external decisions, proofs, or identity
+assurance, read `platform-data-and-proofs.md` for affected paths. Verify
+minimization, scope, correlation, proof properties, fallback and audit context;
+do not report policy-unknown gaps as confirmed findings.
+
+For state changes, concurrent writers, tenant scope, retries, database
+policies, legacy Forms/PL/SQL, or privileged tools, read
+`stateful-logic-review.md` for affected paths and complete template §5.3
+with reviewed/unreviewed entry points, evidence and verified defenses.
 
 Organize into focused analysis passes:
 
