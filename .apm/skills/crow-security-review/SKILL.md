@@ -41,6 +41,7 @@ Located in `modules/`:
 
 - **`security-review-template.md`** — Security review document structure with YAML frontmatter for machine-readable metadata.
 - **`modules/auth-and-access-control.md`** — Authorization gaps, IDOR, privilege escalation per framework.
+- **`modules/stateful-logic-review.md`** — Invariant-sourced lifecycle, concurrency, transaction, tenant, replay, distributed-state and privileged-tool review with evidence/refutation rules.
 - **`modules/framework-security-config.md`** — Per-framework secure defaults and misconfigurations (CSRF, debug modes, middleware ordering, auto-escaping).
 - **`modules/java-containers.md`** — Java web container deployment and configuration checks (Tomcat, Jetty, Undertow, Jakarta EE servers).
 - **`modules/php-runtime.md`** — PHP runtime, Composer, front-controller, and upload configuration checks; load for PHP applications.
@@ -90,6 +91,7 @@ The deterministic synthesis and consistency tools are
    rediscovering architecture. Treat stale, inferred, or unknown facts as
    discovery hints and re-verify material claims.
 9. When remediating, consult the same module(s) to ensure fixes implement the framework-recommended secure pattern rather than an ad hoc one.
+10. Load `stateful-logic-review.md` for state-changing or tenant-scoped workflows, concurrent writers, retried consumers, database policy logic, legacy Forms/PL/SQL, or privileged tool actions. Record unreviewed boundaries and unresolved runtime facts; do not treat an unverified hypothesis as a vulnerability.
 
 Load `platform-data-and-proofs.md` only when the repository has a shared or
 canonical data flow, an external decision/register dependency, or a digital

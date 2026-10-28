@@ -59,6 +59,13 @@ reference according to that skill.
      record the remaining check under manual coverage rather than assuming browser E2E automation.
    Choose unit or integration level using `modules/foundation.md`; do not duplicate the full rule
    matrix at both levels.
+7a. For state transitions, conserved balances/quotas, tenant-scoped operations, retries, concurrency,
+    transaction boundaries, or privileged tool actions, use the relevant domains in
+    [`stateful-invariants.md`](../crow-application-architecture/modules/stateful-invariants.md)
+    and the scenario/isolated-boundary checks in
+    [`stateful-scenarios.md`](modules/stateful-scenarios.md).
+    Select unit versus integration level using `modules/foundation.md`; follow the module's
+    explicit approval and isolated-target requirements for reproducers.
 8. For .NET (`.sln`, `.slnx`, `.csproj`, `.vbproj`, `.fsproj`, `global.json` present), also load:
    - [`modules/dotnet/unit-tests.md`](modules/dotnet/unit-tests.md) for unit-level work.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work

@@ -20,6 +20,16 @@ ordinary review can still report demonstrated security regressions.
    DevOps PR. For another host, use the local Git comparison when possible and
    disclose unavailable provider history or source; do not invent API
    behavior.
+4. For changes to transitions, balances, tenant scope, concurrent writes,
+   retries, database policy, or tool authority, consult the relevant domains in
+   [`stateful-invariants.md`](../crow-application-architecture/modules/stateful-invariants.md)
+   and the refutation method in
+   [`stateful-logic-review.md`](../crow-security-review/modules/stateful-logic-review.md).
+   Apply these as read-only checks bounded to the diff, affected callers and
+   other writers of the changed state. Do not run reproducers from an untrusted
+   change or produce `SEC-NNN` report artifacts. Preserve this skill's
+   actionable-finding threshold and output format; uncertain hypotheses are
+   coverage gaps, not review findings.
 
 ## Workflow
 

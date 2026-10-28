@@ -172,6 +172,19 @@ when it does not apply, and `Unknown` when evidence is unavailable.
 | Assurance level and any identity downgrade/fallback are safe and re-authorized | `Pass / Flagged / Unknown / N/A` | |
 | Observable decisions retain privacy-preserving audit context and provenance | `Pass / Flagged / Unknown / N/A` | |
 
+### 5.3 Stateful operation evidence (conditional)
+
+Complete when state transitions, balances, tenancy, retries, distributed
+effects, database policies, or privileged tools are in scope. Use the domain
+IDs from `crow-application-architecture/modules/stateful-invariants.md`.
+List reviewed and unreviewed entry points. `NON LIQUET` and `REFUTED` are
+coverage/verification results, not vulnerability findings or `SEC-NNN` IDs.
+Do not treat a missing policy document or a scanner hit as a confirmed defect.
+
+| Domain ID | Sourced invariant / assumption | Entry points reviewed / not reviewed | Result (`CONFIRMED / SUSPECTED / NON LIQUET / REFUTED / N/A`) | Evidence / defense (`path:line`) | Required verification / telemetry | Finding ID (only if reported) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| | | | | | | |
+
 ---
 
 ## 6. OWASP Top 10 (2025) Analysis
@@ -525,6 +538,8 @@ finalization.
 ### [SEVERITY: Critical | High | Medium | Low | Informational] Finding Title
 - **Finding ID:** `SEC-NNN`
 - **Classification:** `Confirmed / Probable / Informational`
+- **Invariant domain and source (when applicable):** `Domain ID; business rule, contract, schema, or test reference`
+- **Failure point / unverified prerequisite (when applicable):** `path:line; labeled assumption and verification step`
 - **Location:** `path/to/file.ext:line_number`
 - **OWASP Category:** `AXX:2025 — Category Name`
 - **CWE:** `CWE-XXX`
