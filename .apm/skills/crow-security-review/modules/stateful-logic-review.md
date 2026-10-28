@@ -86,6 +86,8 @@ An unverified chain is not a `SUSPECTED` vulnerability or an
 hit alone is not proof of failure. Preserve the existing
 [`security-review-template.md`](../security-review-template.md) and
 [`finding-synthesis-and-validation.md`](finding-synthesis-and-validation.md)
-output requirements; unresolved runtime conditions belong in §5.3, not in
-an active finding. This evidence status is not the synthesis validation
-disposition.
+output requirements. For `NON LIQUET`, record unresolved runtime conditions
+in §5.3 without an active finding. For `SUSPECTED` cases meeting the criteria
+above, retain the `Probable` `SEC-NNN` finding and record its named
+runtime/configuration prerequisite and verification step in §5.3. This
+evidence status is not the synthesis validation disposition.
