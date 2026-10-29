@@ -2,7 +2,7 @@
 
 Deeper guidance for writing property-based tests with CsCheck. Load only when actually authoring one.
 
-**Prerequisites:** add the `CsCheck` NuGet package to the test project. The generator templates below
+**Prerequisites:** add the `CsCheck` NuGet package to the test project (current CsCheck requires a net10.0+ TFM). The generator templates below
 target a modern .NET TFM; if the project targets .NET 5 or earlier, drop or replace any `TimeOnly`/`DateOnly`
 generators in `GenDateExtensions.cs` (introduced in .NET 6) with `DateTime`-based equivalents. The
 `ReplaySeed` samples use `string?`, so nullable reference types must be enabled in the test project (the
@@ -110,6 +110,18 @@ filter; in Test Explorer prefer the `ReplaySeed` local.
 
 `seed:` / `CsCheck_Seed` are a **failure-replay handle, not a "deterministic CI/CD" switch**. Revalidate
 against the CsCheck version in use when upgrading the dependency.
+
+**CsCheck upgrade notes (latest major changes):**
+
+- CsCheck now targets net10.0+ only; the test project must target .NET 10 or later.
+- Use `Gen.OneOf(constants)` for constant sets; `Gen.OneOfConst` and `Gen.FrequencyConst` were removed
+  (`OneOf`/`Frequency` have overloads taking constants).
+- Invalid `Check` settings and `CsCheck_*` environment variables (`CsCheck_Iter`, `CsCheck_Time`,
+  `CsCheck_Seed`, …) now throw instead of being clamped or ignored, so a typo in a nightly pipeline fails the run.
+- Seeds and `Check.Hash` expected values changed for `Gen.Decimal`, `Gen.Double` and `Gen.Float`; a seed
+  captured on an older CsCheck may not replay the same case, so re-capture it after upgrading.
+- `Gen.Operation` no longer accepts async lambdas (compile error); `CsCheckException.Message` no longer
+  includes the inner exception's message, so read `InnerException` when diagnosing a failure.
 
 - `Sample(assertion, seed: X, iter: N)` generates iteration 1 from the PCG state of `X`; iterations 2..N run
   across worker threads, each seeded from `Stopwatch.GetTimestamp()`. A seed therefore pins **one case only**,
@@ -281,9 +293,9 @@ public static Gen<char> SmartLetter() =>
     Gen.Frequency(
         (50, Gen.OneOf(Gen.Char['a', 'z'], Gen.Char['A', 'Z'])),  // common case: plain ASCII
         (25, Gen.Char['\u00C0', '\u00FF']),                       // common: accented Latin-1
-        (10, Gen.OneOfConst('і', 'ο', 'а')),                      // homoglyphs (security/spoofing)
-        (10, Gen.OneOfConst('ı', 'İ', 'ß')),                      // normalization hazards (Turkish I, ß)
-        (5,  Gen.OneOfConst('א', 'ا')));                          // RTL scripts (bidi handling)
+        (10, Gen.OneOf('і', 'ο', 'а')),                           // homoglyphs (security/spoofing)
+        (10, Gen.OneOf('ı', 'İ', 'ß')),                           // normalization hazards (Turkish I, ß)
+        (5,  Gen.OneOf('א', 'ا')));                               // RTL scripts (bidi handling)
 ```
 
 **Don't just adapt this — copy the real, already-tested files.** `templates/dotnet/generators/` has three

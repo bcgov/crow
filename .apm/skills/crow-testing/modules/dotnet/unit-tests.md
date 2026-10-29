@@ -39,7 +39,7 @@ writing that way. See
      cannot be raised, fall back to the v2 line (`xunit` NuGet package) and record the reason.
    - **`Microsoft.Testing.Extensions.TrxReport`** on the same test project when CI needs a portable TRX
      result file. MTP does not emit TRX out of the box. See "CI test-result publishing (MTP)" below.
-   - **CsCheck** for property-based testing of validation rules and invariants with many input combinations
+   - **CsCheck** (requires a net10.0+ test project) for property-based testing of validation rules and invariants with many input combinations
      (see [`reference/property-based-testing.md`](../reference/property-based-testing.md) for generator and
      shrinking patterns — load only when actually writing a property-based test).
    - **Bogus** for realistic fake test data via a builder per model, seeded for reproducibility
