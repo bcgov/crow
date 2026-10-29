@@ -60,16 +60,25 @@ Replace `copilot` with `claude`, `codex`, or `cursor` for another client.
 The `--global` option installs into the selected client's user profile rather
 than copying Crow into every project.
 
-The `stable` branch follows the latest published stable Crow release. It is
-seeded after successful main-branch asset validation and advances only when a
-stable release is published. To migrate an existing exact-tag global install
-to this update stream, run the full-package command above once; future
-`apm update --global --target copilot` runs can then follow published releases.
 For an exact, reproducible install of this release, use:
 
 ```powershell
 apm install bcgov/crow#v0.15.4 --global --target copilot
 ```
+
+### Updating an installation
+
+Update global APM packages for Copilot to the latest version according to the configured package ref:
+
+```powershell
+apm update --global --target copilot
+```
+
+For Crow installed from `#stable`, this picks up the latest published stable
+release. An exact version tag such as `#v0.15.4` remains pinned to that release;
+to follow future releases, install the full package from `#stable` above once.
+APM refreshes the resolved commit in the global lockfile; do not edit it
+manually.
 
 ### Direct Copilot CLI plugin
 
