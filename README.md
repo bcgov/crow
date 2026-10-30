@@ -3,9 +3,9 @@
 CROW is a public package of agents and skills for agentic software
 development. It supports brownfield architecture, application development,
 Java, .NET, and PHP CI across GitHub Actions, Azure Pipelines, and Jenkins,
-framework and dependency maintenance, accessible B.C. government UX, testing,
-security review and remediation, and the project setup needed to use those
-capabilities across repositories.
+framework and dependency maintenance, accessible B.C. government UX, analytics
+design, testing, security review and remediation, and the project setup needed
+to use those capabilities across repositories.
 
 Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
 Copilot CLI plugin. The full package remains available, and curated
@@ -63,7 +63,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.16.1 --global --target copilot
+apm install bcgov/crow#v0.17.0 --global --target copilot
 ```
 
 ### Updating an installation
@@ -75,7 +75,7 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.16.1` remains pinned to that release;
+release. An exact version tag such as `#v0.17.0` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
@@ -154,7 +154,7 @@ Use the selected client's normal discovery commands:
   testing, and remediation.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.16.1` remains fixed. Installing
+while an exact version tag such as `#v0.17.0` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -168,9 +168,11 @@ package.
 - [Crow B.C. Government UX Agent](.apm/agents/crow-bcgov-ux.agent.md)
 - [Crow Solution Architecture Agent](.apm/agents/crow-solution-architecture.agent.md)
 - [Crow Data Architecture Agent](.apm/agents/crow-data-architecture.agent.md) —
-  Designs relational and file-storage models, plans safe changes for features
-  and bug fixes, and guides modernization refactoring, keeping descriptions,
-  B.C. classifications, and records schedules in the database.
+  Documents, designs, and evolves relational and file-storage models, keeping
+  descriptions, B.C. classifications, and records schedules with the schema.
+- [Crow Analytics Design Agent](.apm/agents/crow-analytics-design.agent.md) —
+  Guides analytics requirements, local source analysis, dimensional design,
+  and signed-off design handoffs without implementing or deploying a solution.
 - [Crow Architecture Review Agent](.apm/agents/crow-architecture-review.agent.md)
 - [Crow Legacy Modernization Agent](.apm/agents/crow-legacy-modernization.agent.md) —
   Guides a legacy application through business and process discovery, portable
@@ -209,11 +211,14 @@ package.
   [technology preferences guide](.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
   for review, removal, and supported categories.
 - [**crow-data-architecture**](.apm/skills/crow-data-architecture/SKILL.md) —
-  Relational data modelling for Oracle, SQL Server, PostgreSQL/PostGIS, and
-  MySQL/MariaDB with Entity Framework, JPA/Hibernate, Doctrine, or Eloquent.
-  Covers filesystem, object-store, and database LOB designs, in-database
-  metadata, and bcgov/wwwsqldesigner `portable-v1` XML, with a model validator
-  and metadata SQL generator.
+  Existing schema documentation and relational data modelling for Oracle,
+  SQL Server, PostgreSQL/PostGIS, and MySQL/MariaDB with Entity Framework,
+  JPA/Hibernate, Doctrine, or Eloquent. Covers filesystem, object-store, and
+  database LOB designs, in-database metadata, and bcgov/wwwsqldesigner
+  `portable-v1` XML, with a model validator and metadata SQL generator.
+- [**crow-analytics-design**](.apm/skills/crow-analytics-design/SKILL.md) —
+  Analytics requirements interviews, local-first source analysis, dimensional
+  design, and user-confirmed handoffs; it does not build or deploy.
 - [**crow-application-architecture**](.apm/skills/crow-application-architecture/SKILL.md) —
   Application boundaries, dependencies, platforms, Zero Trust, and stateful
   invariants; technology modules include .NET, Java, and PHP.
@@ -276,7 +281,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.16.1.zip`. See
+The resulting archive is `build/bcgov-crow-0.17.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
