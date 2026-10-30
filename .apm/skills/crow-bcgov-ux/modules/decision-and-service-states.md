@@ -4,6 +4,8 @@ Load this technology-neutral module only when a supplied screen or flow
 displays an automated eligibility/denial decision, a result from an external
 register or service, or a degraded, asynchronous, offline, or assisted state.
 This module governs point-of-use communication, not journey or policy design.
+Apply the foundations module's fact-next-action-context check to consequential
+messages on these surfaces.
 
 For authentication, step-up, authorization, expiry, revocation, or dependency
 failures, explain the user-visible state without exposing security-sensitive

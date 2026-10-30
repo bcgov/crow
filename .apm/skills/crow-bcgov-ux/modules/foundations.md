@@ -47,6 +47,18 @@ The design system is a work in progress. Use only released components and curren
 - Support 320 CSS-pixel-equivalent reflow and 400% zoom without loss of content or functionality, except for legitimate two-dimensional content.
 - Keep reading order and focus order consistent with visual order.
 
+### Task clarity and visual hierarchy
+
+When visual hierarchy is in scope, inspect the rendered surface with real task
+content: can users find the primary task, current state, and next action
+without competing headings or equally prominent choices? Check whether
+grouping, spacing, and emphasis reflect the importance of the content, and
+whether visual order agrees with reading and focus order. Compare neighbouring
+screens and released B.C. patterns. Base recommendations on observed task
+friction, not generic aesthetic preferences; preserve approved content and
+the existing design system. If rendering is unavailable, mark visual
+observations for manual verification rather than claiming a rendered finding.
+
 ### Iconography
 
 - Use the documented Font Awesome Free icons or suitable accessible SVGs. Do not assume a Font Awesome Pro licence.
@@ -82,6 +94,10 @@ Verify these against the live component page before exact implementation:
 - Make errors specific: identify the field/problem and explain how to correct it without blaming the user.
 - Preserve entered values after validation failures where safe.
 - Announce asynchronous status changes without unnecessarily moving focus.
+- For consequential messages, check fact, next action, and context: state the
+  verified outcome and its impact when known, the available action or recourse,
+  and only the context needed to decide (such as timing or provenance when
+  known). Lead with the fact and action; do not invent a cause, outcome, or policy.
 - For automated eligibility, denial, or external-register results, explain the
   outcome at the point of use and provide the approved correction, review, or
   contact path. Identify pending, degraded, offline, stale, and assisted
