@@ -60,8 +60,8 @@ handoff.
 
 ## Design artifacts
 
-When requested and write-authorized, keep work in
-`docs/design/analytics/`:
+When requested and write-authorized, keep work in the repository-relative
+directory agreed with the user, defaulting to `docs/design/analytics/`:
 
 - `requirements.md` for scope, users, questions, measures, delivery, and
   acceptance.

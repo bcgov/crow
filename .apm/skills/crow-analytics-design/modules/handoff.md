@@ -23,17 +23,15 @@ deferred_items: []
 sign_off_timestamp: <timestamp-or-null>
 ```
 
-Unless otherwise specified, design artifact paths are repository-relative
-paths under `docs/design/analytics/`.
+Design artifacts live in the repository-relative directory agreed with the
+user; the default is `docs/design/analytics/`.
 
 For `status: signed-off`, require all of the following:
 
 - `signed_off_artifacts` and `artifact_paths` both list the non-empty
-  `docs/design/analytics/requirements.md`,
-  `docs/design/analytics/decisions.md`,
-  `docs/design/analytics/bus-matrix.md`,
-  `docs/design/analytics/glossary.md`, and
-  `docs/design/analytics/entity-map.md` artifacts.
+  `requirements.md`, `decisions.md`, `bus-matrix.md`, `glossary.md`, and
+  `entity-map.md` artifacts in the agreed directory, recorded as
+  repository-relative paths.
 - `evidence_paths` is non-empty and points only to inspected evidence or
   user-confirmed requirements recorded in the artifacts.
 - `confirmed_grain` is non-empty, and
