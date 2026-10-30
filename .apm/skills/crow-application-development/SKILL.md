@@ -5,7 +5,7 @@ description: Implement and evolve applications with technology-routed engineerin
 
 # Application Development
 
-Use this skill while implementing or changing an application. Data architecture and data modelling are out of scope; safe persistence implementation is included.
+Use this skill while implementing or changing an application. Data architecture and data modelling are handled by the Crow Data Architecture Agent; safe persistence implementation is included.
 
 ## Context-efficient loading
 

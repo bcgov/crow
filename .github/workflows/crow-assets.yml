@@ -102,6 +102,25 @@ jobs:
           & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
           node --test .\.apm\skills\crow-solution-architecture\scripts\technology-preferences.test.mjs
 
+      - name: Test data architecture model validation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
+
+      - name: Test data architecture metadata SQL generation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
+
+      - name: Verify data architecture scripts on Windows PowerShell 5.1
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Test business rule validation and rendering
         shell: pwsh
         run: |

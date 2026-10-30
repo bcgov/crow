@@ -1,6 +1,6 @@
 # Java safe persistence implementation
 
-Database selection, schema/domain modelling, and data platform architecture remain out of scope.
+Database selection and data platform architecture remain out of scope; schema and domain modelling are handled by the Crow Data Architecture Agent.
 
 - Own each transaction at the use-case boundary; understand Spring `@Transactional` proxy/self-invocation behavior or Jakarta transaction semantics before assuming a method is transactional. Avoid holding transactions open across remote calls.
 - Keep JPA `EntityManager`/Hibernate sessions scoped to a transaction/request, not shared across threads. Avoid implicit lazy loading in serialization; project bounded response DTOs and check query count/N+1 behavior.

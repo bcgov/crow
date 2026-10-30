@@ -4,8 +4,9 @@ Load when an operation changes durable state, moves value, scopes data to a
 tenant, consumes retries/events, or delegates a state-changing action to a
 tool. This module covers application behavior and coordination, not physical
 database topology, data modelling, queue product selection, or HA design.
-Route those infrastructure decisions to the appropriate solution architecture
-work. Apply only the relevant domains below; the labels are stable review
+Data modelling is handled by the Crow Data Architecture Agent. Route
+infrastructure decisions to the appropriate solution architecture work. Apply
+only the relevant domains below; the labels are stable review
 categories, not proof that a vulnerability exists.
 
 ## Establish the contract first

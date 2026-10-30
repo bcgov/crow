@@ -1,6 +1,6 @@
 # .NET secure persistence implementation
 
-This module covers safe implementation only. Database selection, schema/domain modelling, data platform architecture, analytics, and warehouse design are out of scope.
+This module covers safe implementation only. Database selection, data platform architecture, analytics, and warehouse design are out of scope; schema and domain modelling are handled by the Crow Data Architecture Agent.
 
 ## EF Core
 

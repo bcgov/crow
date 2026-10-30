@@ -5,7 +5,7 @@ description: Design or review application architecture using technology-routed g
 
 # Application Architecture
 
-Use this skill when designing a new application or making a structural change to an existing one. Data architecture, database topology, and domain data modelling are intentionally out of scope.
+Use this skill when designing a new application or making a structural change to an existing one. Database topology is out of scope; data modelling is handled by the Crow Data Architecture Agent.
 
 ## Context-efficient loading
 
