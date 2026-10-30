@@ -33,6 +33,10 @@
 - Unquoted identifiers fold to lowercase. Use lowercase `snake_case` and
   avoid quoted mixed-case names, which every query must then quote.
 - Identifiers are truncated at 63 bytes by default.
+- The metadata SQL generator preserves model identifier spelling by default
+  because it quotes names. Use `-FoldUnquotedIdentifiers` only when the
+  physical objects were created from unquoted PostgreSQL identifiers and
+  therefore folded to lowercase.
 
 ## Integrity and indexing
 

@@ -71,7 +71,7 @@ database.
   review items.
 - Generate reviewable metadata SQL from a valid model:
   - Windows PowerShell 5.1:
-    `powershell.exe -NoProfile -File scripts/New-DataModelMetadataSql.ps1 -Path <model.xml> -Dialect <SqlServer|OracleAnnotations|Oracle|PostgreSql|MySql> [-IncludeSensitivityClassification] [-OmitSchema] [-OutFile <file.sql>]`
+    `powershell.exe -NoProfile -File scripts/New-DataModelMetadataSql.ps1 -Path <model.xml> -Dialect <SqlServer|OracleAnnotations|Oracle|PostgreSql|MySql> [-IncludeSensitivityClassification] [-OmitSchema] [-FoldUnquotedIdentifiers] [-OutFile <file.sql>]`
   - PowerShell 7+: use the same command with `pwsh`.
   The generator requires complete governance metadata and an explicit schema
   outside SQL Server. It sets values but never removes metadata for dropped

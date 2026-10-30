@@ -385,6 +385,10 @@ foreach ($table in $tables) {
             Add-ModelError "${tableLocation}: row name cannot be empty."
             continue
         }
+        if ($rowName -match '[&<]') {
+            Add-ModelError "${tableLocation}: row name '$rowName' contains '&' or '<', which the designer does not escape when saving XML."
+            continue
+        }
         if ($rowName -match $controlCharacters) {
             Add-ModelError "${tableLocation}: row name '$($rowName -replace $controlCharacters, '?')' contains control characters."
             continue

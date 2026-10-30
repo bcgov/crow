@@ -60,8 +60,13 @@ is a complete synthetic example.
 - `relation` sits on the referencing row and names the target `table`,
   `schema`, `row`, and optional constraint `name`. Target a single-column
   `PRIMARY` or `UNIQUE` key, and use the same datatype on both ends.
-- Names must not contain control characters. The designer does not escape
-  key names in its user interface; keep them to plain identifiers.
+- Table, schema, column, and key names must not contain control characters.
+  The current designer serializer does not escape `&` or `<` in row names;
+  the validator rejects those column names to prevent invalid XML on save.
+  The metadata SQL generator preserves model identifier spelling for Oracle
+  and PostgreSQL; use `-FoldUnquotedIdentifiers` only when the physical DDL
+  created the objects as unquoted names. Keep key names to plain identifiers;
+  the designer does not escape them in its user interface.
 
 ## Portable datatypes
 

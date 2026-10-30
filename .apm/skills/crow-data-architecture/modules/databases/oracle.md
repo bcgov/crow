@@ -48,6 +48,10 @@
 - Unquoted identifiers are stored in uppercase. Quoted identifiers are
   case-sensitive and must be quoted everywhere. Prefer unquoted names.
 - Identifiers are limited to 128 bytes from 12.2; older versions allow 30.
+- The metadata SQL generator preserves model identifier spelling by default
+  because wwwsqldesigner Oracle exports quote names. Use
+  `-FoldUnquotedIdentifiers` only when the physical objects were created from
+  unquoted Oracle identifiers and therefore folded to uppercase.
 
 ## Integrity and indexing
 

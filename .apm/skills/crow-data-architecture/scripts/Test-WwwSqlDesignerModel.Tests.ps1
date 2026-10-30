@@ -81,6 +81,8 @@ try {
     Invoke-ModelTest 'facets on date fail' (Edit-Example '<datatype>date</datatype>' '<datatype>date(3)</datatype>') 1 'does not accept facets'
     Invoke-ModelTest 'autoincrement on string fails' (Edit-Example 'name="application_number" null="0" autoincrement="0"' 'name="application_number" null="0" autoincrement="1"') 1 'autoincrement requires the integer type'
     Invoke-ModelTest 'invalid null flag fails' (Edit-Example 'name="applicant_name" null="0"' 'name="applicant_name" null="yes"') 1 "null must be '0' or '1'"
+    Invoke-ModelTest 'row name with ampersand is rejected before designer XML round-trip' (Edit-Example 'name="applicant_name"' 'name="a&amp;b"') 1 'designer does not escape'
+    Invoke-ModelTest 'row name with less-than is rejected before designer XML round-trip' (Edit-Example 'name="applicant_name"' 'name="a&lt;b"') 1 'designer does not escape'
     Invoke-ModelTest 'duplicate table identity fails' (Edit-Example 'name="permit_application" schema="permit"' 'name=" PERMIT_TYPE " schema="Permit"') 1 'Duplicate table identity'
     Invoke-ModelTest 'case-only duplicate rows warn' (Edit-Example '<row name="description"' '<row name="Description" null="0" autoincrement="0"><datatype>text</datatype><comment>x</comment><classification>Public</classification></row><row name="description"') 0 'differ only by case'
     Invoke-ModelTest 'two primary keys fail' (Edit-Example '<key type="UNIQUE" name="uq_permit_application_number">' '<key type="PRIMARY" name="uq_permit_application_number">') 1 'more than one PRIMARY key'

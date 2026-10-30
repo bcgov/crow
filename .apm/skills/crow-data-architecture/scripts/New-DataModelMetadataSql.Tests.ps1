@@ -80,25 +80,34 @@ try {
     Invoke-Generator 'SQL Server stores column-specific schedules as extended properties' $columnSchedule @('-Dialect', 'SqlServer') 0 @(
         "@name = N'RecordsSchedule', @value = N'Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)'",
         "@level2type = N'COLUMN', @level2name = N'note'") @() | Out-Null
+    $noColumnSchedule = Write-ModelFixture 'Cases' 'Identity detail'
+    Invoke-Generator 'SQL Server removes column schedule overrides absent from the model' $noColumnSchedule @('-Dialect', 'SqlServer') 0 @(
+        "IF EXISTS (SELECT 1 FROM sys.fn_listextendedproperty(N'RecordsSchedule', N'SCHEMA', N'app', N'TABLE', N'case', N'COLUMN', N'note'))",
+        "EXEC sys.sp_dropextendedproperty @name = N'RecordsSchedule', @level0type = N'SCHEMA', @level0name = N'app'") @() | Out-Null
     Invoke-Generator 'Oracle annotations store column-specific schedules' $columnSchedule @('-Dialect', 'OracleAnnotations') 0 @(
         "ANNOTATIONS (ADD ""RecordsSchedule"" 'Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)')") @() | Out-Null
     Invoke-Generator 'Oracle stores column schedules in the comment trailer' $columnSchedule @('-Dialect', 'Oracle') 0 @(
-        "COMMENT ON COLUMN ""APP"".""CASE"".""NOTE"" IS 'Identity detail @bcgov{DataClassification=Protected B;RecordsSchedule=Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)}';") @() | Out-Null
+        "COMMENT ON COLUMN ""app"".""case"".""note"" IS 'Identity detail @bcgov{DataClassification=Protected B;RecordsSchedule=Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)}';") @() | Out-Null
     Invoke-Generator 'PostgreSQL stores column schedules in the comment trailer' $columnSchedule @('-Dialect', 'PostgreSql') 0 @(
         "COMMENT ON COLUMN ""app"".""case"".""note"" IS 'Identity detail @bcgov{DataClassification=Protected B;RecordsSchedule=Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)}';") @() | Out-Null
     Invoke-Generator 'MySQL stores column schedules in the comment trailer' $columnSchedule @('-Dialect', 'MySql') 0 @(
         "--   COMMENT 'Identity detail @bcgov{DataClassification=Protected B;RecordsSchedule=Identity details: retain 2 years after the decision is final, then destroy (ORCS 12345-20)}'") @() | Out-Null
     Invoke-Generator 'PostgreSQL can omit schema' $quoted @('-Dialect', 'PostgreSql', '-OmitSchema') 0 @(
         'COMMENT ON TABLE "case" IS') @('"app"') | Out-Null
-    Invoke-Generator 'Oracle comments fold simple identifiers to upper case' $quoted @('-Dialect', 'Oracle') 0 @(
+    Invoke-Generator 'Oracle preserves model identifier spelling by default' $quoted @('-Dialect', 'Oracle') 0 @(
+        "COMMENT ON TABLE ""app"".""case"" IS 'Owner''s cases @bcgov{RecordsSchedule=Case files: retain 2 years after closure, then destroy (ARCS 100-20)}';") @() | Out-Null
+    Invoke-Generator 'Oracle folds unquoted identifiers only when requested' $quoted @('-Dialect', 'Oracle', '-FoldUnquotedIdentifiers') 0 @(
         "COMMENT ON TABLE ""APP"".""CASE"" IS 'Owner''s cases @bcgov{RecordsSchedule=Case files: retain 2 years after closure, then destroy (ARCS 100-20)}';") @() | Out-Null
     Invoke-Generator 'Oracle annotations replace values re-runnably' $quoted @('-Dialect', 'OracleAnnotations') 0 @(
-        "COMMENT ON TABLE ""APP"".""CASE"" IS 'Owner''s cases';",
-        'ALTER TABLE "APP"."CASE" ANNOTATIONS (DROP IF EXISTS "RecordsSchedule");',
-        "ALTER TABLE ""APP"".""CASE"" ANNOTATIONS (ADD ""RecordsSchedule"" 'Case files: retain 2 years after closure, then destroy (ARCS 100-20)');",
-        "ALTER TABLE ""APP"".""CASE"" MODIFY (""NOTE"" ANNOTATIONS (ADD ""DataClassification"" 'Protected B'));") @('@bcgov{') | Out-Null
+        "COMMENT ON TABLE ""app"".""case"" IS 'Owner''s cases';",
+        'ALTER TABLE "app"."case" ANNOTATIONS (DROP IF EXISTS "RecordsSchedule");',
+        "ALTER TABLE ""app"".""case"" ANNOTATIONS (ADD ""RecordsSchedule"" 'Case files: retain 2 years after closure, then destroy (ARCS 100-20)');",
+        'ALTER TABLE "app"."case" MODIFY ("note" ANNOTATIONS (DROP IF EXISTS "RecordsSchedule"));',
+        "ALTER TABLE ""app"".""case"" MODIFY (""note"" ANNOTATIONS (ADD ""DataClassification"" 'Protected B'));") @('@bcgov{') | Out-Null
+    Invoke-Generator 'Oracle removes a column schedule override when returning to the table schedule' $noColumnSchedule @('-Dialect', 'OracleAnnotations') 0 @(
+        'ALTER TABLE "app"."case" MODIFY ("note" ANNOTATIONS (DROP IF EXISTS "RecordsSchedule"));') @() | Out-Null
     Invoke-Generator 'Oracle keeps mixed identifiers quoted as written' (Write-ModelFixture 'x' 'y' 'Case Table' 'Note') @('-Dialect', 'Oracle') 0 @(
-        'COMMENT ON TABLE "APP"."Case Table" IS', 'COMMENT ON COLUMN "APP"."Case Table"."NOTE" IS') @() | Out-Null
+        'COMMENT ON TABLE "app"."Case Table" IS', 'COMMENT ON COLUMN "app"."Case Table"."Note" IS') @() | Out-Null
 
     $backslash = Write-ModelFixture 'Path C:\temp' "Line one`nLine two"
     Invoke-Generator 'MySQL escapes backslashes and keeps column notes on one line' $backslash @('-Dialect', 'MySql') 0 @(
@@ -128,7 +137,9 @@ try {
 
     Invoke-Generator 'trailer percent-encodes every reserved character' (Write-ModelFixture 'x' 'y' -Schedule 'Case files 100% {x=y}; logs: retain 2 years after closure (ARCS 100-20)') @('-Dialect', 'PostgreSql') 0 @(
         '@bcgov{RecordsSchedule=Case files 100%25 %7Bx%3Dy%7D%3B logs: retain 2 years after closure (ARCS 100-20)}') @() | Out-Null
-    Invoke-Generator 'PostgreSQL folds simple identifiers to lower case' (Write-ModelFixture 'x' 'y' 'CaseFile' 'NoteText' 'App') @('-Dialect', 'PostgreSql') 0 @(
+    Invoke-Generator 'PostgreSQL preserves model identifier spelling by default' (Write-ModelFixture 'x' 'y' 'CaseFile' 'NoteText' 'App') @('-Dialect', 'PostgreSql') 0 @(
+        'COMMENT ON TABLE "App"."CaseFile" IS', 'COMMENT ON COLUMN "App"."CaseFile"."NoteText" IS') @() | Out-Null
+    Invoke-Generator 'PostgreSQL folds unquoted identifiers only when requested' (Write-ModelFixture 'x' 'y' 'CaseFile' 'NoteText' 'App') @('-Dialect', 'PostgreSql', '-FoldUnquotedIdentifiers') 0 @(
         'COMMENT ON TABLE "app"."casefile" IS', 'COMMENT ON COLUMN "app"."casefile"."notetext" IS') @() | Out-Null
     Invoke-Generator 'PostgreSQL keeps and escapes quoted identifiers' (Write-ModelFixture 'x' 'y' 'Case "A"' 'note') @('-Dialect', 'PostgreSql') 0 @(
         'COMMENT ON TABLE "app"."Case ""A""" IS') @() | Out-Null
@@ -141,6 +152,19 @@ try {
     Invoke-Generator 'Oracle keeps ampersands literal' (Write-ModelFixture 'R&D cases' 'y') @('-Dialect', 'Oracle') 0 @(
         'SET DEFINE OFF', "IS 'R&D cases @bcgov{") @() | Out-Null
 
+    $cafe = 'Caf' + [char]0x00E9
+    $resume = 'R' + [char]0x00E9 + 'sum' + [char]0x00E9
+    $encodingModel = Write-ModelFixture "$cafe files" "$resume details" $cafe $resume 'App'
+    $encodingModelText = [System.IO.File]::ReadAllText($encodingModel, $utf8)
+    [System.IO.File]::WriteAllText(
+        $encodingModel,
+        '<?xml version="1.0" encoding="iso-8859-1"?>' + $encodingModelText,
+        $utf8)
+    $expectedUnicodeTable = "COMMENT ON TABLE ""App"".""$cafe"" IS '$cafe files"
+    $expectedUnicodeColumn = "COMMENT ON COLUMN ""App"".""$cafe"".""$resume"" IS '$resume details"
+    Invoke-Generator 'UTF-8 text overrides a conflicting XML encoding declaration' $encodingModel @('-Dialect', 'PostgreSql') 0 @(
+        $expectedUnicodeTable, $expectedUnicodeColumn) @() | Out-Null
+
     Invoke-Generator 'PostgreSQL identifier byte limit fails' (Write-ModelFixture 'x' 'y' ('t' * 64)) @('-Dialect', 'PostgreSql') 1 @('64 bytes; PostgreSql allows 63') @() | Out-Null
     Invoke-Generator 'MySQL identifier limit fails' (Write-ModelFixture 'x' 'y' ('t' * 65)) @('-Dialect', 'MySql') 1 @('65 characters; MySql allows 64') @() | Out-Null
     Invoke-Generator 'Oracle identifier byte limit fails' (Write-ModelFixture 'x' 'y' ([string][char]0x00E9 * 65)) @('-Dialect', 'Oracle') 1 @('130 bytes; Oracle allows 128') @() | Out-Null
@@ -148,6 +172,7 @@ try {
 
     Invoke-Generator 'sensitivity option requires SQL Server' $quoted @('-Dialect', 'PostgreSql', '-IncludeSensitivityClassification') 1 @('applies only to') @() | Out-Null
     Invoke-Generator 'omit schema is rejected for SQL Server' $quoted @('-Dialect', 'SqlServer', '-OmitSchema') 1 @('not supported for SqlServer') @() | Out-Null
+    Invoke-Generator 'identifier folding option is limited to Oracle and PostgreSQL' $quoted @('-Dialect', 'SqlServer', '-FoldUnquotedIdentifiers') 1 @('applies only to Oracle and PostgreSql') @() | Out-Null
 
     $invalid = Write-ModelFixture 'x' 'y'
     [System.IO.File]::WriteAllText($invalid, [System.IO.File]::ReadAllText($invalid).Replace('Protected B', 'Secret'), $utf8)

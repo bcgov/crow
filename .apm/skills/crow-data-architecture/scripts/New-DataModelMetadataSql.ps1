@@ -15,11 +15,13 @@
   PostgreSql         COMMENT ON with a parseable @bcgov{...} trailer.
   MySql              ALTER TABLE ... COMMENT with a trailer. Column comments require
                      the full column definition, so they are emitted as review notes.
+  -FoldUnquotedIdentifiers matches the folding used by unquoted Oracle/PostgreSQL DDL.
 
   The script never connects to a database. Review the output before applying it.
   It validates with -RequireGovernanceMetadata, so every run sets every description,
-  records schedule, and classification. It does not remove metadata for tables or
-  columns missing from the model; drop those objects through reviewed migrations.
+  records schedule, and classification.   It removes a column-level RecordsSchedule override when that column has no
+  such trailer in the model. It does not remove metadata for objects missing
+  from the model; drop those objects through reviewed migrations.
   Exit codes: 0 generated, 1 validation or limit error, 2 model file not found.
 #>
 [CmdletBinding()]
@@ -34,6 +36,8 @@ param(
     [switch]$IncludeSensitivityClassification,
 
     [switch]$OmitSchema,
+
+    [switch]$FoldUnquotedIdentifiers,
 
     [string]$OutFile
 )
@@ -63,8 +67,25 @@ if ($IncludeSensitivityClassification -and $Dialect -ne 'SqlServer') {
 if ($OmitSchema -and $Dialect -eq 'SqlServer') {
     Exit-Generation '-OmitSchema is not supported for SqlServer; extended properties require a schema.' 1
 }
+if ($FoldUnquotedIdentifiers -and $Dialect -notin @('Oracle', 'OracleAnnotations', 'PostgreSql')) {
+    Exit-Generation '-FoldUnquotedIdentifiers applies only to Oracle and PostgreSql dialects.' 1
+}
 if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) {
     Exit-Generation "Model file not found: $Path" 2
+}
+
+$modelBytes = [System.IO.File]::ReadAllBytes((Resolve-Path -LiteralPath $Path).ProviderPath)
+if ($modelBytes.Length -gt 1MB) {
+    Exit-Generation "Model exceeds the designer's 1 MiB size limit; no SQL generated." 1
+}
+try {
+    $modelText = [System.Text.UTF8Encoding]::new($false, $true).GetString($modelBytes)
+}
+catch {
+    Exit-Generation "Model is not valid UTF-8: $($_.Exception.Message)" 1
+}
+if ($modelText.Length -gt 0 -and $modelText[0] -eq [char]0xFEFF) {
+    $modelText = $modelText.Substring(1)
 }
 
 $validation = & $validatorPath -Path $Path -RequireGovernanceMetadata *>&1
@@ -77,7 +98,7 @@ if ($validationExit -ne 0) {
 $settings = [System.Xml.XmlReaderSettings]::new()
 $settings.DtdProcessing = [System.Xml.DtdProcessing]::Prohibit
 $settings.XmlResolver = $null
-$reader = [System.Xml.XmlReader]::Create((Resolve-Path -LiteralPath $Path).ProviderPath, $settings)
+$reader = [System.Xml.XmlReader]::Create([System.IO.StringReader]::new($modelText), $settings)
 try {
     $document = [System.Xml.XmlDocument]::new()
     $document.XmlResolver = $null
@@ -184,13 +205,15 @@ function ConvertTo-Identifier([string]$Name) {
                 $script:errors.Add("Oracle identifiers cannot contain double quotes: $(ConvertTo-CommentText $Name)")
                 return '"?"'
             }
-            # Unquoted Oracle identifiers are stored in upper case.
-            if ($Name -match '^[A-Za-z][A-Za-z0-9_$#]*$') { return '"' + $Name.ToUpperInvariant() + '"' }
+            if ($FoldUnquotedIdentifiers -and $Name -match '^[A-Za-z][A-Za-z0-9_$#]*$') {
+                $Name = $Name.ToUpperInvariant()
+            }
             return '"' + $Name + '"'
         }
         default {
-            # Unquoted PostgreSQL identifiers are stored in lower case.
-            if ($Name -match '^[A-Za-z_][A-Za-z0-9_$]*$') { return '"' + $Name.ToLowerInvariant() + '"' }
+            if ($FoldUnquotedIdentifiers -and $Name -match '^[A-Za-z_][A-Za-z0-9_$]*$') {
+                $Name = $Name.ToLowerInvariant()
+            }
             return '"' + $Name.Replace('"', '""') + '"'
         }
     }
@@ -237,6 +260,15 @@ function Format-SqlServerProperty([string]$Schema, [string]$Table, [string]$Colu
     )
 }
 
+function Format-SqlServerPropertyDrop([string]$Schema, [string]$Table, [string]$Column, [string]$Name) {
+    $levels = "@level0type = N'SCHEMA', @level0name = $(ConvertTo-SqlLiteral $Schema), @level1type = N'TABLE', @level1name = $(ConvertTo-SqlLiteral $Table), @level2type = N'COLUMN', @level2name = $(ConvertTo-SqlLiteral $Column)"
+    $lookup = "N'SCHEMA', $(ConvertTo-SqlLiteral $Schema), N'TABLE', $(ConvertTo-SqlLiteral $Table), N'COLUMN', $(ConvertTo-SqlLiteral $Column)"
+    return @(
+        "IF EXISTS (SELECT 1 FROM sys.fn_listextendedproperty(N'$Name', $lookup))"
+        "    EXEC sys.sp_dropextendedproperty @name = N'$Name', $levels;"
+    )
+}
+
 function Format-OracleAnnotation([string]$Target, [string]$Column, [string]$Name, [string]$Value) {
     $drop = "ANNOTATIONS (DROP IF EXISTS ""$Name"")"
     $add = "ANNOTATIONS (ADD ""$Name"" $(ConvertTo-SqlLiteral $Value))"
@@ -245,6 +277,15 @@ function Format-OracleAnnotation([string]$Target, [string]$Column, [string]$Name
         return @("ALTER TABLE $Target MODIFY ($columnName $drop);", "ALTER TABLE $Target MODIFY ($columnName $add);")
     }
     return @("ALTER TABLE $Target $drop;", "ALTER TABLE $Target $add;")
+}
+
+function Format-OracleAnnotationDrop([string]$Target, [string]$Column, [string]$Name) {
+    $drop = "ANNOTATIONS (DROP IF EXISTS ""$Name"")"
+    if ($Column) {
+        $columnName = ConvertTo-Identifier $Column
+        return "ALTER TABLE $Target MODIFY ($columnName $drop);"
+    }
+    return "ALTER TABLE $Target $drop;"
 }
 
 $lines = [System.Collections.Generic.List[string]]::new()
@@ -326,6 +367,9 @@ foreach ($table in $document.DocumentElement.ChildNodes) {
                     Test-Limit $pair[1] $location 'column'
                     $lines.AddRange([string[]](Format-SqlServerProperty $schema $tableName $columnName $pair[0] $pair[1]))
                 }
+                if (-not $columnSchedule) {
+                    $lines.AddRange([string[]](Format-SqlServerPropertyDrop $schema $tableName $columnName $scheduleName))
+                }
                 if ($IncludeSensitivityClassification -and $classification) {
                     $lines.Add("ADD SENSITIVITY CLASSIFICATION TO $columnTarget WITH (LABEL = $(ConvertTo-SqlLiteral $classification), RANK = $($sensitivityRanks[$classification]));")
                 }
@@ -341,6 +385,9 @@ foreach ($table in $document.DocumentElement.ChildNodes) {
                 if ($columnSchedule) {
                     Test-Limit $columnSchedule $location 'annotation'
                     $lines.AddRange([string[]](Format-OracleAnnotation $tableTarget $columnName $scheduleName $columnSchedule))
+                }
+                else {
+                    $lines.Add((Format-OracleAnnotationDrop $tableTarget $columnName $scheduleName))
                 }
             }
             default {
