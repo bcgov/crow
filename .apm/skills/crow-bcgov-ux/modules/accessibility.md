@@ -75,4 +75,14 @@ Run existing project tooling first. Supplement it with manual checks:
 7. accessible names, roles, values, descriptions, errors, and live announcements;
 8. contrast checks for every interaction and validation state.
 
+When a rendered surface and safe test states are available, also check
+representative long content, empty results, localized or expanded text,
+permission-limited views, and interrupted operations (such as a lost connection
+or cancelled request). Check that content does not clip, the state and available
+next action remain understandable, and focus, reading order, and recovery work
+at relevant widths and zoom. Use existing fixtures or authorized test access;
+do not bypass permissions or invent product behaviour just to produce a state.
+Record which states could not be exercised. These checks supplement, rather
+than replace, the accessibility checks above.
+
 Record browser, viewport/zoom, assistive technology, and tooling versions for formal reviews. State any checks not performed.

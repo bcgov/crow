@@ -33,11 +33,18 @@ Do not equate a representative sample with full-app conformance.
 3. Shared components and all reachable states.
 4. Form semantics, sensitive-value masking and reveal controls, validation, error recovery, and confirmation.
 5. Keyboard, focus, announcements, motion, zoom/reflow, and contrast.
-6. Screen-specific composition and content.
+6. Screen-specific composition and content: when rendered evidence is
+   available, check whether users can find the primary task, current state,
+   and next action; assess visual grouping and order against established
+   design-system patterns, not aesthetic preferences.
 7. Point-of-use decision explanation, provenance, recourse, and consequential
    service states when the sampled surface has them.
 
 Prioritize shared root causes. A correction to a token, primitive, or shared template is preferable to repeated page-level overrides when regression risk is controlled.
+Where safe rendered states are available, exercise representative long,
+empty, localized, permission-limited, and interrupted states. Check for
+clipped content, understandable next actions, focus and reading order,
+and recovery; record which states could not be exercised.
 
 ## Finding format
 
