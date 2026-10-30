@@ -1,14 +1,15 @@
 ---
 name: crow-data-architecture
-description: Design, evolve, review, or refactor relational and file-storage models for Oracle, SQL Server, PostgreSQL/PostGIS, and MySQL/MariaDB with Entity Framework, JPA/Hibernate, Doctrine, or Eloquent. Keeps descriptions, B.C. security classifications, and records schedules in the database and round-trips models through bcgov/wwwsqldesigner portable-v1 XML.
+description: Document, design, evolve, review, or refactor relational and file-storage models for Oracle, SQL Server, PostgreSQL/PostGIS, and MySQL/MariaDB with Entity Framework, JPA/Hibernate, Doctrine, or Eloquent. Keeps descriptions, B.C. security classifications, and records schedules in the database and round-trips models through bcgov/wwwsqldesigner portable-v1 XML.
 ---
 
 # Data Architecture
 
-Use this skill to design a new relational data model, change an existing model
-for a feature or bug fix, or plan a large-scale data-model refactoring during
-modernization. Application boundaries belong to `crow-application-architecture`;
-solution-wide data responsibility belongs to `crow-solution-architecture`.
+Use this skill to document an existing relational schema or model, design a
+new data model, change an existing model for a feature or bug fix, or plan a
+large-scale data-model refactoring during modernization. Application
+boundaries belong to `crow-application-architecture`; solution-wide data
+responsibility belongs to `crow-solution-architecture`.
 
 ## Context-efficient loading
 
@@ -18,8 +19,10 @@ solution-wide data responsibility belongs to `crow-solution-architecture`.
 2. Load [`modules/principles.md`](modules/principles.md) for every task.
 3. Load [`modules/metadata-governance.md`](modules/metadata-governance.md) for
    every task that adds or changes a table or column.
-4. Load one mode module. For modernization, also load `new-model.md` when
-   the target model is designed from scratch:
+4. Load one mode module. For documentation-only work, load
+   [`modules/existing-model-documentation.md`](modules/existing-model-documentation.md).
+   For modernization, also load `new-model.md` when the target model is
+   designed from scratch:
    - [`modules/new-model.md`](modules/new-model.md) for a new application,
      bounded context, or schema;
    - [`modules/model-change.md`](modules/model-change.md) for a feature, bug
@@ -82,6 +85,18 @@ database.
 a synthetic, valid model for format reference only.
 
 ## Workflow
+
+### Documentation-only
+
+For documentation-only requests, follow
+[`modules/existing-model-documentation.md`](modules/existing-model-documentation.md).
+Perform a read-only evidence and coverage pass before drafting, preserve
+existing metadata, and write only the requested project-local documentation
+after authorization. Skip schema design, migration planning, model
+generation, model validation, and persistence tests unless the request also
+changes the model.
+
+### Design, change, or modernization
 
 1. Record evidence: engine and version, ORM and migration tool, existing
    conventions, data volumes, access patterns, consumers, and deployment and
