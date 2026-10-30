@@ -1,0 +1,65 @@
+name: Code Owner Gate
+
+# Passes when the PR author is a CODEOWNER or a CODEOWNER has approved.
+# Use this as a required status check instead of branch protection's
+# "Require review from Code Owners", which never lets owners self-approve.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_review:
+    types: [submitted, dismissed]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  code-owner-gate:
+    name: Code owner author or approval
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # Read CODEOWNERS from the base branch, not untrusted PR content.
+      - name: Check out base branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          persist-credentials: false
+
+      - name: Check code-owner policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          set -euo pipefail
+
+          pass() { echo "✅ $1" | tee -a "$GITHUB_STEP_SUMMARY"; exit 0; }
+          fail() { echo "❌ $1" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+
+          file=""
+          for candidate in .github/CODEOWNERS CODEOWNERS docs/CODEOWNERS; do
+            if [ -f "$candidate" ]; then file=$candidate; break; fi
+          done
+          [ -n "$file" ] || fail "No CODEOWNERS file found."
+
+          # Individual @users only; team entries (@org/team) are ignored.
+          owners=$(sed -E 's/(^|[[:space:]])#.*//' "$file" \
+            | awk '{ for (i = 2; i <= NF; i++) print tolower($i) }' \
+            | grep -E '^@[^/]+$' | cut -c2- | sort -u || true)
+          [ -n "$owners" ] || fail "No individual users found in $file."
+
+          author=${AUTHOR,,}
+          grep -qxF "$author" <<< "$owners" && pass "PR author @$author is a CODEOWNER."
+
+          # Each reviewer's latest approve/request-changes/dismissed state wins.
+          approvers=$(gh api --paginate "repos/$REPO/pulls/$PR_NUMBER/reviews" \
+            --jq '.[] | select(.user != null and (.state == "APPROVED" or .state == "CHANGES_REQUESTED" or .state == "DISMISSED")) | "\(.user.login) \(.state)"' \
+            | awk '{ latest[tolower($1)] = $2 } END { for (u in latest) if (latest[u] == "APPROVED") print u }')
+
+          approving_owners=$(grep -xFf <(echo "$owners") <<< "$approvers" | sed 's/^/@/' | paste -sd ' ' - || true)
+          [ -n "$approving_owners" ] && pass "Approved by CODEOWNER: $approving_owners"
+
+          fail "@$author is not a CODEOWNER and no CODEOWNER has approved this PR."
