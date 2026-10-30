@@ -1,6 +1,6 @@
 # PHP safe persistence implementation
 
-Database selection, schema/domain modelling, and data platform architecture remain out of scope.
+Database selection and data platform architecture remain out of scope; schema and domain modelling are handled by the Crow Data Architecture Agent.
 
 - Keep transactions at the use-case boundary; roll back on failure and do not hold a transaction across an outbound network call. Know which database statements implicitly commit; test migration behavior against the target engine.
 - Use PDO prepared statements or the framework's parameterized query builder/ORM for values. For raw PDO MySQL connections, declare the connection charset in the DSN (for example, `charset=utf8mb4`) and disable emulated prepares where native prepares are supported; verify driver behavior rather than assuming the framework uses raw PDO. Placeholders cannot bind identifiers or SQL keywords: map requested sort fields, table/column names, and directions through explicit allowlists.

@@ -116,7 +116,8 @@ In scope:
 Out of scope:
 
 - enterprise-wide target architecture, procurement approval, privacy or
-  security certification, detailed data modelling, implementation, and
+  security certification, detailed data modelling (use the Crow Data
+  Architecture Agent), implementation, and
   post-build architecture verification;
 - claiming that a common component, identity provider, hosting platform, or
   technology is approved without current authoritative evidence.

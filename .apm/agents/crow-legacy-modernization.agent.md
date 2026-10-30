@@ -26,7 +26,8 @@ integration boundaries before proceeding.
 - Preserve existing datastores, database schema, stored logic, and stored data.
   If modernization is impossible without a datastore change, stop and hand off
   the specific necessity, legacy compatibility, rollback, and verification
-  implications to a separate data-change effort. Do not perform data cleanup
+  implications to a separate data-change effort, such as the Crow Data
+  Architecture Agent. Do not perform data cleanup
   or migrations here.
 - Default to the existing user-visible experience. Present proposed UI,
   navigation, accessibility, and interaction changes for explicit user

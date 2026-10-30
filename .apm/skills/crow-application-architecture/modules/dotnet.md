@@ -58,7 +58,7 @@ Smaller applications may use `Product.Web` plus one class library and matching t
 
 ## Persistence boundary
 
-Data architecture is excluded, but application boundaries still apply:
+Data architecture is handled by the Crow Data Architecture Agent, but application boundaries still apply:
 
 - Keep transaction ownership at the use-case boundary.
 - Do not expose provider-specific query objects across application boundaries.
