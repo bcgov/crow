@@ -1,12 +1,14 @@
 name: Code Owner Gate
 
 # Passes when the PR author is a CODEOWNER or a CODEOWNER has approved.
-# Use this as a required status check instead of branch protection's
-# "Require review from Code Owners", which never lets owners self-approve.
+# Configure this as a required workflow in a ruleset pinned to a trusted ref;
+# requiring only its status check lets PR-controlled workflow edits impersonate it.
+# It replaces "Require review from Code Owners", which disallows owner self-review.
+# pull_request_target uses the trusted base-branch workflow definition.
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, edited]
   pull_request_review:
     types: [submitted, dismissed]
 
