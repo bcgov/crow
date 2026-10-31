@@ -63,3 +63,4 @@ consumers, and other blind spots instead of presenting a completeness claim.
 - No safety-critical control or meaningful test is proposed for removal.
 - Debt markers and missing metadata are counted when requested.
 - Failures and manual limitations are disclosed.
+- The run ends with the standard [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md).

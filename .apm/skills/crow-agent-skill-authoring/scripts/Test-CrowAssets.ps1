@@ -17,6 +17,13 @@ if (Test-Path -LiteralPath $dependencyGraphPath -PathType Leaf) {
 else {
     $errors.Add("Required dependency graph script is missing: $dependencyGraphPath")
 }
+$agentHandoffsPath = Join-Path $PSScriptRoot 'CrowAgentHandoffs.ps1'
+if (Test-Path -LiteralPath $agentHandoffsPath -PathType Leaf) {
+    . $agentHandoffsPath
+}
+else {
+    $errors.Add("Required agent handoff script is missing: $agentHandoffsPath")
+}
 
 function Add-ValidationError {
     param([string]$Message)
@@ -73,6 +80,15 @@ function Get-Frontmatter {
     return $values
 }
 
+function Get-MarkdownSection {
+    param([string]$Content, [string]$Heading)
+
+    $match = [regex]::Match($Content, '(?ims)^##\s+' + [regex]::Escape($Heading) + '\s*$(.*?)(?=^##\s|\z)')
+    if ($match.Success) {
+        return $match.Groups[1].Value
+    }
+    return $null
+}
 $root = (Resolve-Path $RepoRoot).Path
 $apmPath = Join-Path $root 'apm.yml'
 $pluginPath = Join-Path $root '.github\plugin\plugin.json'
@@ -241,6 +257,7 @@ if ($errors.Count -eq 0) {
     $agentFiles = @(Get-ChildItem $agentsPath -File -Filter '*.agent.md' | Sort-Object Name)
     $skillFiles = @(Get-ChildItem $skillsPath -File -Filter 'SKILL.md' -Recurse | Sort-Object FullName)
     $names = @{}
+    $agentHandoffs = [System.Collections.Generic.List[object]]::new()
 
     foreach ($agentFile in $agentFiles) {
         $frontmatter = Get-Frontmatter $agentFile
@@ -261,6 +278,20 @@ if ($errors.Count -eq 0) {
         if ($agentContent -notmatch '(?im)^##\s+(Core Principles|Non-negotiable principles)\s*$') {
             Add-ValidationError "$($agentFile.FullName): a Core Principles section is required."
         }
+        $completionGate = Get-MarkdownSection $agentContent 'Completion gate'
+        if ($null -eq $completionGate) {
+            Add-ValidationError "$($agentFile.FullName): a Completion gate section is required."
+        }
+        elseif ($completionGate -notmatch 'interaction-contracts\.md') {
+            Add-ValidationError "$($agentFile.FullName): the Completion gate must link to the standard completion report in interaction-contracts.md."
+        }
+        $handoffResult = Get-AgentHandoffs -Path $agentFile.FullName
+        foreach ($handoffError in $handoffResult.Errors) {
+            Add-ValidationError "$($agentFile.FullName): $handoffError"
+        }
+        foreach ($handoff in $handoffResult.Handoffs) {
+            $agentHandoffs.Add([pscustomobject]@{ File = $agentFile.FullName; Handoff = $handoff })
+        }
         if ($names.ContainsKey($frontmatter.name)) {
             Add-ValidationError "Duplicate asset name '$($frontmatter.name)'."
         }
@@ -270,6 +301,49 @@ if ($errors.Count -eq 0) {
         $contextBytes = Get-NormalizedContextBytes $agentFile
         if ($contextBytes -gt $MaxAgentBytes) {
             Add-ValidationWarning "$($agentFile.FullName): $contextBytes normalized UTF-8 bytes exceeds the $MaxAgentBytes-byte agent context threshold."
+        }
+    }
+
+    foreach ($entry in $agentHandoffs) {
+        $handoff = $entry.Handoff
+        foreach ($field in @('label', 'agent', 'prompt')) {
+            if (-not $handoff.ContainsKey($field) -or [string]::IsNullOrWhiteSpace($handoff[$field].Value)) {
+                Add-ValidationError "$($entry.File): each handoff requires '$field'."
+            }
+        }
+        if ($handoff.ContainsKey('agent') -and -not [string]::IsNullOrWhiteSpace($handoff['agent'].Value) -and
+            -not $names.ContainsKey($handoff['agent'].Value)) {
+            Add-ValidationError "$($entry.File): handoff target '$($handoff['agent'].Value)' does not match an agent name."
+        }
+        if (-not $handoff.ContainsKey('send') -or $handoff['send'].Quoted -or $handoff['send'].Value -cne 'false') {
+            Add-ValidationError "$($entry.File): each handoff must set 'send: false' so the user reviews the prompt."
+        }
+        if ($handoff.ContainsKey('model')) {
+            Add-ValidationError "$($entry.File): handoffs must not set 'model'."
+        }
+    }
+    $agentNamesByPath = @{}
+    foreach ($agentFile in $agentFiles) {
+        $agentNamesByPath[".apm/agents/$($agentFile.Name)"] = (Get-Frontmatter $agentFile).name
+    }
+    foreach ($collectionDirectory in $collectionDirectories) {
+        $collectionManifestPath = Join-Path $collectionDirectory.FullName 'apm.yml'
+        if (-not (Test-Path $collectionManifestPath -PathType Leaf)) {
+            continue
+        }
+        $collectionAgentPaths = @(
+            [regex]::Matches([System.IO.File]::ReadAllText($collectionManifestPath),
+                '(?m)^\s{6}path:\s+(\.apm/agents/[^\s#/]+\.agent\.md)\s*$') |
+                ForEach-Object { $_.Groups[1].Value }
+        )
+        $collectionAgentNames = @($collectionAgentPaths | ForEach-Object { $agentNamesByPath[$_] })
+        foreach ($entry in $agentHandoffs) {
+            $sourcePath = ".apm/agents/$(Split-Path -Leaf $entry.File)"
+            $target = if ($entry.Handoff.ContainsKey('agent')) { $entry.Handoff['agent'].Value } else { $null }
+            if ($collectionAgentPaths -contains $sourcePath -and $names.ContainsKey($target) -and
+                $collectionAgentNames -cnotcontains $target) {
+                Add-ValidationError "${collectionManifestPath}: $sourcePath hands off to '$target', which the collection does not include."
+            }
         }
     }
 

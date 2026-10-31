@@ -216,7 +216,12 @@ The script:
 
 ---
 
-## Output Summary
+## Completion gate
+
+- Both source documents were found and their freshness was checked, or the
+  stale or missing source is reported.
+- The Markdown report, HTML dashboard, and PDF exist, or each missing output
+  is reported with its failure.
 
 Present a concise summary to the user:
 - Source document freshness status (dates of `architecture.md` and `security-review.md`).
@@ -224,3 +229,8 @@ Present a concise summary to the user:
 - Location of generated Markdown report (`/docs/executive-report.md`).
 - Location of generated HTML dashboard (`/docs/executive-report.html`).
 - Location/status of generated PDF report (`/docs/executive-report.pdf`).
+
+End with the standard
+[completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report).
+Use `blocked` when a source document is missing, and `failed` when output
+validation or PDF rendering fails.

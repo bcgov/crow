@@ -68,7 +68,13 @@ an approval. Treat each phase as blocked until its prerequisites are met.
 - If unavoidable database change is proven necessary, stop; describe why
   preserving it is impossible and hand off schema/data, migration, legacy
   compatibility, rollback, ownership, and test implications separately.
-  Resume only when that effort has an approved, proven compatible boundary.
+  Record them in `docs/modernization/data-change-handoff.json` from the
+  [data-change handoff template](../resources/data-change-handoff-template.json)
+  and validate it with
+  [`Test-DataChangeHandoff.ps1`](../scripts/Test-DataChangeHandoff.ps1).
+  Mark it `signed-off` only after the data owner's explicit approval; never
+  run the consumer agent. Resume only when that effort has an approved,
+  proven compatible boundary.
   If required security or platform changes cannot preserve an external
   contract, stop and seek a separate scope decision, not an exception here.
 

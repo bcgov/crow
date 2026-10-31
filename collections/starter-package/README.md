@@ -5,7 +5,9 @@ development. It includes the agents and skills needed to understand an
 existing application, make aligned changes, maintain frameworks and
 dependencies, build accessible interfaces, and verify the result with
 automated tests. It also supports Java, .NET, and PHP CI across GitHub Actions,
-Azure Pipelines, and Jenkins. Its architecture, application
+Azure Pipelines, and Jenkins, and includes the security review, remediation,
+and executive report agents that architecture and security handoffs lead to.
+Its architecture, application
 development, testing, and code review guidance also supports REST/SOAP API
 inventory, implementation, and HTTP-based modernization comparisons.
 
@@ -18,7 +20,7 @@ apm install bcgov/crow/collections/starter-package#stable --global --target copi
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.17.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.17.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -34,6 +36,9 @@ compatible stable releases during setup or maintenance.
 - [Crow CI Pipeline Agent](../../.apm/agents/crow-ci-pipelines.agent.md)
 - [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
 - [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
+- [Crow Security & Dependency Review Agent](../../.apm/agents/crow-security-review.agent.md)
+- [Crow Security Remediation Agent](../../.apm/agents/crow-security-remediation.agent.md)
+- [Crow Executive Summary Report Agent](../../.apm/agents/crow-executive-report.agent.md)
 - [Crow Code Review Agent](../../.apm/agents/crow-code-review.agent.md)
 - [Crow Framework & Dependency Update Agent](../../.apm/agents/crow-framework-dependency-update.agent.md)
 - [Crow B.C. Government UX Agent](../../.apm/agents/crow-bcgov-ux.agent.md)
@@ -48,6 +53,7 @@ compatible stable releases during setup or maintenance.
 - [crow-raven-setup](../../.apm/skills/crow-raven-setup/SKILL.md)
 - [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
 - [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)
+- [crow-executive-report](../../.apm/skills/crow-executive-report/SKILL.md)
 - [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
 - [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
 - [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)

@@ -39,7 +39,9 @@ report in their owning repository; do not copy the rule catalogue here.
 Document the datastore, schema/stored logic, data formats, startup migrations,
 isolation, existing write patterns, and whether old code can read candidate
 writes. Link the validated API inventory where applicable. Mark unknown
-consumers and untestable contracts explicitly.
+consumers and untestable contracts explicitly. If a datastore change is
+unavoidable, link `docs/modernization/data-change-handoff.json` and record its
+status.
 
 ## Acceptance and delivery decisions
 

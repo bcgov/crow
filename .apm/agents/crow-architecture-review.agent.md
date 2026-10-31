@@ -2,6 +2,11 @@
 name: 'Crow Architecture Review Agent'
 description: 'Inspects a repository and creates or updates verified, service-scoped architecture documentation under docs/, including conditional REST/SOAP API operation inventory, platform role, reuse, contract, data responsibility, and degradation assessment.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'assets/*', 'codebase-memory-mcp/*']
+handoffs:
+  - label: 'Review security'
+    agent: 'Crow Security & Dependency Review Agent'
+    prompt: 'Run a security and dependency review using the architecture document and security handoff just produced.'
+    send: false
 ---
 
 # Crow Architecture Review Agent
@@ -76,4 +81,4 @@ Do not call the review complete until the routed modules were followed, source
 evidence supports the document and security handoff, Section 11 is complete,
 the deterministic validator passes with `-RequireSecurityHandoff`, existing
 curated content is preserved, and all unknown or manual-review items are
-disclosed.
+disclosed. End with the standard [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md).

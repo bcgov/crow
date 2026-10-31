@@ -6,6 +6,29 @@ datastore. When `crow-legacy-modernization` requires the datastore to stay
 fixed, this work is the separate, explicitly approved data-change effort it
 hands off to.
 
+## Modernization handoff
+
+When `docs/modernization/data-change-handoff.json` exists, read it first and
+validate it with the legacy-modernization
+[`Test-DataChangeHandoff.ps1`](../../crow-legacy-modernization/scripts/Test-DataChangeHandoff.ps1)
+script, passing `-RequireSignedOff` and the target repository as `-RepoRoot`;
+it compares against that repository's `HEAD` unless `-CurrentRevision` is
+given. The handoff stays current while that revision descends from its
+`sourceRevision` and no evidence, artifact, or plan file it lists has changed,
+so committing the handoff or unrelated work does not make it stale. If the script is not installed, stop and ask the user to install
+`crow-legacy-modernization` rather than checking the file by hand. Use its
+affected objects, legacy compatibility,
+rollback, ownership, test implications, and open items as the starting
+evidence; do not ask again about facts it records as `Verified`.
+
+- A `draft` or failed validation may be reviewed but not designed from;
+  report the failures and blocking items.
+- A stale handoff (a changed referenced file, or a revision that does not
+  descend from `sourceRevision`) requires the producer to refresh it, or the
+  user to confirm that it still applies; only then rerun with
+  `-AcceptRevisionMismatch` and record that decision.
+- Never edit the handoff to make it pass; return gaps to the producer.
+
 ## Discovery
 
 1. Inventory every object: tables, views, procedures, functions, triggers,
