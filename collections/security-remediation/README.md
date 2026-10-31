@@ -18,7 +18,7 @@ apm install bcgov/crow/collections/security-remediation#stable --global --target
 For an immutable install of this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.17.0 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.17.1 --global --target copilot
 ```
 
 Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
@@ -35,6 +35,8 @@ updates only after confirmation.
 - [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
 - [Crow Security & Dependency Review Agent](../../.apm/agents/crow-security-review.agent.md)
 - [Crow Security Remediation Agent](../../.apm/agents/crow-security-remediation.agent.md)
+- [Crow Executive Summary Report Agent](../../.apm/agents/crow-executive-report.agent.md) —
+  the security review's handoff target for a plain-language summary.
 
 ## Included skills
 
@@ -42,6 +44,7 @@ updates only after confirmation.
 - [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
 - [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)
 - [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)
+- [crow-executive-report](../../.apm/skills/crow-executive-report/SKILL.md)
 - [crow-sonar-scan](../../.apm/skills/crow-sonar-scan/README.md)
 - [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
 - [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)

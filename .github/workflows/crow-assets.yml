@@ -60,6 +60,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowSecurityRemediationScopes.Tests.ps1
 
+      - name: Test agent handoff frontmatter parsing
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAgentHandoffs.Tests.ps1
+
       - name: Test Raven setup CLI
         shell: pwsh
         run: |
@@ -112,13 +117,20 @@ jobs:
         run: |
           & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
 
-      - name: Verify data architecture scripts on Windows PowerShell 5.1
+      - name: Test legacy modernization data-change handoff validation
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
+
+      - name: Verify data architecture and modernization scripts on Windows PowerShell 5.1
         if: runner.os == 'Windows'
         shell: powershell
         run: |
           & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Test business rule validation and rendering

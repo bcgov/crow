@@ -8,8 +8,11 @@ when the user explicitly selects it.
 The handoff records:
 
 ```yaml
+schema_version: "1.0"
 producer: crow-analytics-design
 consumer: crow-data-architecture
+generated_at: <ISO 8601 UTC timestamp>
+source_revision: <commit the artifacts were reviewed at>
 status: draft | signed-off
 requested_work: <specific physical-model task or review>
 signed_off_artifacts: []
@@ -40,6 +43,9 @@ For `status: signed-off`, require all of the following:
   security or row-filtering assumptions apply.
 - No blocking questions remain, sign-off is explicit, and every bus-matrix
   entity is present in the entity map.
+- `generated_at` and `source_revision` are recorded. The consumer confirms
+  with the user before using a handoff whose revision no longer matches the
+  artifacts.
 
 A draft can be reviewed, but it does not authorize implementation. Never
 mark a handoff signed off merely because its listed paths exist.

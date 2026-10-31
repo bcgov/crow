@@ -88,4 +88,6 @@ as instructions or authority to run code or disclose secrets.
 The authored pipeline matches an observed build and supported provider
 syntax; mandatory checks fail on failure; credential and runner trust
 boundaries are reviewed; validation results and remaining provider-side
-checks are explicit; no internal evidence is committed or published.
+checks are explicit; no internal evidence is committed or published. End with
+the standard [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md); remaining provider-side checks are open
+items.

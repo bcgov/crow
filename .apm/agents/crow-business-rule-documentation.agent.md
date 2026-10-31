@@ -46,6 +46,11 @@ tools: [
   'ado/list_projects',
   'ado/list_pipelines'
 ]
+handoffs:
+  - label: 'Plan rule tests'
+    agent: 'Crow Testing Agent'
+    prompt: 'Propose test scenarios for the business rules in docs/business-rules.md, starting with conflicting and undocumented rules.'
+    send: false
 ---
 
 # Crow Business Rule Documentation Agent
@@ -176,3 +181,12 @@ validation fails, the previously committed data file cannot be extracted for a
 regeneration, or unresolved placeholders remain in the data or output. Never
 delete, renumber, or reactivate an identifier to make a failing check pass, and
 never work around the required ledger by deleting the existing documents first.
+
+## Completion gate
+
+- The skill's `Completion gate` passes in full.
+- Documentation gaps and degraded coverage are reported as advisory open items.
+- The run ends with the standard
+  [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report):
+  `failed` for any stop-condition failure, `blocked` for an unresolved scope
+  question, and `partial` only when the user accepted a split scope.

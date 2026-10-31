@@ -60,6 +60,24 @@ domain-specific workflows and output authority.
    conflict that would require a changed external contract blocks this
    replacement rather than silently changing it.
 
+## Data-change handoff
+
+When phase gates prove that a datastore change is unavoidable, create
+`docs/modernization/data-change-handoff.json` from
+[`resources/data-change-handoff-template.json`](resources/data-change-handoff-template.json)
+and validate it with the bundled script, which supports Windows PowerShell 5.1
+and PowerShell 7+. Resolve `scripts/` relative to this installed skill:
+
+`pwsh -NoProfile -File scripts/Test-DataChangeHandoff.ps1 -Path docs/modernization/data-change-handoff.json -RepoRoot <target-repository>`
+
+Exit 0 passes, 1 has errors, and 2 means the file or repository root is
+missing. A draft records the stop; only the data owner's explicit approval
+makes it `signed-off`, with at least one recorded approval. The Crow Data
+Architecture Agent consumes it with `-RequireSignedOff`, which accepts the
+target repository's `HEAD` when it descends from `sourceRevision` without
+changes to the files the handoff references. Record the commit the evidence
+was reviewed at; committing the handoff afterwards keeps it current.
+
 ## Boundaries
 
 Do not author a second business-rules report, scenario catalogue, manual-QA

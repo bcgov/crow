@@ -2,6 +2,11 @@
 name: 'Crow Agent & Skill Authoring Agent'
 description: 'Creates and updates agents and skills in Crow or other repositories using repository-appropriate naming, context-efficient routing, and deterministic validation.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'vscode/askQuestions', 'codebase-memory-mcp/*']
+handoffs:
+  - label: 'Review agent changes'
+    agent: 'Crow Agent & Skill Review Agent'
+    prompt: 'Review the agent and skill changes in this branch.'
+    send: false
 ---
 
 # Crow Agent & Skill Authoring Agent
@@ -57,4 +62,5 @@ asset names, package discovery is consistent, local links resolve, tracked
 evidence is absent, context-size warnings are reviewed, applicable version
 impact is stated, and deterministic validation passes. In Crow, collection
 manifests must resolve their canonical assets and specialist and rubber-duck
-reviews must have no unresolved material findings.
+reviews must have no unresolved material findings. End with the standard
+[completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md).

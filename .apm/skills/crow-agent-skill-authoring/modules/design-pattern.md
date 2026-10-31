@@ -9,6 +9,7 @@
 | Module | reusable domain knowledge and acceptance criteria | tool-specific orchestration that belongs to one agent |
 | Template | stable document or configuration shape | embedded workflow policy |
 | Script | deterministic checks and transformations with explicit failures | judgment calls, hidden defaults, silent recovery |
+| Handoff file | confirmed producer output, status, and open items for a consumer agent | permission to build, auto-running the consumer |
 | Evidence | temporary research, measurements, transcripts, source extracts | tracked or packaged content |
 
 An agent may consume multiple skills. A skill may support multiple agents. Keep knowledge independent of a particular agent when another capability could reuse it.
@@ -44,6 +45,8 @@ Size warnings from the validator are prompts for review, not automatic proof of 
 ## Failure behavior
 
 State what must stop the workflow: missing source files, ambiguous scope, unavailable required tools, invalid manifests, failed checks, or unconfirmed major-version changes. Do not convert a failed check into a success-shaped result.
+
+Use the [interaction contracts](interaction-contracts.md) for completion status, open items, approvals, handoffs, live providers, and resumable work.
 
 ## Deterministic opportunities
 

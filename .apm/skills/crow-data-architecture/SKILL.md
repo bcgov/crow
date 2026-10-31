@@ -29,7 +29,8 @@ responsibility belongs to `crow-solution-architecture`.
      fix, constraint, index, or type change in an existing model;
    - [`modules/modernization-refactoring.md`](modules/modernization-refactoring.md)
      for a large restructuring, consolidation, split, engine move, or legacy
-     replacement.
+     replacement, including a validated legacy-modernization data-change
+     handoff.
 5. Load only the affected database module from `modules/databases/`:
    [`sqlserver.md`](modules/databases/sqlserver.md),
    [`oracle.md`](modules/databases/oracle.md),
