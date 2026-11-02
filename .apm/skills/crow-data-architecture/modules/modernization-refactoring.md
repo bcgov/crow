@@ -15,6 +15,7 @@ script, passing `-RequireSignedOff` and the target repository as `-RepoRoot`;
 it compares against that repository's `HEAD` unless `-CurrentRevision` is
 given. The handoff stays current while that revision descends from its
 `sourceRevision` and no evidence, artifact, or plan file it lists has changed,
+either in a commit or uncommitted in the working tree,
 so committing the handoff or unrelated work does not make it stale. If the script is not installed, stop and ask the user to install
 `crow-legacy-modernization` rather than checking the file by hand. Use its
 affected objects, legacy compatibility,

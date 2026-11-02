@@ -152,6 +152,28 @@ try {
     $handoff.ownership.approvals = @()
     Invoke-HandoffTest 'signed-off without approvals fails' (ConvertTo-HandoffJson $handoff) 1 'must record at least one approval'
 
+    $handoff = New-Handoff 'signed-off'
+    $handoff.ownership.approvals = @([ordered]@{})
+    Invoke-HandoffTest 'empty approval object fails' (ConvertTo-HandoffJson $handoff) 1 'ownership.approvals[1].approver is required'
+
+    $handoff = New-Handoff 'signed-off'
+    $handoff.ownership.approvals[0].scope = 'DO-999'
+    Invoke-HandoffTest 'approval for an unknown object fails' (ConvertTo-HandoffJson $handoff) 1 "ownership.approvals[1].scope must be 'all' or a known affected object id"
+
+    $handoff = New-Handoff 'signed-off'
+    $handoff.ownership.approvals[0].approvedAt = '2025-01-16'
+    Invoke-HandoffTest 'approval without a UTC timestamp fails' (ConvertTo-HandoffJson $handoff) 1 'ownership.approvals[1].approvedAt must be an ISO 8601 UTC timestamp'
+
+    $handoff = New-Handoff 'signed-off'
+    $handoff.ownership.approvals[0].approver = 'Someone else'
+    Invoke-HandoffTest 'approval from someone other than the data owner fails' (ConvertTo-HandoffJson $handoff) 1 "ownership.dataOwner 'Synthetic data owner' has not approved: DO-001"
+
+    $handoff = New-Handoff 'signed-off'
+    $handoff.affectedObjects += [ordered]@{ id = 'DO-002'; type = 'Index'; name = 'IX_PERMIT_STATUS'; change = 'Rebuild.'; confidence = 'Inferred'; evidenceRefs = @() }
+    Invoke-HandoffTest 'owner approval must cover every affected object' (ConvertTo-HandoffJson $handoff) 1 'has not approved: DO-002'
+    $handoff.ownership.approvals[0].scope = 'all'
+    Invoke-HandoffTest 'owner approval for all objects passes' (ConvertTo-HandoffJson $handoff) 0 'status signed-off, 2 affected object(s)'
+
     $handoff = New-Handoff
     $handoff.generatedAt = '2025-01-15T10:30:00+02:00'
     Invoke-HandoffTest 'offset timestamp fails on every PowerShell version' (ConvertTo-HandoffJson $handoff) 1 'generatedAt must be an ISO 8601 UTC timestamp'
@@ -213,6 +235,31 @@ try {
     Write-FixtureFile 'README.md' "Unrelated change`n"
     Save-FixtureCommit 'Unrelated change' | Out-Null
     Invoke-HandoffTest 'unrelated commits keep the handoff current' '' 0 'status signed-off' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+
+    Write-FixtureFile 'README.md' "Uncommitted unrelated change`n"
+    Write-FixtureFile 'notes.txt' "Untracked unrelated file`n"
+    Invoke-HandoffTest 'uncommitted unrelated changes keep the handoff current' '' 0 'status signed-off' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-FixtureGit @('checkout', '-q', '--', 'README.md') | Out-Null
+    Remove-Item -LiteralPath (Join-Path $gitRoot 'notes.txt')
+
+    $current = Invoke-FixtureGit @('rev-parse', 'HEAD')
+    $handoffPath = Write-GitHandoff $current
+    Save-FixtureCommit 'Sign off at HEAD' | Out-Null
+    $current = Invoke-FixtureGit @('rev-parse', 'HEAD')
+    $handoffPath = Write-GitHandoff $current
+    Write-FixtureFile 'src/Permit.cs' "// Unstaged evidence change`n"
+    Invoke-HandoffTest 'unstaged evidence change at the source revision fails' '' 1 'referenced files have uncommitted changes: src/Permit.cs' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-HandoffTest 'explicit HEAD revision also checks the working tree' '' 1 'uncommitted changes' @('-RequireSignedOff', '-CurrentRevision', $current) -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-FixtureGit @('add', '--', 'src/Permit.cs') | Out-Null
+    Invoke-HandoffTest 'staged evidence change fails' '' 1 'referenced files have uncommitted changes: src/Permit.cs' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-HandoffTest 'user can accept an uncommitted evidence change' '' 0 'Accepted by the user' @('-RequireSignedOff', '-AcceptRevisionMismatch') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-FixtureGit @('reset', '-q', '--hard') | Out-Null
+    $handoffPath = Write-GitHandoff $current
+    Remove-Item -LiteralPath (Join-Path $gitRoot 'src/Permit.cs')
+    Write-FixtureFile 'src/Permit.cs' "// Untracked evidence`n"
+    Invoke-FixtureGit @('rm', '-q', '--cached', '--', 'src/Permit.cs') | Out-Null
+    Invoke-HandoffTest 'untracked evidence file fails' '' 1 'referenced files have uncommitted changes' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-FixtureGit @('reset', '-q', '--hard') | Out-Null
 
     Write-FixtureFile 'src/Permit.cs' "// Changed evidence`n"
     $changed = Save-FixtureCommit 'Change evidence'

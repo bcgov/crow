@@ -125,6 +125,54 @@ handoffs:
         $result.Handoffs[0]['send'].Quoted
     }
 
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: 'Colon'
+    agent: 'Crow Code Review Agent'
+    prompt: Review this: src/Permit.cs
+    send: false
+'@
+    Assert-Case 'unquoted value with an embedded colon reports an error' {
+        $result.Errors.Count -gt 0
+    }
+
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: 'Comment only'
+    agent: 'Crow Code Review Agent'
+    prompt: # TODO
+    send: false
+'@
+    Assert-Case 'comment-only value is empty' {
+        $result.Errors.Count -eq 0 -and $result.Handoffs[0]['prompt'].Value -ceq ''
+    }
+
+    foreach ($key in @("'handoffs':", '"handoffs":', 'handoffs :')) {
+        $result = Get-FixtureResult ($key + @'
+
+  - label: 'Key form'
+    agent: 'Crow Code Review Agent'
+    prompt: 'p'
+    send: true
+'@)
+        Assert-Case "key form $key is recognized" {
+            $result.Errors.Count -eq 0 -and $result.Handoffs.Count -eq 1 -and
+                $result.Handoffs[0]['send'].Value -ceq 'true'
+        }
+    }
+
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: 'Before quoted key'
+    agent: 'Crow Code Review Agent'
+    prompt: 'p'
+    send: false
+'tools': ['read']
+'@
+    Assert-Case 'a quoted top-level key ends the list' {
+        $result.Errors.Count -eq 0 -and $result.Handoffs.Count -eq 1
+    }
+
     $result = Get-FixtureResult "tools: ['read']"
     Assert-Case 'agent without handoffs returns no entries' {
         $result.Errors.Count -eq 0 -and $result.Handoffs.Count -eq 0

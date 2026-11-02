@@ -16,10 +16,19 @@ function ConvertFrom-FrontmatterScalar {
         }
         return [pscustomobject]@{ Value = [regex]::Unescape($match.Groups[1].Value); Quoted = $true }
     }
-    if ($trimmed -match '^[>|\[{&*!]') {
+    if ($trimmed.Length -eq 0 -or $trimmed.StartsWith('#')) {
+        # YAML treats an empty or comment-only value as null.
+        return [pscustomobject]@{ Value = ''; Quoted = $false }
+    }
+    if ($trimmed -match '^([>|\[{&*!%@`]|[-?:](\s|$))') {
         return $null
     }
-    return [pscustomobject]@{ Value = ($trimmed -replace '\s+#.*$', ''); Quoted = $false }
+    $plain = ($trimmed -replace '\s+#.*$', '').TrimEnd()
+    if ($plain -match ':(\s|$)') {
+        # An unquoted ': ' is not a valid plain scalar in a block mapping.
+        return $null
+    }
+    return [pscustomobject]@{ Value = $plain; Quoted = $false }
 }
 
 function Get-AgentHandoffs {
@@ -38,7 +47,7 @@ function Get-AgentHandoffs {
         if ($line.Trim() -eq '---') {
             break
         }
-        if ($line -match '^handoffs:(.*)$') {
+        if ($line -match '^(?:handoffs|''handoffs''|"handoffs")[ \t]*:(.*)$') {
             $inHandoffs = $true
             if (($Matches[1] -replace '\s*#.*$', '').Trim().Length -gt 0) {
                 $errors.Add("line ${lineNumber}: handoffs must use a block list of single-line entries.")
@@ -52,7 +61,7 @@ function Get-AgentHandoffs {
             $current = @{}
             $handoffs.Add($current)
         }
-        elseif ($line -match '^[A-Za-z_][\w-]*:') {
+        elseif ($line -match '^[^\s#-]') {
             break
         }
         elseif (-not ($null -ne $current -and $line -match '^\s+([\w-]+):\s*(.*)$')) {
@@ -62,7 +71,7 @@ function Get-AgentHandoffs {
         $key = $Matches[1]
         $scalar = ConvertFrom-FrontmatterScalar $Matches[2]
         if ($null -eq $scalar) {
-            $errors.Add("line ${lineNumber}: handoff '$key' must be a single-line value.")
+            $errors.Add("line ${lineNumber}: handoff '$key' must be a single-line value; quote values that contain ': '.")
             continue
         }
         $current[$key] = $scalar

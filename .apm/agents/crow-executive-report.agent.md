@@ -232,5 +232,6 @@ Present a concise summary to the user:
 
 End with the standard
 [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report).
-Use `blocked` when a source document is missing, and `failed` when output
+Use `blocked` when a missing source document is still required, `partial`
+when the user accepted a report from partial data, and `failed` when output
 validation or PDF rendering fails.

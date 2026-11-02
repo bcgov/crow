@@ -72,10 +72,13 @@ and PowerShell 7+. Resolve `scripts/` relative to this installed skill:
 
 Exit 0 passes, 1 has errors, and 2 means the file or repository root is
 missing. A draft records the stop; only the data owner's explicit approval
-makes it `signed-off`, with at least one recorded approval. The Crow Data
+makes it `signed-off`. Each `ownership.approvals` entry records `approver`,
+`scope` (`all` or an affected-object ID), and a UTC `approvedAt`; the named
+`dataOwner` must approve every affected object. The Crow Data
 Architecture Agent consumes it with `-RequireSignedOff`, which accepts the
 target repository's `HEAD` when it descends from `sourceRevision` without
-changes to the files the handoff references. Record the commit the evidence
+changes to the files the handoff references, including staged, unstaged, or
+untracked changes in the working tree. Record the commit the evidence
 was reviewed at; committing the handoff afterwards keeps it current.
 
 ## Boundaries

@@ -96,6 +96,31 @@ function Get-RevisionDrift {
     return $null
 }
 
+function Test-HeadRevision {
+    param([string]$Revision)
+    # Uncommitted changes only matter when the checked revision is the checked-out HEAD.
+    $head = Invoke-Git @('rev-parse', '--verify', '--quiet', 'HEAD^{commit}')
+    $resolved = Invoke-Git @('rev-parse', '--verify', '--quiet', "$Revision^{commit}")
+    return $head.ExitCode -eq 0 -and $resolved.ExitCode -eq 0 -and
+        "$($head.Output | Select-Object -First 1)" -eq "$($resolved.Output | Select-Object -First 1)"
+}
+
+function Get-WorkingTreeDrift {
+    # Returns $null when no referenced file has staged, unstaged, or untracked changes.
+    if ($referencedPaths.Count -eq 0) {
+        return $null
+    }
+    $status = Invoke-Git (@('--literal-pathspecs', 'status', '--porcelain', '--untracked-files=all', '--') + $referencedPaths.ToArray())
+    if ($status.ExitCode -ne 0) {
+        return 'the working tree could not be checked'
+    }
+    $changed = @($status.Output | Where-Object { "$_".Length -gt 3 } | ForEach-Object { "$_".Substring(3) })
+    if ($changed.Count -gt 0) {
+        return "referenced files have uncommitted changes: $($changed -join ', ')"
+    }
+    return $null
+}
+
 function New-IdTable {
     return [System.Collections.Hashtable]::new([System.StringComparer]::Ordinal)
 }
@@ -316,6 +341,40 @@ $approvals = Get-Array $ownership 'approvals' 'ownership.approvals'
 if ($signedOff -and $approvals.Count -eq 0) {
     Add-HandoffError 'ownership.approvals must record at least one approval when signed off.'
 }
+$ownerApprovedScopes = New-IdTable
+$approvalIndex = 0
+foreach ($approval in $approvals) {
+    $approvalIndex++
+    $label = "ownership.approvals[$approvalIndex]"
+    if ($approval -isnot [pscustomobject]) {
+        Add-HandoffError "$label must be an object."
+        continue
+    }
+    $approver = Get-Prop $approval 'approver'
+    $approvalScope = Get-Prop $approval 'scope'
+    $valid = $true
+    if (-not (Test-Text $approver)) {
+        Add-HandoffError "$label.approver is required."
+        $valid = $false
+    }
+    if (-not (Test-Text $approvalScope) -or ($approvalScope -cne 'all' -and -not $objectIds.ContainsKey($approvalScope))) {
+        Add-HandoffError "$label.scope must be 'all' or a known affected object id."
+        $valid = $false
+    }
+    if (-not (Test-UtcTimestamp (Get-Prop $approval 'approvedAt'))) {
+        Add-HandoffError "$label.approvedAt must be an ISO 8601 UTC timestamp."
+        $valid = $false
+    }
+    if ($valid -and (Test-Text $dataOwner) -and $approver -ceq $dataOwner) {
+        $ownerApprovedScopes[$approvalScope] = $true
+    }
+}
+if ($signedOff -and (Test-Text $dataOwner) -and $dataOwner -ne 'Unknown' -and -not $ownerApprovedScopes.ContainsKey('all')) {
+    $unapproved = @($objectIds.Keys | Where-Object { -not $ownerApprovedScopes.ContainsKey($_) } | Sort-Object)
+    if ($unapproved.Count -gt 0) {
+        Add-HandoffError "ownership.dataOwner '$dataOwner' has not approved: $($unapproved -join ', ')."
+    }
+}
 
 foreach ($item in (Get-Array $handoff 'testImplications' 'testImplications' -NonEmpty)) {
     if (-not (Test-Text (Get-Prop $item 'id')) -or -not (Test-Text (Get-Prop $item 'summary'))) {
@@ -383,21 +442,24 @@ elseif ($signedOff) {
 if ($sourceRevisionValid -and (Test-Text $CurrentRevision)) {
     $current = $CurrentRevision.Trim()
     $prefixLength = [Math]::Min($sourceRevision.Length, $current.Length)
-    if ([string]::Compare($sourceRevision, 0, $current, 0, $prefixLength,
-            [System.StringComparison]::OrdinalIgnoreCase) -ne 0) {
-        $drift = Get-RevisionDrift $sourceRevision $current
-        if ($null -eq $drift) {
+    $revisionsMatch = [string]::Compare($sourceRevision, 0, $current, 0, $prefixLength,
+        [System.StringComparison]::OrdinalIgnoreCase) -eq 0
+    $drift = if ($revisionsMatch) { $null } else { Get-RevisionDrift $sourceRevision $current }
+    $message = "sourceRevision '$sourceRevision' does not match the current revision '$current': $drift."
+    if ($null -eq $drift -and (Test-HeadRevision $current)) {
+        $drift = Get-WorkingTreeDrift
+        $message = "The handoff is stale against the working tree at '$current': $drift."
+    }
+    if ($null -eq $drift) {
+        if (-not $revisionsMatch) {
             Write-Host "Revision check: '$current' descends from sourceRevision '$sourceRevision' with no referenced file changes."
         }
-        else {
-            $message = "sourceRevision '$sourceRevision' does not match the current revision '$current': $drift."
-            if ($AcceptRevisionMismatch) {
-                Write-Host "WARNING: $message Accepted by the user."
-            }
-            else {
-                Add-HandoffError $message
-            }
-        }
+    }
+    elseif ($AcceptRevisionMismatch) {
+        Write-Host "WARNING: $message Accepted by the user."
+    }
+    else {
+        Add-HandoffError $message
     }
 }
 
