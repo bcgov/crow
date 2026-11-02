@@ -340,7 +340,9 @@ if ($errors.Count -eq 0) {
         foreach ($entry in $agentHandoffs) {
             $sourcePath = ".apm/agents/$(Split-Path -Leaf $entry.File)"
             $target = if ($entry.Handoff.ContainsKey('agent')) { $entry.Handoff['agent'].Value } else { $null }
-            if ($collectionAgentPaths -contains $sourcePath -and $names.ContainsKey($target) -and
+            # A missing target is reported by the handoff checks; skip it here.
+            if ($target -is [string] -and $target.Length -gt 0 -and
+                $collectionAgentPaths -contains $sourcePath -and $names.ContainsKey($target) -and
                 $collectionAgentNames -cnotcontains $target) {
                 Add-ValidationError "${collectionManifestPath}: $sourcePath hands off to '$target', which the collection does not include."
             }

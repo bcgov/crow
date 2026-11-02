@@ -112,6 +112,30 @@ function Save-FixtureCommit {
     return (Invoke-FixtureGit @('rev-parse', 'HEAD'))
 }
 
+function New-FixtureLink {
+    param([string]$Link, [string]$Target, [switch]$Directory)
+    # Windows creates directory junctions without elevation; file symlinks may need Developer Mode.
+    $type = if ($Directory -and $env:OS -eq 'Windows_NT') { 'Junction' } else { 'SymbolicLink' }
+    try {
+        New-Item -ItemType $type -Path $Link -Target $Target -ErrorAction Stop | Out-Null
+        return $true
+    }
+    catch {
+        return $false
+    }
+}
+
+function Remove-FixtureLink {
+    param([string]$Link, [switch]$Directory)
+    # Delete only the link so the target is never removed through it.
+    if ($Directory) {
+        [System.IO.Directory]::Delete($Link)
+    }
+    else {
+        [System.IO.File]::Delete($Link)
+    }
+}
+
 function Write-GitHandoff {
     param([string]$SourceRevision)
     $handoff = New-Handoff 'signed-off'
@@ -222,6 +246,26 @@ try {
     $handoff.status = 'confirmed'
     Invoke-HandoffTest 'unknown status fails' (ConvertTo-HandoffJson $handoff) 1 "status must be 'draft' or 'signed-off'"
 
+    Invoke-HandoffTest 'single-item root array fails' ('[' + (ConvertTo-HandoffJson (New-Handoff 'signed-off')) + ']') 1 'must be a JSON object' @('-RequireSignedOff', '-CurrentRevision', $revision)
+
+    $outside = Join-Path $fixtureRoot 'outside'
+    New-Item -ItemType Directory -Path $outside -Force | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $outside 'Evidence.cs'), "// Linked evidence`n", $utf8)
+    $links = @(
+        @{ Name = 'linked file'; Link = (Join-Path $fixtureRoot 'src/Linked.cs'); Target = (Join-Path $outside 'Evidence.cs'); Evidence = 'src/Linked.cs'; Directory = $false },
+        @{ Name = 'linked directory'; Link = (Join-Path $fixtureRoot 'linked'); Target = $outside; Evidence = 'linked/Evidence.cs'; Directory = $true }
+    )
+    foreach ($link in $links) {
+        if (-not (New-FixtureLink $link.Link $link.Target -Directory:$link.Directory)) {
+            Write-Host "Skipped: $($link.Name) evidence fails (this platform cannot create the link)"
+            continue
+        }
+        $handoff = New-Handoff
+        $handoff.evidence[0].path = $link.Evidence
+        Invoke-HandoffTest "$($link.Name) evidence fails" (ConvertTo-HandoffJson $handoff) 1 'must not pass through a symbolic link or junction'
+        Remove-FixtureLink $link.Link -Directory:$link.Directory
+    }
+
     $gitRoot = Join-Path $fixtureRoot 'repo'
     New-Item -ItemType Directory -Path $gitRoot -Force | Out-Null
     Invoke-FixtureGit @('init', '-q') | Out-Null
@@ -280,6 +324,7 @@ try {
     Write-FixtureFile 'src/Permit.cs' "// Changed evidence`n"
     $changed = Save-FixtureCommit 'Change evidence'
     Invoke-HandoffTest 'changed evidence makes the handoff stale' '' 1 'referenced files changed since then: src/Permit.cs' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-HandoffTest 'a revision other than HEAD fails' '' 1 'must resolve to the checked-out HEAD' @('-RequireSignedOff', '-CurrentRevision', $reviewed, '-AcceptRevisionMismatch') -FilePath $handoffPath -RepoRoot $gitRoot
     Invoke-HandoffTest 'user can accept changed evidence' '' 0 'Accepted by the user' @('-RequireSignedOff', '-AcceptRevisionMismatch') -FilePath $handoffPath -RepoRoot $gitRoot
 
     $handoffPath = Write-GitHandoff $changed

@@ -20,6 +20,10 @@ function ConvertFrom-FrontmatterScalar {
         # YAML treats an empty or comment-only value as null.
         return [pscustomobject]@{ Value = ''; Quoted = $false }
     }
+    if ($trimmed -cmatch '^(null|Null|NULL|~)(\s+#.*)?$') {
+        # Unquoted YAML null tokens are missing values; quoted 'null' stays a string.
+        return [pscustomobject]@{ Value = ''; Quoted = $false }
+    }
     if ($trimmed -match '^([>|\[{&*!%@`]|[-?:](\s|$))') {
         return $null
     }
@@ -42,12 +46,26 @@ function Get-AgentHandoffs {
     $inHandoffs = $false
     $current = $null
     $propertyIndent = 0
+    $dashIndent = $null
+    $rootIndent = $null
     for ($index = 1; $index -lt $lines.Count; $index++) {
         $line = $lines[$index]
         $lineNumber = $index + 1
         if ($line.Trim() -eq '---') {
             break
         }
+        if ($line.Trim().Length -eq 0 -or $line -match '^\s*#') {
+            continue
+        }
+        # YAML allows uniformly indented frontmatter; strip the root indentation.
+        if ($null -eq $rootIndent) {
+            $rootIndent = [regex]::Match($line, '^[ \t]*').Value
+        }
+        if (-not $line.StartsWith($rootIndent)) {
+            $errors.Add("line ${lineNumber}: frontmatter lines must not be indented less than the first key.")
+            continue
+        }
+        $line = $line.Substring($rootIndent.Length)
         if ($line -match '^(?:handoffs|''handoffs''|"handoffs")[ \t]*:(.*)$') {
             $inHandoffs = $true
             if (($Matches[1] -replace '\s*#.*$', '').Trim().Length -gt 0) {
@@ -55,14 +73,24 @@ function Get-AgentHandoffs {
             }
             continue
         }
-        if (-not $inHandoffs -or $line.Trim().Length -eq 0 -or $line -match '^\s*#') {
+        if (-not $inHandoffs) {
             continue
         }
-        if ($line -match '^(\s*-\s+)([\w-]+):\s*(.*)$') {
+        if ($line -match '^(\s*)(-\s+)([\w-]+):\s*(.*)$') {
+            if ($null -eq $dashIndent) {
+                $dashIndent = $Matches[1].Length
+            }
+            elseif ($Matches[1].Length -ne $dashIndent) {
+                $errors.Add("line ${lineNumber}: handoff entries must align with the first entry; nested sequences are not supported.")
+                $current = $null
+                continue
+            }
             $current = @{}
             $handoffs.Add($current)
             # Properties of this entry must align with its first key.
-            $propertyIndent = $Matches[1].Length
+            $propertyIndent = $Matches[1].Length + $Matches[2].Length
+            $key = $Matches[3]
+            $rawValue = $Matches[4]
         }
         elseif ($line -match '^[^\s#-]') {
             break
@@ -75,8 +103,11 @@ function Get-AgentHandoffs {
             $errors.Add("line ${lineNumber}: handoff properties must align with the entry's first key; nested mappings are not supported.")
             continue
         }
-        $key = $Matches[2]
-        $scalar = ConvertFrom-FrontmatterScalar $Matches[3]
+        else {
+            $key = $Matches[2]
+            $rawValue = $Matches[3]
+        }
+        $scalar = ConvertFrom-FrontmatterScalar $rawValue
         if ($null -eq $scalar) {
             $errors.Add("line ${lineNumber}: handoff '$key' must be a single-line value; quote values that contain ': '.")
             continue

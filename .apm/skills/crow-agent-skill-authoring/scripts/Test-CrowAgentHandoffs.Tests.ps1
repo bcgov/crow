@@ -173,6 +173,42 @@ handoffs:
         $result.Errors.Count -eq 0 -and $result.Handoffs[0]['prompt'].Value -ceq ''
     }
 
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: null
+    agent: ~
+    prompt: NULL # missing
+    send: 'null'
+'@
+    Assert-Case 'unquoted YAML null tokens are empty; quoted null is text' {
+        $result.Errors.Count -eq 0 -and $result.Handoffs[0]['label'].Value -ceq '' -and
+            $result.Handoffs[0]['agent'].Value -ceq '' -and $result.Handoffs[0]['prompt'].Value -ceq '' -and
+            $result.Handoffs[0]['send'].Value -ceq 'null'
+    }
+
+    $path = Join-Path $fixtureRoot 'indented.agent.md'
+    $content = "---`r`n  name: 'Crow Fixture Agent'`r`n  handoffs:`r`n    - label: 'Indented'`r`n      agent: 'Crow Code Review Agent'`r`n      prompt: 'p'`r`n      send: true`r`n---`r`n"
+    [System.IO.File]::WriteAllText($path, $content, $utf8)
+    $result = Get-AgentHandoffs -Path $path
+    Assert-Case 'uniformly indented frontmatter is parsed' {
+        $result.Errors.Count -eq 0 -and $result.Handoffs.Count -eq 1 -and $result.Handoffs[0]['send'].Value -eq 'true'
+    }
+
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: 'First'
+    agent: 'Crow Code Review Agent'
+    prompt: 'p'
+    send: false
+   - label: 'Misaligned'
+     agent: 'Crow Code Review Agent'
+     prompt: 'p'
+     send: false
+'@
+    Assert-Case 'misaligned handoff entry reports an error' {
+        ($result.Errors -join "`n") -match 'must align with the first entry'
+    }
+
     foreach ($key in @("'handoffs':", '"handoffs":', 'handoffs :')) {
         $result = Get-FixtureResult ($key + @'
 

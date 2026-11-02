@@ -150,6 +150,26 @@ function Get-Array {
     return $value
 }
 
+function Get-LinkedPathSegment {
+    param([string]$RelativePath)
+    # Returns the first segment below RepoRoot that is a symbolic link or junction.
+    $current = $RepoRoot
+    $segments = @($RelativePath.Split('/') | Where-Object { $_.Length -gt 0 -and $_ -ne '.' })
+    $walked = @()
+    foreach ($segment in $segments) {
+        $current = Join-Path $current $segment
+        $walked += $segment
+        if (-not (Test-Path -LiteralPath $current)) {
+            return $null
+        }
+        $item = Get-Item -LiteralPath $current -Force
+        if (($item.Attributes -band [System.IO.FileAttributes]::ReparsePoint) -or $item.LinkType) {
+            return ($walked -join '/')
+        }
+    }
+    return $null
+}
+
 function Test-RelativePath {
     param($Value, [string]$Label, [switch]$MustExist)
     if (-not (Test-Text $Value)) {
@@ -169,7 +189,12 @@ function Test-RelativePath {
     if ($MustExist) {
         try {
             $fullPath = Join-Path $RepoRoot $normalized
-            if (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
+            $linkedPath = Get-LinkedPathSegment $normalized
+            if ($null -ne $linkedPath) {
+                # Git tracks a link, not its target, so linked content cannot be tied to sourceRevision.
+                Add-HandoffError "$Label '$Value' must not pass through a symbolic link or junction ('$linkedPath')."
+            }
+            elseif (-not (Test-Path -LiteralPath $fullPath -PathType Leaf)) {
                 Add-HandoffError "$Label '$Value' does not exist under the repository root."
             }
             elseif ((Get-Item -LiteralPath $fullPath).Length -eq 0) {
@@ -228,13 +253,15 @@ $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 $handoffFullPath = (Resolve-Path -LiteralPath $Path).Path
 
 try {
-    $handoff = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $Path).Path) | ConvertFrom-Json
+    $json = [System.IO.File]::ReadAllText((Resolve-Path -LiteralPath $Path).Path)
+    $handoff = $json | ConvertFrom-Json
 }
 catch {
     Write-Host "ERROR: Invalid JSON in ${Path}: $($_.Exception.Message)"
     exit 1
 }
-if ($handoff -isnot [pscustomobject]) {
+# ConvertFrom-Json unwraps a single-element root array, so check the raw root.
+if (-not $json.TrimStart([char]0xFEFF, ' ', "`t", "`r", "`n").StartsWith('{') -or $handoff -isnot [pscustomobject]) {
     Write-Host 'ERROR: The handoff must be a JSON object.'
     exit 1
 }
@@ -458,9 +485,16 @@ if ($sourceRevisionValid -and (Test-Text $CurrentRevision)) {
     # is only the fallback when the repository root is not a Git work tree.
     $workTree = Invoke-Git @('rev-parse', '--is-inside-work-tree')
     $inWorkTree = $workTree.ExitCode -eq 0 -and "$($workTree.Output | Select-Object -First 1)" -eq 'true'
-    $drift = if ($inWorkTree -or -not $revisionsMatch) { Get-RevisionDrift $sourceRevision $current } else { $null }
+    if ($inWorkTree -and -not (Test-HeadRevision $current)) {
+        # Referenced files are read from the checkout, so a different revision would mix sources.
+        Add-HandoffError "CurrentRevision '$current' must resolve to the checked-out HEAD; check out that revision instead."
+        $drift = $null
+    }
+    else {
+        $drift = if ($inWorkTree -or -not $revisionsMatch) { Get-RevisionDrift $sourceRevision $current } else { $null }
+    }
     $message = "sourceRevision '$sourceRevision' does not match the current revision '$current': $drift."
-    if ($null -eq $drift -and (Test-HeadRevision $current)) {
+    if ($null -eq $drift -and $inWorkTree -and (Test-HeadRevision $current)) {
         $drift = Get-WorkingTreeDrift
         $message = "The handoff is stale against the working tree at '$current': $drift."
     }
