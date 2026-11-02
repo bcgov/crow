@@ -78,7 +78,8 @@ makes it `signed-off`. Each `ownership.approvals` entry records `approver`,
 Architecture Agent consumes it with `-RequireSignedOff`, which accepts the
 target repository's `HEAD` when it descends from `sourceRevision` without
 changes to the files the handoff references, including staged, unstaged, or
-untracked changes in the working tree. Record the commit the evidence
+untracked changes in the working tree. Referenced files ignored by Git cannot
+be tied to a commit, so they also need a refresh or explicit acceptance. Record the commit the evidence
 was reviewed at; committing the handoff afterwards keeps it current.
 
 ## Boundaries

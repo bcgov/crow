@@ -41,6 +41,7 @@ function Get-AgentHandoffs {
     $errors = [System.Collections.Generic.List[string]]::new()
     $inHandoffs = $false
     $current = $null
+    $propertyIndent = 0
     for ($index = 1; $index -lt $lines.Count; $index++) {
         $line = $lines[$index]
         $lineNumber = $index + 1
@@ -57,21 +58,31 @@ function Get-AgentHandoffs {
         if (-not $inHandoffs -or $line.Trim().Length -eq 0 -or $line -match '^\s*#') {
             continue
         }
-        if ($line -match '^\s*-\s+([\w-]+):\s*(.*)$') {
+        if ($line -match '^(\s*-\s+)([\w-]+):\s*(.*)$') {
             $current = @{}
             $handoffs.Add($current)
+            # Properties of this entry must align with its first key.
+            $propertyIndent = $Matches[1].Length
         }
         elseif ($line -match '^[^\s#-]') {
             break
         }
-        elseif (-not ($null -ne $current -and $line -match '^\s+([\w-]+):\s*(.*)$')) {
+        elseif (-not ($null -ne $current -and $line -match '^(\s+)([\w-]+):\s*(.*)$')) {
             $errors.Add("line ${lineNumber}: unsupported handoff syntax; use '- label:' entries with single-line values.")
             continue
         }
-        $key = $Matches[1]
-        $scalar = ConvertFrom-FrontmatterScalar $Matches[2]
+        elseif ($Matches[1].Length -ne $propertyIndent) {
+            $errors.Add("line ${lineNumber}: handoff properties must align with the entry's first key; nested mappings are not supported.")
+            continue
+        }
+        $key = $Matches[2]
+        $scalar = ConvertFrom-FrontmatterScalar $Matches[3]
         if ($null -eq $scalar) {
             $errors.Add("line ${lineNumber}: handoff '$key' must be a single-line value; quote values that contain ': '.")
+            continue
+        }
+        if ($current.ContainsKey($key)) {
+            $errors.Add("line ${lineNumber}: handoff '$key' is duplicated.")
             continue
         }
         $current[$key] = $scalar

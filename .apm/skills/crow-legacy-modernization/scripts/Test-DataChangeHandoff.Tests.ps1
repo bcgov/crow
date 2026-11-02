@@ -261,6 +261,22 @@ try {
     Invoke-HandoffTest 'untracked evidence file fails' '' 1 'referenced files have uncommitted changes' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
     Invoke-FixtureGit @('reset', '-q', '--hard') | Out-Null
 
+    Write-FixtureFile '.gitignore' "generated/`n"
+    $ignoredHead = Save-FixtureCommit 'Ignore generated files'
+    Write-FixtureFile 'generated/schema.sql' "-- Generated evidence`n"
+    $handoff = New-Handoff 'signed-off'
+    $handoff.sourceRevision = $ignoredHead
+    $handoff.artifactPaths = @('docs/modernization/plan.md', 'generated/schema.sql')
+    Write-FixtureFile 'docs/modernization/data-change-handoff.json' (ConvertTo-HandoffJson $handoff)
+    Invoke-HandoffTest 'ignored referenced file fails' '' 1 'ignored by Git and cannot be verified: generated/schema.sql' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+
+    $handoff = New-Handoff 'signed-off'
+    $handoff.sourceRevision = $ignoredHead + 'a'
+    Write-FixtureFile 'docs/modernization/data-change-handoff.json' (ConvertTo-HandoffJson $handoff)
+    Invoke-HandoffTest 'unknown source revision sharing the HEAD prefix fails' '' 1 'could not be compared' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot
+    Invoke-FixtureGit @('reset', '-q', '--hard') | Out-Null
+    Remove-Item -LiteralPath (Join-Path $gitRoot 'generated') -Recurse -Force
+
     Write-FixtureFile 'src/Permit.cs' "// Changed evidence`n"
     $changed = Save-FixtureCommit 'Change evidence'
     Invoke-HandoffTest 'changed evidence makes the handoff stale' '' 1 'referenced files changed since then: src/Permit.cs' @('-RequireSignedOff') -FilePath $handoffPath -RepoRoot $gitRoot

@@ -106,17 +106,27 @@ function Test-HeadRevision {
 }
 
 function Get-WorkingTreeDrift {
-    # Returns $null when no referenced file has staged, unstaged, or untracked changes.
+    # Returns $null when no referenced file has staged, unstaged, untracked, or ignored changes.
     if ($referencedPaths.Count -eq 0) {
         return $null
     }
-    $status = Invoke-Git (@('--literal-pathspecs', 'status', '--porcelain', '--untracked-files=all', '--') + $referencedPaths.ToArray())
+    $status = Invoke-Git (@('--literal-pathspecs', 'status', '--porcelain', '--untracked-files=all', '--ignored=traditional', '--') + $referencedPaths.ToArray())
     if ($status.ExitCode -ne 0) {
         return 'the working tree could not be checked'
     }
-    $changed = @($status.Output | Where-Object { "$_".Length -gt 3 } | ForEach-Object { "$_".Substring(3) })
+    $entries = @($status.Output | Where-Object { "$_".Length -gt 3 })
+    $ignored = @($entries | Where-Object { "$_".StartsWith('!!') } | ForEach-Object { "$_".Substring(3) })
+    $changed = @($entries | Where-Object { -not "$_".StartsWith('!!') } | ForEach-Object { "$_".Substring(3) })
+    $reasons = @()
     if ($changed.Count -gt 0) {
-        return "referenced files have uncommitted changes: $($changed -join ', ')"
+        $reasons += "referenced files have uncommitted changes: $($changed -join ', ')"
+    }
+    if ($ignored.Count -gt 0) {
+        # Git does not track ignored files, so their content cannot be tied to sourceRevision.
+        $reasons += "referenced files are ignored by Git and cannot be verified: $($ignored -join ', ')"
+    }
+    if ($reasons.Count -gt 0) {
+        return $reasons -join '; '
     }
     return $null
 }
@@ -165,7 +175,7 @@ function Test-RelativePath {
             elseif ((Get-Item -LiteralPath $fullPath).Length -eq 0) {
                 Add-HandoffError "$Label '$Value' is empty."
             }
-            elseif ($referencedPaths -notcontains $normalized -and
+            elseif ($referencedPaths -cnotcontains $normalized -and
                 -not [string]::Equals((Resolve-Path -LiteralPath $fullPath).Path, $handoffFullPath,
                     [System.StringComparison]::OrdinalIgnoreCase)) {
                 $referencedPaths.Add($normalized)
@@ -444,7 +454,11 @@ if ($sourceRevisionValid -and (Test-Text $CurrentRevision)) {
     $prefixLength = [Math]::Min($sourceRevision.Length, $current.Length)
     $revisionsMatch = [string]::Compare($sourceRevision, 0, $current, 0, $prefixLength,
         [System.StringComparison]::OrdinalIgnoreCase) -eq 0
-    $drift = if ($revisionsMatch) { $null } else { Get-RevisionDrift $sourceRevision $current }
+    # In a Git work tree, always let Git resolve both revisions; prefix matching
+    # is only the fallback when the repository root is not a Git work tree.
+    $workTree = Invoke-Git @('rev-parse', '--is-inside-work-tree')
+    $inWorkTree = $workTree.ExitCode -eq 0 -and "$($workTree.Output | Select-Object -First 1)" -eq 'true'
+    $drift = if ($inWorkTree -or -not $revisionsMatch) { Get-RevisionDrift $sourceRevision $current } else { $null }
     $message = "sourceRevision '$sourceRevision' does not match the current revision '$current': $drift."
     if ($null -eq $drift -and (Test-HeadRevision $current)) {
         $drift = Get-WorkingTreeDrift

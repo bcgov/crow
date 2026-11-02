@@ -138,6 +138,32 @@ handoffs:
 
     $result = Get-FixtureResult @'
 handoffs:
+  - label: 'Nested'
+    agent: 'Crow Code Review Agent'
+    prompt: 'p'
+    send: true
+    extra:
+      send: false
+'@
+    Assert-Case 'nested mapping cannot override a top-level property' {
+        ($result.Errors -join "`n") -match 'nested mappings are not supported' -and
+            $result.Handoffs[0]['send'].Value -eq 'true'
+    }
+
+    $result = Get-FixtureResult @'
+handoffs:
+  - label: 'Duplicate'
+    agent: 'Crow Code Review Agent'
+    prompt: 'p'
+    send: true
+    send: false
+'@
+    Assert-Case 'duplicate property reports an error' {
+        ($result.Errors -join "`n") -match "'send' is duplicated"
+    }
+
+    $result = Get-FixtureResult @'
+handoffs:
   - label: 'Comment only'
     agent: 'Crow Code Review Agent'
     prompt: # TODO
