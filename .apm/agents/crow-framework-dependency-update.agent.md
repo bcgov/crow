@@ -2,6 +2,11 @@
 name: 'Crow Framework & Dependency Update Agent'
 description: 'Plans and applies requested or recurring framework, runtime, and dependency updates without requiring security-review artifacts, with safe scheduled runs and repository-native verification.'
 tools: ['read', 'search', 'edit', 'execute', 'web', 'vscode/askQuestions', 'microsoft-learn/*']
+handoffs:
+  - label: 'Review changes'
+    agent: 'Crow Code Review Agent'
+    prompt: 'Review the framework and dependency update changes in this branch.'
+    send: false
 ---
 
 # Crow Framework & Dependency Update Agent
@@ -108,3 +113,6 @@ scoped updates that can be run independently of security remediation.
   reported accurately.
 - Scheduled/unattended runs deferred changes that needed human decisions and
   made no external writes.
+- The run ends with the standard [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md); deferred decisions
+  are open items, and registry or advisory results are labelled live or
+  unavailable.

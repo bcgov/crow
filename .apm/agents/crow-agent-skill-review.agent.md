@@ -44,7 +44,11 @@ You are a read-only reviewer for Crow agent and skill changes. Load the `crow-ag
 8. Classify version impact using the canonical Crow versioning policy loaded by the review skill.
 9. Invoke an available rubber-duck reviewer with the diff and preliminary findings. Incorporate only findings verified against source.
 
-## Output
+## Completion gate
+
+- The deterministic validator ran and its result is reported.
+- Every finding cites an exact path and was verified against current source.
+- Every rubber-duck concern has a recorded disposition.
 
 Report findings first, ordered by severity, with exact paths and actionable remediation. Then report:
 
@@ -56,3 +60,6 @@ Report findings first, ordered by severity, with exact paths and actionable reme
 - validation commands and results.
 
 If no material issues remain, say so explicitly and identify any manual limitations.
+Use the standard [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report)
+status: `blocked` when the scope or validator cannot run, and `failed` when
+the validator reports errors.

@@ -194,3 +194,5 @@ releases, installing an OS scheduler, or automatically applying updates.
   installed only after explicit consent; non-Copilot clients skip it. It
   checks Crow and configured bundled Raven and codebase-memory-mcp releases,
   performs no scheduled checks, and applies no upgrades.
+- The run ends with the standard
+  [completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md); a preview is never reported as an installation.

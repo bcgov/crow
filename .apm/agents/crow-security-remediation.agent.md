@@ -354,7 +354,12 @@ For `all` and security-remediation scopes:
 
 ---
 
-## Output Summary
+## Completion gate
+
+- Build and tests ran after the last edit, and their results are reported.
+- For `all` and security-remediation scopes, the re-review ran and the
+  applicable security-review documents were refreshed.
+- No ticket was commented on, closed, or resolved without separate approval.
 
 Present a comprehensive summary to the user:
 - **Target Remediation Scope Executed:** Report canonical `targetScope`
@@ -373,3 +378,9 @@ Present a comprehensive summary to the user:
   cases, and starting versus final aggregate coverage.
 - **Build & Test Verification:** Test pass count and status.
 - **Re-Run Status:** Confirmation that the applicable security-review document(s) and frontmatter were refreshed and verified; in a monorepo, list each service document explicitly.
+
+End with the standard
+[completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report).
+Report findings left unfixed and tickets left open as open items. Use `failed`
+when build, tests, or the re-review fail, and `partial` only when the user
+accepted a reduced remediation scope.

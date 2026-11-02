@@ -15,12 +15,13 @@ Use this skill when adding or changing agents, skills, modules, templates, or th
 4. Read only the related existing agent, skill router, and modules. Do not load unrelated Crow capabilities.
 5. Use the templates in [`resources/`](resources/) as starting structures, not as content to copy blindly.
 6. Load [`modules/collection-management.md`](modules/collection-management.md) when a Crow collection, package subset, or distribution manifest changes.
+7. Load [`modules/interaction-contracts.md`](modules/interaction-contracts.md) when an agent interviews users, writes or updates documents, reports completion, hands work to another agent, reads a live provider, or resumes prior work.
 
 ## Authoring loop
 
 1. Identify the target repository from its repository metadata, not from the globally installed Crow skill's location or the directory name alone. If its identity is unclear, ask before choosing a naming convention. Inspect its existing agents and skills and whether an existing skill already owns the capability.
 2. When creating an agent or skill in `bcgov/crow`, use the `crow-` prefix. In any other repository, ask the user which prefix to use **before creating the asset**. Inspect agent filenames and skill directory/frontmatter names for an established shared prefix; suggest it, or the repository name in lowercase kebab-case with a trailing hyphen if none exists. If existing prefixes conflict, present the candidates rather than selecting one silently. Apply the confirmed prefix to new asset identifiers and filenames following the target repository's conventions; do not impose `crow-` because Crow is installed globally.
-3. Define a narrow trigger, in-scope behavior, non-goals, required tools, failure behavior, and completion gate.
+3. Define a narrow trigger, in-scope behavior, non-goals, required tools, failure behavior, and a `## Completion gate` section that the validator requires for every agent.
 4. Put orchestration in the agent, routing in `SKILL.md`, reusable knowledge in modules, stable output shapes in templates, and mechanical operations in scripts.
 5. Keep the agent and router concise. Link to one canonical policy instead of repeating it.
 6. Apply the [minimal-change decision ladder](../crow-application-architecture/modules/minimal-change.md) before creating a new asset, abstraction, dependency, or output contract. Preserve security, accessibility, correctness, and release gates when simplifying.
