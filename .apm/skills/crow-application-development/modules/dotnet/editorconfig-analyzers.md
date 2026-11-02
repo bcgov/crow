@@ -38,14 +38,20 @@ indent_size = 4
 # Naming and style: keep the repository's existing choices; add only what is already followed.
 csharp_style_namespace_declarations = file_scoped:suggestion
 
-# Correctness rules worth failing the build on in new code
-dotnet_diagnostic.CA1816.severity = warning   # Call GC.SuppressFinalize correctly
-dotnet_diagnostic.CA1822.severity = warning   # Mark members as static
-dotnet_diagnostic.CA1869.severity = warning   # Cache and reuse JsonSerializerOptions
-dotnet_diagnostic.CS8509.severity = error     # Non-exhaustive switch expression
+# Correctness rules worth failing the build on in new code.
+# EditorConfig has no inline comments; keep every comment on its own line.
+# CA1816: call GC.SuppressFinalize correctly
+dotnet_diagnostic.CA1816.severity = warning
+# CA1822: mark members as static
+dotnet_diagnostic.CA1822.severity = warning
+# CA1869: cache and reuse JsonSerializerOptions
+dotnet_diagnostic.CA1869.severity = warning
+# CS8509: non-exhaustive switch expression
+dotnet_diagnostic.CS8509.severity = error
 
-# Noisy rules with low value; set explicitly rather than leaving a recurring warning
-# dotnet_diagnostic.CA1873.severity = none    # Avoid potentially expensive logging (noise on guarded logs)
+# Noisy rules with low value; set explicitly rather than leaving a recurring warning.
+# CA1873: avoid potentially expensive logging (noise on guarded logs)
+# dotnet_diagnostic.CA1873.severity = none
 
 [*.{csproj,props,targets}]
 indent_size = 2
@@ -53,7 +59,8 @@ indent_size = 2
 # Tests: relax only rules that conflict with the test idiom, and say why.
 # Prefer placing these in tests/.editorconfig so production code keeps the strict setting.
 # [**/*Tests*/**.cs]
-# dotnet_diagnostic.CA1707.severity = none    # Underscores in test method names
+# CA1707: underscores in test method names
+# dotnet_diagnostic.CA1707.severity = none
 ```
 
 Do not bulk-disable analyzers to silence an existing backlog. Set a rule to `none` only when it is
