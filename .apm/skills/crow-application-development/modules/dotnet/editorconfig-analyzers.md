@@ -84,11 +84,15 @@ Make analyzers run at build time (these default to off or to the IDE only):
 - Do **not** add `TreatWarningsAsErrors` to an existing project with a warning backlog; that fails the
   build for unrelated code. For a new project it is reasonable. For an existing one, use
   `-warnaserror:<rule>` in CI on specific rules, or a ratchet agreed with the team.
-- xUnit v3 test projects include `xunit.analyzers`. For xUnit v2 projects, add the `xunit.analyzers`
-  package so xUnit1004/xUnit1045/xUnit1051 style rules are reported.
-- Sonar rules (`S*`) come from the Sonar scanner or the `SonarAnalyzer.CSharp` package, not from
-  `.editorconfig` alone. A rule set to `none` in `.editorconfig` hides an external Roslyn rule such as
-  `CA*` from the scan, but a `csharpsquid:*` rule still needs a server-side ignore or a project setting.
+- xUnit analyzers: xUnit v3 test projects include `xunit.analyzers`, and the v2 `xunit` metapackage already
+  references it transitively. Check for an existing reference before adding one. Rules are version-specific:
+  xUnit1051 (and `Assert.Skip`) apply to v3 only, so on a retained v2 suite list only v2-supported rules
+  such as xUnit1004 and xUnit1045.
+- Sonar rules (`S*`) run through the Sonar scanner or the `SonarAnalyzer.CSharp` package. SonarQube's C#
+  documentation supports file-scoped `dotnet_diagnostic.Sxxxx.severity = none` in `.editorconfig` as well as
+  `CA*` rules, so try that before changing server configuration. If the issue still appears in a scan, the
+  server-side quality profile or an ignore rule is the fallback. The suppression restrictions above still
+  apply, and confirm the effect with a scan.
 
 ## Verification
 

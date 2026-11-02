@@ -44,7 +44,8 @@ analyzer numbering has shifted between releases.
 
 After generating or editing tests, before reporting completion:
 
-1. Build the **test project** with warnings visible: `dotnet build <test.csproj> --no-restore -v q`. If the
+1. Build the **test project** with warnings visible: `dotnet build <test.csproj> --no-restore --no-incremental -v q`
+   (`--no-incremental` forces compilation so analyzers rerun even after the test command already built it). If the
    repo already promotes specific warnings to errors, use its existing settings; `-warnaserror` takes
    explicit diagnostic IDs (for example `-warnaserror:xUnit1004,CA1822`), not wildcard families. Do not add
    `TreatWarningsAsErrors` to the project for this check.
