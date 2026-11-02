@@ -107,6 +107,13 @@ move publishing to a separate step: uncheck that option and add `PublishTestResu
 **Publish Test Results** task using VSTest format and a pattern such as `**/TestResults/*.trx`. The
 VSTest format is correct even though MTP produced the file; the on-disk TRX shape is identical.
 
+## Analyzer-clean generation
+
+Write C# tests that pass xUnit, Roslyn, and Sonar analyzers on the first build (theory data, `static`
+helpers, dispose pattern, no skipped or empty scaffolding, no repeated literals). Load
+[`../reference/dotnet-analyzer-clean-tests.md`](../reference/dotnet-analyzer-clean-tests.md) before writing
+test code and run its verification gate before reporting completion.
+
 ## Test project layout
 
 Once more than one model or feature is under test, structure matters more than it looks. A layout that has
@@ -136,7 +143,9 @@ The file taxonomy per model, and why each exists:
 - **`{Entity}SmokeTests.cs`** — fast sanity checks: the builder's defaults are valid, a fully-populated model
   is valid, a minimal model is valid, and each common valid scenario passes. Run these first when changing
   anything; they answer "is this broken at all?" in seconds, and they double as documentation of what a valid
-  model looks like. Include a `[Fact(Skip = "Development scratchpad")]` slot for quick iteration.
+  model looks like. Include a scratchpad `[Fact]` slot for quick iteration whose first line is
+  `Assert.Skip("Development scratchpad");` (xUnit v3). Do not use `[Fact(Skip = "...")]`; the attribute form
+  trips xUnit1004. On xUnit v2 there is no `Assert.Skip`, so use a `SkippableFact`-style package or omit the slot.
 - **`{Entity}{Field}FieldsTests.cs`** — either a ~40-line subclass of a shared suite (for field types that
   repeat across models) or a normal test class (for fields unique to this model).
 - **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for model

@@ -78,6 +78,8 @@ reference according to that skill.
    - [`modules/php/integration-tests.md`](modules/php/integration-tests.md) for HTTP, runtime, persistence, or external-boundary work.
 10. Load a `modules/reference/*.md` file **only** when the core module you're using explicitly points to it
    for the situation at hand. Available reference material, and its trigger:
+   - `dotnet-analyzer-clean-tests.md` — generating or editing any C# test code; load before writing it and
+     again at the verification gate (xUnit/CA/Sonar-clean generation checklist).
    - `property-based-testing.md` — writing a property-based test or its generators.
    - `managed-template-lifecycle.md` — installing a ready-to-copy template, or an existing
      `testing-plan.md` managed-template registry reports drift.

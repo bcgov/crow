@@ -19,6 +19,7 @@ Use this skill while implementing or changing an application. Data architecture 
    - [`modules/dotnet/aspnet-core.md`](modules/dotnet/aspnet-core.md) for HTTP, MVC, Razor, Blazor, API, auth, middleware, or hosted SPA work.
    - [`modules/dotnet/persistence.md`](modules/dotnet/persistence.md) for EF Core, Dapper, SQL, migrations, or transactions.
    - [`modules/dotnet/testing-ci.md`](modules/dotnet/testing-ci.md) for tests, packages, builds, containers, or pipelines.
+   - [`modules/dotnet/editorconfig-analyzers.md`](modules/dotnet/editorconfig-analyzers.md) when the repository has no `.editorconfig` or analyzer configuration, when a testing or review engagement reports that gap, or when creating a new .NET solution.
    - [`modules/api-contracts.md`](modules/api-contracts.md) for creating, changing, or modernizing a REST or SOAP API in any supported technology.
 8. For Java source or a Maven/Gradle Java project (`pom.xml`, `build.gradle`, `build.gradle.kts`), load [`modules/java/foundation.md`](modules/java/foundation.md); confirm the target is Java rather than Kotlin-only or another JVM language. Add only the affected modules:
    - [`modules/java/web.md`](modules/java/web.md) for Spring MVC, Servlet, Jakarta REST, API, auth, or HTTP work.
