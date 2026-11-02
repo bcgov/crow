@@ -247,6 +247,8 @@ try {
     Invoke-HandoffTest 'unknown status fails' (ConvertTo-HandoffJson $handoff) 1 "status must be 'draft' or 'signed-off'"
 
     Invoke-HandoffTest 'single-item root array fails' ('[' + (ConvertTo-HandoffJson (New-Handoff 'signed-off')) + ']') 1 'must be a JSON object' @('-RequireSignedOff', '-CurrentRevision', $revision)
+    Invoke-HandoffTest 'leading JSON whitespace before the root object passes' (" `t`r`n" + (ConvertTo-HandoffJson (New-Handoff))) 0 'status draft'
+    Invoke-HandoffTest 'single-item root array after whitespace fails' (" `r`n[" + (ConvertTo-HandoffJson (New-Handoff)) + ']') 1 'must be a JSON object'
 
     $outside = Join-Path $fixtureRoot 'outside'
     New-Item -ItemType Directory -Path $outside -Force | Out-Null
