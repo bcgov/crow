@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "1.0",
+  "producer": "crow-legacy-modernization",
+  "consumer": "crow-data-architecture",
+  "generatedAt": "YYYY-MM-DDTHH:mm:ssZ",
+  "sourceRevision": "GIT_COMMIT_SHA",
+  "status": "draft",
+  "scope": {
+    "application": "APPLICATION_OR_SERVICE_NAME",
+    "modernizationPlan": "docs/modernization/plan.md"
+  },
+  "requestedWork": "Design the data change that the replacement requires.",
+  "necessity": {
+    "summary": "Why the replacement cannot preserve the existing datastore.",
+    "confidence": "Inferred",
+    "evidenceRefs": [
+      "EV-001"
+    ]
+  },
+  "affectedObjects": [
+    {
+      "id": "DO-001",
+      "type": "Table",
+      "name": "SYNTHETIC_TABLE",
+      "change": "Required change to the object.",
+      "confidence": "Inferred",
+      "evidenceRefs": [
+        "EV-001"
+      ]
+    }
+  ],
+  "legacyCompatibility": {
+    "summary": "Whether the legacy application can read replacement writes during transition.",
+    "confidence": "Unknown",
+    "evidenceRefs": []
+  },
+  "rollback": {
+    "summary": "How the data change is reversed and what data could be lost.",
+    "confidence": "Unknown",
+    "evidenceRefs": []
+  },
+  "ownership": {
+    "dataOwner": "Unknown",
+    "approvals": []
+  },
+  "testImplications": [
+    {
+      "id": "TI-001",
+      "summary": "Scenarios that must run against both datastore versions.",
+      "scenarioRefs": []
+    }
+  ],
+  "artifactPaths": [
+    "docs/modernization/plan.md"
+  ],
+  "evidence": [
+    {
+      "id": "EV-001",
+      "path": "src/example.ext",
+      "startLine": 1,
+      "endLine": 1,
+      "summary": "Synthetic source evidence."
+    }
+  ],
+  "openItems": [
+    {
+      "id": "OI-001",
+      "class": "Blocking",
+      "question": "Who owns the affected data and approves the change?",
+      "affects": [
+        "DO-001"
+      ]
+    }
+  ],
+  "signOff": {
+    "approvedBy": null,
+    "approvedAt": null
+  }
+}

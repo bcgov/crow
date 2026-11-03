@@ -12,6 +12,13 @@
   is the absence of a catalogue handled without invented examples?
 - Are freshness claims, routing triggers, evidence quality, and contract
   ownership/versioning explicit where the capability depends on them?
+- Does the agent apply the applicable
+  [interaction contracts](../../crow-agent-skill-authoring/modules/interaction-contracts.md):
+  evidence before writes, separate approval for writes beyond declared
+  outputs, the standard completion status, classified open items, validated
+  handoffs, live-provider limits, and resumable work?
+- Does every agent have a `## Completion gate` section, and do any VS Code
+  `handoffs` use exact agent names with `send: false`?
 
 ## Context and token efficiency
 

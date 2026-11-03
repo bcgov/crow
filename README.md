@@ -146,12 +146,12 @@ Use the selected client's normal discovery commands:
 
 - [Starter Package](collections/starter-package/README.md) — Raven setup,
   architecture and code review, application architecture and development,
-  B.C. UX, application CI, project context, testing, and framework/dependency maintenance
-  for daily brownfield work.
+  B.C. UX, application CI, project context, testing, framework/dependency maintenance,
+  and security review, remediation, and executive reporting for daily brownfield work.
 - [Security Remediation](collections/security-remediation/README.md) —
   Raven setup, architecture review and handoff, project context, security
   review, Sonar scanning, secure architecture, application development,
-  testing, and remediation.
+  testing, remediation, and executive reporting.
 
 APM selectors control update behavior: `#stable` follows published releases,
 while an exact version tag such as `#v0.17.2` remains fixed. Installing
