@@ -11,9 +11,8 @@ not the package list — the shape of an existing suite (shared abstract suites,
 setup) should override this module's defaults. State any deliberate deviation and why.
 
 **Match the structure, not the vintage.** Follow the existing suite's infrastructure decisions exactly, but
-write new tests to the project's declared style (`.editorconfig`) and the idiom its target framework
-supports — an older C# style in the surrounding files records when they were written, not a decision to keep
-writing that way. See
+write new tests to the project's declared style and the idiom its target framework supports — an older C#
+style in the surrounding files records when they were written, not a decision to keep writing that way. See
 [`../reference/language-features-for-testability.md`](../reference/language-features-for-testability.md).
 
 ## Detect first, default second
@@ -107,12 +106,11 @@ move publishing to a separate step: uncheck that option and add `PublishTestResu
 **Publish Test Results** task using VSTest format and a pattern such as `**/TestResults/*.trx`. The
 VSTest format is correct even though MTP produced the file; the on-disk TRX shape is identical.
 
-## Analyzer-clean generation
+## Test-code guidance
 
-Write C# tests that pass xUnit, Roslyn, and Sonar analyzers on the first build (theory data, `static`
-helpers, dispose pattern, no skipped or empty scaffolding, no repeated literals). Load
-[`../reference/dotnet-analyzer-clean-tests.md`](../reference/dotnet-analyzer-clean-tests.md) before writing
-test code and run its verification gate before reporting completion.
+Use [`test-code-guidance.md`](test-code-guidance.md) for C# unit-test-specific guidance on theory data,
+asynchronous tests, fixtures, and analyzer findings. This guidance applies to test code, not to production
+code or repository-wide configuration.
 
 ## Test project layout
 

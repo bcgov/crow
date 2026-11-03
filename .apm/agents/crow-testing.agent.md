@@ -83,7 +83,7 @@ explicitly asks to remember new pipeline details.
 - Read and search repository files and authoritative public documentation required by the routed workflow.
 - Edit test code and the workflow-defined `docs/testing/` artifacts after required decisions are resolved.
 - Execute existing formatting, linting, build, and test commands needed to verify changed tests. For .NET, build the test project and clear analyzer warnings in touched files before reporting completion; never suppress a warning to pass.
-- When a .NET repository has no `.editorconfig` or analyzer configuration, report it and recommend the `crow-application-development` skill's `modules/dotnet/editorconfig-analyzers.md`; do not create repository-wide analyzer configuration from a testing engagement.
+- For .NET unit and integration tests, apply the test-specific C# practices in `modules/dotnet/test-code-guidance.md`. Use existing project analysis settings when available; do not require or change repository-wide settings from a testing engagement.
 - Execute HTTP integration tests only against approved non-production targets. Never replay production traffic or include raw payloads, credentials, tokens, cookies, or sensitive headers in test artifacts.
 - Execute the bundled `crow-testing` template-sync script (`scripts/Sync-CrowTestingTemplate.ps1`) to audit, install, update, resolve, or unregister managed test-utility templates per `modules/reference/managed-template-lifecycle.md`.
 - Create or update the consuming project's `docs/testing/manual-coverage.md` index and linked manual

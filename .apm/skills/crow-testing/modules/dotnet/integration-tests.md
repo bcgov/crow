@@ -31,12 +31,10 @@ verification can scan or block materially, otherwise use the narrowest statement
 suppression. Never reference `TestContext.Current` from production repositories or services. For
 parameterless `IAsyncLifetime` methods, follow the lifecycle-token guidance in the linked section.
 
-### Analyzer-clean generation
+### Test-code guidance
 
-Integration tests and fixtures follow the same analyzer-clean rules (skipped tests, theory data, `static`
-helpers, dispose pattern, shared `JsonSerializerOptions`, logging). Load
-[`../reference/dotnet-analyzer-clean-tests.md`](../reference/dotnet-analyzer-clean-tests.md) before writing
-test code and run its verification gate before reporting completion.
+Use [`test-code-guidance.md`](test-code-guidance.md) for C# integration-test and fixture guidance. These
+recommendations apply to test code, not to production code or repository-wide configuration.
 
 ## Study the existing suite before generating anything
 

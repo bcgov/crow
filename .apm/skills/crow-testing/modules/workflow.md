@@ -247,9 +247,9 @@ recurring manual-only or deferred item is actually discovered or changed.
 ## Step 8: Verification
 
 1. Run the existing linter or formatter first, then the smallest relevant test command. For .NET, also
-   build the test project and clear every analyzer warning in the touched files per
-   [`reference/dotnet-analyzer-clean-tests.md`](reference/dotnet-analyzer-clean-tests.md) § "Verification
-   gate"; report, don't fix, pre-existing warnings elsewhere.
+   build the test project and address warnings in the touched test code using
+   [`dotnet/test-code-guidance.md`](dotnet/test-code-guidance.md); report, don't fix, pre-existing warnings
+   elsewhere.
 2. For scenario-gated work, compare implemented tests with every approved scenario and required assertion.
 3. Confirm all touched tests pass.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's

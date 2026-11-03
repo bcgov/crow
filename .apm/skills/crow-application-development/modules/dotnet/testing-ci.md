@@ -8,7 +8,6 @@
 - Test success, invalid input, unauthenticated, forbidden, wrong-owner/tenant, cancellation, timeout, and dependency failure paths.
 - Replace external systems with controlled fakes or disposable test infrastructure. Do not call shared production-like services from unit tests.
 - Treat coverage as a diagnostic and enforce a meaningful repository threshold; merely checking that a coverage file exists is not a gate.
-- Make xUnit, Roslyn, and Sonar analyzers visible at build time so generated tests are checked; see [`editorconfig-analyzers.md`](editorconfig-analyzers.md) for the `.editorconfig` baseline. Do not suppress analyzer rules to pass a test build.
 - Microsoft.Testing.Platform is a supported opt-in for modern test stacks; adopt it only after confirming the chosen MSTest/NUnit/xUnit/TUnit adapters and CI/reporting integrations support it.
 
 ## Deterministic CI sequence
