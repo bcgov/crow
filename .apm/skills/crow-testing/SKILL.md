@@ -70,6 +70,8 @@ reference according to that skill.
    - [`modules/dotnet/unit-tests.md`](modules/dotnet/unit-tests.md) for unit-level work.
    - [`modules/dotnet/integration-tests.md`](modules/dotnet/integration-tests.md) for integration-level work
      against SQL Server.
+   Both .NET test modules route to [`modules/dotnet/test-code-guidance.md`](modules/dotnet/test-code-guidance.md)
+   for test-specific C# practices.
 9. For Java source or Maven/Gradle Java manifests (`pom.xml`, `build.gradle`, `build.gradle.kts`), confirm the target is Java rather than Kotlin-only or another JVM language, then load:
    - [`modules/java/unit-tests.md`](modules/java/unit-tests.md) for unit-level work.
    - [`modules/java/integration-tests.md`](modules/java/integration-tests.md) for HTTP, container, persistence, or external-boundary work.

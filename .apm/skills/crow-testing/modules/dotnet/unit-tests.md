@@ -11,9 +11,8 @@ not the package list — the shape of an existing suite (shared abstract suites,
 setup) should override this module's defaults. State any deliberate deviation and why.
 
 **Match the structure, not the vintage.** Follow the existing suite's infrastructure decisions exactly, but
-write new tests to the project's declared style (`.editorconfig`) and the idiom its target framework
-supports — an older C# style in the surrounding files records when they were written, not a decision to keep
-writing that way. See
+write new tests to the project's declared style and the idiom its target framework supports — an older C#
+style in the surrounding files records when they were written, not a decision to keep writing that way. See
 [`../reference/language-features-for-testability.md`](../reference/language-features-for-testability.md).
 
 ## Detect first, default second
@@ -107,6 +106,12 @@ move publishing to a separate step: uncheck that option and add `PublishTestResu
 **Publish Test Results** task using VSTest format and a pattern such as `**/TestResults/*.trx`. The
 VSTest format is correct even though MTP produced the file; the on-disk TRX shape is identical.
 
+## Test-code guidance
+
+Use [`test-code-guidance.md`](test-code-guidance.md) for C# unit-test-specific guidance on theory data,
+asynchronous tests, fixtures, and analyzer findings. This guidance applies to test code, not to production
+code or repository-wide configuration.
+
 ## Test project layout
 
 Once more than one model or feature is under test, structure matters more than it looks. A layout that has
@@ -136,7 +141,9 @@ The file taxonomy per model, and why each exists:
 - **`{Entity}SmokeTests.cs`** — fast sanity checks: the builder's defaults are valid, a fully-populated model
   is valid, a minimal model is valid, and each common valid scenario passes. Run these first when changing
   anything; they answer "is this broken at all?" in seconds, and they double as documentation of what a valid
-  model looks like. Include a `[Fact(Skip = "Development scratchpad")]` slot for quick iteration.
+  model looks like. Include a scratchpad `[Fact]` slot for quick iteration whose first line is
+  `Assert.Skip("Development scratchpad");` (xUnit v3). Do not use `[Fact(Skip = "...")]`; the attribute form
+  trips xUnit1004. On xUnit v2 there is no `Assert.Skip`, so use a `SkippableFact`-style package or omit the slot.
 - **`{Entity}{Field}FieldsTests.cs`** — either a ~40-line subclass of a shared suite (for field types that
   repeat across models) or a normal test class (for fields unique to this model).
 - **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for model
