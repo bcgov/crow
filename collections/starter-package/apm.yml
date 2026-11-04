@@ -1,6 +1,6 @@
 name: bcgov-crow-starter-package
 version: 0.17.2
-description: Crow agents and skills for daily brownfield development, application CI, code review, and REST/SOAP API modernization
+description: Crow agents and skills for daily brownfield development, application CI, code review, security review and remediation, and REST/SOAP API modernization
 author:
   name: bcgov
 license: MIT
@@ -37,6 +37,18 @@ dependencies:
       ref: v0.17.2
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-architecture-review.agent.md
+      ref: v0.17.2
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/agents/crow-security-review.agent.md
+      ref: v0.17.2
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/agents/crow-security-remediation.agent.md
+      ref: v0.17.2
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/agents/crow-executive-report.agent.md
+      ref: v0.17.2
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/skills/crow-executive-report
       ref: v0.17.2
     - git: https://github.com/bcgov/crow.git
       path: .apm/agents/crow-code-review.agent.md
@@ -76,6 +88,9 @@ dependencies:
       ref: v0.17.2
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-project-context
+      ref: v0.17.2
+    - git: https://github.com/bcgov/crow.git
+      path: .apm/skills/crow-agent-skill-authoring/modules/interaction-contracts.md
       ref: v0.17.2
     - git: https://github.com/bcgov/crow.git
       path: .apm/skills/crow-solution-architecture/modules/technology-preferences.md
