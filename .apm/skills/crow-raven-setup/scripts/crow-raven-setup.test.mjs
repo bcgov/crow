@@ -410,6 +410,28 @@ test("list emits reviewed Raven servers", () => {
   assert.doesNotMatch(result.stdout, /^sonar\t/m);
 });
 
+test("remote HTTP servers merge without setup state and reject unknown IDs", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-remote-"));
+  const options = ["--state-dir", join(root, "state"), "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const env = { COPILOT_HOME: root };
+  const listed = run(["list", "--group", "security"]);
+  assert.match(listed.stdout, /^sysdig-secure-mcp\tsecurity\t.*\tremote$/m);
+  const preview = run(["config", "preview", ...options], undefined, env);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.deepEqual(reviewed.added, ["sysdig-secure-mcp"]);
+  assert.deepEqual(reviewed.proposed["sysdig-secure-mcp"], {
+    type: "http",
+    url: "https://secure.sysdig.com/mcp/secure"
+  });
+  const apply = run(["config", "apply", ...options, "--approval-sha256", reviewed.approvalSha256, "--confirm"], undefined, env);
+  assert.equal(apply.status, 0, apply.stderr);
+  const retry = run(["config", "preview", ...options], undefined, env);
+  assert.deepEqual(JSON.parse(retry.stdout).unchanged, ["sysdig-secure-mcp"]);
+  const unknown = run(["config", "preview", "--client", "copilot", "--remote", "nope"], undefined, env);
+  assert.notEqual(unknown.status, 0);
+});
+
 test("parses an outstanding Crow APM update without treating current output as stale", () => {
   assert.deepEqual(
     parseCrowOutdatedOutput("bcgov/crow  v0.9.1  -  v0.9.2  outdated  git tags"),

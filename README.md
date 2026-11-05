@@ -113,6 +113,9 @@ preview and approval it can merge the selected servers into Copilot Global's
 `mcp-config.json`, also used by VS Code Copilot sessions. VS Code may migrate
 old profile entries there; Crow does not write `mcp.json` or `settings.json`.
 The merge preserves existing entries and backs up changed files.
+Hosted remote servers in the catalog, such as `sysdig-secure-mcp` (HTTP with
+OAuth sign-in on first use), need no installation; setup merges them with the
+same preview and approval.
 For other editors, use the portable configuration only when the editor
 supports its schema; otherwise follow its native MCP setup flow. Setup never
 collects credentials. When new servers are added, it points to Raven's

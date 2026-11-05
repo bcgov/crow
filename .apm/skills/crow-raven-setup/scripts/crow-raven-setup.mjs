@@ -1889,7 +1889,28 @@ function catalog() {
   if (value.schemaVersion !== 1 || !Array.isArray(value.servers)) {
     fail("Bundled Raven server catalog has an unsupported shape.");
   }
+  const remote = value.remoteServers ?? [];
+  const ids = new Set(value.servers.map((server) => server.id));
+  if (!Array.isArray(remote) || remote.some((server) => {
+    const unique = !ids.has(server.id) && server.id !== "codebase-memory-mcp";
+    ids.add(server.id);
+    return !unique || server.transport !== "http" || !/^https:\/\/[^\s/]+\/\S*$/.test(server.url || "");
+  })) {
+    fail("Bundled Raven remote server catalog has an unsupported shape.");
+  }
   return value;
+}
+
+function selectedRemoteServers(args, serverCatalog) {
+  const requested = String(args.remote || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+  if (new Set(requested).size !== requested.length) fail("--remote contains duplicate IDs.");
+  const known = new Map((serverCatalog.remoteServers ?? []).map((server) => [server.id, server]));
+  const unknown = requested.filter((id) => !known.has(id));
+  if (unknown.length > 0) fail(`Unknown remote server IDs: ${unknown.join(", ")}.`);
+  return requested.map((id) => known.get(id));
 }
 
 function selectedServers(args, serverCatalog) {
@@ -2634,8 +2655,10 @@ Commands:
        [--codebase-memory-version X.Y.Z] [--state-dir <path>]
   setup --plan <path> --plan-sha256 <digest> --confirm
   config preview --client copilot|portable [--config <path>] [--state-dir <path>]
+                 [--remote <id,...>]
   config apply --client copilot|portable [--config <path>]
-               [--state-dir <path>] --approval-sha256 <digest> --confirm
+               [--state-dir <path>] [--remote <id,...>]
+               --approval-sha256 <digest> --confirm
   check [--state-dir <path>] [--force]
   rollback [--state-dir <path>] --confirm
   update-check [--state-dir <path>] [--setup-state-dir <path>] [--force]
@@ -2650,6 +2673,9 @@ explicit --delivery source fallback. Config preview/apply merges only the
 reviewed client configuration: VS Code and Copilot use the same user-level
 mcp-config.json, never profile mcp.json or settings.json. Setup does not
 collect credentials.
+Remote servers (hosted HTTP/OAuth endpoints such as sysdig-secure-mcp) need no
+install or setup state: --remote merges their reviewed catalog entries, and the
+client handles sign-in on first use.
 The optional Copilot update hook checks at most once
 per day during agent use and never installs updates.`);
 }
@@ -2659,9 +2685,14 @@ function listCommand(args) {
   const servers = args.group
     ? serverCatalog.servers.filter((server) => server.group === args.group)
     : serverCatalog.servers;
-  if (servers.length === 0) fail(`No Raven servers found for group '${args.group}'.`);
+  const remote = (serverCatalog.remoteServers ?? [])
+    .filter((server) => !args.group || server.group === args.group);
+  if (servers.length + remote.length === 0) fail(`No Raven servers found for group '${args.group}'.`);
   for (const server of servers) {
     console.log(`${server.id}\t${server.group}\t${server.description}`);
+  }
+  for (const server of remote) {
+    console.log(`${server.id}\t${server.group}\t${server.description}\tremote`);
   }
 }
 
@@ -2681,12 +2712,16 @@ function configCommand(args) {
   const action = args._[1];
   if (!["preview", "apply"].includes(action)) fail("Use config preview or config apply.");
   const target = paths(args);
-  if (!existsSync(target.state)) fail("Crow Raven setup is not configured.");
-  const state = readState(target);
+  const remote = selectedRemoteServers(args, catalog());
+  const remoteEntries = Object.fromEntries(
+    remote.map((server) => [server.id, { type: server.transport, url: server.url }])
+  );
+  if (!existsSync(target.state) && remote.length === 0) fail("Crow Raven setup is not configured.");
+  const state = existsSync(target.state) ? readState(target) : null;
   const options = {
     ...args,
-    managedEntries: state.managedFragment.mcpServers,
-    previousEntries: state.previous?.managedFragment.mcpServers
+    managedEntries: { ...state?.managedFragment.mcpServers, ...remoteEntries },
+    previousEntries: state?.previous?.managedFragment.mcpServers
   };
   const result = action === "preview"
     ? previewClientConfig(options)

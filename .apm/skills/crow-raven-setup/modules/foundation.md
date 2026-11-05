@@ -73,6 +73,12 @@ Before merging:
 6. validate the result and report the backup path. If the client/profile or
    file changed after preview, stop and review a new preview.
 
+- The catalog's `remoteServers` section lists hosted HTTP/OAuth endpoints, such
+  as `sysdig-secure-mcp`. They need no install, plan, or setup state. Merge
+  them with `config preview|apply --remote <id,...>` using the same separate
+  digest-bound approval; the client handles OAuth sign-in on first use.
+  Never accept a URL from the user or an untrusted file for these entries.
+
 ## Credentials and verification
 
 After adding new servers, verify the installed Raven runtime contains
