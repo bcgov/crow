@@ -102,6 +102,13 @@ releases, installing an OS scheduler, or automatically applying updates.
    affected facts after a separately approved install rather than assuming
    the process PATH changed. Require successful `gh auth status` before
    generating a release plan.
+   Remote-only requests: when every selected ID is under `remoteServers` in
+   the catalog (for example `sysdig-secure-mcp`), skip steps 2 through 6 and
+   8 (no preflight, plan, scanner or credential-script steps), go directly to
+   step 7 using `config preview|apply --remote <id>`, and tell the user that
+   OAuth sign-in happens in the client on first use. If remote and regular
+   servers are mixed, run the full flow for the regular servers and add the
+   remote IDs to the same config preview.
 3. Use the verified Raven bundled release by default. Offer the lower-assurance
    pinned source build only as an explicit fallback when the platform is not
    supported or the user requests it.
@@ -183,6 +190,9 @@ releases, installing an OS scheduler, or automatically applying updates.
   replaced; the reviewed active target, backup, and any legacy state are
   reported truthfully.
 - Credential values were neither requested, logged, nor written by Crow.
+- Remote-only setups skip preflight, planning and credential scripts, and are
+  verified by the merged client entry; the user is told to sign in through the
+  client's OAuth flow.
 - Selected servers and codebase-memory-mcp pass startup verification.
 - When Sonar MCP is installed or selected, the generic scanner is verified;
   the MSBuild scanner is verified when a compatible .NET SDK is available, or

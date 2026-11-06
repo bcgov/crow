@@ -23,6 +23,6 @@
     { "id": "rfcbuddy", "group": "portfolio", "description": "RFC schedule search and baseline tracking", "entrypoint": "packages/rfcbuddy-mcp/dist/index.js", "packageVersion": "0.2.0", "access": "mixed", "authentication": "dedicated-rfcbuddy", "securityStatus": "pre-stable" }
   ],
   "remoteServers": [
-    { "id": "sysdig-secure-mcp", "group": "security", "description": "Sysdig Secure vulnerability, runtime, and posture data (hosted, OAuth sign-in on first use)", "transport": "http", "url": "https://secure.sysdig.com/mcp/secure", "authentication": "oauth", "securityStatus": "pre-stable" }
+    { "id": "sysdig-secure-mcp", "group": "security", "description": "Sysdig Secure vulnerability, runtime, and posture data (hosted, OAuth sign-in on first use; exposes read and write/admin tools, effective access follows the signed-in user's Sysdig role)", "transport": "http", "url": "https://secure.sysdig.com/mcp/secure", "access": "mixed", "authentication": "oauth", "securityStatus": "pre-stable" }
   ]
 }
