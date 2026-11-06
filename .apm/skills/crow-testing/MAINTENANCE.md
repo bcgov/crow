@@ -56,7 +56,9 @@ reflexively touch them:
 
 - `modules/foundation.md`'s band-pass filter model and "Choosing the level" section.
 - The interview-first discovery/discussion workflow in `crow-testing.agent.md` and `modules/discovery.md`.
-- `templates/scenario-doc-template.md`, `templates/testing-plan-template.md`,
+- `templates/scenario-doc-template.md` sections (rules, questions, plain-language matrix, predictions) track
+  `modules/reference/example-mapping.md`; edit them together. Other templates:
+  `templates/testing-plan-template.md`,
   `templates/testability-notes-template.md`, `templates/modernization-handoff-template.md`.
 - The DDD/F#-inspired entries in `modules/reference/design-smell-entries.md` that aren't tied to a specific
   C# version (illegal states representable, anemic domain models, mutable state by default, non-exhaustive

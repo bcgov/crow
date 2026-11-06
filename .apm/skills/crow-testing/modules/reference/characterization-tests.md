@@ -64,7 +64,8 @@ Two reasons this matters:
 
 ## When to stop
 
-Stop when you can predict the output before running the test. That's the signal you understand the code well
+Stop when you can predict the output before running the test (record the prediction per
+[`example-mapping.md`](example-mapping.md) § Predict, then verify). That's the signal you understand the code well
 enough to move on — continuing past it produces tests that pin incidental detail and break on every harmless
 refactor.
 

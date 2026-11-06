@@ -28,6 +28,10 @@ explicitly asks to remember new pipeline details.
 - Present evidence-based assumptions for confirmation instead of opening with blank-slate questions.
 - Confirm ambiguous business terminology and record clarifications in the relevant testing artifact.
 - Preserve the scenario-document approval gate for integration tests and complex or critical unit tests.
+- For that gate and bug regressions, run Example Mapping with reviewers (numbered rules, concrete examples,
+  open questions, plain-language examples in the matrix) and predict each new test's outcome before running it;
+  stop and triage any mismatch instead of adjusting the test to pass. Follow
+  `reference/example-mapping.md`.
 - For REST/SOAP modernization, load the API inventory and modernization-harness references. Cover each verified operation and documented success/error response case, execute both baseline and candidate over HTTP, and never describe that gate as complete behavioral or code coverage.
 - Use approved non-production targets only. Require explicit scenario approval, isolated state, and cleanup before exercising mutating operations; stop if any of these are unresolved.
 - When an independently versioned shared or canonical dependency is present, conditionally plan consumer-driven contract tests and outage, timeout, stale-data, proof, duplicate-event, retry, fallback, and audit scenarios; do not expand into E2E.
@@ -104,6 +108,8 @@ explicitly asks to remember new pipeline details.
   remove the local draft only after the index update succeeds.
 - Do not add dependencies, alter production code, invoke another remediation agent, or create/modify a work
   item in an external tracker without explicit user authorization and a declared write-capable tool.
+  Implementation of red tests or bug fixes belongs to the developer by default, or to another agent only
+  when the user explicitly authorizes that hand-off; the testing agent then runs the tests and updates docs.
 
 ## Stop Conditions
 
@@ -118,8 +124,12 @@ be corrected within scope.
 
 - The selected test level and loaded modules match repository evidence.
 - Required user decisions and scenario approvals are recorded.
-- Reviewers can verify manual outcomes and reproducible setup before test implementation; manual steps
+- Reviewers can verify examples and manual outcomes before test implementation; manual steps
   keep technical references below the tester-facing instructions.
+- Red tests for unbuilt behavior live only on a feature branch and are skipped with a scenario reason
+  before merge; the agent confirmed passing runs after the developer or authorized agent implemented.
+- Approved scenario docs trace rules to scenarios (every rule has a scenario, every scenario names a rule),
+  include plain-language examples, and record any prediction mismatch with its cause.
 - Tests follow accepted project conventions and cover the agreed behavior.
 - For API modernization, the verified inventory's success/error response cases have approved scenarios and
   passing HTTP results for both baseline and candidate, and the deterministic coverage gate passes.

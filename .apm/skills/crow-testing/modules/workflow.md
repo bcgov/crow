@@ -127,6 +127,8 @@ interpret the remaining index; otherwise avoid adding a new history log.
    and adding its index row. Apply the index/detail fields in `modules/manual-coverage.md` without
    copying manual steps. Start AI-authored details as Draft and read an existing detail's review status
    before editing; for Approved content, report discrepancies and request a named-document instruction.
+5. For Step 5 complex/critical work, ask once whether to pause after Red or after the confirming run, or
+   neither, and who makes red tests pass (see `reference/example-mapping.md`).
 
 ## Step 3: Discovery
 
@@ -192,13 +194,23 @@ content each of these bullets references. Do not regenerate a guide that is alre
    application boundary applies. Resolve pending group/application ownership first. Adapt
    `scenario-doc-template.md` to existing
    multi-document sets (phases, rules, diagrams, harnesses) rather than flattening or copying them.
-   Include scope, terminology, authoritative rules, scenarios, required assertions, and status.
-4. Offer to expand partial requirements into a complete scenario set. Have the developer, business analyst,
-   and client or their designated reviewers review the applicable scenarios, including manual outcomes.
-   Distinguish automated rule/data checks from remaining rendered or judgment-based manual checks.
-5. Stop for explicit scenario review and approval before writing test code; document unresolved decisions
-   rather than inventing prerequisites or expected results for manual checks.
-6. After approval, implement in phases. Keep the scenario doc's top Current status rollup, Coverage
+   Include the sections in the template: status, plain-language test matrix, scope, rules, and only when
+   needed open questions, example detail, and cross-cutting checks.
+4. Run Example Mapping per [`reference/example-mapping.md`](reference/example-mapping.md): draft rules,
+   concrete examples, and open questions from available evidence, then have the developer, business analyst,
+   and client or their designated reviewers correct them. Offer to expand partial requirements into a
+   complete scenario set. Distinguish automated rule/data checks from remaining rendered or
+   judgment-based manual checks.
+5. Stop for explicit scenario review and approval before writing test code. At approval, verify every rule
+   has a matrix row, every row names a rule, examples read clearly to a non-technical reviewer, and no
+   blocking question is open. Document unresolved decisions rather than inventing
+   prerequisites or expected results for manual checks.
+6. After approval, write tests in phases, one scenario per cycle in the documented order. Before each run,
+   predict the outcome and compare it with the actual result (`reference/example-mapping.md` §
+   Predict, then verify); a mismatch stops the cycle. For behavior not yet built, follow § Red tests and
+   hand-off (separate branch, skip before merge, developer or authorized agent implements, agent confirms).
+   Honor any pause point. Keep the scenario
+   doc's top Current status rollup, Coverage
    field/summary, and `testing-plan.md`'s Feature-scenarios row synchronized as tests land — not just
    reported in chat.
 7. Check the cross-family review cadence before implementation and offer a plan review when overdue.
@@ -225,8 +237,13 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
 
 ## Step 7: Bug regressions
 
-1. Reproduce the bug with a failing test at the lowest level that can detect it.
-2. Simplify the reproducing data and verify the fix makes the test pass.
+1. Reproduce the bug with a failing test at the lowest level that can detect it. Before running it, state
+   the predicted failure and why; if the actual failure differs, stop and diagnose (see
+   [`reference/example-mapping.md`](reference/example-mapping.md) § Predict, then verify). For
+   non-trivial rules, capture the broken behavior as a rule plus concrete example (and any open question)
+   in the scenario doc.
+2. Simplify the reproducing data. The fix is made by a developer or, only with explicit user authorization,
+   handed off to another agent; the testing agent then runs the test and confirms it passes as predicted.
 3. Now that the bug is confirmed and reproduced, load `reference/work-item-drafting.md`. Check the local
    `testing-plan.md` Work-item candidates table; if no matching candidate exists, create a durable
    draft under `docs/testing/drafts/` and present it to the user. If the user supplies an existing ID/link,
@@ -235,7 +252,7 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
    claim an item was created without a verified provider result.
 4. Add only nearby tests that protect the same defect class.
 5. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
-   time-box and any seam technique before making production changes.
+   time-box and any seam technique; propose, but do not make, production changes (hand them off).
 6. Update the relevant scenario document and testing plan.
 
 The same Step 6 scope limits apply here: if the regression stays within them, the shortcut is test code +
@@ -250,7 +267,8 @@ recurring manual-only or deferred item is actually discovered or changed.
    build the test project and address warnings in the touched test code using
    [`dotnet/test-code-guidance.md`](dotnet/test-code-guidance.md); report, don't fix, pre-existing warnings
    elsewhere.
-2. For scenario-gated work, compare implemented tests with every approved scenario and required assertion.
+2. For scenario-gated work, compare implemented tests with every approved scenario and cross-cutting check,
+   and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
 3. Confirm all touched tests pass.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s

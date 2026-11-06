@@ -90,6 +90,8 @@ reference according to that skill.
      loaded once, during discovery or feature scoping.
    - `characterization-tests.md` — the area's current behavior isn't understood well enough to specify;
      legacy code with no coverage.
+   - `example-mapping.md` — Step 5 scenario documents, Step 7 bug regressions, and characterization work:
+     rule/example/question mapping with reviewers, plain-language examples, and predict-then-verify.
    - `legacy-seams.md` — you want to test existing code but can't call it in isolation, and refactoring
      first isn't safe because there are no tests yet.
    - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
