@@ -50,7 +50,10 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    prerequisite and Sonar inventory, auth status, setup/hook state, approvals,
    plan digest, and remaining gates; retry only failed checks.
 2. Validate exact requested IDs against the bundled catalog without asking
-   for redundant selection confirmation. Confirm only lists derived from
+   for redundant selection confirmation. IDs under `remoteServers` (for example
+   `sysdig-secure-mcp`) skip plan/setup/preflight; apply them only through
+   `config preview|apply --remote <id>` and skip credential-script guidance
+   (OAuth sign-in happens in the client). Confirm only lists derived from
    broader groups. If the user selects `sonar`, load
    `modules/sonar-scanners.md` for the new installation even if the server is
    not yet configured in the client. Record an explicit `--no-raven` choice

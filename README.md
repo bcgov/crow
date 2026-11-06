@@ -63,7 +63,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.17.2 --global --target copilot
+apm install bcgov/crow#v0.17.3 --global --target copilot
 ```
 
 ### Updating an installation
@@ -75,7 +75,7 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.17.2` remains pinned to that release;
+release. An exact version tag such as `#v0.17.3` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
@@ -113,6 +113,9 @@ preview and approval it can merge the selected servers into Copilot Global's
 `mcp-config.json`, also used by VS Code Copilot sessions. VS Code may migrate
 old profile entries there; Crow does not write `mcp.json` or `settings.json`.
 The merge preserves existing entries and backs up changed files.
+Hosted remote servers in the catalog, such as `sysdig-secure-mcp` (HTTP with
+OAuth sign-in on first use), need no installation; setup merges them with the
+same preview and approval.
 For other editors, use the portable configuration only when the editor
 supports its schema; otherwise follow its native MCP setup flow. Setup never
 collects credentials. When new servers are added, it points to Raven's
@@ -154,7 +157,7 @@ Use the selected client's normal discovery commands:
   testing, remediation, and executive reporting.
 
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.17.2` remains fixed. Installing
+while an exact version tag such as `#v0.17.3` remains fixed. Installing
 `bcgov/crow` without a ref follows the default branch and can include
 unreleased commits. Collections use the same `stable` branch as the full
 package.
@@ -281,7 +284,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.17.2.zip`. See
+The resulting archive is `build/bcgov-crow-0.17.3.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
