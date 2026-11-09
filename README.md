@@ -115,7 +115,10 @@ old profile entries there; Crow does not write `mcp.json` or `settings.json`.
 The merge preserves existing entries and backs up changed files.
 Hosted remote servers in the catalog, such as `sysdig-secure-mcp` (HTTP with
 OAuth sign-in on first use), need no installation; setup merges them with the
-same preview and approval.
+same preview and approval. After `sysdig-secure-mcp` is selected, setup also offers,
+with a separate confirmation, to install Sysdig's own skills directly from
+`github.com/sysdig/skills` (the finding-to-fix set; API-token skills only on
+request). They are installed from Sysdig, not maintained or audited by Crow.
 For other editors, use the portable configuration only when the editor
 supports its schema; otherwise follow its native MCP setup flow. Setup never
 collects credentials. When new servers are added, it points to Raven's

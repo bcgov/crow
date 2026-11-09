@@ -104,11 +104,11 @@ releases, installing an OS scheduler, or automatically applying updates.
    generating a release plan.
    Remote-only requests: when every selected ID is under `remoteServers` in
    the catalog (for example `sysdig-secure-mcp`), skip steps 2 through 6 and
-   8 (no preflight, plan, scanner or credential-script steps), go directly to
-   step 7 using `config preview|apply --remote <id>`, and tell the user that
-   OAuth sign-in happens in the client on first use. If remote and regular
-   servers are mixed, run the full flow for the regular servers and add the
-   remote IDs to the same config preview.
+   9 (no preflight, plan, scanner or credential-script steps), go directly to
+   step 7 using `config preview|apply --remote <id>`, then step 8, and tell the
+   user that OAuth sign-in happens in the client on first use. If remote and
+   regular servers are mixed, run the full flow for the regular servers and add
+   the remote IDs to the same config preview.
 3. Use the verified Raven bundled release by default. Offer the lower-assurance
    pinned source build only as an explicit fallback when the platform is not
    supported or the user requests it.
@@ -151,7 +151,17 @@ releases, installing an OS scheduler, or automatically applying updates.
    on collisions, concurrent changes, malformed files, or legacy settings;
    report the backup path and verify the resulting client configuration.
    Never substitute a hand-edited client file when the script rejects it.
-8. Verify each selected executable path, the pinned codebase-memory command,
+8. When `sysdig-secure-mcp` is selected in this setup, offer to install Sysdig's
+   skills directly from `github.com/sysdig/skills` by loading
+   `crow-raven-setup/modules/sysdig-skills.md`. Make it a separate preview and
+   confirmation after the client configuration, resolve the latest tag at run
+   time, offer the full default set of six skills (every Sysdig skill except
+   the API-token skills, covering finding through remediation), state that the
+   remediation and account-setup skills can change things, let the user remove
+   skills, and do not offer the API-token skills
+   unless the user asks. Never request, display, or store the Sysdig API token.
+   Declining does not block or undo the MCP configuration.
+9. Verify each selected executable path, the pinned codebase-memory command,
    and the selected servers' MCP startup behavior. When Sonar MCP is installed
    or selected, verify `sonar-scanner --version`. When a compatible .NET SDK
    is available, verify the exact MSBuild scanner version with
@@ -162,7 +172,7 @@ releases, installing an OS scheduler, or automatically applying updates.
    the selected client's configured environment or user PATH and restart the
    client when required. If its effective environment cannot be confirmed,
    report local scanner verification separately from MCP visibility.
-9. On later setup or maintenance requests, run a freshness check only when the
+10. On later setup or maintenance requests, run a freshness check only when the
    recorded check is at least 24 hours old unless the user requests an
    immediate check. Notify about differences; require confirmation to update.
    Whenever Sonar MCP is installed or `sonar` is selected, independently
@@ -190,6 +200,9 @@ releases, installing an OS scheduler, or automatically applying updates.
   replaced; the reviewed active target, backup, and any legacy state are
   reported truthfully.
 - Credential values were neither requested, logged, nor written by Crow.
+- Sysdig skills are installed only after a separate confirmation, from Sysdig's
+  repository at a tag resolved at run time; declining leaves the MCP
+  configuration intact.
 - Remote-only setups skip preflight, planning and credential scripts, and are
   verified by the merged client entry; the user is told to sign in through the
   client's OAuth flow.
