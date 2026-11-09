@@ -22,9 +22,11 @@ as durable documentation; prune only obsolete rows or notes.
 ## Test matrix
 
 <!--
-One row per example, grouped by rule, simplest first within each rule (this is the test list). Write Example and Expected outcome for a
-business reader: real names, amounts, dates, no technical terms. Put test setup in the test reference.
-Every rule has at least one row and every row names a rule.
+One row per example. Group rows by rule and put the simplest first (this is the test list).
+Use short sentences, familiar words, and one idea at a time. Put multi-step examples in Example detail
+as numbered actions, with one action per step. State the starting situation and expected outcome
+separately. Use exact names, amounts, dates, and outcomes. Keep test setup in the test reference.
+Every rule has a row, and every row names a rule.
 
 Coverage: `Automated - <test file>` (tests passed in this engagement) /
 `Partial - manual/deferred: MC-###; automated remainder: <ref>` /
@@ -66,16 +68,19 @@ line such as `All S1-S6 automated - FooTests.cs`.
 ## Example detail
 
 <!--
-Only for a calculation, boundary, or disputed outcome that does not fit a matrix cell. Omit otherwise.
-Plain language, concrete values, one boundary case, and one sentence on why the rule exists.
+Use only when a calculation, boundary, or disputed outcome needs more than a matrix cell.
+Include every relevant boundary and failure case in the matrix or here.
 -->
 
 ### R# - <rule name> (S#, S#)
 
-- **Starting point:** <concrete situation>
-- **Action and result:** <what happens, with exact values>
-- **Boundary:** <e.g. $100.00 exactly gets no discount; $100.01 does>
-- **Why:** <business reason, so a future reader can tell a bug from intended behavior>
+- **Starting situation:** <plain-language situation with concrete values>
+- **Actions:**
+  1. <One action; add one numbered line per action>
+- **Expected result:** <what the person sees, with exact values>
+- **Boundary cases:** <all relevant nearby cases; omit if none apply>
+
+- **Why it matters:** <one short sentence explaining the rule>
 
 ## Prediction mismatches
 

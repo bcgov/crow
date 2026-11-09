@@ -24,10 +24,19 @@ early. The agent drafts from available evidence; the humans correct.
 3. Anything you cannot derive is a question, not an assumption. Ask the most blocking one first.
 4. Ask reviewers: "What example would break this rule?" and "Is there a rule these examples miss?"
 
-Write examples for a non-technical reader: real names, amounts, and dates; business words only ("order",
-"applicant", "approved"), no setup or code terms. Good: `Order of $100.00 with code SAVE10 -> no discount
-(minimum is over $100)`. Bad: `Seed order with total=100, apply promo`. Use `Example detail` only for a
-calculation, boundary, or disputed outcome that does not fit a cell. Keep the document short.
+### Write for a business reader
+
+- Use familiar business words. Avoid code and test setup.
+- Keep sentences short. Put one idea in each sentence.
+- For several actions, use numbered steps. Put one action in each step.
+- State the exact result, including amounts, dates, or status.
+- Define unfamiliar business terms under `Terms`.
+
+**Matrix example:** The order is $100.00. The customer enters SAVE10. No discount applies. The order must
+be over $100.
+
+Use `Example detail` only when a calculation, boundary, or disputed outcome needs more than a matrix cell.
+Keep each action brief. Include all relevant boundary and failure cases. Add one short reason when useful.
 
 Time-box the session (about 25 minutes of reviewer time per story). Then read the shape of the map:
 
