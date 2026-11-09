@@ -201,10 +201,11 @@ content each of these bullets references. Do not regenerate a guide that is alre
    and client or their designated reviewers correct them. Offer to expand partial requirements into a
    complete scenario set. Distinguish automated rule/data checks from remaining rendered or
    judgment-based manual checks.
-5. Stop for explicit scenario review and approval before writing test code. At approval, verify every rule
-   has a matrix row, every row names a rule, examples read clearly to a non-technical reviewer, and no
-   blocking question is open. Document unresolved decisions rather than inventing
-   prerequisites or expected results for manual checks.
+5. Stop for explicit scenario review and approval before writing test code. At approval, verify every
+   in-scope rule has a matrix row, every row names a rule, examples read clearly to a non-technical reviewer,
+   and no unresolved question affects an approved expected outcome. A Q# or deferral is not a decision;
+   exclude affected rules/scenarios from the approved scope until a reviewer decides them. Document
+   unresolved decisions rather than inventing prerequisites or expected results for manual checks.
 6. After approval, write tests in phases, one scenario per cycle in the documented order. Before each run,
    predict the outcome and compare it with the actual result (`reference/example-mapping.md` §
    Predict, then verify); a mismatch stops the cycle. For behavior not yet built, follow § Red tests and
@@ -269,7 +270,10 @@ recurring manual-only or deferred item is actually discovered or changed.
    elsewhere.
 2. For scenario-gated work, compare implemented tests with every approved scenario and cross-cutting check,
    and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
-3. Confirm all touched tests pass.
+3. Confirm each test is in its intended state: tests for implemented behavior in the verification scope pass;
+   deliberate red tests for unimplemented behavior fail for the predicted reason on the feature branch and,
+   before merge, are skipped and marked `Not implemented - no verification claim`. A passing run is required
+   only when implementation is ready and confirming verification is in scope.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect

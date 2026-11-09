@@ -33,14 +33,15 @@ Time-box the session (about 25 minutes of reviewer time per story). Then read th
 
 | Signal | Meaning | Action |
 |---|---|---|
-| Many open questions | Not ready | Resolve or defer before approval |
+| Many open questions | Not ready | Resolve questions affecting in-scope behavior, or exclude that behavior from approval |
 | Many rules | Story is too big | Propose splitting the feature |
 | Many examples under one rule | Rule is too complex | Split the rule |
 | Few rules, few examples, no questions | Ready, or too vague | Ask "what would break this?" once more |
 
-Ready for approval when every rule has a row, every row names a rule, and no blocking question remains
-(or it is recorded as deferred with the rows it blocks). A rule marked "not confirmed" needs a reviewer
-decision or a Q# before approval (template example: R2 / Q1 / S2). Group matrix rows by rule and order
+Approve only when every in-scope rule has a row, every row names a rule, and no unresolved question affects
+an approved expected outcome. A Q# records uncertainty; it does not resolve it. A rule marked "not
+confirmed" needs a reviewer decision before approval. A question may remain deferred only if the affected
+rules and scenarios are explicitly excluded from the approved scope. Group matrix rows by rule and order
 them simplest first within each rule; that order is the test list.
 
 ## Predict, then verify
@@ -77,7 +78,8 @@ The agent writes tests only; it never makes them green by changing production co
    authorizes that hand-off.
 4. When told the code is ready, enable skipped tests for the confirming run. Leave passing tests enabled and
    mark them `Automated`; if the implementation is still deferred, keep them skipped and mark them
-   `Not implemented`. Report failures without claiming coverage. Update the status rollup.
+   `Not implemented - no verification claim`. Report failures without claiming coverage. Update the status
+   rollup.
 
 ## Optional pause points
 

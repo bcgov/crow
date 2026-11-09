@@ -126,8 +126,10 @@ be corrected within scope.
 - Required user decisions and scenario approvals are recorded.
 - Reviewers can verify examples and manual outcomes before test implementation; manual steps
   keep technical references below the tester-facing instructions.
-- Red tests for unbuilt behavior live only on a feature branch and are skipped with a scenario reason
-  before merge; the agent confirmed passing runs after the developer or authorized agent implemented.
+- For unbuilt behavior, test-only work may complete after tests fail for the predicted reason on a feature
+  branch. Before merge, still-unimplemented tests are skipped with scenario IDs and marked
+  `Not implemented - no verification claim`; do not require a pass until implementation is ready and
+  verification is in scope. Report deferred implementation or verification without claiming coverage.
 - Approved scenario docs trace rules to scenarios (every rule has a scenario, every scenario names a rule),
   include plain-language examples, and record any prediction mismatch with its cause.
 - Tests follow accepted project conventions and cover the agreed behavior.
