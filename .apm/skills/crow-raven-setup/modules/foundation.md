@@ -78,6 +78,9 @@ Before merging:
   them with `config preview|apply --remote <id,...>` using the same separate
   digest-bound approval; the client handles OAuth sign-in on first use.
   Never accept a URL from the user or an untrusted file for these entries.
+- Selecting `sysdig-secure-mcp` also triggers the Sysdig skills offer in
+  `modules/sysdig-skills.md`: separate confirmation, latest tag resolved at run
+  time, installed from Sysdig's repository, and no API token handled by Crow.
 
 ## Credentials and verification
 

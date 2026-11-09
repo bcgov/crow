@@ -60,7 +60,8 @@ Before installing, show a plan containing:
 - the exact tag, the chosen skill names, and the exact command;
 - that the install clones `github.com/sysdig/skills` over HTTPS at that tag, and
   that the `skills` CLI does not verify a content hash;
-- that the `skills` CLI reports anonymous install telemetry;
+- that the `skills` CLI reports anonymous install telemetry and prints a
+  third-party security audit table, which the agent summarizes after install;
 - the Python 3 requirement of the skill scripts (standard library only), with
   the detected status;
 - the install location and the exact removal command.
@@ -81,7 +82,11 @@ command without running it.
 ## Verify, update, and remove
 
 Verify with `npx skills list --global` that each selected skill is present, and
-report the installed tag. Do not run any Sysdig skill or call a Sysdig tool as a
+report the installed tag. Read the security audit table that `npx skills add`
+prints (skills.sh scanners such as Socket and Snyk) and tell the user about any
+skill rated above Safe or showing alerts, naming the skill and the reported
+issue. This is information only: Crow does not run its own scan, and a
+non-Safe rating does not block the install. Do not run any Sysdig skill or call a Sysdig tool as a
 setup check. Remind the user to sign in to the `sysdig-secure-mcp` server in the
 client (OAuth) before using the skills, and to restart the client or start a
 new session if the skills are not listed.
