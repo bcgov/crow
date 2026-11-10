@@ -31,6 +31,10 @@ In xUnit v3, pass `TestContext.Current.CancellationToken` to responsive async AP
 (xUnit1051). Follow the exception guidance in [`unit-tests.md`](unit-tests.md) for fast assertion-only
 queries, and never pass test context into production code. This API and rule do not apply to xUnit v2.
 
+For deadline, delay, expiry, and retry tests, follow
+[`Deterministic time and timeout tests`](unit-tests.md#deterministic-time-and-timeout-tests):
+use provider-aware timers and `FakeTimeProvider` rather than real sleeps or elapsed-time tolerances.
+
 Keep test helpers stateless where possible; methods that do not use instance state can be `static` (CA1822).
 For fixture disposal, follow the repository's established pattern. A simple fixture does not need an
 invented finalizer or full dispose pattern; when a finalizer is defined, `Dispose()` should call

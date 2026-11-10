@@ -89,6 +89,39 @@ captured token explicitly. The parameterless xUnit v3 `IAsyncLifetime.Initialize
 represents the fixture lifetime, not an individual test; otherwise use a fixture-owned, bounded
 `CancellationTokenSource` for cancellable setup/teardown rather than inventing a test token.
 
+## Deterministic time and timeout tests
+
+When a test waits for a deadline, delay, expiry, or retry interval, prefer virtual time over real sleeps
+or wall-clock duration assertions. First identify what owns the timer; do not replace a real external
+boundary test with a fake-clock test and claim the same coverage.
+
+- Reuse an existing controllable clock. Otherwise prefer `FakeTimeProvider` from
+  `Microsoft.Extensions.TimeProvider.Testing` (`Microsoft.Extensions.Time.Testing` namespace) over a
+  custom timer implementation. Keep the package in the test project, verify target-framework
+  compatibility, and follow the repository's package/version management. Obtain explicit authorization
+  before adding a dependency or changing production code; neither is implicit in a testing engagement.
+- Inject `TimeProvider` into the code that owns time-dependent behavior, using `TimeProvider.System`
+  in production. Preserve production timeout durations, caller cancellation, error classification, and
+  timer disposal. Keep the change local rather than threading a clock through unrelated code.
+- **The timer must use the provider.** On .NET 8+, use
+  `new CancellationTokenSource(timeout, timeProvider)` for a deadline or
+  `Task.Delay(delay, timeProvider, cancellationToken)` for a delay. Link the deadline token with the
+  caller token when both must cancel the operation. Ordinary `CancelAfter`, `Task.Delay(delay)`, and
+  `CancellationTokenSource.CreateLinkedTokenSource(...)` do not acquire a fake clock merely because
+  a `TimeProvider` was injected. For older targets, verify the applicable backport APIs before proposing
+  an implementation.
+- Use a fresh `FakeTimeProvider` per test. Start the operation and ensure the timer is registered before
+  advancing time; if setup is asynchronous, synchronize with an explicit readiness signal rather than
+  a sleep. Advance to just before the deadline and assert the operation is pending, then cross the
+  deadline, await completion, and assert the expected outcome and relevant diagnostics.
+- Test caller cancellation separately from deadline expiry. Throwing a synthetic
+  `TaskCanceledException` verifies exception handling, **not that the deadline fires**. Do not shorten
+  production timeouts or skip deadline tests to make the suite faster.
+- Keep an independent, bounded real-time test timeout/cancellation safeguard so broken timer wiring
+  cannot hang the runner. Advancing fake time does not guarantee async continuations have completed;
+  await them. It does not advance external servers, ordinary `HttpClient.Timeout`, or a directly used
+  `Stopwatch`; only provider-aware consumers are controlled.
+
 ## CI test-result publishing (MTP)
 
 MTP does not emit TRX by default. Add `Microsoft.Testing.Extensions.TrxReport` when CI needs a TRX file,
