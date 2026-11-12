@@ -14,7 +14,7 @@ work next doesn't have to re-derive the context.
 <!-- What was found, and why it graduated to its own document instead of a testability-notes.md row
      (cross-cutting habit, or the user asked for more detail). One or two sentences. -->
 
-**Recorded against:** <!-- TFM / LangVersion at the time this was written, e.g. "net8.0 / C# 12". Lets a
+**Recorded against:** <!-- TFM / LangVersion at the time this was written, e.g. "net10.0 / C# 14". Lets a
 later engagement notice the project has since moved past what this finding assumed -- see
 modules/workflow.md Step 1. -->
 

@@ -7,7 +7,7 @@ scoped to test code and do not imply that the repository must adopt new rules or
 
 Analyzer IDs are references to the kinds of findings these practices help avoid, not a requirement to
 configure or enable every analyzer. Check the project's framework and analyzer versions before relying on
-a rule ID: xUnit rules and APIs differ between v2 and v3.
+a rule ID.
 
 ## Test cases and data
 
@@ -15,21 +15,19 @@ For xUnit theories, use typed `TheoryData<T1, T2>` with xUnit-serializable value
 strings, enums, `DateTime`, and types implementing `IXunitSerializable` (xUnit1044/xUnit1045). Ordinary
 records and classes are not automatically serializable, even if their members are simple. For other values,
 pass a key or identifier and construct the object inside the test, or accept that the data row is not
-individually discoverable. `TheoryDataRow<T>` is available in xUnit v3; don't use it in a v2 suite. Avoid
+individually discoverable. Avoid
 untyped `object[]` rows.
 
 When checking a single item, use the value returned by `Assert.Single(list)` instead of checking the count
 and then indexing (xUnit2033; count assertions may also trigger xUnit2013). A committed scratchpad or
 environment-dependent test can skip at runtime: put `Assert.Skip("reason");` first in the test body, or use
-the v3 conditional skip APIs (xUnit1004). The v2 framework has no `Assert.Skip`; use a skip-capable mechanism
-already present in the project, or omit the scratch skip rather than adding a new dependency or attribute
-skip.
+the conditional skip APIs (xUnit1004). Do not use attribute skips.
 
 ## Async tests and fixtures
 
-In xUnit v3, pass `TestContext.Current.CancellationToken` to responsive async APIs that accept a token
+Pass `TestContext.Current.CancellationToken` to responsive async APIs that accept a token
 (xUnit1051). Follow the exception guidance in [`unit-tests.md`](unit-tests.md) for fast assertion-only
-queries, and never pass test context into production code. This API and rule do not apply to xUnit v2.
+queries, and never pass test context into production code.
 
 Keep test helpers stateless where possible; methods that do not use instance state can be `static` (CA1822).
 For fixture disposal, follow the repository's established pattern. A simple fixture does not need an

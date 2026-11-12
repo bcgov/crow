@@ -1,6 +1,6 @@
 # xUnit v2 to v3 migration
 
-Load when an existing .NET test project uses xUnit v2. Use it first to assess migration cost, then obtain
+Load when an existing .NET test project uses xUnit v2, including when the Crow Testing Agent hands one off. Use it first to assess migration cost, then obtain
 explicit user confirmation before applying any migration step. Do not load this module for a new project or
 an existing xUnit v3 suite.
 
@@ -10,10 +10,10 @@ Offer migration for a standard v2 suite:
 
 - `[Fact]`/`[Theory]`, `IClassFixture<T>`, `ITestOutputHelper`, and optional `IAsyncLifetime`;
 - `xunit` plus optional `xunit.runner.visualstudio` package references; and
-- a target framework already at .NET 8.0+ or .NET Framework 4.7.2+.
+- a target framework already at .NET 8.0+ (Crow's baseline is .NET 10) or .NET Framework 4.7.2+.
 
-Treat these as high-cost blockers and follow the existing v2 suite unless the user explicitly approves a
-larger migration:
+Treat these as high-cost blockers: report them and stop for the user's decision unless they explicitly
+approve a larger migration:
 
 - custom `ITestFramework`, `TestFrameworkAttribute`, or `IXunitTestCaseDiscoverer`;
 - custom theory data-source infrastructure;
@@ -21,12 +21,13 @@ larger migration:
 - non-standard runners, custom AppDomain hosts, or in-tree framework forks; or
 - a target framework below the v3 floor that cannot be raised.
 
-Migration is never automatic. New tests must not land on v3 alongside a still-v2 suite unless the user
-explicitly chooses that mixed path.
+Migration is never automatic. Crow Testing supports xUnit.v3 only, so a project that stays on v2 cannot use
+it; do not add v3 tests alongside a still-v2 suite. After a successful migration, hand back to the Crow
+Testing Agent.
 
 ## Standard v2 to v3 migration steps
 
-1. Raise the test project's TFM to `net8.0`+ or `net472`+ if not already there.
+1. Raise the test project's TFM to `net8.0`+ (prefer `net10.0`) or `net472`+ if not already there.
 2. Replace `<PackageReference Include="xunit" ...>` with
    `<PackageReference Include="xunit.v3" ...>`. Remove `xunit.runner.visualstudio` unless the project
    explicitly needs the classic VSTest bridge. If VSTest is required, keep
@@ -43,11 +44,11 @@ explicitly chooses that mixed path.
    namespace.
 7. Run the v3 analyzers (`xunit.analyzers` on the v3 line) and resolve their diagnostics.
 8. If the project runs in CI/CD, follow the general MTP test-result guidance in
-   [`unit-tests.md`](../dotnet/unit-tests.md#ci-test-result-publishing-mtp).
+   [`unit-tests.md`](../../crow-testing/modules/dotnet/unit-tests.md#ci-test-result-publishing-mtp).
 
 ## Cancellation during migration
 
 After migration, apply the canonical
-[`xUnit v3 cancellation and xUnit1051`](../dotnet/unit-tests.md#xunit-v3-cancellation-and-xunit1051)
+[`xUnit v3 cancellation and xUnit1051`](../../crow-testing/modules/dotnet/unit-tests.md#xunit-v3-cancellation-and-xunit1051)
 guidance. In particular, do not turn the migration into blanket token boilerplate for fast assertion-only
 queries, and do not reference `TestContext.Current` from production code.

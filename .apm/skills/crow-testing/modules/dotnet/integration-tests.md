@@ -5,13 +5,11 @@ rule as `dotnet/unit-tests.md`.
 
 ## Test framework version
 
-Crow's default is **xUnit.v3** (`xunit.v3` NuGet package, .NET 8.0+ / .NET Framework 4.7.2+, executable
+Crow's default is **xUnit.v3** (`xunit.v3` NuGet package, .NET 8.0+ / .NET Framework 4.7.2+ (Crow's baseline for new projects is .NET 10), executable
 test projects on Microsoft.Testing.Platform). Integration test projects follow the same rule as the unit
-side: detect what already exists (`xunit` vs `xunit.v3` in `PackageReference` entries), follow a v3 suite
-as-is, and for a v2 suite load the
-[`xUnit v2 to v3 migration`](../reference/xunit-v2-to-v3-migration.md) playbook to assess cost before
-asking the user to confirm migration. The `IAsyncLifetime` return-type change (v2 `Task` → v3 `ValueTask`)
-ripples into integration fixtures — see
+side: this skill supports xUnit.v3 only. If the project references `xunit` (v2), stop and follow the
+hand-off in [`unit-tests.md`](unit-tests.md) (Crow Legacy Modernization Agent migrates v2 to v3). For
+fixtures, see
 [`../reference/integration/fixtures.md`](../reference/integration/fixtures.md).
 
 Integration test projects need the same optional `Microsoft.Testing.Extensions.TrxReport` package +

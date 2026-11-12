@@ -41,7 +41,7 @@ not to be fixed as part of a testing engagement itself unless explicitly request
      it. A constraint is not a smell.
 
      "Recorded at" matters most here: if the reason mentions the target framework or language version (e.g.
-     "not available until net8.0", "requires C# 11"), a later engagement can compare it against the
+     "not available until net10.0", "requires C# 11"), a later engagement can compare it against the
      project's *current* TFM/LangVersion and flag it as possibly stale -- see modules/workflow.md Step 1. -->
 
 | Finding | Why it can't change | Decided by | Date | Recorded at (TFM / LangVersion) |
