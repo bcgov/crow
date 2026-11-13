@@ -45,9 +45,7 @@ public sealed class OrderAssignmentFixture : IntegrationTestBase, IAsyncLifetime
 }
 ```
 
-`InitializeAsync` / `DisposeAsync` return `ValueTask` — that's the xUnit.v3 signature. On xUnit v2 the same
-methods return `Task`; the pattern is otherwise identical. Crow's default is v3 — see the v2→v3 assessment
-in [`../xunit-v2-to-v3-migration.md`](../xunit-v2-to-v3-migration.md) if the target project is still on v2.
+`InitializeAsync` / `DisposeAsync` return `ValueTask` — the xUnit.v3 signature.
 
 Give the fixture a `CreateService(...)` factory rather than exposing raw dependencies — tests that need a
 different role or user then differ by one argument instead of rebuilding the whole graph.

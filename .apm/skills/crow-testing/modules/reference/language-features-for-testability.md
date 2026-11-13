@@ -45,7 +45,7 @@ apply. Before recommending anything, read:
 That check is one-way. The more common case in a maintained codebase is the reverse: **the framework allows
 it and the code doesn't use it.**
 
-Retargeting rewrites nothing. A team that moved from `net472` to `net8.0` will say "we're on .NET 8" —
+Retargeting rewrites nothing. A team that moved from `net472` to `net10.0` will say "we're on .NET 10" —
 meaning the runtime — while new files still get `DateTime.Now`, an `int?` plus a null check, and a `switch`
 statement with a `default` arm, because that's what the file next to them looks like. **A modern target
 framework is not modern code**, and the gap between them is where these findings live.
@@ -90,7 +90,7 @@ finding:
 | Several nullable/bool fields modelling what is really one of N states | sealed `record` hierarchy + `switch` expression | C# 9 / C# 8 | Invalid field combinations become unconstructible instead of runtime-validated |
 
 **Check `<Nullable>` first — it is the cheapest and widest of these.** It defaults to `disable` when
-unspecified, and retargeting never adds it, so a solution can sit on `net8.0` for years with the compiler's
+unspecified, and retargeting never adds it, so a solution can sit on `net10.0` for years with the compiler's
 null analysis simply not running. Nothing reports this; it is an absence, not a violation. Adopt it
 incrementally rather than all at once: turn it on solution-wide with the warnings non-fatal and burn them
 down, or enable per file with `#nullable enable` on new and touched files (which is the stop-the-bleeding

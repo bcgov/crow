@@ -293,10 +293,10 @@ Inspect repository configuration, build files, and runtime tools to determine ex
    - **JS**: React, Angular, Vue, Vite, Next.js, Express, NestJS versions in `package.json`.
    - **PHP**: Laravel, Symfony, WordPress versions in `composer.json`.
 3. **Container Images:**
-   - Parse `Dockerfile` `FROM` instructions for base image tags (e.g. `mcr.microsoft.com/dotnet/aspnet:8.0`, `eclipse-temurin:21-jre-alpine`, `node:20-bookworm-slim`).
+   - Parse `Dockerfile` `FROM` instructions for base image tags (e.g. `mcr.microsoft.com/dotnet/aspnet:10.0`, `eclipse-temurin:21-jre-alpine`, `node:20-bookworm-slim`).
 4. **EOL Status Verification & Major Upgrade Recommendations:**
    - Cross-reference runtime and framework major versions against official support matrices and EOL schedules (e.g., endoflife.date). Mark as `Active`, `Maintenance`, or `End-of-Life (EOL)`.
-   - **Major Upgrade Trigger:** Whenever a framework or runtime major version is approaching or past its End-of-Life date (e.g., within 6 months of EOL or already EOL), you **MUST** explicitly recommend a major version upgrade to the next supported LTS/stable major release (e.g., recommend upgrading .NET 6 -> .NET 8, Spring Boot 2 -> 3, Angular 12 -> 17).
+   - **Major Upgrade Trigger:** Whenever a framework or runtime major version is approaching or past its End-of-Life date (e.g., within 6 months of EOL or already EOL), you **MUST** explicitly recommend a major version upgrade to the next supported LTS/stable major release (e.g., recommend upgrading .NET 6 -> .NET 10, Spring Boot 2 -> 3, Angular 12 -> 17).
 
 ### Step 5: Third-Party Dependency & Vulnerability (CVE) Audit
 
@@ -315,7 +315,7 @@ Parse lock files and dependency manifests to inventory third-party libraries whi
 3. **Never Mirror Resolved Version to Latest:**
    - Never infer `Latest Version` from a manifest or lockfile. Confirm it
      through the ecosystem's outdated CLI or a direct registry query.
-   - Use exact stable versions, not wildcards or ranges (`8.0.x`, `^2.1`,
+   - Use exact stable versions, not wildcards or ranges (`10.0.x`, `^2.1`,
      `~1.4`, `*`).
 
 4. **Automated Workflow Verification Check:**

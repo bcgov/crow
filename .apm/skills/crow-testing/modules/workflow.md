@@ -127,6 +127,10 @@ interpret the remaining index; otherwise avoid adding a new history log.
    and adding its index row. Apply the index/detail fields in `modules/manual-coverage.md` without
    copying manual steps. Start AI-authored details as Draft and read an existing detail's review status
    before editing; for Approved content, report discrepancies and request a named-document instruction.
+5. For Step 5 complex/critical work and bug regressions whose fix is not ready, ask once whether to pause
+   after Red or after the confirming run, or neither; who makes red tests pass (see
+   `reference/example-mapping.md`); and whether the user accepts ending this engagement after Red with the
+   confirming run postponed. Record the answer; do not assume acceptance.
 
 ## Step 3: Discovery
 
@@ -192,13 +196,26 @@ content each of these bullets references. Do not regenerate a guide that is alre
    application boundary applies. Resolve pending group/application ownership first. Adapt
    `scenario-doc-template.md` to existing
    multi-document sets (phases, rules, diagrams, harnesses) rather than flattening or copying them.
-   Include scope, terminology, authoritative rules, scenarios, required assertions, and status.
-4. Offer to expand partial requirements into a complete scenario set. Have the developer, business analyst,
-   and client or their designated reviewers review the applicable scenarios, including manual outcomes.
-   Distinguish automated rule/data checks from remaining rendered or judgment-based manual checks.
-5. Stop for explicit scenario review and approval before writing test code; document unresolved decisions
-   rather than inventing prerequisites or expected results for manual checks.
-6. After approval, implement in phases. Keep the scenario doc's top Current status rollup, Coverage
+   Include the sections in the template: status, plain-language test matrix, scope, rules, and only when
+   needed open questions, example detail, and cross-cutting checks.
+4. Run Example Mapping per [`reference/example-mapping.md`](reference/example-mapping.md): draft rules,
+   concrete examples, and open questions from available evidence, then have the developer, business analyst,
+   and client or their designated reviewers correct them. Offer to expand partial requirements into a
+   complete scenario set. Distinguish automated rule/data checks from remaining rendered or
+   judgment-based manual checks.
+5. Stop for explicit scenario review and approval before writing test code. At approval, verify every
+   in-scope rule has a matrix row, every row names a rule, examples read clearly to a non-technical reviewer,
+   and no unresolved question affects an approved expected outcome. A Q# or deferral is not a decision;
+   exclude affected rules/scenarios from the approved scope until a reviewer decides them. Document
+   unresolved decisions rather than inventing prerequisites or expected results for manual checks.
+6. After approval, write tests in phases, one scenario per cycle in the documented order. Before each run,
+   predict the outcome and compare it with the actual result (`reference/example-mapping.md` §
+   Predict, then verify); a mismatch stops the cycle. For behavior not yet built, follow § Red tests and
+   hand-off (separate branch; use a supported skip before merge, or keep the red test unmerged and hand it
+   off with the implementation request when skipping is unavailable; developer or authorized agent
+   implements, agent confirms).
+   Honor any pause point. Keep the scenario
+   doc's top Current status rollup, Coverage
    field/summary, and `testing-plan.md`'s Feature-scenarios row synchronized as tests land — not just
    reported in chat.
 7. Check the cross-family review cadence before implementation and offer a plan review when overdue.
@@ -225,8 +242,15 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
 
 ## Step 7: Bug regressions
 
-1. Reproduce the bug with a failing test at the lowest level that can detect it.
-2. Simplify the reproducing data and verify the fix makes the test pass.
+1. Reproduce the bug with a failing test at the lowest level that can detect it. Before running it, state
+   the predicted failure and why; if the actual failure differs, stop and diagnose (see
+   [`reference/example-mapping.md`](reference/example-mapping.md) § Predict, then verify). For
+   non-trivial rules, capture the broken behavior as a rule plus concrete example (and any open question)
+   in the scenario doc.
+2. Simplify the reproducing data. The fix is made by a developer or, only with explicit user authorization,
+   handed off to another agent; the testing agent then runs the test and confirms it passes as predicted.
+   Until the fix is ready, handle the failing regression test per `reference/example-mapping.md` § Red tests
+   and hand-off.
 3. Now that the bug is confirmed and reproduced, load `reference/work-item-drafting.md`. Check the local
    `testing-plan.md` Work-item candidates table; if no matching candidate exists, create a durable
    draft under `docs/testing/drafts/` and present it to the user. If the user supplies an existing ID/link,
@@ -235,7 +259,9 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
    claim an item was created without a verified provider result.
 4. Add only nearby tests that protect the same defect class.
 5. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
-   time-box and any seam technique before making production changes.
+   time-box and any seam technique. Make a minimal, behavior-preserving seam only with explicit user
+   authorization for that change (`reference/legacy-seams.md`); hand off the fix and every other production
+   change.
 6. Update the relevant scenario document and testing plan.
 
 The same Step 6 scope limits apply here: if the regression stays within them, the shortcut is test code +
@@ -250,8 +276,15 @@ recurring manual-only or deferred item is actually discovered or changed.
    build the test project and address warnings in the touched test code using
    [`dotnet/test-code-guidance.md`](dotnet/test-code-guidance.md); report, don't fix, pre-existing warnings
    elsewhere.
-2. For scenario-gated work, compare implemented tests with every approved scenario and required assertion.
-3. Confirm all touched tests pass.
+2. For scenario-gated work, compare implemented tests with every approved scenario and cross-cutting check,
+   and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
+3. Confirm each test is in its intended state: tests for implemented behavior in the verification scope pass;
+   deliberate red tests fail for the predicted reason on the feature branch and, before merge, use a
+   supported skip and are marked `Not implemented - no verification claim` (behavior not built) or
+   `Fix pending - <draft key or work item> - no verification claim` (unfixed bug). When skipping is
+   unavailable, keep the red test unmerged and hand it off with the implementation request. Exploratory
+   characterization tests pass against the observed behavior they pin. A passing run of red tests is
+   required only when implementation is ready and confirming verification is in scope.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect
@@ -286,3 +319,11 @@ Report:
 - remaining work;
 - exact validation commands and outcomes;
 - cross-check review status.
+
+Map the completion-report `Status` per the interaction contract. Red tests that fail for the predicted reason
+are a passed check, not a failed one. Use `complete` only when every in-scope check passed and the user
+explicitly accepted any skipped check and postponed confirming run; record those as deferred open items.
+Without that acceptance, use `blocked` and name the awaited implementation or decision. Use `failed` when a
+test fails differently from its prediction or an implemented-behavior test fails. Never count skipped or
+unmerged tests as verified coverage, and never present characterization-stage tests as verifying an agreed
+requirement.

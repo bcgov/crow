@@ -31,11 +31,12 @@ style in the surrounding files records when they were written, not a decision to
    overridable ("I see only a placeholder NUnit test — I'd suggest starting fresh with xUnit.v3/CsCheck
    since nothing is established yet; say the word to keep NUnit instead").
 2. **Only when there is no test project yet** (a brand-new .NET project with nothing to detect), default to:
-   - **xUnit.v3** as the test framework (`xunit.v3` NuGet package). v3 requires .NET 8.0+ or .NET Framework
+   - **xUnit.v3** as the test framework (`xunit.v3` NuGet package). v3 runs on .NET 8.0+ or .NET Framework
      4.7.2+ and produces executable test projects on
      [Microsoft.Testing.Platform](https://learn.microsoft.com/dotnet/core/testing/microsoft-testing-platform-intro)
-     rather than DLLs run by an external adapter. If the target project's TFM is below v3's floor and
-     cannot be raised, fall back to the v2 line (`xunit` NuGet package) and record the reason.
+     rather than DLLs run by an external adapter. Crow's baseline for new projects is .NET 10 (`net10.0`), since
+     .NET 8 and 9 are obsolete. If the target project's TFM is below v3's floor and
+     cannot be raised, stop and tell the user; do not fall back to xUnit v2.
    - **`Microsoft.Testing.Extensions.TrxReport`** on the same test project when CI needs a portable TRX
      result file. MTP does not emit TRX out of the box. See "CI test-result publishing (MTP)" below.
    - **CsCheck** (requires a net10.0+ test project) for property-based testing of validation rules and invariants with many input combinations
@@ -55,11 +56,9 @@ style in the surrounding files records when they were written, not a decision to
    delete alias setup. If the migration is non-trivial (heavy reliance on reflection auto-population or a
    large alias registry), leave the existing suite in place. **New tests must never introduce AutoBogus**
    regardless of what the surrounding suite uses.
-4. **When the existing suite is on xUnit v2 (`xunit` package):** offer to migrate to xUnit.v3 rather than
-   silently following v2. Load the
-   [`xUnit v2 to v3 migration`](../reference/xunit-v2-to-v3-migration.md) playbook to assess cost, then
-   ask the user to confirm before applying its migration steps. New tests must not land on v3 alongside a
-   still-v2 suite unless the user explicitly chooses that mixed path.
+4. **When the existing suite is on xUnit v2 (`xunit` package):** this skill supports xUnit.v3 only. Stop
+   and do not author tests against v2. Tell the user, and recommend they run the Crow Legacy Modernization
+   Agent (a separate agent that may need to be installed) to migrate v2 to v3, then return here.
 
 5. **Do not default to FluentValidation, FluentValidation.TestHelper, or FluentAssertions.** These are only
    appropriate when the project already uses FluentValidation for its validation rules. If it doesn't,
@@ -67,10 +66,6 @@ style in the surrounding files records when they were written, not a decision to
    perfectly good fallback.
 
 ### xUnit v3 cancellation and xUnit1051
-
-This guidance applies **only to xUnit v3 suites**. Do not use `TestContext.Current.CancellationToken` or
-apply xUnit1051 advice to a retained xUnit v2 suite; load the v2-to-v3 migration module when assessing a
-migration instead.
 
 At responsive async boundaries in test methods, pass `TestContext.Current.CancellationToken` when a
 service, repository, validator, database, network, or workflow API accepts a `CancellationToken`. This
@@ -88,6 +83,9 @@ captured token explicitly. The parameterless xUnit v3 `IAsyncLifetime.Initialize
 `DisposeAsync` methods do not receive a per-test token: when `TestContext.Current` is available there, it
 represents the fixture lifetime, not an individual test; otherwise use a fixture-owned, bounded
 `CancellationTokenSource` for cancellable setup/teardown rather than inventing a test token.
+
+This section applies only to xUnit.v3. For NUnit, MSTest, or another framework, use its supported
+cancellation APIs and the existing suite's conventions.
 
 ## CI test-result publishing (MTP)
 
@@ -141,9 +139,9 @@ The file taxonomy per model, and why each exists:
 - **`{Entity}SmokeTests.cs`** — fast sanity checks: the builder's defaults are valid, a fully-populated model
   is valid, a minimal model is valid, and each common valid scenario passes. Run these first when changing
   anything; they answer "is this broken at all?" in seconds, and they double as documentation of what a valid
-  model looks like. Include a scratchpad `[Fact]` slot for quick iteration whose first line is
-  `Assert.Skip("Development scratchpad");` (xUnit v3). Do not use `[Fact(Skip = "...")]`; the attribute form
-  trips xUnit1004. On xUnit v2 there is no `Assert.Skip`, so use a `SkippableFact`-style package or omit the slot.
+  model looks like. In xUnit.v3 suites, include a scratchpad `[Fact]` slot for quick iteration whose first
+  line is `Assert.Skip("Development scratchpad");`. Do not use `[Fact(Skip = "...")]`; the attribute form
+  trips xUnit1004. In other frameworks, use their supported skip mechanism and follow the suite's conventions.
 - **`{Entity}{Field}FieldsTests.cs`** — either a ~40-line subclass of a shared suite (for field types that
   repeat across models) or a normal test class (for fields unique to this model).
 - **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for model

@@ -17,7 +17,10 @@ through verified replacement. Load
 first. Follow its phase gates and load existing Crow skills **at the phase
 where they are needed**; do not assume other agents have run or delegate work
 implicitly. In a multi-application system, agree on bounded application and
-integration boundaries before proceeding.
+integration boundaries before proceeding. When the request is only to migrate
+a .NET test project from xUnit v2 to v3 (for example, handed off by the Crow
+Testing Agent), skip the replacement workflow and follow the skill's xUnit v2
+test-project migration module; confirm with the user before changing anything.
 
 ## Core Principles
 
