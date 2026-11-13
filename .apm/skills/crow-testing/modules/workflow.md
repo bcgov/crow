@@ -209,7 +209,9 @@ content each of these bullets references. Do not regenerate a guide that is alre
 6. After approval, write tests in phases, one scenario per cycle in the documented order. Before each run,
    predict the outcome and compare it with the actual result (`reference/example-mapping.md` §
    Predict, then verify); a mismatch stops the cycle. For behavior not yet built, follow § Red tests and
-   hand-off (separate branch, skip before merge, developer or authorized agent implements, agent confirms).
+   hand-off (separate branch; use a supported skip before merge, or keep the red test unmerged and hand it
+   off with the implementation request when skipping is unavailable; developer or authorized agent
+   implements, agent confirms).
    Honor any pause point. Keep the scenario
    doc's top Current status rollup, Coverage
    field/summary, and `testing-plan.md`'s Feature-scenarios row synchronized as tests land — not just
@@ -272,8 +274,9 @@ recurring manual-only or deferred item is actually discovered or changed.
    and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
 3. Confirm each test is in its intended state: tests for implemented behavior in the verification scope pass;
    deliberate red tests for unimplemented behavior fail for the predicted reason on the feature branch and,
-   before merge, are skipped and marked `Not implemented - no verification claim`. A passing run is required
-   only when implementation is ready and confirming verification is in scope.
+   before merge, use a supported skip and are marked `Not implemented - no verification claim`. When
+   skipping is unavailable, keep the red test unmerged and hand it off with the implementation request.
+   A passing run is required only when implementation is ready and confirming verification is in scope.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect

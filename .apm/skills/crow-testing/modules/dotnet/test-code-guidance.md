@@ -11,21 +11,23 @@ a rule ID.
 
 ## Test cases and data
 
-For xUnit theories, use typed `TheoryData<T1, T2>` with xUnit-serializable values such as primitives,
+For xUnit.v3 theories, use typed `TheoryData<T1, T2>` with xUnit-serializable values such as primitives,
 strings, enums, `DateTime`, and types implementing `IXunitSerializable` (xUnit1044/xUnit1045). Ordinary
 records and classes are not automatically serializable, even if their members are simple. For other values,
 pass a key or identifier and construct the object inside the test, or accept that the data row is not
-individually discoverable. Avoid
-untyped `object[]` rows.
+individually discoverable. Avoid untyped `object[]` rows.
 
-When checking a single item, use the value returned by `Assert.Single(list)` instead of checking the count
-and then indexing (xUnit2033; count assertions may also trigger xUnit2013). A committed scratchpad or
-environment-dependent test can skip at runtime: put `Assert.Skip("reason");` first in the test body, or use
-the conditional skip APIs (xUnit1004). Do not use attribute skips.
+When using xUnit.v3, check a single item with the value returned by `Assert.Single(list)` instead of
+checking the count and then indexing (xUnit2033; count assertions may also trigger xUnit2013). A committed
+scratchpad or environment-dependent xUnit.v3 test can skip at runtime: put `Assert.Skip("reason");` first
+in the test body, or use the conditional skip APIs (xUnit1004). Do not use attribute skips with xUnit.v3.
 
-## Async tests and fixtures
+For NUnit, MSTest, and other test frameworks, use their supported APIs and follow the existing suite
+conventions for cancellation and skips. Do not apply xUnit-specific APIs or analyzer requirements to them.
 
-Pass `TestContext.Current.CancellationToken` to responsive async APIs that accept a token
+## xUnit.v3 async tests and fixtures
+
+In xUnit.v3, pass `TestContext.Current.CancellationToken` to responsive async APIs that accept a token
 (xUnit1051). Follow the exception guidance in [`unit-tests.md`](unit-tests.md) for fast assertion-only
 queries, and never pass test context into production code.
 

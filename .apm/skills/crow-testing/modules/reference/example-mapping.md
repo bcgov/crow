@@ -81,9 +81,12 @@ The agent writes tests only; it never makes them green by changing production co
 1. Commit red tests only to a separate feature branch, never the default branch, so developers have time
    to implement before merge.
 2. Before merge, any test for a behavior that is still not implemented uses a skip mechanism supported by
-   the target framework and version; follow its specific guidance (for .NET/xUnit, see
+   the target framework and version; follow its specific guidance (for .NET, see
    [`test-code-guidance.md`](../dotnet/test-code-guidance.md)). The skip reason names the scenario
    (for example, `S4 - not implemented`), and its Coverage reads `Not implemented - no verification claim`.
+   If the framework/version has no supported skip mechanism, do not merge the failing test: keep it on
+   the feature branch and hand it off with the implementation request. Once implemented, rerun it and
+   merge it only when it passes.
 3. Ask who makes the tests pass: the developer (default), or another agent only when the user explicitly
    authorizes that hand-off.
 4. When told the code is ready, enable skipped tests for the confirming run. Leave passing tests enabled and

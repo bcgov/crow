@@ -84,6 +84,9 @@ captured token explicitly. The parameterless xUnit v3 `IAsyncLifetime.Initialize
 represents the fixture lifetime, not an individual test; otherwise use a fixture-owned, bounded
 `CancellationTokenSource` for cancellable setup/teardown rather than inventing a test token.
 
+This section applies only to xUnit.v3. For NUnit, MSTest, or another framework, use its supported
+cancellation APIs and the existing suite's conventions.
+
 ## CI test-result publishing (MTP)
 
 MTP does not emit TRX by default. Add `Microsoft.Testing.Extensions.TrxReport` when CI needs a TRX file,
@@ -136,9 +139,9 @@ The file taxonomy per model, and why each exists:
 - **`{Entity}SmokeTests.cs`** — fast sanity checks: the builder's defaults are valid, a fully-populated model
   is valid, a minimal model is valid, and each common valid scenario passes. Run these first when changing
   anything; they answer "is this broken at all?" in seconds, and they double as documentation of what a valid
-  model looks like. Include a scratchpad `[Fact]` slot for quick iteration whose first line is
-  `Assert.Skip("Development scratchpad");`. Do not use `[Fact(Skip = "...")]`; the attribute form
-  trips xUnit1004.
+  model looks like. In xUnit.v3 suites, include a scratchpad `[Fact]` slot for quick iteration whose first
+  line is `Assert.Skip("Development scratchpad");`. Do not use `[Fact(Skip = "...")]`; the attribute form
+  trips xUnit1004. In other frameworks, use their supported skip mechanism and follow the suite's conventions.
 - **`{Entity}{Field}FieldsTests.cs`** — either a ~40-line subclass of a shared suite (for field types that
   repeat across models) or a normal test class (for fields unique to this model).
 - **`{Entity}TrimmingTests.cs`** — kept deliberately separate as the *single source of truth* for model
