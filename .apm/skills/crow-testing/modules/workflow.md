@@ -247,6 +247,8 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
    in the scenario doc.
 2. Simplify the reproducing data. The fix is made by a developer or, only with explicit user authorization,
    handed off to another agent; the testing agent then runs the test and confirms it passes as predicted.
+   Until the fix is ready, handle the failing regression test per `reference/example-mapping.md` § Red tests
+   and hand-off.
 3. Now that the bug is confirmed and reproduced, load `reference/work-item-drafting.md`. Check the local
    `testing-plan.md` Work-item candidates table; if no matching candidate exists, create a durable
    draft under `docs/testing/drafts/` and present it to the user. If the user supplies an existing ID/link,
@@ -255,7 +257,9 @@ work`, `Status` = `Automated - <test file or folder>`, `Manual/deferred items` =
    claim an item was created without a verified provider result.
 4. Add only nearby tests that protect the same defect class.
 5. If behavior is unknown and uncovered, use characterization tests first. Present the characterization
-   time-box and any seam technique; propose, but do not make, production changes (hand them off).
+   time-box and any seam technique. Make a minimal, behavior-preserving seam only with explicit user
+   authorization for that change (`reference/legacy-seams.md`); hand off the fix and every other production
+   change.
 6. Update the relevant scenario document and testing plan.
 
 The same Step 6 scope limits apply here: if the regression stays within them, the shortcut is test code +
@@ -273,10 +277,12 @@ recurring manual-only or deferred item is actually discovered or changed.
 2. For scenario-gated work, compare implemented tests with every approved scenario and cross-cutting check,
    and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
 3. Confirm each test is in its intended state: tests for implemented behavior in the verification scope pass;
-   deliberate red tests for unimplemented behavior fail for the predicted reason on the feature branch and,
-   before merge, use a supported skip and are marked `Not implemented - no verification claim`. When
-   skipping is unavailable, keep the red test unmerged and hand it off with the implementation request.
-   A passing run is required only when implementation is ready and confirming verification is in scope.
+   deliberate red tests for unimplemented behavior or an unfixed bug fail for the predicted reason on the
+   feature branch and, before merge, use a supported skip and are marked
+   `Not implemented - no verification claim`. When skipping is unavailable, keep the red test unmerged and
+   hand it off with the implementation request. Exploratory characterization tests pass against the
+   observed behavior they pin. A passing run of red tests is required only when implementation is ready and
+   confirming verification is in scope.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect
@@ -311,3 +317,10 @@ Report:
 - remaining work;
 - exact validation commands and outcomes;
 - cross-check review status.
+
+Map the completion-report `Status` as follows. Red tests that fail for the predicted reason are a passed
+check, not a failed one. Use `complete` when all in-scope work is done; list awaited implementation and the
+confirming run as deferred open items. Use `blocked` when a confirming run is in scope but implementation is
+not ready. Use `failed` when a test fails differently from its prediction or an implemented-behavior test
+fails. Never count skipped or unmerged tests as verified coverage, and never present characterization-stage
+tests as verifying an agreed requirement.

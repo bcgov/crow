@@ -17,7 +17,7 @@ So there are two different moves, at two different moments:
 | When | After you have tests | Before you have any |
 | Goal | The design you'd recommend | The smallest change that lets one test exist |
 | Risk appetite | Normal refactor | Near-zero; behavior must be provably unchanged |
-| Who does it | Often handed off | Usually you, right now |
+| Who does it | Often handed off | You, only with explicit user authorization for the change; otherwise hand it off |
 
 Use the techniques here to buy the first test. Once you have a regression net, the playbook applies.
 

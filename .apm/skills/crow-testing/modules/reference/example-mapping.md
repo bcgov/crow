@@ -61,8 +61,13 @@ doc only when a mismatch teaches something future readers need (`Prediction mism
 - New behavior: Red with the exact expected failure, for example `expected 404, got 200 because the
   endpoint does not check ownership yet`. A compile error is not a useful red; fix the test until it fails on
   the assertion. Then see § Red tests and hand-off.
-- Existing behavior (characterization, or tests added after the code): predict Pass and why. Only if you
-  doubt the test can fail, change the test's expected value and confirm it fails; never edit production code.
+- Existing behavior (tests added after the code, or characterization once you can predict the output):
+  predict Pass and why. Only if you doubt the test can fail, change the test's expected value and confirm it
+  fails; never edit production code.
+- Exploratory characterization (behavior not yet predictable): no prediction is required. Pin the observed
+  output as described in [`characterization-tests.md`](characterization-tests.md); a surprise is information,
+  not a defect. Record obviously wrong behavior as a known issue rather than accepting it as a rule. Apply
+  predict-then-verify once you can predict the output; that is also the signal to stop exploring.
 - Bug regression: predict the exact symptom from the report before the fix, then Pass after.
 
 Run one scenario per cycle and compare:
@@ -74,9 +79,15 @@ Run one scenario per cycle and compare:
 | Passes unexpectedly | Hollow test, behavior already exists, or wrong setup | Stop, strengthen the test or reclassify |
 | Fails when Pass predicted | Defect or wrong rule | Stop, report as a finding; never edit the test to pass |
 
+The "never edit the test to pass" rule applies to specification, regression, and confirmed characterization
+tests. Pinning observed output during exploratory characterization is not editing a test to pass.
+
 ## Red tests and hand-off
 
-The agent writes tests only; it never makes them green by changing production code.
+The agent writes tests only; it never makes them green by changing production code. A minimal,
+behavior-preserving test seam ([`legacy-seams.md`](legacy-seams.md)) needs explicit user authorization for
+that change and must not implement the behavior or fix under test. The same steps apply to a reproduced bug
+whose fix is not ready; name its draft key or work item in the skip reason.
 
 1. Commit red tests only to a separate feature branch, never the default branch, so developers have time
    to implement before merge.

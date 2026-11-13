@@ -43,7 +43,9 @@ someone stops you.
 2. **Call it and record the output.** Start with realistic inputs, then widen: empty, null, boundary,
    malformed.
 3. **Pin the observed output as the assertion.** For wide or structured output, use approval/snapshot
-   testing rather than dozens of hand-written assertions.
+   testing rather than dozens of hand-written assertions. While exploring, a difference between your guess
+   and the observed output is information, not a test failure to triage; see
+   [`example-mapping.md`](example-mapping.md) § Predict, then verify.
 4. **Repeat until the behavior stops surprising you.** Coverage of the branches you intend to change is the
    bar — not total coverage.
 5. **Then change the code.** Any test that now fails is a behavior change; decide deliberately whether it
