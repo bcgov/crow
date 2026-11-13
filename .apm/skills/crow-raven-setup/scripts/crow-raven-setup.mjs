@@ -76,7 +76,7 @@ function parseArgs(values) {
       continue;
     }
     const key = value.slice(2);
-    if (["confirm", "force", "no-raven", "sonar"].includes(key)) {
+    if (["confirm", "force", "no-raven", "sonar", "include-managed"].includes(key)) {
       parsed[key] = true;
       continue;
     }
@@ -2655,9 +2655,9 @@ Commands:
        [--codebase-memory-version X.Y.Z] [--state-dir <path>]
   setup --plan <path> --plan-sha256 <digest> --confirm
   config preview --client copilot|portable [--config <path>] [--state-dir <path>]
-                 [--remote <id,...>]
+                 [--remote <id,...> [--include-managed]]
   config apply --client copilot|portable [--config <path>]
-               [--state-dir <path>] [--remote <id,...>]
+               [--state-dir <path>] [--remote <id,...> [--include-managed]]
                --approval-sha256 <digest> --confirm
   check [--state-dir <path>] [--force]
   rollback [--state-dir <path>] --confirm
@@ -2674,8 +2674,9 @@ reviewed client configuration: VS Code and Copilot use the same user-level
 mcp-config.json, never profile mcp.json or settings.json. Setup does not
 collect credentials.
 Remote servers (hosted HTTP/OAuth endpoints such as sysdig-secure-mcp) need no
-install or setup state: --remote merges their reviewed catalog entries, and the
-client handles sign-in on first use.
+install or setup state: --remote merges only their reviewed catalog entries.
+Add --include-managed to also merge the existing Crow-managed local servers;
+this requires setup state. The client handles sign-in on first use.
 The optional Copilot update hook checks at most once
 per day during agent use and never installs updates.`);
 }
@@ -2713,11 +2714,15 @@ function configCommand(args) {
   if (!["preview", "apply"].includes(action)) fail("Use config preview or config apply.");
   const target = paths(args);
   const remote = selectedRemoteServers(args, catalog());
+  if (args["include-managed"] && remote.length === 0) {
+    fail("--include-managed requires --remote <id,...>.");
+  }
+  const includeManaged = remote.length === 0 || args["include-managed"];
   const remoteEntries = Object.fromEntries(
     remote.map((server) => [server.id, { type: server.transport, url: server.url }])
   );
-  if (!existsSync(target.state) && remote.length === 0) fail("Crow Raven setup is not configured.");
-  const state = existsSync(target.state) ? readState(target) : null;
+  if (includeManaged && !existsSync(target.state)) fail("Crow Raven setup is not configured.");
+  const state = includeManaged ? readState(target) : null;
   const options = {
     ...args,
     managedEntries: { ...state?.managedFragment.mcpServers, ...remoteEntries },

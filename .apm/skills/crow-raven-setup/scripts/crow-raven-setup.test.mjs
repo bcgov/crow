@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  rmSync,
   unlinkSync,
   writeFileSync
 } from "node:fs";
@@ -430,6 +431,74 @@ test("remote HTTP servers merge without setup state and reject unknown IDs", () 
   assert.deepEqual(JSON.parse(retry.stdout).unchanged, ["sysdig-secure-mcp"]);
   const unknown = run(["config", "preview", "--client", "copilot", "--remote", "nope"], undefined, env);
   assert.notEqual(unknown.status, 0);
+});
+
+test("remote-only merges preserve customized and omitted local servers without reading setup state", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "crow-remote-existing-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const stateDir = join(root, "state");
+  mkdirSync(stateDir);
+  const state = bundledRavenState(stateDir);
+  const statePath = join(stateDir, "state.json");
+  const stateBytes = JSON.stringify(state);
+  writeFileSync(statePath, stateBytes);
+  const config = join(root, "mcp-config.json");
+  const customized = { command: "user-managed-jira", args: [] };
+  writeFileSync(config, JSON.stringify({ mcpServers: { jira: customized } }));
+  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const env = { COPILOT_HOME: root };
+  const preview = run(["config", "preview", ...options], undefined, env);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.deepEqual(reviewed.added, ["sysdig-secure-mcp"]);
+  const apply = run([
+    "config", "apply", ...options, "--approval-sha256", reviewed.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(apply.status, 0, apply.stderr);
+  const merged = JSON.parse(readFileSync(config, "utf8")).mcpServers;
+  assert.deepEqual(merged.jira, customized);
+  assert.equal(Object.hasOwn(merged, "codebase-memory-mcp"), false);
+  assert.equal(readFileSync(statePath, "utf8"), stateBytes);
+  assert.equal(existsSync(join(stateDir, "mcp-fragment.json")), false);
+});
+
+test("mixed remote and managed merges require explicit selection and a matching preview", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "crow-remote-mixed-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const stateDir = join(root, "state");
+  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const env = { COPILOT_HOME: root };
+  const missing = run(["config", "preview", ...options, "--include-managed"], undefined, env);
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /not configured/);
+  mkdirSync(stateDir);
+  const state = codebaseOnlyState(stateDir);
+  writeFileSync(join(stateDir, "state.json"), JSON.stringify(state));
+  const remoteOnly = run(["config", "preview", ...options], undefined, env);
+  assert.equal(remoteOnly.status, 0, remoteOnly.stderr);
+  const stale = run([
+    "config", "apply", ...options, "--include-managed",
+    "--approval-sha256", JSON.parse(remoteOnly.stdout).approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stderr, /changed since preview/);
+  const preview = run(["config", "preview", ...options, "--include-managed"], undefined, env);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.deepEqual(reviewed.added, ["codebase-memory-mcp", "sysdig-secure-mcp"]);
+  const apply = run([
+    "config", "apply", ...options, "--include-managed",
+    "--approval-sha256", reviewed.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(apply.status, 0, apply.stderr);
+  const merged = JSON.parse(readFileSync(join(root, "mcp-config.json"), "utf8")).mcpServers;
+  assert.deepEqual(merged["codebase-memory-mcp"], state.managedFragment.mcpServers["codebase-memory-mcp"]);
+  assert.deepEqual(merged["sysdig-secure-mcp"], reviewed.proposed["sysdig-secure-mcp"]);
+  const invalid = run([
+    "config", "preview", "--client", "copilot", "--include-managed"
+  ], undefined, env);
+  assert.notEqual(invalid.status, 0);
+  assert.match(invalid.stderr, /requires --remote/);
 });
 
 test("parses an outstanding Crow APM update without treating current output as stale", () => {
@@ -1640,10 +1709,10 @@ test("Raven release metadata reconciles reviewed servers and native launchers", 
   }
 });
 
-test("Crow's reviewed catalog matches Raven v0.2.0 contracts", () => {
+test("Crow's reviewed catalog accepts Raven v0.3.0 release contracts", () => {
   const catalog = JSON.parse(readFileSync(new URL("../resources/raven-servers.json", import.meta.url), "utf8"));
   for (const server of catalog.servers) {
-    assert.equal(server.packageVersion, "0.2.0", server.id);
+    assert.equal(server.packageVersion, "0.3.0", server.id);
   }
 
   const ado = catalog.servers.find((server) => server.id === "ado");
@@ -1654,7 +1723,7 @@ test("Crow's reviewed catalog matches Raven v0.2.0 contracts", () => {
       package: "@nrs/ado-mcp",
       launcher: "raven-ado",
       entrypoint: "packages/ado-mcp/dist/index.js",
-      packageVersion: "0.2.0",
+      packageVersion: "0.3.0",
       access: "read-write"
     }]
   };

@@ -56,7 +56,9 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    for redundant selection confirmation. IDs under `remoteServers` (for example
    `sysdig-secure-mcp`) skip plan/setup/preflight; apply them only through
    `config preview|apply --remote <id>` and skip credential-script guidance
-   (OAuth sign-in happens in the client). Confirm only lists derived from
+   (OAuth sign-in happens in the client). Mixed local/remote requests use
+   `--remote <id,...> --include-managed` on both preview and apply; without
+   that flag no local managed entries are read or merged. Confirm only lists derived from
    broader groups. If the user selects `sonar`, load
    `modules/sonar-scanners.md` for the new installation even if the server is
    not yet configured in the client. Record an explicit `--no-raven` choice
@@ -68,7 +70,8 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 3. Use Raven's attested bundled release by default. Use `--delivery source`
    only as an explicit fallback. Generate the exact setup plan, present its
    SHA-256 digest and effects, and obtain confirmation bound to that unchanged
-   plan.
+   plan. The reviewed local catalog targets Raven 0.3.0; use
+   `modules/delivery-and-updates.md` for the 0.2.0 upgrade requirements.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version
    resolution, state, or fragment-generation logic in model-authored commands.
    This script manages Raven and codebase-memory-mcp only. The setup agent
@@ -111,9 +114,9 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    the result.
 8. When `sysdig-secure-mcp` is selected in the current setup, offer to install
    Sysdig's skills directly from `github.com/sysdig/skills` using
-   `modules/sysdig-skills.md`: a separate preview and confirmation, a latest tag
-      resolved at run time, the full default set of six skills (finding through
-      remediation), and no API-token skills unless the user asks. Declining
+   `modules/sysdig-skills.md`: read-only discovery, a separately approved exact
+   CLI version and tag-resolved commit, the full default set of six skills
+   (finding through remediation), and no API-token skills unless the user asks. Declining
    does not block the MCP configuration.
 9. Verify selected servers and, when Sonar MCP is installed or selected,
    scanner versions and client PATH configuration. Verify the .NET scanner

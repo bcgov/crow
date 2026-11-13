@@ -108,14 +108,19 @@ releases, installing an OS scheduler, or automatically applying updates.
    step 7 using `config preview|apply --remote <id>`, then step 8, and tell the
    user that OAuth sign-in happens in the client on first use. If remote and
    regular servers are mixed, run the full flow for the regular servers and add
-   the remote IDs to the same config preview.
+   the remote IDs to the same config preview with
+   `--remote <id,...> --include-managed`. Repeat those selection flags on apply;
+   without `--include-managed`, remote-only configuration never reads or merges
+   the local managed fragment.
 3. Use the verified Raven bundled release by default. Offer the lower-assurance
    pinned source build only as an explicit fallback when the platform is not
    supported or the user requests it.
 4. Resolve the Raven suite release (or source ref) and codebase-memory-mcp
    version into a deterministic plan, preview its paths, commands, trust level,
    effects, and SHA-256 digest, and run that unchanged plan only after
-   confirmation.
+   confirmation. The reviewed local catalog targets Raven 0.3.0; load
+   `crow-raven-setup/modules/delivery-and-updates.md` for its upgrade requirements
+   before proposing an update from 0.2.0.
 5. When Sonar MCP is installed or `sonar` is selected in this setup, prepare a
    separate preview for the generic SonarScanner CLI and, when a compatible
    .NET SDK is present, SonarScanner for .NET (MSBuild). Resolve exact stable
@@ -154,8 +159,10 @@ releases, installing an OS scheduler, or automatically applying updates.
 8. When `sysdig-secure-mcp` is selected in this setup, offer to install Sysdig's
    skills directly from `github.com/sysdig/skills` by loading
    `crow-raven-setup/modules/sysdig-skills.md`. Make it a separate preview and
-   confirmation after the client configuration, resolve the latest tag at run
-   time, offer the full default set of six skills (every Sysdig skill except
+   confirmation after the client configuration, resolve the latest tag and
+   its commit at run time, discover skills through read-only GitHub APIs,
+   and approve the exact installer version before running it. Offer the full
+   default set of six skills (every Sysdig skill except
    the API-token skills, covering finding through remediation), state that the
    remediation and account-setup skills can change things, let the user remove
    skills, and do not offer the API-token skills
@@ -201,8 +208,9 @@ releases, installing an OS scheduler, or automatically applying updates.
   reported truthfully.
 - Credential values were neither requested, logged, nor written by Crow.
 - Sysdig skills are installed only after a separate confirmation, from Sysdig's
-  repository at a tag resolved at run time; declining leaves the MCP
-  configuration intact.
+  repository at the resolved tag's commit, using an approved exact CLI version.
+  No installer runs during discovery; removal is client-scoped. Declining
+  leaves the MCP configuration intact.
 - Remote-only setups skip preflight, planning and credential scripts, and are
   verified by the merged client entry; the user is told to sign in through the
   client's OAuth flow.

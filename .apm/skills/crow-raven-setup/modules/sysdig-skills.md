@@ -19,8 +19,16 @@ agent.
 
 Resolve the latest tag from the official repository at invocation time, for
 example `gh api repos/sysdig/skills/tags --jq '.[0].name'`, and use that exact
-tag. Never hardcode a tag, install from `main`, or reuse a tag from an old
-prompt. If the tag cannot be resolved, report the failure and defer the offer.
+tag. Resolve that tag to its full commit SHA with a read-only GitHub commit
+lookup and use the SHA for discovery and installation. Record both. Never
+hardcode a tag, install from `main`, or reuse a tag from an old prompt. If the
+tag or commit cannot be resolved, report the failure and defer the offer.
+
+Discover the available skill directories and read their `SKILL.md` names
+through read-only GitHub contents/tree APIs at that commit. Check API
+pagination and truncation before claiming a complete inventory. Do not run
+`npx`, install a prerequisite, or execute downloaded code to discover skills.
+If read-only discovery is unavailable, report it and defer the offer.
 
 ## Skill groups
 
@@ -49,28 +57,37 @@ Sysdig (Settings, Sysdig Secure API) and exported by the user as
 user's OAuth sign-in. Never ask for, display, or store the token, and never
 tell the user to paste it into chat.
 
-Verify the skill names against the repository at the resolved tag
-(`npx skills add sysdig/skills#<tag> --list`) before offering them; skip any
-name that no longer exists and say so.
+Verify the skill names against that read-only inventory before offering them;
+skip any name that no longer exists and say so.
 
 ## Preview and install
 
+Resolve an exact `skills` CLI version and its Node.js engine requirement from
+the public npm registry metadata (`https://registry.npmjs.org/skills/latest`)
+without running the package. Check Node.js, npm/npx, Git, and Python 3 locally.
+Defer the install on missing or incompatible prerequisites; never install
+them implicitly. Do not run the CLI before the following approval.
+
 Before installing, show a plan containing:
 
-- the exact tag, the chosen skill names, and the exact command;
-- that the install clones `github.com/sysdig/skills` over HTTPS at that tag, and
-  that the `skills` CLI does not verify a content hash;
+- the tag and full commit SHA, exact CLI version, chosen skill names, and command;
+- that `npx` may download and execute that exact third-party CLI, and that
+  the install clones `github.com/sysdig/skills` over HTTPS at the resolved commit;
+- that the npm package has registry integrity metadata but the `skills` CLI
+  does not verify a content hash for the skill content;
 - that the `skills` CLI reports anonymous install telemetry and prints a
   third-party security audit table, which the agent summarizes after install;
-- the Python 3 requirement of the skill scripts (standard library only), with
-  the detected status;
-- the install location and the exact removal command.
+- the detected prerequisite versions and required Node.js engine range;
+- the Python 3 requirement of the skill scripts (standard library only);
+- the target client, install location, existing selected-name installations,
+  and exact client-scoped removal command. Stop on unmanaged or edited
+  destinations until their replacement has been separately approved.
 
 Require explicit confirmation. Then run, once per confirmed selection (the
 active client is Copilot, so use `github-copilot`):
 
 ```text
-npx skills add sysdig/skills#<tag> --skill <name> [--skill <name> ...] --agent github-copilot --global --copy --yes
+npx --yes skills@<cli-version> add sysdig/skills#<commit-sha> --skill <name> [--skill <name> ...] --agent github-copilot --global --copy --yes
 ```
 
 Use `npx.cmd` on Windows PowerShell when script execution is disabled. The
@@ -81,8 +98,10 @@ command without running it.
 
 ## Verify, update, and remove
 
-Verify with `npx skills list --global` that each selected skill is present, and
-report the installed tag. Read the security audit table that `npx skills add`
+Verify with `npx --yes skills@<cli-version> list --global --agent github-copilot`
+that each selected skill is present, and report the installed tag, commit, and
+CLI version. Reuse the approved CLI version for every command in this operation.
+Read the security audit table that the approved `skills add`
 prints (skills.sh scanners such as Socket and Snyk) and tell the user about any
 skill rated above Safe or showing alerts, naming the skill and the reported
 issue. This is information only: Crow does not run its own scan, and a
@@ -92,9 +111,15 @@ client (OAuth) before using the skills, and to restart the client or start a
 new session if the skills are not listed.
 
 On later setup or maintenance requests, compare the latest tag with the tag
-reported at install (from the handoff record or `npx skills list --global` when
-it shows one); if the installed tag is unknown, say so and offer a reinstall at
-the latest tag. A pinned install does not update itself, so reinstall only
-after confirmation. Remove skills with
-`npx skills remove <name> --global` after confirmation. Do not keep Sysdig skill
-state in Crow setup state.
+reported at install from the handoff record or read-only installed metadata;
+if the installed tag is unknown, say so and offer a reinstall at the latest
+resolved commit. A pinned install does not update itself, so reinstall only
+after confirmation. A changed CLI version needs a new preview and approval.
+Remove skills with
+`npx --yes skills@<cli-version> remove <name> --global --agent github-copilot`
+after confirmation naming the client and affected paths. For another client,
+use that same approved client identifier consistently for install, list, and
+remove. Never omit `--agent` on removal: the CLI otherwise targets all agents.
+If a shared canonical directory would affect another client, disclose that
+impact and obtain additional approval rather than claiming isolated removal.
+Do not keep Sysdig skill state in Crow setup state.
