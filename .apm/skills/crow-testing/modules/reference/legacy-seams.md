@@ -17,7 +17,7 @@ So there are two different moves, at two different moments:
 | When | After you have tests | Before you have any |
 | Goal | The design you'd recommend | The smallest change that lets one test exist |
 | Risk appetite | Normal refactor | Near-zero; behavior must be provably unchanged |
-| Who does it | Often handed off | You, only with explicit user authorization for the change; otherwise hand it off |
+| Who does it | Often handed off | Behavior-preserving seams: you, only with explicit user authorization for the change; otherwise, and always for sprout/wrap changes that add behavior, hand it off |
 
 Use the techniques here to buy the first test. Once you have a regression net, the playbook applies.
 
@@ -29,10 +29,11 @@ to the ones a testing engagement actually reaches for.
 - **Sprout method / sprout class.** You need to *add* behavior to an untestable method. Don't edit the body:
   write the new logic as a separate method (or class), fully tested, and call it from one line in the old
   body. The legacy code stays unverified but untouched, and everything new is covered. This is the default
-  move when the task is a change rather than a test-writing exercise.
+  move when the task is a change rather than a test-writing exercise. Because it adds behavior, recommend it
+  and hand the implementation off; never apply it yourself.
 - **Wrap method.** You need new behavior to run *around* existing behavior. Rename the original, then create
   a new method with the old name that calls the renamed original plus your new, tested code. Callers are
-  unaffected; the new part is testable in isolation.
+  unaffected; the new part is testable in isolation. Like sprouting, this adds behavior, so hand it off.
 - **Extract and override call.** A single awkward call (`DateTime.Now`, a static logger, an email send) sits
   in the middle of otherwise testable logic. Move just that call into its own `protected virtual` method,
   then override it in a test-only subclass. One-line change, no dependency injection, no signature change.

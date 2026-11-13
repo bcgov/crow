@@ -31,7 +31,9 @@ Every rule has a row, and every row names a rule.
 Coverage: `Automated - <test file>` (tests passed in this engagement) /
 `Partial - manual/deferred: MC-###; automated remainder: <ref>` /
 `Manual - MC-###` / `Deferred - MC-###` / `Uncovered, automatable - <backlog ref>` /
-`Not implemented - no verification claim`. Skipped tests do not count as automated. If all rows share one disposition, drop the column and add one
+`Not implemented - no verification claim` (behavior not built yet) /
+`Fix pending - <draft key or work item> - no verification claim` (reproduced bug in existing behavior,
+fix not yet confirmed). Skipped tests do not count as automated. If all rows share one disposition, drop the column and add one
 line such as `All S1-S6 automated - FooTests.cs`.
 -->
 

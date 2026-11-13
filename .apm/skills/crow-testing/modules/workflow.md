@@ -127,8 +127,10 @@ interpret the remaining index; otherwise avoid adding a new history log.
    and adding its index row. Apply the index/detail fields in `modules/manual-coverage.md` without
    copying manual steps. Start AI-authored details as Draft and read an existing detail's review status
    before editing; for Approved content, report discrepancies and request a named-document instruction.
-5. For Step 5 complex/critical work, ask once whether to pause after Red or after the confirming run, or
-   neither, and who makes red tests pass (see `reference/example-mapping.md`).
+5. For Step 5 complex/critical work and bug regressions whose fix is not ready, ask once whether to pause
+   after Red or after the confirming run, or neither; who makes red tests pass (see
+   `reference/example-mapping.md`); and whether the user accepts ending this engagement after Red with the
+   confirming run postponed. Record the answer; do not assume acceptance.
 
 ## Step 3: Discovery
 
@@ -277,12 +279,12 @@ recurring manual-only or deferred item is actually discovered or changed.
 2. For scenario-gated work, compare implemented tests with every approved scenario and cross-cutting check,
    and compare each recorded prediction with its actual result; record any mismatch cause in the scenario doc.
 3. Confirm each test is in its intended state: tests for implemented behavior in the verification scope pass;
-   deliberate red tests for unimplemented behavior or an unfixed bug fail for the predicted reason on the
-   feature branch and, before merge, use a supported skip and are marked
-   `Not implemented - no verification claim`. When skipping is unavailable, keep the red test unmerged and
-   hand it off with the implementation request. Exploratory characterization tests pass against the
-   observed behavior they pin. A passing run of red tests is required only when implementation is ready and
-   confirming verification is in scope.
+   deliberate red tests fail for the predicted reason on the feature branch and, before merge, use a
+   supported skip and are marked `Not implemented - no verification claim` (behavior not built) or
+   `Fix pending - <draft key or work item> - no verification claim` (unfixed bug). When skipping is
+   unavailable, keep the red test unmerged and hand it off with the implementation request. Exploratory
+   characterization tests pass against the observed behavior they pin. A passing run of red tests is
+   required only when implementation is ready and confirming verification is in scope.
 4. Persist the transparency signals in the docs themselves, not just the chat response: the scenario doc's
    top Current status rollup and `Coverage` field/summary (when one exists) and `testing-plan.md`'s
    Current status plus Feature-scenarios row (Status, automated coverage, and manual QA scope) must reflect
@@ -318,9 +320,10 @@ Report:
 - exact validation commands and outcomes;
 - cross-check review status.
 
-Map the completion-report `Status` as follows. Red tests that fail for the predicted reason are a passed
-check, not a failed one. Use `complete` when all in-scope work is done; list awaited implementation and the
-confirming run as deferred open items. Use `blocked` when a confirming run is in scope but implementation is
-not ready. Use `failed` when a test fails differently from its prediction or an implemented-behavior test
-fails. Never count skipped or unmerged tests as verified coverage, and never present characterization-stage
-tests as verifying an agreed requirement.
+Map the completion-report `Status` per the interaction contract. Red tests that fail for the predicted reason
+are a passed check, not a failed one. Use `complete` only when every in-scope check passed and the user
+explicitly accepted any skipped check and postponed confirming run; record those as deferred open items.
+Without that acceptance, use `blocked` and name the awaited implementation or decision. Use `failed` when a
+test fails differently from its prediction or an implemented-behavior test fails. Never count skipped or
+unmerged tests as verified coverage, and never present characterization-stage tests as verifying an agreed
+requirement.

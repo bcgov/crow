@@ -128,12 +128,14 @@ be corrected within scope.
 - Required user decisions and scenario approvals are recorded.
 - Reviewers can verify examples and manual outcomes before test implementation; manual steps
   keep technical references below the tester-facing instructions.
-- For unbuilt behavior or an unfixed bug, test-only work may complete after tests fail for the predicted
-  reason on a feature branch. Before merge, those tests use a supported skip naming the scenario ID or
-  work-item draft and are marked `Not implemented - no verification claim`; when skipping is unavailable,
-  they stay unmerged and are handed off with the implementation request. Do not require a pass until
-  implementation is ready and verification is in scope. Report awaited implementation and verification as
-  deferred open items without claiming coverage, using the status mapping in `modules/workflow.md`.
+- For unbuilt behavior or an unfixed bug, test-only work may end after tests fail for the predicted reason on
+  a feature branch, but only when the user explicitly accepted postponing the confirming run. Before merge,
+  those tests use a supported skip naming the scenario ID or work-item draft and are marked
+  `Not implemented - no verification claim` (unbuilt behavior) or
+  `Fix pending - <draft key or work item> - no verification claim` (unfixed bug); when skipping is
+  unavailable, they stay unmerged and are handed off with the implementation request. Record accepted
+  postponements as deferred open items without claiming coverage; without acceptance, report `blocked`.
+  Follow the status mapping in `modules/workflow.md`.
 - Approved scenario docs trace rules to scenarios (every rule has a scenario, every scenario names a rule),
   include plain-language examples, and record any prediction mismatch with its cause.
 - Tests follow accepted project conventions and cover the agreed behavior.

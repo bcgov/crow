@@ -87,7 +87,9 @@ tests. Pinning observed output during exploratory characterization is not editin
 The agent writes tests only; it never makes them green by changing production code. A minimal,
 behavior-preserving test seam ([`legacy-seams.md`](legacy-seams.md)) needs explicit user authorization for
 that change and must not implement the behavior or fix under test. The same steps apply to a reproduced bug
-whose fix is not ready; name its draft key or work item in the skip reason.
+whose fix is not ready, except that its skip reason names the draft key or work item and its Coverage reads
+`Fix pending - <draft key or work item> - no verification claim`; `Not implemented` is reserved for behavior
+that does not exist yet.
 
 1. Commit red tests only to a separate feature branch, never the default branch, so developers have time
    to implement before merge.
@@ -101,9 +103,11 @@ whose fix is not ready; name its draft key or work item in the skip reason.
 3. Ask who makes the tests pass: the developer (default), or another agent only when the user explicitly
    authorizes that hand-off.
 4. When told the code is ready, enable skipped tests for the confirming run. Leave passing tests enabled and
-   mark them `Automated`; if the implementation is still deferred, keep them skipped and mark them
-   `Not implemented - no verification claim`. Report failures without claiming coverage. Update the status
-   rollup.
+   mark them `Automated`; if the implementation or fix is still deferred, keep them skipped with their
+   pending Coverage value. Report failures without claiming coverage. Update the status rollup.
+5. Ending the engagement before the confirming run requires the user to accept postponing it (see
+   [`workflow.md`](../workflow.md) Step 2); otherwise report the engagement as `blocked` on the awaited
+   implementation.
 
 ## Optional pause points
 
