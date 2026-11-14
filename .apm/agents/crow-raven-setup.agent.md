@@ -102,13 +102,25 @@ releases, installing an OS scheduler, or automatically applying updates.
    affected facts after a separately approved install rather than assuming
    the process PATH changed. Require successful `gh auth status` before
    generating a release plan.
+   Remote-only requests: when every selected ID is under `remoteServers` in
+   the catalog (for example `sysdig-secure-mcp`), skip steps 2 through 6 and
+   9 (no preflight, plan, scanner or credential-script steps), go directly to
+   step 7 using `config preview|apply --remote <id>`, then step 8, and tell the
+   user that OAuth sign-in happens in the client on first use. If remote and
+   regular servers are mixed, run the full flow for the regular servers and add
+   the remote IDs to the same config preview with
+   `--remote <id,...> --include-managed`. Repeat those selection flags on apply;
+   without `--include-managed`, remote-only configuration never reads or merges
+   the local managed fragment.
 3. Use the verified Raven bundled release by default. Offer the lower-assurance
    pinned source build only as an explicit fallback when the platform is not
    supported or the user requests it.
 4. Resolve the Raven suite release (or source ref) and codebase-memory-mcp
    version into a deterministic plan, preview its paths, commands, trust level,
    effects, and SHA-256 digest, and run that unchanged plan only after
-   confirmation.
+   confirmation. The reviewed local catalog targets Raven 0.3.0; load
+   `crow-raven-setup/modules/delivery-and-updates.md` for its upgrade requirements
+   before proposing an update from 0.2.0.
 5. When Sonar MCP is installed or `sonar` is selected in this setup, prepare a
    separate preview for the generic SonarScanner CLI and, when a compatible
    .NET SDK is present, SonarScanner for .NET (MSBuild). Resolve exact stable
@@ -144,7 +156,19 @@ releases, installing an OS scheduler, or automatically applying updates.
    on collisions, concurrent changes, malformed files, or legacy settings;
    report the backup path and verify the resulting client configuration.
    Never substitute a hand-edited client file when the script rejects it.
-8. Verify each selected executable path, the pinned codebase-memory command,
+8. When `sysdig-secure-mcp` is selected in this setup, offer to install Sysdig's
+   skills directly from `github.com/sysdig/skills` by loading
+   `crow-raven-setup/modules/sysdig-skills.md`. Make it a separate preview and
+   confirmation after the client configuration, resolve the latest tag and
+   its commit at run time, discover skills through read-only GitHub APIs,
+   and approve the exact installer version before running it. Offer the full
+   default set of six skills (every Sysdig skill except
+   the API-token skills, covering finding through remediation), state that the
+   remediation and account-setup skills can change things, let the user remove
+   skills, and do not offer the API-token skills
+   unless the user asks. Never request, display, or store the Sysdig API token.
+   Declining does not block or undo the MCP configuration.
+9. Verify each selected executable path, the pinned codebase-memory command,
    and the selected servers' MCP startup behavior. When Sonar MCP is installed
    or selected, verify `sonar-scanner --version`. When a compatible .NET SDK
    is available, verify the exact MSBuild scanner version with
@@ -155,7 +179,7 @@ releases, installing an OS scheduler, or automatically applying updates.
    the selected client's configured environment or user PATH and restart the
    client when required. If its effective environment cannot be confirmed,
    report local scanner verification separately from MCP visibility.
-9. On later setup or maintenance requests, run a freshness check only when the
+10. On later setup or maintenance requests, run a freshness check only when the
    recorded check is at least 24 hours old unless the user requests an
    immediate check. Notify about differences; require confirmation to update.
    Whenever Sonar MCP is installed or `sonar` is selected, independently
@@ -183,6 +207,13 @@ releases, installing an OS scheduler, or automatically applying updates.
   replaced; the reviewed active target, backup, and any legacy state are
   reported truthfully.
 - Credential values were neither requested, logged, nor written by Crow.
+- Sysdig skills are installed only after a separate confirmation, from Sysdig's
+  repository at the resolved tag's commit, using an approved exact CLI version.
+  No installer runs during discovery; removal is client-scoped. Declining
+  leaves the MCP configuration intact.
+- Remote-only setups skip preflight, planning and credential scripts, and are
+  verified by the merged client entry; the user is told to sign in through the
+  client's OAuth flow.
 - Selected servers and codebase-memory-mcp pass startup verification.
 - When Sonar MCP is installed or selected, the generic scanner is verified;
   the MSBuild scanner is verified when a compatible .NET SDK is available, or

@@ -73,6 +73,20 @@ Before merging:
 6. validate the result and report the backup path. If the client/profile or
    file changed after preview, stop and review a new preview.
 
+- The catalog's `remoteServers` section lists hosted HTTP/OAuth endpoints, such
+  as `sysdig-secure-mcp`. They need no install, plan, or setup state. Merge
+  them with `config preview|apply --remote <id,...>` using the same separate
+  digest-bound approval; the client handles OAuth sign-in on first use.
+  Remote-only merges do not read setup state or add local entries. For mixed
+  local/remote setup, add `--include-managed` to both preview and apply; this
+  explicitly includes the local fragment and requires valid setup state.
+  Never accept a URL from the user or an untrusted file for these entries.
+- Selecting `sysdig-secure-mcp` also triggers the Sysdig skills offer in
+  `modules/sysdig-skills.md`: separate confirmation, latest tag resolved at run
+  time and resolved to a commit, installed from Sysdig's repository through an
+  approved exact CLI version, and no API token handled by Crow. Discovery
+  uses read-only GitHub APIs and never executes the installer.
+
 ## Credentials and verification
 
 After adding new servers, verify the installed Raven runtime contains
