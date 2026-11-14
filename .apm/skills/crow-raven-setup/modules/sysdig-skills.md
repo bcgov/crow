@@ -80,8 +80,18 @@ Before installing, show a plan containing:
 - the detected prerequisite versions and required Node.js engine range;
 - the Python 3 requirement of the skill scripts (standard library only);
 - the target client, install location, existing selected-name installations,
-  and exact client-scoped removal command. Stop on unmanaged or edited
+  and exact agent-filtered removal command. Stop on unmanaged or edited
   destinations until their replacement has been separately approved.
+
+Inspect the selected CLI version's documented path/overwrite behavior through
+read-only sources. `--agent github-copilot --global --copy` is not an isolation
+boundary: CLI versions such as 1.7.3 write to shared `~/.agents/skills`, where
+other clients can discover the skills, and replace same-name directories.
+The preview must name every shared destination, existing copy that would be
+replaced, and affected clients using that directory. Obtain explicit approval
+for that shared exposure and replacement before running the installer. If
+the effects cannot be established, defer installation rather than promise a
+Copilot-only result.
 
 Require explicit confirmation. Then run, once per confirmed selection (the
 active client is Copilot, so use `github-copilot`):
@@ -122,4 +132,11 @@ use that same approved client identifier consistently for install, list, and
 remove. Never omit `--agent` on removal: the CLI otherwise targets all agents.
 If a shared canonical directory would affect another client, disclose that
 impact and obtain additional approval rather than claiming isolated removal.
+After removal, inspect the selected client's actual discovery and the
+previously identified installation paths; the CLI's success message is not
+proof that the skill is gone. If a shared copy remains discoverable to the
+client, report that client-isolated removal was not achieved and leave it
+unchanged. Propose a separate shared-removal plan naming all affected clients
+and paths, require fresh approval, then verify discovery and paths again.
+If client discovery cannot be checked, report removal as unverified.
 Do not keep Sysdig skill state in Crow setup state.

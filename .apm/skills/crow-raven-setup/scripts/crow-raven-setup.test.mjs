@@ -413,10 +413,10 @@ test("list emits reviewed Raven servers", () => {
 
 test("remote HTTP servers merge without setup state and reject unknown IDs", () => {
   const root = mkdtempSync(join(tmpdir(), "crow-remote-"));
-  const options = ["--state-dir", join(root, "state"), "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const options = ["--state-dir", join(root, "state"), "--client", "copilot", "--remote", "sysdig-secure-mcp", "--region", "us1"];
   const env = { COPILOT_HOME: root };
   const listed = run(["list", "--group", "security"]);
-  assert.match(listed.stdout, /^sysdig-secure-mcp\tsecurity\t.*\tremote$/m);
+  assert.match(listed.stdout, /^sysdig-secure-mcp\tsecurity\t.*\tremote\tregions: us1,.*eu1/m);
   const preview = run(["config", "preview", ...options], undefined, env);
   assert.equal(preview.status, 0, preview.stderr);
   const reviewed = JSON.parse(preview.stdout);
@@ -445,7 +445,7 @@ test("remote-only merges preserve customized and omitted local servers without r
   const config = join(root, "mcp-config.json");
   const customized = { command: "user-managed-jira", args: [] };
   writeFileSync(config, JSON.stringify({ mcpServers: { jira: customized } }));
-  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp", "--region", "us1"];
   const env = { COPILOT_HOME: root };
   const preview = run(["config", "preview", ...options], undefined, env);
   assert.equal(preview.status, 0, preview.stderr);
@@ -460,13 +460,25 @@ test("remote-only merges preserve customized and omitted local servers without r
   assert.equal(Object.hasOwn(merged, "codebase-memory-mcp"), false);
   assert.equal(readFileSync(statePath, "utf8"), stateBytes);
   assert.equal(existsSync(join(stateDir, "mcp-fragment.json")), false);
+  writeFileSync(statePath, "{");
+  writeFileSync(join(stateDir, "pending-promotion.json"), "{");
+  const repeat = run(["config", "preview", ...options], undefined, env);
+  assert.equal(repeat.status, 0, repeat.stderr);
+  const repeated = JSON.parse(repeat.stdout);
+  const reapply = run([
+    "config", "apply", ...options, "--approval-sha256", repeated.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(reapply.status, 0, reapply.stderr);
+  assert.equal(readFileSync(statePath, "utf8"), "{");
+  assert.equal(readFileSync(join(stateDir, "pending-promotion.json"), "utf8"), "{");
+  assert.equal(existsSync(join(stateDir, "mcp-fragment.json")), false);
 });
 
 test("mixed remote and managed merges require explicit selection and a matching preview", (t) => {
   const root = mkdtempSync(join(tmpdir(), "crow-remote-mixed-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
   const stateDir = join(root, "state");
-  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const options = ["--state-dir", stateDir, "--client", "copilot", "--remote", "sysdig-secure-mcp", "--region", "us1"];
   const env = { COPILOT_HOME: root };
   const missing = run(["config", "preview", ...options, "--include-managed"], undefined, env);
   assert.notEqual(missing.status, 0);
@@ -499,6 +511,71 @@ test("mixed remote and managed merges require explicit selection and a matching 
   ], undefined, env);
   assert.notEqual(invalid.status, 0);
   assert.match(invalid.stderr, /requires --remote/);
+});
+
+test("empty remote selections cannot preview or apply the local managed fragment", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "crow-remote-empty-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const stateDir = join(root, "state");
+  mkdirSync(stateDir);
+  const state = codebaseOnlyState(stateDir);
+  const stateBytes = JSON.stringify(state);
+  const statePath = join(stateDir, "state.json");
+  writeFileSync(statePath, stateBytes);
+  const options = ["--state-dir", stateDir, "--client", "copilot"];
+  const env = { COPILOT_HOME: root };
+  const local = run(["config", "preview", ...options], undefined, env);
+  assert.equal(local.status, 0, local.stderr);
+  const approval = JSON.parse(local.stdout).approvalSha256;
+  const fragmentBytes = readFileSync(join(stateDir, "mcp-fragment.json"), "utf8");
+  for (const selection of ["", ",", " , "]) {
+    for (const action of ["preview", "apply"]) {
+      const result = run([
+        "config", action, ...options, "--remote", selection,
+        "--approval-sha256", approval, "--confirm"
+      ], undefined, env);
+      assert.notEqual(result.status, 0);
+      assert.match(result.stderr, /at least one remote server ID/);
+    }
+  }
+  assert.equal(existsSync(join(root, "mcp-config.json")), false);
+  assert.equal(readFileSync(statePath, "utf8"), stateBytes);
+  assert.equal(readFileSync(join(stateDir, "mcp-fragment.json"), "utf8"), fragmentBytes);
+});
+
+test("Sysdig requires an allowlisted tenant region and binds its endpoint to approval", (t) => {
+  const root = mkdtempSync(join(tmpdir(), "crow-remote-region-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const options = ["--state-dir", join(root, "state"), "--client", "copilot", "--remote", "sysdig-secure-mcp"];
+  const env = { COPILOT_HOME: root };
+  const missing = run(["config", "preview", ...options], undefined, env);
+  assert.notEqual(missing.status, 0);
+  assert.match(missing.stderr, /Choose --region/);
+  for (const region of ["", "unknown", "https://example.invalid/mcp/secure"]) {
+    const invalid = run(["config", "preview", ...options, "--region", region], undefined, env);
+    assert.notEqual(invalid.status, 0);
+    assert.match(invalid.stderr, /Choose --region|Unknown region/);
+  }
+  const preview = run(["config", "preview", ...options, "--region", "eu1"], undefined, env);
+  assert.equal(preview.status, 0, preview.stderr);
+  const reviewed = JSON.parse(preview.stdout);
+  assert.deepEqual(reviewed.proposed["sysdig-secure-mcp"], {
+    type: "http", url: "https://eu1.app.sysdig.com/mcp/secure"
+  });
+  const stale = run([
+    "config", "apply", ...options, "--region", "us1",
+    "--approval-sha256", reviewed.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.notEqual(stale.status, 0);
+  assert.match(stale.stderr, /changed since preview/);
+  assert.equal(existsSync(join(root, "mcp-config.json")), false);
+  const apply = run([
+    "config", "apply", ...options, "--region", "eu1",
+    "--approval-sha256", reviewed.approvalSha256, "--confirm"
+  ], undefined, env);
+  assert.equal(apply.status, 0, apply.stderr);
+  const merged = JSON.parse(readFileSync(join(root, "mcp-config.json"), "utf8"));
+  assert.deepEqual(merged.mcpServers["sysdig-secure-mcp"], reviewed.proposed["sysdig-secure-mcp"]);
 });
 
 test("parses an outstanding Crow APM update without treating current output as stale", () => {
