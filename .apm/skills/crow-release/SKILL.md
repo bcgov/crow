@@ -35,6 +35,13 @@ archive digest after packaging; do not replace it manually in
 - exactly the versioned ZIP and SHA-256 artifacts;
 - installation instructions.
 
+Reviewed release notes must not contain HTTP(S) URLs; keep configuration URLs
+in linked repository documentation instead. Run
+`scripts/Test-CrowReleaseNotes.ps1` before merging. It resolves the current
+package version and validates the actual reviewed notes with the same
+placeholder, title, archive, and checksum rules used by candidate preparation.
+The PR release-version check runs it against the proposed merge commit.
+
 The tag, title, archive name, checksum filename, and version must agree. Do not
 copy generated release text without reviewing it for internal URLs, credentials,
 environment-specific paths, private repository names, or unsupported claims.

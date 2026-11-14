@@ -29,6 +29,11 @@ jobs:
         run: |
           & ./.apm/skills/crow-release/scripts/Test-CrowPullRequestVersion.ps1 -BaseCommit $env:BASE_COMMIT
 
+      - name: Validate reviewed release notes against the candidate contract
+        shell: pwsh
+        run: |
+          & ./.apm/skills/crow-release/scripts/Test-CrowReleaseNotes.ps1
+
   validate:
     name: Validate Crow assets (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
