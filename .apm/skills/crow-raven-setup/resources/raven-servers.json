@@ -23,6 +23,26 @@
     { "id": "rfcbuddy", "group": "portfolio", "description": "RFC schedule search and baseline tracking", "entrypoint": "packages/rfcbuddy-mcp/dist/index.js", "packageVersion": "0.3.0", "access": "mixed", "authentication": "dedicated-rfcbuddy", "securityStatus": "pre-stable" }
   ],
   "remoteServers": [
-    { "id": "sysdig-secure-mcp", "group": "security", "description": "Sysdig Secure vulnerability, runtime, and posture data (hosted, OAuth sign-in on first use; exposes read and write/admin tools, effective access follows the signed-in user's Sysdig role)", "transport": "http", "url": "https://secure.sysdig.com/mcp/secure", "access": "mixed", "authentication": "oauth", "securityStatus": "pre-stable" }
+    {
+      "id": "sysdig-secure-mcp",
+      "group": "security",
+      "description": "Sysdig Secure vulnerability, runtime, and posture data (hosted, select the tenant region; OAuth sign-in on first use; exposes read and write/admin tools, effective access follows the signed-in user's Sysdig role)",
+      "transport": "http",
+      "regions": {
+        "us1": "https://secure.sysdig.com/mcp/secure",
+        "us2": "https://us2.app.sysdig.com/mcp/secure",
+        "us3": "https://app.us3.sysdig.com/mcp/secure",
+        "us4": "https://app.us4.sysdig.com/mcp/secure",
+        "eu1": "https://eu1.app.sysdig.com/mcp/secure",
+        "eu2": "https://app.eu2.sysdig.com/mcp/secure",
+        "au1": "https://app.au1.sysdig.com/mcp/secure",
+        "in1": "https://app.in1.sysdig.com/mcp/secure",
+        "jp1": "https://app.jp1.sysdig.com/mcp/secure",
+        "me2": "https://app.me2.sysdig.com/mcp/secure"
+      },
+      "access": "mixed",
+      "authentication": "oauth",
+      "securityStatus": "pre-stable"
+    }
   ]
 }

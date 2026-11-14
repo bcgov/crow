@@ -16,7 +16,10 @@ Pull requests that change `.apm/`, `collections/`, or `apm.yml` must declare a
 package version higher than the base branch's version. The PR check is in
 `scripts/Test-CrowPullRequestVersion.ps1` and runs before merge in the Crow
 asset validation workflow. Keep all manifests, collection refs, and README
-examples aligned. This check verifies the bump, not the semantic classification
+examples aligned. The same PR job validates the current version's reviewed
+release notes using `scripts/Test-CrowReleaseNotes.ps1`, shared with candidate
+preparation, so URLs, unresolved placeholders, and artifact mismatches fail
+before merge. The version check verifies the bump, not the semantic classification
 or GitHub release availability; the release preparation and publication gates
 still handle those separately.
 

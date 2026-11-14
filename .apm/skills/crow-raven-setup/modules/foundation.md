@@ -77,10 +77,21 @@ Before merging:
   as `sysdig-secure-mcp`. They need no install, plan, or setup state. Merge
   them with `config preview|apply --remote <id,...>` using the same separate
   digest-bound approval; the client handles OAuth sign-in on first use.
+  Branch to this path before running setup/hook status or inspecting local
+  state, fragments, promotions, or scanners.
   Remote-only merges do not read setup state or add local entries. For mixed
   local/remote setup, add `--include-managed` to both preview and apply; this
   explicitly includes the local fragment and requires valid setup state.
   Never accept a URL from the user or an untrusted file for these entries.
+  Sysdig's `regions` map is an allowlist sourced from its
+  [regional MCP guidance](https://github.com/sysdig/skills/blob/03cadb82f5a234a96d68e2839ca21e4854c9f564/skills/sysdig-investigate/references/mcp-setup.md).
+  Select the tenant's region explicitly (ask if unknown), pass
+  `--region <code>` on preview and apply, and show its code and endpoint
+  before approval. `list --group security` shows supported codes. Do not
+  assume US East or substitute a user-provided URL. An unavailable region
+  blocks setup; an existing different endpoint remains a collision.
+  Endpoint availability is not deployment approval: Raven's published
+  B.C. government assessment covers US East only.
 - Selecting `sysdig-secure-mcp` also triggers the Sysdig skills offer in
   `modules/sysdig-skills.md`: separate confirmation, latest tag resolved at run
   time and resolved to a commit, installed from Sysdig's repository through an

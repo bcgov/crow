@@ -156,12 +156,7 @@ function Assert-Candidate {
         $metadata.NotesSha256 -ne (Get-FileHash -Algorithm SHA256 -LiteralPath $notesPath).Hash.ToLowerInvariant()) {
         throw 'Release candidate metadata checksum does not match its notes.'
     }
-    if ($notes -match '\{\{[A-Z0-9_]+\}\}' -or $notes -match '(?i)\bhttps?://') {
-        throw 'Release candidate notes contain unresolved placeholders or URLs.'
-    }
-    if ($notes -notmatch '(?m)^# BCGov Crow - v' + [regex]::Escape($ExpectedVersion) + '\s*$') {
-        throw 'Release candidate notes have an invalid title.'
-    }
+    & $releaseNotesValidatorPath -Version $ExpectedVersion -NotesContent $notes -ArchiveSha256 $actualHash
 }
 
 $root = (Resolve-Path $RepoRoot).Path
@@ -187,6 +182,7 @@ $notesPath = Join-Path $outputPath 'release-notes.md'
 $metadataPath = Join-Path $outputPath 'crow-release-metadata.json'
 $validatorPath = Join-Path $root '.apm/skills/crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1'
 $releaseGuardsPath = Join-Path $root '.apm/skills/crow-release/scripts/Test-CrowReleaseGuards.ps1'
+$releaseNotesValidatorPath = Join-Path $root '.apm/skills/crow-release/scripts/Test-CrowReleaseNotes.ps1'
 
 Assert-VersionReferences -Root $root -ExpectedVersion $Version
 
@@ -209,6 +205,12 @@ if ($remoteMain.ToLowerInvariant() -ne $CommitSha.ToLowerInvariant()) {
 if ($CandidateDirectory) {
     $candidatePath = (Resolve-Path $CandidateDirectory).Path
     Assert-Candidate -Directory $candidatePath -ExpectedVersion $Version -ExpectedCommitSha $CommitSha
+}
+else {
+    if ([string]::IsNullOrWhiteSpace($ReleaseNotesPath)) {
+        throw 'ReleaseNotesPath is required. Generate and review release notes with an LLM before preparing the release.'
+    }
+    & $releaseNotesValidatorPath -Version $Version -ReleaseNotesPath $ReleaseNotesPath
 }
 
 & $validatorPath -RepoRoot $root -StrictContext
@@ -258,24 +260,12 @@ if ($CandidateDirectory) {
     $notesContent = $notesContent.Replace($candidateMetadata.ArchiveSha256, $archiveHash)
 }
 else {
-    if ([string]::IsNullOrWhiteSpace($ReleaseNotesPath)) {
-        throw 'ReleaseNotesPath is required. Generate and review release notes with an LLM before preparing the release.'
-    }
     $notesContent = [System.IO.File]::ReadAllText((Resolve-Path $ReleaseNotesPath).Path)
     $notesContent = $notesContent.Replace('{{VERSION}}', $Version)
     $notesContent = $notesContent.Replace('{{SHA256}}', $archiveHash)
 }
 
-if ($notesContent -match '\{\{[A-Z0-9_]+\}\}' -or $notesContent -match '(?i)\bhttps?://') {
-    throw 'Release notes contain unresolved placeholders or URLs.'
-}
-if ($notesContent -notmatch '(?m)^# BCGov Crow - v' + [regex]::Escape($Version) + '\s*$') {
-    throw 'Release notes have an invalid title.'
-}
-if ($notesContent -notmatch [regex]::Escape("bcgov-crow-$Version.zip") -or
-    $notesContent -notmatch [regex]::Escape($archiveHash)) {
-    throw 'Release notes do not identify the exact archive and checksum.'
-}
+& $releaseNotesValidatorPath -Version $Version -NotesContent $notesContent -ArchiveSha256 $archiveHash
 Write-Utf8NoBom -Path $notesPath -Content $notesContent
 
 $metadata = [ordered]@{
