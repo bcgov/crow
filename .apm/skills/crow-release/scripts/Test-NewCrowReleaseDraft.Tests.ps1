@@ -14,6 +14,7 @@ if ($testVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
 }
 $testTag = "v$testVersion"
 $testArchiveName = "bcgov-crow-$testVersion.zip"
+$notesValidatorPath = Join-Path $PSScriptRoot 'Test-CrowReleaseNotes.ps1'
 $fakeReleaseCreated = $false
 
 function Invoke-Git {
@@ -61,6 +62,7 @@ function Assert-ReviewedReleaseNotes {
     }
 
     $notes = [System.IO.File]::ReadAllText($notesPath)
+    & $notesValidatorPath -Version $ExpectedVersion -ReleaseNotesPath $notesPath
     $archiveName = "bcgov-crow-$ExpectedVersion.zip"
     $checksumName = "$archiveName.sha256"
     $codeSpan = [string][char]0x60
@@ -166,6 +168,33 @@ function global:gh {
 
 try {
     Assert-ReviewedReleaseNotes -Root $sourceRoot -ExpectedVersion $testVersion
+
+    $checkedInNotes = [System.IO.File]::ReadAllText(
+        (Join-Path $sourceRoot ".github/release-notes/v$testVersion.md"))
+    Assert-ThrowsLike {
+        & $notesValidatorPath -Version $testVersion -NotesContent (
+            $checkedInNotes + "`nConfiguration example: https://example.invalid/service")
+    } 'unresolved placeholders or URLs' 'Pre-merge validation rejects configuration URLs'
+    Assert-ThrowsLike {
+        & $notesValidatorPath -Version $testVersion -NotesContent (
+            $checkedInNotes + "`n{{SUMMARY}}")
+    } 'unresolved placeholders or URLs' 'Pre-merge validation rejects unresolved narrative placeholders'
+    foreach ($tokenCount in @(0, 2)) {
+        $invalidNotes = $checkedInNotes.Replace('{{SHA256}}', '')
+        if ($tokenCount -eq 2) {
+            $invalidNotes += "`n{{SHA256}}`n{{SHA256}}"
+        }
+        Assert-ThrowsLike {
+            & $notesValidatorPath -Version $testVersion -NotesContent $invalidNotes
+        } 'exactly one' "Rejects $tokenCount checksum placeholders"
+    }
+    $fixtureHash = 'a' * 64
+    $renderedNotes = $checkedInNotes.Replace('{{SHA256}}', $fixtureHash)
+    & $notesValidatorPath -Version $testVersion -NotesContent $renderedNotes -ArchiveSha256 $fixtureHash
+    Assert-ThrowsLike {
+        & $notesValidatorPath -Version $testVersion -NotesContent $renderedNotes -ArchiveSha256 ('b' * 64)
+    } 'exact archive and checksum' 'Candidate validation rejects a mismatched rendered checksum'
+    Write-Host 'Passed: checked-in release notes render under the candidate validation contract'
 
     # Build an independent fixture so the CI checkout's shallow history is not pushed.
     New-Item -ItemType Directory -Path $tempRoot | Out-Null

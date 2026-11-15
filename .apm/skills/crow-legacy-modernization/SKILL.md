@@ -60,6 +60,14 @@ domain-specific workflows and output authority.
    conflict that would require a changed external contract blocks this
    replacement rather than silently changing it.
 
+## xUnit v2 test-project migration
+
+Load [`modules/xunit-v2-to-v3-migration.md`](modules/xunit-v2-to-v3-migration.md) when a .NET test project
+is on xUnit v2, either within a modernization run or when the Crow Testing Agent hands one off (Crow Testing
+supports xUnit.v3 only). It assesses cost and requires user confirmation before any migration step. This
+is the one test-framework upgrade this skill performs; it does not authorize upgrading the legacy
+application itself.
+
 ## Data-change handoff
 
 When phase gates prove that a datastore change is unavoidable, create

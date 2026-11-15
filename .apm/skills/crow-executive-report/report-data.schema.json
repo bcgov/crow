@@ -202,7 +202,7 @@
 
     "executive_brief": "The application has 2 critical SQL injection vulnerabilities in the authentication module that could allow complete database compromise. Framework currency is poor — the .NET 6 runtime reached end-of-life 6 months ago.",
 
-    "tech_stack_summary": ".NET 8, PostgreSQL 16, React 18, Redis",
+    "tech_stack_summary": ".NET 10, PostgreSQL 16, React 18, Redis",
     "arch_pattern": "Monolith (MVC)",
     "deployment_model": "Kubernetes on OpenShift",
     "resilience_summary": "Single-region, no DR failover configured",
@@ -258,7 +258,7 @@
         "category": "EOL Runtime",
         "risk": "HIGH",
         "impact": "No security patches since Nov 2024",
-        "action": "Upgrade to .NET 8 LTS"
+        "action": "Upgrade to .NET 10 LTS"
       }
     ],
 
@@ -276,7 +276,7 @@
     ],
 
     "p1_actions": "Fix SQL injection in auth module; add authorization to admin endpoints",
-    "p2_actions": "Upgrade .NET 6 to .NET 8; update 3 vulnerable dependencies",
+    "p2_actions": "Upgrade .NET 6 to .NET 10; update 3 vulnerable dependencies",
     "p3_actions": "Implement rate limiting on auth endpoints; add CSP headers"
   }
 }

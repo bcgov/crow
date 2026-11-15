@@ -46,6 +46,31 @@ before switching state; never update the active checkout in place.
 
 ## Freshness and updates
 
+### Raven 0.2.0 to 0.3.0
+
+The reviewed local catalog targets the 17 bundled Raven 0.3.0 servers.
+Keep exact package-version, entrypoint, and access checks; never bypass a
+catalog mismatch or silently fall back to source delivery. Existing 0.2.0
+state remains the rollback target until the replacement passes verification.
+Sysdig remains a separately configured hosted endpoint, not a bundled server.
+
+Before approval, disclose the
+[Raven 0.3.0 upgrade notes](https://github.com/bcgov/raven/releases/tag/v0.3.0):
+
+- `ADO_BASE_URL` and `SONARQUBE_URL` require HTTPS and reject credentials,
+  queries, and fragments. Existing HTTP configurations need user correction
+  through Raven's credential workflow; do not read or echo secret values.
+- Azure DevOps Services requires `ADO_BASE_URL=https://dev.azure.com`, with
+  the organization in `ADO_DEFAULT_COLLECTION`, not in the base URL path.
+  Azure DevOps Server URL paths are unchanged.
+
+Resolve the exact requested release with `plan --raven-version 0.3.0` and the
+selected server IDs. Keep codebase-memory-mcp version changes explicit in the
+same reviewed plan; an available 0.12.1 update is not permission to install it.
+Preserve attestation, configuration approval, startup checks, and rollback.
+
+### Invocation checks
+
 Updates are checked at invocation time, not by a resident process:
 
 - the Raven `check` command checks at most once every 24 hours based on its

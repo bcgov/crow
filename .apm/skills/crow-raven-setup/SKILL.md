@@ -18,8 +18,20 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 4. Load [`modules/sonar-scanners.md`](modules/sonar-scanners.md) only when
    Sonar MCP is active/configured or the `sonar` server is selected for the
    current setup, and scanner setup or maintenance is in scope.
+5. Load [`modules/sysdig-skills.md`](modules/sysdig-skills.md) only when the
+   `sysdig-secure-mcp` server is selected for the current setup or the user
+   asks to install or update Sysdig's skills.
 
 ## Workflow
+
+Before step 1, resolve requested server IDs/groups using only the bundled
+catalog. Remote-only selections go directly to step 7, then step 8; skip
+steps 1 through 6 and 9, including setup state, promotion reconciliation,
+fragment repair, update-hook and scanner inspection. Do not run `status` or
+`check` for this path. Select Sysdig's tenant region from the catalog, asking
+if it was not supplied; use `--region <code>` on preview and apply. Never
+default to US East. Only local or mixed selections enter the local-state
+workflow; clarify unresolved selection before inspecting state.
 
 1. Inspect existing state with `node scripts/crow-raven-setup.mjs status`
    and inspect the optional
@@ -50,7 +62,12 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    prerequisite and Sonar inventory, auth status, setup/hook state, approvals,
    plan digest, and remaining gates; retry only failed checks.
 2. Validate exact requested IDs against the bundled catalog without asking
-   for redundant selection confirmation. Confirm only lists derived from
+   for redundant selection confirmation. IDs under `remoteServers` (for example
+   `sysdig-secure-mcp`) follow the pre-step-1 branch and skip credential scripts
+   (OAuth sign-in happens in the client). Mixed local/remote requests use
+   `--remote <id,...> --include-managed` on both preview and apply, plus
+   `--region <code>` for Sysdig. Without `--include-managed`, no local managed
+   entries are read or merged. Confirm only lists derived from
    broader groups. If the user selects `sonar`, load
    `modules/sonar-scanners.md` for the new installation even if the server is
    not yet configured in the client. Record an explicit `--no-raven` choice
@@ -62,7 +79,8 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
 3. Use Raven's attested bundled release by default. Use `--delivery source`
    only as an explicit fallback. Generate the exact setup plan, present its
    SHA-256 digest and effects, and obtain confirmation bound to that unchanged
-   plan.
+   plan. The reviewed local catalog targets Raven 0.3.0; use
+   `modules/delivery-and-updates.md` for the 0.2.0 upgrade requirements.
 4. Use `crow-raven-setup.mjs`; do not recreate its installation, version
    resolution, state, or fragment-generation logic in model-authored commands.
    This script manages Raven and codebase-memory-mcp only. The setup agent
@@ -103,7 +121,13 @@ back Crow's Raven MCP server and codebase-memory-mcp dependencies.
    when it matches the verified previous Crow-managed fragment; preview
    replaced IDs and obtain approval for them too. Report backup and verify
    the result.
-8. Verify selected servers and, when Sonar MCP is installed or selected,
+8. When `sysdig-secure-mcp` is selected in the current setup, offer to install
+   Sysdig's skills directly from `github.com/sysdig/skills` using
+   `modules/sysdig-skills.md`: read-only discovery, a separately approved exact
+   CLI version and tag-resolved commit, the full default set of six skills
+   (finding through remediation), and no API-token skills unless the user asks. Declining
+   does not block the MCP configuration.
+9. Verify selected servers and, when Sonar MCP is installed or selected,
    scanner versions and client PATH configuration. Verify the .NET scanner
    only when the compatible SDK is available. On every subsequent setup or
    maintenance invocation, check for newer compatible stable scanner releases
@@ -115,11 +139,15 @@ Run `node scripts/crow-raven-setup.mjs help` for the command contract.
 ## Completion gate
 
 - Selection is explicit and catalog-valid.
-- Raven release provenance is verified (or source fallback is immutable), and
-  package versions are exact.
+- For local or mixed setup, Raven release provenance is verified (or source
+  fallback is immutable), and package versions are exact.
 - State and generated configuration contain no credentials.
 - Existing client configuration is preserved.
+- Remote-only setup does not inspect or change local setup, promotion,
+  fragment, hook, or scanner state; Sysdig uses the selected allowlisted region.
+- Sysdig skills are installed only after a separate confirmation; declining
+  leaves the MCP configuration intact, and no API token is requested or stored.
 - Setup or maintenance verification succeeds without hidden fallback.
-- When Sonar MCP is installed or selected, the generic scanner is verified;
+- For local or mixed requests, when Sonar MCP is installed or selected, the generic scanner is verified;
   the .NET/MSBuild scanner is verified when a compatible SDK is available, or
   its missing prerequisite is reported. Unverified MCP visibility is reported.
