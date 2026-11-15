@@ -100,6 +100,11 @@ approach below).
 smell whose defects reach *production* before anything catches them — and the backport puts it within reach
 of even a `net462` codebase.
 
+For timer behavior, injection alone is insufficient: use provider-aware deadline/delay APIs, not ordinary
+`CancelAfter`. `FakeTimeProvider` comes from the test-only `Microsoft.Extensions.TimeProvider.Testing`
+package. Follow [deterministic time and timeout tests](../dotnet/unit-tests.md#deterministic-time-and-timeout-tests)
+for package authorization, target compatibility, boundary assertions, and coverage limits.
+
 **No native discriminated unions.** C# has none as of C# 14 — the proposal has not shipped. A sealed record
 hierarchy plus an exhaustive `switch` expression is an *approximation*, and worth saying so rather than
 implying the language feature exists. It gets most of the benefit: the compiler warns (`CS8509`) on an
