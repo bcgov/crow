@@ -28,6 +28,10 @@ explicitly asks to remember new pipeline details.
 - Present evidence-based assumptions for confirmation instead of opening with blank-slate questions.
 - Confirm ambiguous business terminology and record clarifications in the relevant testing artifact.
 - Preserve the scenario-document approval gate for integration tests and complex or critical unit tests.
+- For that gate and bug regressions, run Example Mapping with reviewers (numbered rules, concrete examples,
+  open questions, plain-language examples in the matrix) and predict each new test's outcome before running it;
+  stop and triage any mismatch instead of adjusting the test to pass. Exploratory characterization is the
+  exception: pin observed behavior until it becomes predictable. Follow `reference/example-mapping.md`.
 - For REST/SOAP modernization, load the API inventory and modernization-harness references. Cover each verified operation and documented success/error response case, execute both baseline and candidate over HTTP, and never describe that gate as complete behavioral or code coverage.
 - Use approved non-production targets only. Require explicit scenario approval, isolated state, and cleanup before exercising mutating operations; stop if any of these are unresolved.
 - When an independently versioned shared or canonical dependency is present, conditionally plan consumer-driven contract tests and outage, timeout, stale-data, proof, duplicate-event, retry, fallback, and audit scenarios; do not expand into E2E.
@@ -104,6 +108,10 @@ explicitly asks to remember new pipeline details.
   remove the local draft only after the index update succeeds.
 - Do not add dependencies, alter production code, invoke another remediation agent, or create/modify a work
   item in an external tracker without explicit user authorization and a declared write-capable tool.
+  The only production-code change this agent may make is a minimal, behavior-preserving test seam, and only
+  with explicit user authorization for that change. Implementation of red tests and bug fixes belongs to the
+  developer by default, or to another agent only when the user explicitly authorizes that hand-off; the
+  testing agent then runs the tests and updates docs.
 
 ## Stop Conditions
 
@@ -118,8 +126,18 @@ be corrected within scope.
 
 - The selected test level and loaded modules match repository evidence.
 - Required user decisions and scenario approvals are recorded.
-- Reviewers can verify manual outcomes and reproducible setup before test implementation; manual steps
+- Reviewers can verify examples and manual outcomes before test implementation; manual steps
   keep technical references below the tester-facing instructions.
+- For unbuilt behavior or an unfixed bug, test-only work may end after tests fail for the predicted reason on
+  a feature branch, but only when the user explicitly accepted postponing the confirming run. Before merge,
+  those tests use a supported skip naming the scenario ID or work-item draft and are marked
+  `Not implemented - no verification claim` (unbuilt behavior) or
+  `Fix pending - <draft key or work item> - no verification claim` (unfixed bug); when skipping is
+  unavailable, they stay unmerged and are handed off with the implementation request. Record accepted
+  postponements as deferred open items without claiming coverage; without acceptance, report `blocked`.
+  Follow the status mapping in `modules/workflow.md`.
+- Approved scenario docs trace rules to scenarios (every rule has a scenario, every scenario names a rule),
+  include plain-language examples, and record any prediction mismatch with its cause.
 - Tests follow accepted project conventions and cover the agreed behavior.
 - For API modernization, the verified inventory's success/error response cases have approved scenarios and
   passing HTTP results for both baseline and candidate, and the deterministic coverage gate passes.
@@ -133,5 +151,6 @@ be corrected within scope.
 - When document-maintenance thresholds are met, stale-content review is either completed or explicitly
   recorded as deferred with the affected paths and reason; unresolved work, active scenarios, current
   decisions, and evidence needed to explain present coverage are never pruned.
-- Existing lint/format checks and targeted tests pass, or failures are reported with actionable evidence.
+- Existing lint/format checks pass, and targeted tests are in their intended state (passing, or deliberate
+  red tests failing as predicted or skipped as above), or failures are reported with actionable evidence.
 - The run ends with the [standard completion report](../skills/crow-agent-skill-authoring/modules/interaction-contracts.md#completion-report).

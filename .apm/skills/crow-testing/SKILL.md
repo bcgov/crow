@@ -90,6 +90,8 @@ reference according to that skill.
      loaded once, during discovery or feature scoping.
    - `characterization-tests.md` — the area's current behavior isn't understood well enough to specify;
      legacy code with no coverage.
+   - `example-mapping.md` — Step 5 scenario documents, Step 7 bug regressions, and characterization work:
+     rule/example/question mapping with reviewers, plain-language examples, and predict-then-verify.
    - `legacy-seams.md` — you want to test existing code but can't call it in isolation, and refactoring
      first isn't safe because there are no tests yet.
    - `migration-testing.md` — behavior is being *replaced* rather than changed: a rewrite, port,
@@ -98,8 +100,8 @@ reference according to that skill.
      ported, or compared over HTTP. Also load
      [`../crow-architecture-review/modules/api-inventory.md`](../crow-architecture-review/modules/api-inventory.md)
      and validate its inventory with the bundled API modernization coverage script.
-   - `xunit-v2-to-v3-migration.md` — an existing .NET test project uses xUnit v2; load it to assess
-     migration cost, then require user confirmation before applying its migration steps.
+   - xUnit v2 project found — no module here; this skill supports xUnit.v3 only. Stop and recommend the
+     Crow Legacy Modernization Agent's v2-to-v3 migration (see `modules/dotnet/unit-tests.md` item 4).
    - `design-smell-catalog.md` — a discovery scan turned up testability problems and the compact list in
      `discovery.md` isn't enough. Loads the triage table only; it links to `design-smell-entries.md` for
      any one entry's full detail.

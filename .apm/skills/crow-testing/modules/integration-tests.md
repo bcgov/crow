@@ -64,9 +64,9 @@ adding an `N/A` row.
 For every integration test area (and any complex/critical unit-test area per `unit-tests.md`):
 
 1. **Write the scenarios document first**, using `templates/scenario-doc-template.md`: plain language, a
-   Scope section, an Authoritative Rules section, a Scenarios table (ID / setup / seeded data / expected
-   result / extra assertions), and a Required Assertions table. Summarize into tables; push details into
-   prose only where a table would lose meaning.
+   Scope, a Test matrix (ID / rule / plain-language example / expected outcome / coverage), Rules, and, only
+   when needed, Open questions, Example detail, and Cross-cutting checks. Build rules, examples, and
+   questions with reviewers per `reference/example-mapping.md`. Keep tables first and prose minimal.
 2. If the user hands you a partial rule set or a single implemented feature, offer to expand it into a
    complete scenario set covering the full acceptance criteria.
 3. **Get explicit user review/approval of the scenarios doc before writing any test code.** This is a hard
