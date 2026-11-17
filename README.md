@@ -8,8 +8,8 @@ design, testing, security review and remediation, and the project setup needed
 to use those capabilities across repositories.
 
 Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
-Copilot CLI plugin. The full package remains available, and curated
-collections are available when a project needs only part of Crow.
+Copilot CLI plugin. Install the full package and use the Getting Started
+Agent to choose the capabilities needed for your task.
 
 The [Crow vision and capability governance](GOVERNANCE.md) draft describes
 the principles used to decide which agents and skills belong in Crow.
@@ -36,21 +36,7 @@ curl -sSL https://aka.ms/apm-unix | sh
 
 ### 2. Install a package
 
-Install the [Starter Package](collections/starter-package/README.md) for
-daily brownfield development:
-
-```powershell
-apm install bcgov/crow/collections/starter-package#stable --global --target copilot
-```
-
-Install the [Security Remediation collection](collections/security-remediation/README.md)
-for application security scanning and remediation:
-
-```powershell
-apm install bcgov/crow/collections/security-remediation#stable --global --target copilot
-```
-
-Install the complete Crow package when all capabilities are needed:
+Install the complete Crow package:
 
 ```powershell
 apm install bcgov/crow#stable --global --target copilot
@@ -63,7 +49,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.18.1 --global --target copilot
+apm install bcgov/crow#v0.19.0 --global --target copilot
 ```
 
 ### Updating an installation
@@ -75,10 +61,27 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.18.1` remains pinned to that release;
+release. An exact version tag such as `#v0.19.0` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
+
+Existing [Starter Package](collections/starter-package/README.md) and
+[Security Remediation](collections/security-remediation/README.md) selectors
+are being replaced by compatibility wrappers for the complete package.
+While either legacy selector remains, run two native updates:
+
+```powershell
+apm update --global --target copilot
+apm update --global --target copilot
+```
+
+The first refreshes wrapper metadata; the second resolves the complete package.
+Exact tags and archived installs stay pinned and require an explicit version/ref change.
+
+If a previous collection installation failed with a standalone module/script
+path error, it is not a valid update baseline. Ask the Raven Setup Agent to
+preview replacing its legacy selectors with `bcgov/crow#stable`.
 
 ### Direct Copilot CLI plugin
 
@@ -97,10 +100,28 @@ copilot plugin list
 /skills list
 ```
 
-### 3. Set up Raven and code intelligence
+### 3. Get help choosing agents and skills
+
+Start the **[Crow Getting Started Agent](.apm/agents/crow-getting-started.agent.md)**:
+
+- VS Code Copilot: select it in the Agent dropdown.
+- Copilot CLI: use `/agent` to select it.
+- Claude Code or Cursor: select the `crow-getting-started` skill with `/`.
+- Codex: select `$crow-getting-started` or use `/skills`.
+
+Tell it what you want to accomplish. It asks only the missing questions,
+explains the relevant agents and skills, and supplies a copyable prompt for
+your client. For complex re-platforming, security/remediation, or data-model
+changes, it can draft a coordinator prompt with specialist assignments,
+dependencies, parallel work, approval checkpoints, and verification.
+Getting Started guides the next session; it does not execute the task or
+launch agents. See its [client recipes](.apm/skills/crow-getting-started/modules/client-invocation.md)
+for discovery and manual fallbacks.
+
+### 4. Set up Raven and code intelligence
 
 After installation, invoke the **[Crow Raven Setup Agent](.apm/agents/crow-raven-setup.agent.md)**
-first:
+when those capabilities are needed:
 
 ```text
 /agent Crow Raven Setup Agent
@@ -125,6 +146,9 @@ stable releases during setup or maintenance, and asks before upgrades.
 Setup state is user-local under `~/.crow/raven-setup` by default. Do not
 commit it or put Raven credentials in a repository.
 
+Getting Started suggests this setup agent when no Raven MCP servers are
+available in the session. Local prompt guidance does not require Raven.
+
 For Copilot users, setup offers once to install an optional user-level hook
 for update reminders. If enabled, it checks Crow's stable release and any
 bundled Raven or codebase-memory-mcp release recorded by Crow Setup on an agent
@@ -133,7 +157,7 @@ installs updates automatically. **The hook does not track SonarScanner
 releases.** Run the Raven Setup Agent directly to check scanner versions when
 Sonar MCP is configured or selected during setup.
 
-### 4. Verify the installation
+### 5. Verify the installation
 
 Use the selected client's normal discovery commands:
 
@@ -142,25 +166,17 @@ Use the selected client's normal discovery commands:
 /skills list
 ```
 
-## Choose a collection
-
-- [Starter Package](collections/starter-package/README.md) — Raven setup,
-  architecture and code review, application architecture and development,
-  B.C. UX, application CI, project context, testing, framework/dependency maintenance,
-  and security review, remediation, and executive reporting for daily brownfield work.
-- [Security Remediation](collections/security-remediation/README.md) —
-  Raven setup, architecture review and handoff, project context, security
-  review, Sonar scanning, secure architecture, application development,
-  testing, remediation, and executive reporting.
-
 APM selectors control update behavior: `#stable` follows published releases,
-while an exact version tag such as `#v0.18.1` remains fixed. Installing
-`bcgov/crow` without a ref follows the default branch and can include
-unreleased commits. Collections use the same `stable` branch as the full
-package.
+while an exact version tag remains fixed. Installing `bcgov/crow` without a
+ref follows the default branch and can include unreleased commits. The two
+legacy collection addresses remain for update compatibility rather than as
+separately curated packages.
 
 ## Agents
 
+- [Crow Getting Started Agent](.apm/agents/crow-getting-started.agent.md) —
+  Interviews developers and teaches task-specific, client-aware prompts,
+  including coordinated multi-agent work. Guidance only, not execution.
 - [Crow CI Pipeline Agent](.apm/agents/crow-ci-pipelines.agent.md) — Assesses
   and builds Java/.NET/PHP CI across GitHub Actions, Azure Pipelines, and
   Jenkins. Inventories classic Azure builds and releases, analyzes supplied
@@ -194,6 +210,9 @@ package.
 
 ## Skills
 
+- [**crow-getting-started**](.apm/skills/crow-getting-started/SKILL.md) —
+  Focused onboarding, capability selection, and single-agent or coordinated
+  task prompts with client-specific invocation guidance.
 - [**crow-ci-pipelines**](.apm/skills/crow-ci-pipelines/SKILL.md) —
   Java/.NET/PHP CI assessment, troubleshooting, and authoring with conditional
   [GitHub Actions](.apm/skills/crow-ci-pipelines/modules/github-actions.md),
@@ -281,7 +300,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.18.1.zip`. See
+The resulting archive is `build/bcgov-crow-0.19.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

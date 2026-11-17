@@ -51,9 +51,11 @@ Use a script instead of model prose when the operation can be expressed as stabl
 - Agent and skill names and descriptions have clear invocation boundaries.
 - Only relevant modules are loaded.
 - Package manifests and documentation agree.
-- In Crow, collection manifests are version-aligned, resolve only repository-local source assets, and remain subsets of the full package.
-- In Crow, the asset dependency graph finds no dead links; each collection includes the
-  linked skills and modules required by its bundled agents.
+- In Crow, the two retained collection wrappers satisfy the
+  [compatibility contract](modules/collection-management.md), with matching
+  versions and full-root dependencies, no subsets or root cycles.
+- In Crow, the asset dependency graph finds no dead links and verifies full
+  publication closure for each compatibility wrapper.
 - Local references resolve.
 - No tracked evidence or sensitive material exists.
 - Validator and package checks pass.

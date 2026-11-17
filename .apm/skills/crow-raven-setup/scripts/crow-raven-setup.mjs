@@ -541,12 +541,17 @@ function readApmInstalledPackageVersion(selector, runCommand = runApm) {
 function resolveInstalledCrowPackage(options = {}) {
   const pluginVersion = readCrowPackageVersion(options.scriptPath);
   const apmManifest = readGlobalCrowApmSelectors(options.manifestPath);
+  const updatePasses = apmManifest.selectors.some((value) => value !== "bcgov/crow") ? 2 : 1;
   let selector = null;
   if (apmManifest.selectors.length === 1) {
     [selector] = apmManifest.selectors;
   } else if (apmManifest.selectors.length > 1) {
     if (pluginVersion && apmManifest.selectors.includes("bcgov/crow")) {
       selector = "bcgov/crow";
+    } else if (updatePasses === 2) {
+      // Both aliases address Crow; retain a detected identity for the existing
+      // version lookup, but the global update plan must cover both passes.
+      [selector] = apmManifest.selectors;
     } else {
       throw new Error(
         `Multiple Crow package selectors are installed globally: ${apmManifest.selectors.join(", ")}.`
@@ -554,20 +559,22 @@ function resolveInstalledCrowPackage(options = {}) {
     }
   }
 
-  if (selector === "bcgov/crow" && pluginVersion) {
-    return { version: pluginVersion, selector };
+  if (pluginVersion && (selector === "bcgov/crow" || apmManifest.selectors.length > 1)) {
+    return { version: pluginVersion, selector, updatePasses };
   }
   if (selector) {
     return {
       version: readApmInstalledPackageVersion(selector, options.runApm || runApm),
-      selector
+      selector,
+      updatePasses
     };
   }
-  if (pluginVersion) return { version: pluginVersion, selector: null };
+  if (pluginVersion) return { version: pluginVersion, selector: null, updatePasses };
   if (!apmManifest.exists) {
     return {
       version: readApmInstalledPackageVersion("bcgov/crow", options.runApm || runApm),
-      selector: "bcgov/crow"
+      selector: "bcgov/crow",
+      updatePasses
     };
   }
   throw new Error(
@@ -1243,7 +1250,10 @@ function createCrowUpdateChecks(options, configured) {
     checks,
     getSelector: () => options.getCrowInstallSelector
       ? options.getCrowInstallSelector()
-      : installedCrowPackage?.selector || null
+      : installedCrowPackage?.selector || null,
+    getUpdatePasses: () => options.getCrowUpdatePasses
+      ? options.getCrowUpdatePasses()
+      : installedCrowPackage?.updatePasses || null
   };
 }
 
@@ -1337,6 +1347,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
   let versions;
   let updates;
   let crowSelector = null;
+  let crowUpdatePasses = null;
   let failures = [];
   let successfulComponents = new Set();
   try {
@@ -1374,6 +1385,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
     state.lastCheckedByComponent = checkTimes;
     failures = collectCrowUpdateFailures(setupStateFailure, checkedComponents);
     crowSelector = updateChecks.getSelector();
+    crowUpdatePasses = updateChecks.getUpdatePasses();
     const merged = mergeCrowUpdateVersions(state, updateChecks.checks, checkedComponents);
     versions = merged.versions;
     successfulComponents = new Set([
@@ -1421,6 +1433,7 @@ async function runCrowUpdateCheck(statePath, state, now, options) {
     current: versions.crow.current,
     latest: versions.crow.latest,
     crowSelector,
+    crowUpdatePasses,
     versions,
     updates,
     updateAvailable,
@@ -1484,7 +1497,7 @@ function crowUpdateInstallCommand(selector) {
   ].includes(selector)) {
     throw new Error("The installed Crow package selector is unsupported.");
   }
-  return `apm install '${selector}#stable' --global --target copilot`;
+  return "apm install 'bcgov/crow#stable' --global --target copilot";
 }
 
 function updateReminder(result) {
@@ -1498,8 +1511,13 @@ function updateReminder(result) {
     const instructions = [];
     if (updates.some((update) => update.component === "crow")) {
       if (result.crowSelector) {
+        const updateCommand = "apm update --global --target copilot";
+        const legacy = result.crowUpdatePasses === 2 || result.crowSelector !== "bcgov/crow";
+        const updateSteps = legacy
+          ? `After confirmation, while any legacy selector remains, run two native update passes: \`${updateCommand}\`, then \`${updateCommand}\`. The first refreshes wrapper metadata; the second resolves the complete root dependency graph. Verify complete content after the second pass; a first-pass refresh is not migration success.`
+          : `After confirmation, \`${updateCommand}\` follows published stable releases.`;
         instructions.push(
-          `For an APM global Copilot install, migrate or update the detected \`${result.crowSelector}\` selector to its release-maintained stable branch with \`${crowUpdateInstallCommand(result.crowSelector)}\`; then \`apm update --global --target copilot\` follows published stable releases.`
+          `For an APM global Copilot install, the detected selector is \`${result.crowSelector}\`. ${updateSteps} For a separately confirmed canonical-root installation, use \`${crowUpdateInstallCommand(result.crowSelector)}\`; this is not an update pass and does not remove legacy selector entries. Full-package uninstall removes Crow content needed by aliases too, but must preserve unrelated human-owned files. Selectors are not automatically rewritten. Exact tags and archives need an explicit version/ref change.`
         );
       } else {
         instructions.push(

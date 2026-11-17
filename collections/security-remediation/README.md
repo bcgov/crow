@@ -1,75 +1,47 @@
-# Crow Security Remediation
+# Crow Security Remediation — compatibility address
 
-The Security Remediation collection provides a focused workflow for scanning
-an application, documenting its security-relevant architecture, producing
-evidence-backed findings, and implementing and verifying remediations.
-Routine framework and dependency maintenance has a separate
-[Crow Framework & Dependency Update Agent](../../.apm/agents/crow-framework-dependency-update.agent.md)
-in the Starter Package.
-The existing `framework-upgrades` and `dependencies` scopes remain as
-deprecated compatibility routes through the update skills.
+The curated Security Remediation subset is retired. Its exact selector
+`bcgov/crow/collections/security-remediation` and package name
+`bcgov-crow-security-remediation` are retained indefinitely as a
+compatibility-only address. From v0.19.0, this wrapper depends on the complete
+Crow root package at the matching release tag; it owns no agents or skills.
+The security review and remediation agents and skills are not removed.
 
-Install it from Crow's release-maintained stable branch:
+For new installs, use the canonical package:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#stable --global --target copilot
+apm install bcgov/crow#stable --global --target copilot
 ```
 
-For an immutable install of this release:
+For existing installs on a mutable ref such as `#stable`, run **two native
+update passes** after confirmation when that ref advances to this release:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.18.1 --global --target copilot
+apm update --global --target copilot
+apm update --global --target copilot
 ```
 
-Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
-first. The security review workflow requires code intelligence and may
-require the Sonar MCP server, depending on the requested scan and configured
-project connections. When Sonar MCP is configured or selected during setup,
-the Raven Setup Agent also verifies the local SonarScanner CLI and, when a
-compatible SDK is available, the .NET/MSBuild scanner; it offers compatible
-updates only after confirmation.
+The first pass refreshes this wrapper; the second resolves its complete
+root dependency graph. Verify complete content after the second pass.
+Continue using two passes while any legacy selector remains.
+APM retains the user's legacy selector; it does not automatically rewrite it
+to `bcgov/crow`.
 
-## Included agents
+Uninstalling the direct full package removes all installed Crow package
+content, including content needed by this alias. Alias-backed copies are not
+preserved; unrelated human-owned files must remain untouched. Package
+uninstall does not automatically remove Raven or MCP client configuration.
 
-- [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
-- [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
-- [Crow Security & Dependency Review Agent](../../.apm/agents/crow-security-review.agent.md)
-- [Crow Security Remediation Agent](../../.apm/agents/crow-security-remediation.agent.md)
-- [Crow Executive Summary Report Agent](../../.apm/agents/crow-executive-report.agent.md) —
-  the security review's handoff target for a plain-language summary.
+Exact tags and downloaded archives remain pinned to their original content.
+Updating an immutable install requires an explicit version/ref change. This
+release's retained address is:
 
-## Included skills
+```powershell
+apm install bcgov/crow/collections/security-remediation#v0.19.0 --global --target copilot
+```
 
-- [crow-raven-setup](../../.apm/skills/crow-raven-setup/SKILL.md)
-- [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
-- [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)
-- [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)
-- [crow-executive-report](../../.apm/skills/crow-executive-report/SKILL.md)
-- [crow-sonar-scan](../../.apm/skills/crow-sonar-scan/README.md)
-- [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
-- [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)
-- [crow-code-review](../../.apm/skills/crow-code-review/SKILL.md) — required by
-  the post-implementation self-review route.
-- [crow-testing](../../.apm/skills/crow-testing/SKILL.md)
-- [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
-- [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
-
-The collection also includes the
-[technology-preferences module](../../.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
-and its [command-line helper](../../.apm/skills/crow-solution-architecture/scripts/technology-preferences.mjs),
-conditionally used by `crow-project-context`.
-
-The collection also includes the
-[BC Gov UX review-remediation module](../../.apm/skills/crow-bcgov-ux/modules/review-remediation.md),
-conditionally referenced by `crow-testing`'s manual-coverage guidance.
-
-The collection keeps external issue publication and ticket updates
-confirmation-gated. Review findings and remediation scope before allowing any
-write to GHAS, a work tracker, or another provider.
-
-Run the Architecture Review Agent first when architecture documentation is
-missing or stale. It produces a compact validated
-`architecture-security-facts.json` handoff that lets the security review reuse
-verified boundaries and workflows without loading the full architecture
-document. The security review still works without the handoff and re-verifies
-stale or inferred facts.
+Use the [root package documentation](../../README.md) for discovery and setup.
+The [Crow Security Remediation Agent](../../.apm/agents/crow-security-remediation.agent.md)
+keeps external issue publication and ticket updates confirmation-gated.
+See the [collection compatibility rules](../../.apm/skills/crow-agent-skill-authoring/modules/collection-management.md)
+for the wrapper contract.

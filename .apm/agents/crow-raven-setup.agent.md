@@ -194,13 +194,19 @@ workflow below; unresolved selection must be clarified first.
    after confirmation.
    When APM reports a newer Crow release but `apm update --global` leaves an
    exact-pinned package unchanged, explain the selector behavior. After
-   confirmation, migrate the same installed selector to Crow's
-   release-maintained branch by appending `#stable`: use `bcgov/crow#stable` for
-   the full package,
-   `bcgov/crow/collections/starter-package#stable` for that collection, or
-   `bcgov/crow/collections/security-remediation#stable` for that collection.
-   Do not add the full package to update a collection. Later,
-   `apm update --global --target copilot` follows published stable releases.
+   confirmation, recommend the canonical complete package `bcgov/crow#stable`.
+   Legacy collection selectors remain full-root compatibility addresses from
+   v0.19.0; APM does not rewrite those selectors. Follow
+   [delivery and updates](../skills/crow-raven-setup/modules/delivery-and-updates.md)
+   for two confirmed native update passes while any legacy selector remains:
+   wrapper metadata first, full-root graph second, then verify complete content.
+   A separately confirmed canonical-root install is not an update pass and
+   does not remove aliases. Follow that module before explaining full-package
+   uninstall, which removes alias-needed Crow content but not unrelated files.
+   Exact tags and archives require an explicit version/ref change.
+   Later native updates follow the selected mutable ref using that plan.
+   Preview effects and obtain confirmation before any install, selector
+   change, or removal; never automatically change the user's profile.
 
 ## Completion gate
 

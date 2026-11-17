@@ -113,12 +113,7 @@ if ($errors.Count -eq 0) {
     if ($apmContent -match '(?m)^includes:\s*auto\s*$') {
         Add-ValidationError "apm.yml must use an explicit publication allowlist; includes: auto can package ignored evidence."
     }
-    $includeMatches = [regex]::Matches(
-        $apmContent,
-        '(?m)^\s{2}-\s+(\.apm/[^\s#]+)\s*$')
-    $includePaths = @($includeMatches | ForEach-Object {
-        $_.Groups[1].Value.TrimEnd('/').Replace('\', '/')
-    })
+    $includePaths = @(Get-CrowRootPublicationPaths -Content $apmContent)
     if ($includePaths.Count -eq 0) {
         Add-ValidationError 'apm.yml does not contain explicit .apm publication paths.'
     }
@@ -177,81 +172,9 @@ if ($errors.Count -eq 0) {
         }
     }
 
-    $collectionDirectories = @(Get-ChildItem $collectionsPath -Directory | Sort-Object Name)
-    if ($collectionDirectories.Count -eq 0) {
-        Add-ValidationError 'The collections directory must contain at least one collection.'
-    }
-    foreach ($collectionDirectory in $collectionDirectories) {
-        $collectionManifestPath = Join-Path $collectionDirectory.FullName 'apm.yml'
-        $collectionReadmePath = Join-Path $collectionDirectory.FullName 'README.md'
-        if (-not (Test-Path $collectionManifestPath -PathType Leaf)) {
-            Add-ValidationError "$($collectionDirectory.FullName): collection apm.yml is missing."
-            continue
-        }
-        if (-not (Test-Path $collectionReadmePath -PathType Leaf)) {
-            Add-ValidationError "$($collectionDirectory.FullName): collection README.md is missing."
-        }
-
-        $collectionManifest = [System.IO.File]::ReadAllText($collectionManifestPath)
-        if ($collectionManifest -notmatch '(?m)^name:\s*([a-z0-9-]+)\s*$') {
-            Add-ValidationError "${collectionManifestPath}: collection name is missing or invalid."
-        }
-        elseif ($Matches[1] -ne "bcgov-crow-$($collectionDirectory.Name)") {
-            Add-ValidationError "${collectionManifestPath}: collection name '$($Matches[1])' must be 'bcgov-crow-$($collectionDirectory.Name)'."
-        }
-        if ($collectionManifest -notmatch '(?m)^version:\s*([0-9]+\.[0-9]+\.[0-9]+)\s*$') {
-            Add-ValidationError "${collectionManifestPath}: collection version is missing or invalid."
-        }
-        elseif ($Matches[1] -ne $apmVersion) {
-            Add-ValidationError "${collectionManifestPath}: version $($Matches[1]) must match root version $apmVersion."
-        }
-
-        $dependencySources = @(
-            [regex]::Matches($collectionManifest, '(?m)^\s{4}-\s+git:\s+([^\s#]+)\s*$') |
-                ForEach-Object { $_.Groups[1].Value }
-        )
-        $dependencyPaths = @(
-            [regex]::Matches($collectionManifest, '(?m)^\s{6}path:\s+([^\s#]+)\s*$') |
-                ForEach-Object { $_.Groups[1].Value.Replace('\', '/') }
-        )
-        if ($dependencyPaths.Count -eq 0) {
-            Add-ValidationError "${collectionManifestPath}: collection must declare APM dependencies with canonical source paths."
-        }
-        if ($dependencySources.Count -ne $dependencyPaths.Count) {
-            Add-ValidationError "${collectionManifestPath}: dependency git and path counts must match."
-        }
-        foreach ($dependencySource in $dependencySources) {
-            if ($dependencySource -ne 'https://github.com/bcgov/crow.git') {
-                Add-ValidationError "${collectionManifestPath}: dependency source '$dependencySource' must be https://github.com/bcgov/crow.git."
-            }
-        }
-        foreach ($dependencyPath in $dependencyPaths) {
-            if (-not $dependencyPath.StartsWith('.apm/')) {
-                Add-ValidationError "${collectionManifestPath}: dependency path '$dependencyPath' must resolve to .apm/."
-                continue
-            }
-            $sourcePath = Join-Path $root $dependencyPath
-            if (-not (Test-Path $sourcePath)) {
-                Add-ValidationError "${collectionManifestPath}: dependency path '$dependencyPath' does not exist."
-            }
-        }
-        $dependencyRefs = @(
-            [regex]::Matches($collectionManifest, '(?m)^\s{6}ref:\s+([^\s#]+)\s*$') |
-                ForEach-Object { $_.Groups[1].Value }
-        )
-        if ($dependencyRefs.Count -ne $dependencyPaths.Count) {
-            Add-ValidationError "${collectionManifestPath}: dependency git, path, and ref counts must match."
-        }
-        elseif (@($dependencyRefs | Where-Object { $_ -ne "v$apmVersion" }).Count -gt 0) {
-            Add-ValidationError "${collectionManifestPath}: every collection dependency must use ref v$apmVersion."
-        }
-        if (Test-Path $collectionReadmePath -PathType Leaf) {
-            $collectionReadme = [System.IO.File]::ReadAllText($collectionReadmePath)
-            $installReference = "bcgov/crow/collections/$($collectionDirectory.Name)#v$apmVersion"
-            if (-not $collectionReadme.Contains($installReference)) {
-                Add-ValidationError "${collectionReadmePath}: collection install example must reference $installReference."
-            }
-        }
+    $collectionCompatibilityReport = Get-CrowCollectionCompatibilityReport -RepoRoot $root
+    foreach ($compatibilityError in $collectionCompatibilityReport.Errors) {
+        Add-ValidationError $compatibilityError
     }
 
     $agentFiles = @(Get-ChildItem $agentsPath -File -Filter '*.agent.md' | Sort-Object Name)
@@ -322,32 +245,8 @@ if ($errors.Count -eq 0) {
             Add-ValidationError "$($entry.File): handoffs must not set 'model'."
         }
     }
-    $agentNamesByPath = @{}
-    foreach ($agentFile in $agentFiles) {
-        $agentNamesByPath[".apm/agents/$($agentFile.Name)"] = (Get-Frontmatter $agentFile).name
-    }
-    foreach ($collectionDirectory in $collectionDirectories) {
-        $collectionManifestPath = Join-Path $collectionDirectory.FullName 'apm.yml'
-        if (-not (Test-Path $collectionManifestPath -PathType Leaf)) {
-            continue
-        }
-        $collectionAgentPaths = @(
-            [regex]::Matches([System.IO.File]::ReadAllText($collectionManifestPath),
-                '(?m)^\s{6}path:\s+(\.apm/agents/[^\s#/]+\.agent\.md)\s*$') |
-                ForEach-Object { $_.Groups[1].Value }
-        )
-        $collectionAgentNames = @($collectionAgentPaths | ForEach-Object { $agentNamesByPath[$_] })
-        foreach ($entry in $agentHandoffs) {
-            $sourcePath = ".apm/agents/$(Split-Path -Leaf $entry.File)"
-            $target = if ($entry.Handoff.ContainsKey('agent')) { $entry.Handoff['agent'].Value } else { $null }
-            # A missing target is reported by the handoff checks; skip it here.
-            if ($target -is [string] -and $target.Length -gt 0 -and
-                $collectionAgentPaths -contains $sourcePath -and $names.ContainsKey($target) -and
-                $collectionAgentNames -cnotcontains $target) {
-                Add-ValidationError "${collectionManifestPath}: $sourcePath hands off to '$target', which the collection does not include."
-            }
-        }
-    }
+    # Wrappers include the full root, so the root handoff-target check above
+    # covers every bundled agent; no retired subset handoff inventory remains.
 
     $actualSkillPaths = [System.Collections.Generic.List[string]]::new()
     foreach ($skillFile in $skillFiles) {
@@ -436,7 +335,8 @@ if ($errors.Count -eq 0) {
         }
     }
 
-    $dependencyReport = Get-CrowAssetDependencyReport -RepoRoot $root
+    $dependencyReport = Get-CrowAssetDependencyReport -RepoRoot $root `
+        -CollectionCompatibilityReport $collectionCompatibilityReport
     foreach ($dependencyError in $dependencyReport.Errors) {
         Add-ValidationError $dependencyError
     }

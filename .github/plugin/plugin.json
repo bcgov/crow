@@ -1,13 +1,14 @@
 {
   "name": "bcgov-crow",
-  "version": "0.18.1",
-  "description": "CROW agents and skills for application CI, legacy modernization, Raven setup, accessible B.C. government UX, architecture, analytics design, data architecture, REST/SOAP API modernization, framework and dependency updates, code and security review, remediation, documentation, reporting, Crow authoring, and releases.",
+  "version": "0.19.0",
+  "description": "CROW agents and skills for getting started and coordinated task prompting, application CI, legacy modernization, Raven setup, accessible B.C. government UX, architecture, analytics design, data architecture, REST/SOAP API modernization, framework and dependency updates, code and security review, remediation, documentation, reporting, Crow authoring, and releases.",
   "author": {
     "name": "bcgov"
   },
   "repository": "https://github.com/bcgov/crow",
   "license": "MIT",
   "keywords": [
+    "crow-getting-started",
     "crow-ci-pipelines",
     "crow-bcgov-ux",
     "crow-application-architecture",
@@ -39,6 +40,7 @@
     ".apm/agents"
   ],
   "skills": [
+    ".apm/skills/crow-getting-started",
     ".apm/skills/crow-ci-pipelines",
     ".apm/skills/crow-bcgov-ux",
     ".apm/skills/crow-business-rules",

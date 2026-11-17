@@ -574,6 +574,88 @@ The `crow-missing-skill` skill will be used for this route.
         -Errors $report.Errors `
         -ExpectedText "Unknown skill reference 'crow-missing-skill'" `
         -Scenario 'Reports an unresolved future-passive skill reference'
+
+    # Preserve all generic subset traversal fixtures above. These final cases
+    # exercise the production compatibility contract and explicit root node.
+    Remove-Item -LiteralPath (Join-Path $fixtureRoot 'collections/fixture') -Recurse -Force
+    Write-FixtureFile -Path $agentPath -Content @'
+---
+name: 'Crow Graph Test Agent'
+description: 'Synthetic agent for full package tests.'
+---
+Load the `crow-main` skill before proceeding.
+'@
+    $fullRootManifest = @'
+name: bcgov-crow
+version: 0.19.0
+includes:
+  - .apm/agents
+  - .apm/skills
+dependencies: {}
+'@
+    $fullRootPath = Join-Path $fixtureRoot 'apm.yml'
+    Write-FixtureFile -Path $fullRootPath -Content $fullRootManifest
+    $wrapperManifest = @'
+name: bcgov-crow-starter-package
+version: 0.19.0
+dependencies:
+  apm:
+    - git: https://github.com/bcgov/crow.git
+      ref: v0.19.0
+'@
+    $starterManifestPath = Join-Path $fixtureRoot 'collections/starter-package/apm.yml'
+    foreach ($name in @('starter-package', 'security-remediation')) {
+        Write-FixtureFile -Path (Join-Path $fixtureRoot "collections/$name/apm.yml") `
+            -Content $wrapperManifest.Replace('bcgov-crow-starter-package', "bcgov-crow-$name")
+        Write-FixtureFile -Path (Join-Path $fixtureRoot "collections/$name/README.md") `
+            -Content "bcgov/crow/collections/$name#v0.19.0`nbcgov/crow#stable"
+    }
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    if ($report.Errors.Count -ne 0) {
+        throw "Full-root compatibility closure failed: $($report.Errors -join ' | ')"
+    }
+    $rootEdges = @($report.Graph.Edges | Where-Object {
+        $_.Kind -eq 'FullPackageDependency' -and $_.To -eq 'apm.yml' -and
+        $_.Reference -ceq 'https://github.com/bcgov/crow.git#v0.19.0'
+    })
+    $rootBundles = @($report.Graph.Edges | Where-Object {
+        $_.From -eq 'apm.yml' -and $_.Kind -eq 'Bundle'
+    })
+    if ($rootEdges.Count -ne 2 -or $rootBundles.Count -ne 2 -or
+        $report.Graph.Nodes['apm.yml'].Kind -ne 'FullPackage') {
+        throw 'Compatibility wrappers must have explicit canonical root edges and a non-empty full-package bundle.'
+    }
+    Write-Host 'Passed: Both wrappers resolve an explicit full-root node with complete publication closure'
+
+    Write-FixtureFile -Path $starterManifestPath `
+        -Content $wrapperManifest.Replace('https://github.com/bcgov/crow.git', 'https://github.com/example/other.git')
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    Assert-HasError -Errors $report.Errors -ExpectedText 'full-root dependency source' `
+        -Scenario 'Rejects a root compatibility edge from another repository'
+    if (@($report.Graph.Edges | Where-Object {
+        $_.Kind -eq 'FullPackageDependency' -and $_.From -eq 'collections/starter-package'
+    }).Count -ne 0) {
+        throw 'An invalid source must not produce a passing root dependency edge.'
+    }
+    Write-FixtureFile -Path $starterManifestPath -Content $wrapperManifest.Replace('ref: v0.19.0', 'ref: v0.18.1')
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    Assert-HasError -Errors $report.Errors -ExpectedText 'full-root dependency ref' `
+        -Scenario 'Rejects a mismatched root compatibility ref'
+    Write-FixtureFile -Path $starterManifestPath -Content $wrapperManifest
+    Write-FixtureFile -Path $fullRootPath -Content ([regex]::Replace($fullRootManifest, '(?m)^  - \.apm/agents\r?\n', ''))
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    Assert-HasError -Errors $report.Errors -ExpectedText "Full root publication allowlist omits '.apm/agents/crow-test.agent.md'" `
+        -Scenario 'Checks full-package coverage instead of treating the compatibility node as empty'
+    Write-FixtureFile -Path $fullRootPath -Content $fullRootManifest.Replace('dependencies: {}', @'
+dependencies:
+  apm:
+    - git: https://github.com/bcgov/crow.git
+      path: collections/starter-package
+      ref: v0.19.0
+'@)
+    $report = Get-CrowAssetDependencyReport -RepoRoot $fixtureRoot
+    Assert-HasError -Errors $report.Errors -ExpectedText 'no wrapper cycle' `
+        -Scenario 'Rejects a root-to-wrapper cycle in graph validation'
 }
 finally {
     if (Test-Path -LiteralPath $fixtureRoot -PathType Container) {
