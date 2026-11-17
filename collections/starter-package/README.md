@@ -1,69 +1,45 @@
-# Crow Starter Package
+# Crow Starter Package — compatibility address
 
-The Starter Package is the focused Crow installation for daily brownfield
-development. It includes the agents and skills needed to understand an
-existing application, make aligned changes, maintain frameworks and
-dependencies, build accessible interfaces, and verify the result with
-automated tests. It also supports Java, .NET, and PHP CI across GitHub Actions,
-Azure Pipelines, and Jenkins, and includes the security review, remediation,
-and executive report agents that architecture and security handoffs lead to.
-Its architecture, application
-development, testing, and code review guidance also supports REST/SOAP API
-inventory, implementation, and HTTP-based modernization comparisons.
+The curated Starter Package subset is retired. Its exact selector
+`bcgov/crow/collections/starter-package` and package name
+`bcgov-crow-starter-package` are retained indefinitely as a compatibility-only
+address. From v0.19.0, this wrapper depends on the complete Crow root package
+at the matching release tag; it owns no agents or skills.
 
-Install it from Crow's release-maintained stable branch:
+For new installs, use the canonical package:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#stable --global --target copilot
+apm install bcgov/crow#stable --global --target copilot
 ```
 
-For an immutable install of this release:
+For existing installs on a mutable ref such as `#stable`, run **two native
+update passes** after confirmation when that ref advances to this release:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.18.1 --global --target copilot
+apm update --global --target copilot
+apm update --global --target copilot
 ```
 
-Invoke the [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
-first. It configures the optional Raven servers and
-[codebase-memory-mcp](https://github.com/bcgov/codebase-memory-mcp) used by
-the architecture and testing workflows. When Sonar MCP is configured or
-selected during setup, it also sets up the local SonarScanner CLI and the
-.NET/MSBuild scanner when a compatible SDK is available, and checks for
-compatible stable releases during setup or maintenance.
+The first pass refreshes this wrapper; the second resolves its complete
+root dependency graph. Verify complete content after the second pass.
+Continue using two passes while any legacy selector remains.
+APM retains the user's legacy selector; it does not automatically rewrite it
+to `bcgov/crow`.
 
-## Included agents
+Uninstalling the direct full package removes all installed Crow package
+content, including content needed by this alias. Alias-backed copies are not
+preserved; unrelated human-owned files must remain untouched. Package
+uninstall does not automatically remove Raven or MCP client configuration.
 
-- [Crow CI Pipeline Agent](../../.apm/agents/crow-ci-pipelines.agent.md)
-- [Crow Raven Setup Agent](../../.apm/agents/crow-raven-setup.agent.md)
-- [Crow Architecture Review Agent](../../.apm/agents/crow-architecture-review.agent.md)
-- [Crow Security & Dependency Review Agent](../../.apm/agents/crow-security-review.agent.md)
-- [Crow Security Remediation Agent](../../.apm/agents/crow-security-remediation.agent.md)
-- [Crow Executive Summary Report Agent](../../.apm/agents/crow-executive-report.agent.md)
-- [Crow Code Review Agent](../../.apm/agents/crow-code-review.agent.md)
-- [Crow Framework & Dependency Update Agent](../../.apm/agents/crow-framework-dependency-update.agent.md)
-- [Crow B.C. Government UX Agent](../../.apm/agents/crow-bcgov-ux.agent.md)
-- [Crow Testing Agent](../../.apm/agents/crow-testing.agent.md)
+Exact tags and downloaded archives remain pinned to their original content.
+Updating an immutable install requires an explicit version/ref change. This
+release's retained address is:
 
-## Included skills
+```powershell
+apm install bcgov/crow/collections/starter-package#v0.19.0 --global --target copilot
+```
 
-- [crow-ci-pipelines](../../.apm/skills/crow-ci-pipelines/SKILL.md)
-- [crow-sonar-scan](../../.apm/skills/crow-sonar-scan/SKILL.md) —
-  CI uses its [application-version guide](../../.apm/skills/crow-sonar-scan/modules/project-version.md)
-  only when the pipeline includes a Sonar scan.
-- [crow-raven-setup](../../.apm/skills/crow-raven-setup/SKILL.md)
-- [crow-project-context](../../.apm/skills/crow-project-context/SKILL.md)
-- [crow-security-review](../../.apm/skills/crow-security-review/SKILL.md)
-- [crow-executive-report](../../.apm/skills/crow-executive-report/SKILL.md)
-- [crow-framework-updates](../../.apm/skills/crow-framework-updates/SKILL.md)
-- [crow-dependency-updates](../../.apm/skills/crow-dependency-updates/SKILL.md)
-- [crow-architecture-review](../../.apm/skills/crow-architecture-review/SKILL.md)
-- [crow-code-review](../../.apm/skills/crow-code-review/SKILL.md)
-- [crow-application-architecture](../../.apm/skills/crow-application-architecture/SKILL.md)
-- [crow-application-development](../../.apm/skills/crow-application-development/SKILL.md)
-- [crow-bcgov-ux](../../.apm/skills/crow-bcgov-ux/SKILL.md)
-- [crow-testing](../../.apm/skills/crow-testing/SKILL.md)
-
-The collection also includes the
-[technology-preferences module](../../.apm/skills/crow-solution-architecture/modules/technology-preferences.md)
-and its [command-line helper](../../.apm/skills/crow-solution-architecture/scripts/technology-preferences.mjs),
-conditionally used by `crow-project-context`.
+The complete package retains the existing development and security workflows.
+See the [root package documentation](../../README.md) for discovery and setup,
+and [collection compatibility rules](../../.apm/skills/crow-agent-skill-authoring/modules/collection-management.md)
+for the wrapper contract.

@@ -60,6 +60,11 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssetDependencyGraph.Tests.ps1
 
+      - name: Test retained collection compatibility contract
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowCollectionCompatibility.Tests.ps1
+
       - name: Test security remediation scope aliases
         shell: pwsh
         run: |

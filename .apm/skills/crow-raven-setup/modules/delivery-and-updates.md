@@ -134,8 +134,44 @@ apm install 'bcgov/crow#stable' --global --target copilot
 After migration, `apm update --global --target copilot` resolves the current
 published stable branch. The command `apm install bcgov/crow` without a ref
 follows the repository's default branch and can include unreleased changes;
-exact version tags remain fixed. For a collection install, use that
-collection's package path with `#stable`. `apm self-update` updates the APM
+exact version tags and downloaded archives remain fixed and require an
+explicit version/ref change.
+
+The old `bcgov/crow/collections/starter-package` and
+`bcgov/crow/collections/security-remediation` selectors remain recognized
+indefinitely as compatibility-only full-root wrappers from v0.19.0. Their
+approved mutable-ref migration uses two confirmed native updates while any
+legacy selector remains:
+
+```powershell
+apm update --global --target copilot
+apm update --global --target copilot
+```
+
+The first refreshes wrapper metadata; the second resolves the complete root
+graph. Verify complete content after pass two; a first-pass refresh is not
+migration success. See the
+[collection compatibility contract](../../crow-agent-skill-authoring/modules/collection-management.md).
+The update hook compares installed full-root metadata, not the wrapper's
+version. Missing root metadata leaves the check incomplete and reports how
+to finish the update rather than treating an advanced wrapper as current.
+Do not assume that advancing a wrapper ref refreshes its dependency graph.
+Uninstalling the direct full package removes all installed Crow package
+content, including content needed by legacy aliases; alias-backed copies
+are not preserved. Unrelated human-owned files must remain untouched.
+Package uninstall does not automatically remove Raven runtimes, credentials,
+or MCP client configuration.
+APM keeps the legacy selector in
+the user's manifest; it does not automatically rewrite it. Recommend
+`bcgov/crow#stable` for new installs and when offering canonical-root
+migration. Preview any install, selector change, or removal and obtain
+explicit confirmation; never change client/profile state automatically.
+Installing the canonical root does not itself remove alias entries. Only a
+separately confirmed replacement of all legacy selectors changes the plan to
+the root's single-update workflow. Never count an explicit install as a native
+update pass.
+
+`apm self-update` updates the APM
 CLI itself, not Crow. Installs managed outside APM, such as a direct Copilot
 plugin install, require their corresponding updater.
 

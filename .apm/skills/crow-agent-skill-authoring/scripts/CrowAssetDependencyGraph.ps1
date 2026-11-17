@@ -1,3 +1,5 @@
+. (Join-Path $PSScriptRoot 'CrowCollectionCompatibility.ps1')
+
 function Get-CrowPathComparison {
     if ([System.IO.Path]::DirectorySeparatorChar -eq [char]92) {
         return [System.StringComparison]::OrdinalIgnoreCase
@@ -514,7 +516,10 @@ function Test-CrowCollectionIncludesPath {
 }
 
 function Get-CrowAssetDependencyReport {
-    param([Parameter(Mandatory)][string]$RepoRoot)
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [object]$CollectionCompatibilityReport
+    )
 
     $root = (Resolve-Path -LiteralPath $RepoRoot).Path
     $agentsPath = Join-Path $root '.apm/agents'
@@ -705,7 +710,21 @@ function Get-CrowAssetDependencyReport {
         }
     }
 
-    foreach ($collectionDirectory in Get-ChildItem -LiteralPath $collectionsPath -Directory) {
+    $collectionDirectories = @()
+    if (Test-Path -LiteralPath $collectionsPath -PathType Container) {
+        $collectionDirectories = @(Get-ChildItem -LiteralPath $collectionsPath -Directory -Force)
+    }
+    if ($null -eq $CollectionCompatibilityReport -and @($collectionDirectories | Where-Object {
+        $_.Name -in @('starter-package', 'security-remediation')
+    }).Count -gt 0) {
+        $CollectionCompatibilityReport = Get-CrowCollectionCompatibilityReport -RepoRoot $root
+        foreach ($errorText in $CollectionCompatibilityReport.Errors) { $errors.Add($errorText) }
+    }
+    $rootPackage = if ($null -ne $CollectionCompatibilityReport) { $CollectionCompatibilityReport.RootPackage } else { $null }
+    $rootBundleAdded = $false
+    $rootPublicationChecked = $false
+    $rootClosureChecked = $false
+    foreach ($collectionDirectory in $collectionDirectories) {
         $manifestPath = Join-Path $collectionDirectory.FullName 'apm.yml'
         if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
             continue
@@ -716,31 +735,82 @@ function Get-CrowAssetDependencyReport {
             Path = $collectionId
             Kind = 'Collection'
         }
-        $manifest = [System.IO.File]::ReadAllText($manifestPath)
-        $dependencyPaths = @(
-            [regex]::Matches($manifest, '(?m)^\s{6}path:\s+([^\s#]+)\s*$') |
-                ForEach-Object { $_.Groups[1].Value.Replace('\', '/').TrimEnd('/') }
-        )
+        $manifest = if ($null -ne $CollectionCompatibilityReport -and
+            $CollectionCompatibilityReport.Manifests.ContainsKey($collectionDirectory.Name)) {
+            $CollectionCompatibilityReport.Manifests[$collectionDirectory.Name]
+        }
+        else { Read-CrowCollectionManifest -Path $manifestPath }
+        if ($null -eq $CollectionCompatibilityReport -or
+            -not $CollectionCompatibilityReport.Manifests.ContainsKey($collectionDirectory.Name)) {
+            foreach ($errorText in $manifest.Errors) { $errors.Add($errorText) }
+        }
         $dependencies = [System.Collections.Generic.List[object]]::new()
-        foreach ($dependencyPath in $dependencyPaths) {
-            $dependencyFullPath = Join-Path $root $dependencyPath
-            if (-not (Test-Path -LiteralPath $dependencyFullPath)) {
-                continue
+        $fullPackageCollection = $false
+        foreach ($manifestDependency in $manifest.Dependencies) {
+            $dependencyPaths = @()
+            if (-not $manifestDependency.ContainsKey('path')) {
+                if ($null -eq $rootPackage) {
+                    $rootPackage = Read-CrowFullRootPackage -RepoRoot $root
+                    foreach ($errorText in $rootPackage.Errors) { $errors.Add($errorText) }
+                }
+                $rootErrors = @(Test-CrowFullRootDependency -Dependency $manifestDependency `
+                    -Version $rootPackage.Version -Path $manifestPath)
+                foreach ($errorText in $rootErrors) { $errors.Add($errorText) }
+                if ($rootErrors.Count -gt 0 -or $rootPackage.Errors.Count -gt 0) { continue }
+                $fullPackageCollection = $true
+                $dependencyPaths = @($rootPackage.Includes)
+                $graph.Nodes['apm.yml'] = [pscustomobject]@{ Path = 'apm.yml'; Kind = 'FullPackage' }
+                Add-CrowAssetGraphEdge -Graph $graph -From $collectionId -To 'apm.yml' `
+                    -Kind 'FullPackageDependency' -Reference "$($manifestDependency.git)#$($manifestDependency.ref)"
+                # A full-package edge must cover all source assets, not merely
+                # create an empty collection node and pretend closure passed.
+                if (-not $rootPublicationChecked) {
+                  $rootPublicationChecked = $true
+                  foreach ($sourceFile in Get-ChildItem -LiteralPath (Join-Path $root '.apm') -File -Recurse -Force) {
+                    $relative = Get-CrowRepositoryRelativePath -Root $root -Path $sourceFile.FullName
+                    if (@($dependencyPaths | Where-Object {
+                        $relative.Equals($_, $pathComparison) -or $relative.StartsWith("$_/", $pathComparison)
+                    }).Count -eq 0) {
+                        $errors.Add("Full root publication allowlist omits '$relative'.")
+                    }
+                  }
+                }
             }
+            else {
+                $dependencyPaths = @($manifestDependency.path.Replace('\', '/').TrimEnd('/'))
+            }
+            foreach ($dependencyPath in $dependencyPaths) {
+                if (-not $dependencyPath.StartsWith('.apm/', $pathComparison) -or
+                    $dependencyPath -match '(^|/)\.\.?(/|$)') {
+                    $errors.Add("${manifestPath}: dependency path '$dependencyPath' must be a canonical .apm asset.")
+                    continue
+                }
+                $dependencyFullPath = Join-Path $root $dependencyPath
+                if (-not (Test-Path -LiteralPath $dependencyFullPath)) {
+                    $errors.Add("${manifestPath}: dependency path '$dependencyPath' does not exist.")
+                    continue
+                }
 
-            $dependency = [pscustomobject]@{
-                Path = $dependencyPath
-                FullPath = $dependencyFullPath
-                IsDirectory = Test-Path -LiteralPath $dependencyFullPath -PathType Container
+                $dependency = [pscustomobject]@{
+                    Path = $dependencyPath
+                    FullPath = $dependencyFullPath
+                    IsDirectory = Test-Path -LiteralPath $dependencyFullPath -PathType Container
+                }
+                $dependencies.Add($dependency)
+                if ($manifestDependency.ContainsKey('path') -or -not $rootBundleAdded) {
+                    Add-CrowAssetGraphEdge `
+                        -Graph $graph `
+                        -From $(if ($manifestDependency.ContainsKey('path')) { $collectionId } else { 'apm.yml' }) `
+                        -To $dependencyPath `
+                        -Kind 'Bundle'
+                }
             }
-            $dependencies.Add($dependency)
-            Add-CrowAssetGraphEdge `
-                -Graph $graph `
-                -From $collectionId `
-                -To $dependencyPath `
-                -Kind 'Bundle'
+            if (-not $manifestDependency.ContainsKey('path')) { $rootBundleAdded = $true }
         }
 
+        if ($fullPackageCollection -and $rootClosureChecked) { continue }
+        if ($fullPackageCollection) { $rootClosureChecked = $true }
+        $closureOwner = if ($fullPackageCollection) { 'Full root package' } else { "Collection '$($collectionDirectory.Name)'" }
         $visited = [System.Collections.Generic.HashSet[string]]::new($pathComparer)
         $queue = [System.Collections.Queue]::new()
         foreach ($dependency in $dependencies) {
@@ -797,7 +867,7 @@ function Get-CrowAssetDependencyReport {
                         -Dependencies @($dependencies) `
                         -RequiredPath $requiredPath)) {
                     $errors.Add(
-                        "Collection '$($collectionDirectory.Name)' is missing required skill/module '$requiredPath' referenced by '$sourcePath'.")
+                        "$closureOwner is missing required skill/module '$requiredPath' referenced by '$sourcePath'.")
                 }
 
                 $requiredFullPath = Join-Path $root $requiredPath

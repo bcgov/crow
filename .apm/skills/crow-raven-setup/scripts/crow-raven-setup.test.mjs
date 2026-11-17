@@ -1301,6 +1301,8 @@ test("delivers update reminders using Local and Copilot CLI hook output formats"
   assert.match(local.output.systemMessage, /Crow update available/);
   assert.match(local.output.systemMessage, /apm install 'bcgov\/crow#stable'/);
   assert.match(local.output.systemMessage, /apm update --global --target copilot/);
+  assert.equal(local.output.systemMessage.match(/apm update --global --target copilot/g).length, 1);
+  assert.doesNotMatch(local.output.systemMessage, /run two native update passes/);
   assert.match(local.output.hookSpecificOutput.additionalContext, /Tell the user/);
   assert.equal(markCrowUpdateNotified(localStateDir, local.checkResult, localNow), true);
 
@@ -1339,11 +1341,12 @@ test("delivers update reminders using Local and Copilot CLI hook output formats"
   assert.equal(markCrowUpdateNotified(cliStateDir, transformed.checkResult, localNow), true);
 });
 
-test("uses the detected selector when recommending Crow collection updates", async () => {
+test("legacy selectors and root coexistence require two native update passes", async () => {
   const root = mkdtempSync(join(tmpdir(), "crow-collection-update-reminder-"));
   for (const selector of [
     "bcgov/crow/collections/starter-package",
-    "bcgov/crow/collections/security-remediation"
+    "bcgov/crow/collections/security-remediation",
+    "bcgov/crow"
   ]) {
     const selectorName = selector.split("/").at(-1);
     const stateDir = join(root, selectorName, "state");
@@ -1366,15 +1369,31 @@ test("uses the detected selector when recommending Crow collection updates", asy
       getConfiguredUpdateVersions: noManagedUpdateVersions,
       now,
       getCrowInstallSelector: () => selector,
+      getCrowUpdatePasses: () => 2,
       getCurrentVersion: () => "0.10.2",
       getLatestVersion: () => "0.11.0"
     });
     assert.ok(
       result.output.systemMessage.includes(
-        `apm install '${selector}#stable' --global --target copilot`
+        "apm install 'bcgov/crow#stable' --global --target copilot"
       )
     );
-    assert.doesNotMatch(result.output.systemMessage, /bcgov\/crow#stable/);
+    assert.ok(result.output.systemMessage.includes(`detected selector is \`${selector}\``));
+    if (selector !== "bcgov/crow") {
+      assert.ok(!result.output.systemMessage.includes(`apm install '${selector}#stable'`));
+    }
+    assert.match(result.output.systemMessage, /After confirmation/);
+    assert.match(result.output.systemMessage, /Selectors are not automatically rewritten/);
+    assert.match(result.output.systemMessage, /while any legacy selector remains/);
+    assert.match(result.output.systemMessage, /run two native update passes/);
+    assert.equal(result.output.systemMessage.match(/apm update --global --target copilot/g).length, 2);
+    assert.match(result.output.systemMessage, /first refreshes wrapper metadata; the second resolves/);
+    assert.match(result.output.systemMessage, /first-pass refresh is not migration success/);
+    assert.match(result.output.systemMessage, /not an update pass and does not remove legacy selector entries/);
+    assert.match(result.output.systemMessage, /Full-package uninstall removes Crow content needed by aliases too/);
+    assert.match(result.output.systemMessage, /must preserve unrelated human-owned files/);
+    assert.match(result.output.systemMessage, /Exact tags and archives need an explicit version\/ref change/);
+    assert.match(result.output.systemMessage, /No update was installed automatically/);
     assert.equal(markCrowUpdateNotified(stateDir, result.checkResult, now), true);
   }
 });
@@ -1448,7 +1467,7 @@ test("validates GitHub's latest Crow release before accepting its version", asyn
   );
 });
 
-test("resolves the installed APM selector and version for the full package and collections", () => {
+test("resolves the installed root content version for the full package and collections", () => {
   for (const selector of [
     "bcgov/crow",
     "bcgov/crow/collections/starter-package",
@@ -1456,9 +1475,6 @@ test("resolves the installed APM selector and version for the full package and c
   ]) {
     const root = mkdtempSync(join(tmpdir(), "crow-apm-selector-"));
     const manifestPath = join(root, "apm.yml");
-    const scriptPath = selector === "bcgov/crow"
-      ? script
-      : join(root, "installed", "scripts", "crow-raven-setup.mjs");
     writeFileSync(manifestPath, [
       "name: test-global",
       "dependencies:",
@@ -1469,7 +1485,7 @@ test("resolves the installed APM selector and version for the full package and c
     let apmCalls = 0;
     const installed = resolveInstalledCrowPackage({
       manifestPath,
-      scriptPath,
+      scriptPath: script,
       runApm: (args) => {
         apmCalls++;
         assert.deepEqual(args, ["view", selector, "--global"]);
@@ -1482,17 +1498,13 @@ test("resolves the installed APM selector and version for the full package and c
       }
     });
     assert.equal(installed.selector, selector);
-    if (selector === "bcgov/crow") {
-      const plugin = JSON.parse(readFileSync(
-        new URL("../../../../.github/plugin/plugin.json", import.meta.url),
-        "utf8"
-      ));
-      assert.equal(installed.version, plugin.version);
-      assert.equal(apmCalls, 0);
-    } else {
-      assert.equal(installed.version, "0.10.2");
-      assert.equal(apmCalls, 1);
-    }
+    assert.equal(installed.updatePasses, selector === "bcgov/crow" ? 1 : 2);
+    const plugin = JSON.parse(readFileSync(
+      new URL("../../../../.github/plugin/plugin.json", import.meta.url),
+      "utf8"
+    ));
+    assert.equal(installed.version, plugin.version);
+    assert.equal(apmCalls, 0);
   }
 });
 
@@ -1509,21 +1521,100 @@ test("resolves a Crow collection from its APM repository path", () => {
     "      ref: v0.10.2",
     "  mcp: []"
   ].join("\n"));
+  const rootMetadata = join(root, "apm_modules", "bcgov", "crow", ".github", "plugin");
+  mkdirSync(rootMetadata, { recursive: true });
+  writeFileSync(join(rootMetadata, "plugin.json"), JSON.stringify({
+    name: "bcgov-crow", version: "0.10.2"
+  }));
 
   const installed = resolveInstalledCrowPackage({
     manifestPath,
     scriptPath: join(root, "installed", "scripts", "crow-raven-setup.mjs"),
-    runApm: (args) => {
-      assert.deepEqual(args, ["view", selector, "--global"]);
-      return {
-        status: 0,
-        stdout: "Name: installed-crow-collection\nVersion: 0.10.2",
-        stderr: "",
-        error: null
-      };
-    }
+    runApm: () => assert.fail("Wrapper metadata must not determine the installed root version")
   });
-  assert.deepEqual(installed, { version: "0.10.2", selector });
+  assert.deepEqual(installed, { version: "0.10.2", selector, updatePasses: 2 });
+});
+
+test("an interrupted legacy update stays actionable until installed root content is verified", async () => {
+  for (const selector of [
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ]) {
+    const root = mkdtempSync(join(tmpdir(), "crow-interrupted-update-"));
+    try {
+      const stateDir = join(root, "state");
+      const manifestPath = join(root, "apm.yml");
+      const installedRoot = join(root, "installed");
+      const pluginPath = join(installedRoot, ".github", "plugin", "plugin.json");
+      const scriptPath = join(installedRoot, ".apm", "skills", "crow-raven-setup", "scripts", "crow-raven-setup.mjs");
+      mkdirSync(join(installedRoot, ".github", "plugin"), { recursive: true });
+      writeFileSync(pluginPath, JSON.stringify({ name: "bcgov-crow", version: "0.18.1" }));
+      writeFileSync(manifestPath, `dependencies:\n  apm:\n    - ${selector}#stable\n`);
+      const installed = run([
+        "update-hook", "install", "--state-dir", stateDir,
+        "--hook-dir", join(root, "hooks"), "--confirm"
+      ]);
+      assert.equal(installed.status, 0, installed.stderr);
+      const options = {
+        stateDir,
+        force: true,
+        now: Date.now() + 60_000,
+        getConfiguredUpdateVersions: noManagedUpdateVersions,
+        getLatestVersion: () => "0.19.0",
+        resolveInstalledCrowPackage: () => resolveInstalledCrowPackage({
+          manifestPath,
+          scriptPath,
+          runApm: () => ({
+            status: 0, stdout: "Version: 0.19.0", stderr: "", error: null
+          })
+        })
+      };
+      const event = { hook_event_name: "UserPromptSubmit", prompt: "Check updates" };
+      const interrupted = await handleUpdateHookEvent(event, options);
+      assert.equal(interrupted.checkResult.current, "0.18.1");
+      assert.match(interrupted.output.systemMessage, /Crow update available/);
+      assert.match(interrupted.output.systemMessage, /run two native update passes/);
+      assert.equal(markCrowUpdateNotified(stateDir, interrupted.checkResult, options.now), true);
+
+      unlinkSync(pluginPath);
+      const missing = await handleUpdateHookEvent(event, options);
+      assert.equal(missing.checkResult.checked, false);
+      assert.match(missing.output.systemMessage, /root content could not be verified/);
+      assert.match(missing.output.systemMessage, /run both native update passes/);
+      const incompleteState = JSON.parse(readFileSync(join(stateDir, "state.json"), "utf8"));
+      assert.equal(incompleteState.lastAttemptStatus, "failed");
+      assert.equal(incompleteState.lastCheckedByComponent.crow, null);
+
+      const rootMetadata = join(root, "apm_modules", "bcgov", "crow", ".github", "plugin");
+      mkdirSync(rootMetadata, { recursive: true });
+      writeFileSync(join(rootMetadata, "plugin.json"), JSON.stringify({
+        name: "bcgov-crow", version: "0.19.0"
+      }));
+      const completed = await handleUpdateHookEvent(event, options);
+      assert.equal(completed.checkResult.current, "0.19.0");
+      assert.equal(completed.checkResult.updateAvailable, false);
+      assert.deepEqual(completed.output, {});
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
+});
+
+test("canonical-root detection does not hide remaining legacy selectors", () => {
+  const root = mkdtempSync(join(tmpdir(), "crow-root-alias-coexistence-"));
+  try {
+    const manifestPath = join(root, "apm.yml");
+    writeFileSync(manifestPath, "dependencies:\n  apm:\n    - bcgov/crow#stable\n    - bcgov/crow/collections/starter-package#stable\n");
+    const installed = resolveInstalledCrowPackage({ manifestPath, scriptPath: script });
+    assert.equal(installed.selector, "bcgov/crow");
+    assert.equal(installed.updatePasses, 2);
+    writeFileSync(manifestPath, "dependencies:\n  apm:\n    - bcgov/crow/collections/starter-package#stable\n    - bcgov/crow/collections/security-remediation#stable\n");
+    const aliases = resolveInstalledCrowPackage({ manifestPath, scriptPath: script });
+    assert.equal(aliases.selector, "bcgov/crow/collections/starter-package");
+    assert.equal(aliases.updatePasses, 2);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("validates the latest Raven release and codebase-memory registry version", async () => {

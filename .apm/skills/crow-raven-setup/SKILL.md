@@ -91,12 +91,12 @@ workflow; clarify unresolved selection before inspecting state.
    when Crow is APM-managed; it never applies that update. If `apm outdated`
    reports a newer Crow release but `apm update --global` leaves an exact-pinned
    install unchanged, explain that the exact tag is fixed. After confirmation,
-   migrate the same installed selector to Crow's release-maintained branch by
-   appending `#stable`: use `bcgov/crow#stable` for the full package,
-   `bcgov/crow/collections/starter-package#stable` for that collection, or
-   `bcgov/crow/collections/security-remediation#stable` for that collection.
-   Do not add the full package to update a collection. Later,
-   `apm update --global --target copilot` follows published stable releases.
+   recommend the canonical complete package `bcgov/crow#stable`. The legacy
+   collection selectors remain recognized compatibility addresses; see
+   [delivery and updates](modules/delivery-and-updates.md) for mutable-ref
+   two-pass legacy migration and immutable-pin behavior. Preview effects and require explicit
+   confirmation before installs, selector changes, or removals. Never
+   automatically change a user's profile.
 5. When setup adds new servers, point to the verified installed Raven runtime
    script `scripts/setup-credentials.ps1` (Windows) or
    `scripts/setup-credentials-mac.mjs` (macOS). If unavailable or on Linux,
