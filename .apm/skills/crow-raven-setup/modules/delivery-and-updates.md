@@ -152,6 +152,9 @@ The first refreshes wrapper metadata; the second resolves the complete root
 graph. Verify complete content after pass two; a first-pass refresh is not
 migration success. See the
 [collection compatibility contract](../../crow-agent-skill-authoring/modules/collection-management.md).
+The update hook compares installed full-root metadata, not the wrapper's
+version. Missing root metadata leaves the check incomplete and reports how
+to finish the update rather than treating an advanced wrapper as current.
 Do not assume that advancing a wrapper ref refreshes its dependency graph.
 Uninstalling the direct full package removes all installed Crow package
 content, including content needed by legacy aliases; alias-backed copies

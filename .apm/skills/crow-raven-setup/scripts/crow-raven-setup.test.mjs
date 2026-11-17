@@ -1467,7 +1467,7 @@ test("validates GitHub's latest Crow release before accepting its version", asyn
   );
 });
 
-test("resolves the installed APM selector and version for the full package and collections", () => {
+test("resolves the installed root content version for the full package and collections", () => {
   for (const selector of [
     "bcgov/crow",
     "bcgov/crow/collections/starter-package",
@@ -1475,9 +1475,6 @@ test("resolves the installed APM selector and version for the full package and c
   ]) {
     const root = mkdtempSync(join(tmpdir(), "crow-apm-selector-"));
     const manifestPath = join(root, "apm.yml");
-    const scriptPath = selector === "bcgov/crow"
-      ? script
-      : join(root, "installed", "scripts", "crow-raven-setup.mjs");
     writeFileSync(manifestPath, [
       "name: test-global",
       "dependencies:",
@@ -1488,7 +1485,7 @@ test("resolves the installed APM selector and version for the full package and c
     let apmCalls = 0;
     const installed = resolveInstalledCrowPackage({
       manifestPath,
-      scriptPath,
+      scriptPath: script,
       runApm: (args) => {
         apmCalls++;
         assert.deepEqual(args, ["view", selector, "--global"]);
@@ -1502,17 +1499,12 @@ test("resolves the installed APM selector and version for the full package and c
     });
     assert.equal(installed.selector, selector);
     assert.equal(installed.updatePasses, selector === "bcgov/crow" ? 1 : 2);
-    if (selector === "bcgov/crow") {
-      const plugin = JSON.parse(readFileSync(
-        new URL("../../../../.github/plugin/plugin.json", import.meta.url),
-        "utf8"
-      ));
-      assert.equal(installed.version, plugin.version);
-      assert.equal(apmCalls, 0);
-    } else {
-      assert.equal(installed.version, "0.10.2");
-      assert.equal(apmCalls, 1);
-    }
+    const plugin = JSON.parse(readFileSync(
+      new URL("../../../../.github/plugin/plugin.json", import.meta.url),
+      "utf8"
+    ));
+    assert.equal(installed.version, plugin.version);
+    assert.equal(apmCalls, 0);
   }
 });
 
@@ -1529,21 +1521,83 @@ test("resolves a Crow collection from its APM repository path", () => {
     "      ref: v0.10.2",
     "  mcp: []"
   ].join("\n"));
+  const rootMetadata = join(root, "apm_modules", "bcgov", "crow", ".github", "plugin");
+  mkdirSync(rootMetadata, { recursive: true });
+  writeFileSync(join(rootMetadata, "plugin.json"), JSON.stringify({
+    name: "bcgov-crow", version: "0.10.2"
+  }));
 
   const installed = resolveInstalledCrowPackage({
     manifestPath,
     scriptPath: join(root, "installed", "scripts", "crow-raven-setup.mjs"),
-    runApm: (args) => {
-      assert.deepEqual(args, ["view", selector, "--global"]);
-      return {
-        status: 0,
-        stdout: "Name: installed-crow-collection\nVersion: 0.10.2",
-        stderr: "",
-        error: null
-      };
-    }
+    runApm: () => assert.fail("Wrapper metadata must not determine the installed root version")
   });
   assert.deepEqual(installed, { version: "0.10.2", selector, updatePasses: 2 });
+});
+
+test("an interrupted legacy update stays actionable until installed root content is verified", async () => {
+  for (const selector of [
+    "bcgov/crow/collections/starter-package",
+    "bcgov/crow/collections/security-remediation"
+  ]) {
+    const root = mkdtempSync(join(tmpdir(), "crow-interrupted-update-"));
+    try {
+      const stateDir = join(root, "state");
+      const manifestPath = join(root, "apm.yml");
+      const installedRoot = join(root, "installed");
+      const pluginPath = join(installedRoot, ".github", "plugin", "plugin.json");
+      const scriptPath = join(installedRoot, ".apm", "skills", "crow-raven-setup", "scripts", "crow-raven-setup.mjs");
+      mkdirSync(join(installedRoot, ".github", "plugin"), { recursive: true });
+      writeFileSync(pluginPath, JSON.stringify({ name: "bcgov-crow", version: "0.18.1" }));
+      writeFileSync(manifestPath, `dependencies:\n  apm:\n    - ${selector}#stable\n`);
+      const installed = run([
+        "update-hook", "install", "--state-dir", stateDir,
+        "--hook-dir", join(root, "hooks"), "--confirm"
+      ]);
+      assert.equal(installed.status, 0, installed.stderr);
+      const options = {
+        stateDir,
+        force: true,
+        now: Date.now() + 60_000,
+        getConfiguredUpdateVersions: noManagedUpdateVersions,
+        getLatestVersion: () => "0.19.0",
+        resolveInstalledCrowPackage: () => resolveInstalledCrowPackage({
+          manifestPath,
+          scriptPath,
+          runApm: () => ({
+            status: 0, stdout: "Version: 0.19.0", stderr: "", error: null
+          })
+        })
+      };
+      const event = { hook_event_name: "UserPromptSubmit", prompt: "Check updates" };
+      const interrupted = await handleUpdateHookEvent(event, options);
+      assert.equal(interrupted.checkResult.current, "0.18.1");
+      assert.match(interrupted.output.systemMessage, /Crow update available/);
+      assert.match(interrupted.output.systemMessage, /run two native update passes/);
+      assert.equal(markCrowUpdateNotified(stateDir, interrupted.checkResult, options.now), true);
+
+      unlinkSync(pluginPath);
+      const missing = await handleUpdateHookEvent(event, options);
+      assert.equal(missing.checkResult.checked, false);
+      assert.match(missing.output.systemMessage, /root content could not be verified/);
+      assert.match(missing.output.systemMessage, /run both native update passes/);
+      const incompleteState = JSON.parse(readFileSync(join(stateDir, "state.json"), "utf8"));
+      assert.equal(incompleteState.lastAttemptStatus, "failed");
+      assert.equal(incompleteState.lastCheckedByComponent.crow, null);
+
+      const rootMetadata = join(root, "apm_modules", "bcgov", "crow", ".github", "plugin");
+      mkdirSync(rootMetadata, { recursive: true });
+      writeFileSync(join(rootMetadata, "plugin.json"), JSON.stringify({
+        name: "bcgov-crow", version: "0.19.0"
+      }));
+      const completed = await handleUpdateHookEvent(event, options);
+      assert.equal(completed.checkResult.current, "0.19.0");
+      assert.equal(completed.checkResult.updateAvailable, false);
+      assert.deepEqual(completed.output, {});
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }
 });
 
 test("canonical-root detection does not hide remaining legacy selectors", () => {

@@ -344,21 +344,24 @@ function compareCrowVersions(left, right) {
   return 0;
 }
 
+function readCrowPluginVersion(manifestPath) {
+  if (!existsSync(manifestPath)) return null;
+  let manifest;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+  } catch (error) {
+    throw new Error(`Crow plugin metadata is malformed: ${error.message}`);
+  }
+  return manifest.name === "bcgov-crow"
+    ? normalizeCrowVersion(manifest.version, "Crow plugin version")
+    : null;
+}
+
 function readCrowPackageVersion(scriptPath = fileURLToPath(import.meta.url)) {
   let directory = dirname(resolve(scriptPath));
   for (let depth = 0; depth < 8; depth++) {
-    const manifestPath = join(directory, ".github", "plugin", "plugin.json");
-    if (existsSync(manifestPath)) {
-      let manifest;
-      try {
-        manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
-      } catch (error) {
-        throw new Error(`Crow plugin metadata is malformed: ${error.message}`);
-      }
-      if (manifest.name === "bcgov-crow") {
-        return normalizeCrowVersion(manifest.version, "Crow plugin version");
-      }
-    }
+    const version = readCrowPluginVersion(join(directory, ".github", "plugin", "plugin.json"));
+    if (version) return version;
     const parent = dirname(directory);
     if (parent === directory) break;
     directory = parent;
@@ -540,7 +543,11 @@ function readApmInstalledPackageVersion(selector, runCommand = runApm) {
 
 function resolveInstalledCrowPackage(options = {}) {
   const pluginVersion = readCrowPackageVersion(options.scriptPath);
-  const apmManifest = readGlobalCrowApmSelectors(options.manifestPath);
+  const manifestPath = options.manifestPath || join(
+    process.env.APM_HOME || join(homedir(), ".apm"),
+    "apm.yml"
+  );
+  const apmManifest = readGlobalCrowApmSelectors(manifestPath);
   const updatePasses = apmManifest.selectors.some((value) => value !== "bcgov/crow") ? 2 : 1;
   let selector = null;
   if (apmManifest.selectors.length === 1) {
@@ -559,8 +566,20 @@ function resolveInstalledCrowPackage(options = {}) {
     }
   }
 
-  if (pluginVersion && (selector === "bcgov/crow" || apmManifest.selectors.length > 1)) {
+  if (pluginVersion) {
     return { version: pluginVersion, selector, updatePasses };
+  }
+  if (updatePasses === 2) {
+    // Wrapper metadata can advance before the full-root content is installed.
+    const rootVersion = readCrowPluginVersion(join(
+      dirname(manifestPath), "apm_modules", "bcgov", "crow", ".github", "plugin", "plugin.json"
+    ));
+    if (!rootVersion) {
+      throw new Error(
+        "Installed Crow root content could not be verified. After confirmation, run both native update passes with `apm update --global --target copilot` and verify the full-package installation."
+      );
+    }
+    return { version: rootVersion, selector, updatePasses };
   }
   if (selector) {
     return {
@@ -569,7 +588,6 @@ function resolveInstalledCrowPackage(options = {}) {
       updatePasses
     };
   }
-  if (pluginVersion) return { version: pluginVersion, selector: null, updatePasses };
   if (!apmManifest.exists) {
     return {
       version: readApmInstalledPackageVersion("bcgov/crow", options.runApm || runApm),
