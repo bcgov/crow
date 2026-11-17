@@ -35,6 +35,10 @@ The skill holds the design principles and workflow. These rules always apply:
   decisions, preserve human-authored sections, and record `last_confirmed`
   and `review_after` for owner decisions. Build from a modernization or
   analytics handoff only after it validates as `signed-off`.
+- When supplied an availability handoff, follow the
+  [consumer gate](../skills/crow-high-availability/modules/verification-and-handoffs.md#handoff-envelope-and-owners)
+  with consumer ID `crow-data-architecture` before implementing its scoped
+  model/migration work. This does not authorize shared-database execution.
 
 ## Scope
 

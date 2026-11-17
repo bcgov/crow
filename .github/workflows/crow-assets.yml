@@ -117,6 +117,11 @@ jobs:
           & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
           node --test .\.apm\skills\crow-solution-architecture\scripts\technology-preferences.test.mjs
 
+      - name: Test application maintenance continuity contracts
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-high-availability\scripts\Test-HighAvailabilityOutput.Tests.ps1
+
       - name: Test data architecture model validation
         shell: pwsh
         run: |
@@ -141,6 +146,8 @@ jobs:
           & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          & .\.apm\skills\crow-high-availability\scripts\Test-HighAvailabilityOutput.Tests.ps1
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Test business rule validation and rendering
