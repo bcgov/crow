@@ -34,8 +34,8 @@ jobs:
         run: |
           & ./.apm/skills/crow-release/scripts/Test-CrowReleaseNotes.ps1
 
-  validate:
-    name: Validate Crow assets (${{ matrix.os }})
+  platform_tests:
+    name: Platform validators (${{ matrix.os }}, ${{ matrix.suite }})
     runs-on: ${{ matrix.os }}
     timeout-minutes: 10
     strategy:
@@ -45,20 +45,135 @@ jobs:
           - windows-latest
           - ubuntu-latest
           - macos-latest
+        suite:
+          - filesystem
+          - reports
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
 
       - name: Run deterministic asset checks
+        if: matrix.suite == 'filesystem'
         shell: pwsh
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssets.ps1 -StrictContext
 
       - name: Test agent and skill dependency graph
+        if: matrix.suite == 'filesystem'
         shell: pwsh
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAssetDependencyGraph.Tests.ps1
+
+      - name: Test Raven setup CLI
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          node --test .\.apm\skills\crow-raven-setup\scripts\crow-raven-setup.test.mjs
+
+      - name: Test technology preference persistence
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          node --test .\.apm\skills\crow-solution-architecture\scripts\technology-preferences.test.mjs
+
+      - name: Test data architecture model validation
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
+
+      - name: Test data architecture metadata SQL generation
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
+
+      - name: Test Crow debt scanner
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-simplification-review\scripts\Test-CrowDebt.Tests.ps1
+
+      - name: Test architecture output validation
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
+
+      - name: Test security review synthesis
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-security-review\scripts\New-CrowSecuritySynthesis.Tests.ps1
+
+      - name: Test executive report STRIDE data contract
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-executive-report\Test-CrowExecutiveReportStride.Tests.ps1
+
+      - name: Test solution architecture output validation
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
+
+      - name: Test application maintenance continuity contracts
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-high-availability\scripts\Test-HighAvailabilityOutput.Tests.ps1
+
+      - name: Test legacy modernization data-change handoff validation
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
+
+      - name: Test business rule validation and rendering
+        if: matrix.suite == 'reports'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-business-rules\scripts\Test-CrowBusinessRules.Tests.ps1
+
+      - name: Test release safety guards
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
+
+      - name: Test pull request version gate
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-CrowPullRequestVersion.Tests.ps1
+
+      - name: Test release draft preparation
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-release\scripts\Test-NewCrowReleaseDraft.Tests.ps1
+
+      - name: Test testing-template synchronization
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-testing\scripts\Test-CrowTestingTemplateSync.ps1
+
+      - name: Test API modernization coverage gate
+        if: matrix.suite == 'filesystem'
+        shell: pwsh
+        run: |
+          & .\.apm\skills\crow-testing\scripts\Test-ApiModernizationCoverage.Tests.ps1
+
+  portable_tests:
+    name: Portable validator contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
 
       - name: Test retained collection compatibility contract
         shell: pwsh
@@ -75,103 +190,77 @@ jobs:
         run: |
           & .\.apm\skills\crow-agent-skill-authoring\scripts\Test-CrowAgentHandoffs.Tests.ps1
 
-      - name: Test Raven setup CLI
-        shell: pwsh
-        run: |
-          node --test .\.apm\skills\crow-raven-setup\scripts\crow-raven-setup.test.mjs
-
       - name: Validate public Crow project memory
         shell: pwsh
         run: |
-          & .\.apm\skills\crow-project-context\scripts\Test-CrowConfig.ps1
           & .\.apm\skills\crow-project-context\scripts\Test-CrowConfig.Tests.ps1
-
-      - name: Test Crow debt scanner
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-simplification-review\scripts\Test-CrowDebt.Tests.ps1
-
-      - name: Test architecture output validation
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-architecture-review\scripts\Test-ArchitectureOutput.Tests.ps1
-
-      - name: Test security review synthesis
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-security-review\scripts\New-CrowSecuritySynthesis.Tests.ps1
 
       - name: Test executive report rendering
         shell: pwsh
         run: |
           & .\.apm\skills\crow-executive-report\Test-ExecutiveReportOutput.Tests.ps1
 
-      - name: Test executive report STRIDE data contract
+      - name: Test security issue conversion
         shell: pwsh
         run: |
-          & .\.apm\skills\crow-executive-report\Test-CrowExecutiveReportStride.Tests.ps1
+          & .\.apm\skills\crow-security-review\scripts\ConvertTo-CrowSecurityIssues.Tests.ps1
 
-      - name: Test solution architecture output validation
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-solution-architecture\scripts\Test-SolutionArchitectureOutput.Tests.ps1
-          node --test .\.apm\skills\crow-solution-architecture\scripts\technology-preferences.test.mjs
-
-      - name: Test application maintenance continuity contracts
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-high-availability\scripts\Test-HighAvailabilityOutput.Tests.ps1
+  windows_powershell:
+    name: Windows PowerShell 5.1 compatibility
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
 
       - name: Test data architecture model validation
-        shell: pwsh
+        shell: powershell
         run: |
           & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
 
       - name: Test data architecture metadata SQL generation
-        shell: pwsh
+        shell: powershell
         run: |
           & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
 
       - name: Test legacy modernization data-change handoff validation
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
-
-      - name: Verify data architecture and modernization scripts on Windows PowerShell 5.1
-        if: runner.os == 'Windows'
         shell: powershell
         run: |
-          & .\.apm\skills\crow-data-architecture\scripts\Test-WwwSqlDesignerModel.Tests.ps1
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          & .\.apm\skills\crow-data-architecture\scripts\New-DataModelMetadataSql.Tests.ps1
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           & .\.apm\skills\crow-legacy-modernization\scripts\Test-DataChangeHandoff.Tests.ps1
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Test application maintenance continuity contracts
+        shell: powershell
+        run: |
           & .\.apm\skills\crow-high-availability\scripts\Test-HighAvailabilityOutput.Tests.ps1
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-      - name: Test business rule validation and rendering
+  validate:
+    name: Validate Crow assets (${{ matrix.os }})
+    if: always()
+    needs: [platform_tests, portable_tests, windows_powershell]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 2
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+          - macos-latest
+    steps:
+      - name: Require every validation group to pass
         shell: pwsh
+        env:
+          PLATFORM_RESULT: ${{ needs.platform_tests.result }}
+          PORTABLE_RESULT: ${{ needs.portable_tests.result }}
+          WINDOWS_POWERSHELL_RESULT: ${{ needs.windows_powershell.result }}
         run: |
-          & .\.apm\skills\crow-business-rules\scripts\Test-CrowBusinessRules.Tests.ps1
-
-      - name: Test release safety guards
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-release\scripts\Test-CrowReleaseGuards.ps1
-          & .\.apm\skills\crow-release\scripts\Test-CrowPullRequestVersion.Tests.ps1
-
-      - name: Test release draft preparation
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-release\scripts\Test-NewCrowReleaseDraft.Tests.ps1
-
-      - name: Test testing-template synchronization
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-testing\scripts\Test-CrowTestingTemplateSync.ps1
-
-      - name: Test API modernization coverage gate
-        shell: pwsh
-        run: |
-          & .\.apm\skills\crow-testing\scripts\Test-ApiModernizationCoverage.Tests.ps1
+          $results = @{
+              Platform = $env:PLATFORM_RESULT
+              Portable = $env:PORTABLE_RESULT
+              WindowsPowerShell = $env:WINDOWS_POWERSHELL_RESULT
+          }
+          foreach ($group in $results.GetEnumerator()) {
+              if ($group.Value -ne 'success') {
+                  throw "$($group.Key) validators did not pass: $($group.Value)"
+              }
+          }

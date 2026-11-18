@@ -4,6 +4,8 @@ Tailor this contract to the confirmed task. Use exact discoverable agent
 names/skill identifiers, not placeholder roles as invented agent names.
 The coordinator is the next session's role; Getting Started does not execute
 this prompt. Omit irrelevant phases and unresolved implementation permission.
+Keep both review checkpoints, tailored using the
+[review policy](../modules/reviews.md).
 
 ```text
 Act as coordinator for [objective and final deliverables].
@@ -40,17 +42,41 @@ another owner's outputs. Reconcile contradictions and shared decisions before
 dependent work continues. Stop consumers on failed/stale prerequisites.
 Workers stop at their assigned deliverable; the coordinator consolidates
 results and issues only necessary affected follow-ups.
-Review/retry limits: [bounded limits appropriate to this task].
+Review/retry limits: [maximum correction/re-review cycles per checkpoint, then pause].
 Pause when exhausted; never weaken a verifier to make a phase pass.
 
 Gates:
-[Evidence/design confirmation and requested independent review.]
+[Evidence/design confirmation and applicable owner approvals.]
 [Plan/task-list review and explicit implementation authorization.]
 [Approved implementation slices, applicable tests, integrated security/code review.]
 [Separate manual review, provider/ticket writes, migration and deployment approvals.]
 Approval for planning is not approval to build; approval for one phase does
 not authorize the next. Use signed-off handoffs only where the owning workflow
 requires them. Never bypass specialist scope or approval gates.
+
+Two review checkpoints:
+1. Review [early artifact and focus] after [stage], before [dependent work].
+2. Review [later/reconciled artifact and focus] after [stage], before final delivery.
+At each checkpoint, obtain a bounded read-only review from a separate agent.
+Verify available models and prefer a model family different from yours;
+a different role name is not a different model family. Prefer distinct
+reviewer families too when available. Honor current model/cost and delegation
+policies; do not install tools or change models beyond authorized limits.
+Share only minimum permitted evidence, never secrets or personal data, and
+honor data-handling/provider-approval policies; a prohibited route is unavailable.
+If another family is unavailable or unverified, disclose this and use a
+permitted separate same-family reviewer. If delegation is unavailable or
+disallowed, supply a manual review prompt requesting the reviewer's verified
+model family (or explicit unknown) and wait for returned findings.
+Never count an unverified family as cross-family.
+Do not count self-review or claim reviews that did not occur. If no separate
+review is possible, pause and ask about explicitly reduced, unreviewed output.
+You, the original coordinator, reconcile each review against evidence before
+dependent work or final delivery: accept and apply justified in-scope fixes,
+explain rejected findings, and surface unresolved decisions. Rerun affected
+checks and obtain re-review for material changes within the review/retry limit;
+pause on blockers or an exhausted limit. Return both review outcomes,
+reconciliation decisions, remaining risks, and any family/capability limits.
 
 Continue within approved scope until the stop point, except when a material
 decision, approval, missing prerequisite, unsafe target or failed check blocks

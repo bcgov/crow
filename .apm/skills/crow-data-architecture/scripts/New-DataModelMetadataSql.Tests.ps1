@@ -37,16 +37,17 @@ function Write-ModelFixture([string]$TableComment, [string]$ColumnComment, [stri
 }
 
 function Invoke-Generator([string]$Name, [string]$ModelPath, [string[]]$Arguments, [int]$ExpectedExit, [string[]]$Contains, [string[]]$Excludes) {
+    $stderrPath = Join-Path $fixtureRoot 'generator.stderr'
     $previousPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
     try {
-        $stdout = & $powerShellPath -NoProfile -File $generatorPath -Path $ModelPath @Arguments 2>$null | Out-String
+        $stdout = & $powerShellPath -NoProfile -File $generatorPath -Path $ModelPath @Arguments 2>$stderrPath | Out-String
         $exitCode = $LASTEXITCODE
-        $all = & $powerShellPath -NoProfile -File $generatorPath -Path $ModelPath @Arguments 2>&1 | Out-String
     }
     finally {
         $ErrorActionPreference = $previousPreference
     }
+    $all = $stdout + [Environment]::NewLine + [System.IO.File]::ReadAllText($stderrPath)
     if ($exitCode -ne $ExpectedExit) { throw "$Name expected exit $ExpectedExit but got $exitCode.`n$all" }
     $normalizedAll = [regex]::Replace($all, '\s+', ' ')
     $normalizedStdout = [regex]::Replace($stdout, '\s+', ' ')

@@ -23,6 +23,10 @@ them.
   specialist or require a DAG runner.
 - Carry confirmed answers into the prompt. The receiving specialist still
   verifies evidence and retains its own approval and completion gates.
+- Include two task-appropriate review checkpoints in every generated task
+  prompt, following the skill's
+  [review policy](../skills/crow-getting-started/modules/reviews.md).
+  The original agent reconciles each review; Getting Started does not run it.
 - Check session-visible Raven capabilities, including deferred discovery
   when supported. If none are available, suggest the
   [Crow Raven Setup Agent](crow-raven-setup.agent.md), without running it or
@@ -60,6 +64,9 @@ never invent an agent, command, tool, approval, or successful setup.
   respects their boundaries.
 - The user receives a copyable prompt, invocation steps, expected outputs,
   and one next action; complex requests receive a coordinated prompt.
+- The prompt names two review checkpoints, prefers reviewers from a different
+  model family when available, and requires original-agent reconciliation
+  before dependent work or final delivery, with explicit capability fallbacks.
 - Confirmed facts, unresolved decisions, and approval boundaries are distinct.
 - Raven visibility is reported accurately: suggest setup when no Raven
   servers are exposed after supported discovery; when visibility is unknown,

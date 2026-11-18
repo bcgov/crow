@@ -27,7 +27,8 @@ Propose a small decomposition and confirm only unresolved choices:
   the selected existing Crow specialists/skills. Do not invent a Crow
   orchestration agent or assume an application-development agent exists.
 - **Approvals and reviews:** who decides material trade-offs, what requires a
-  manual review, and which independent/model-family checks the user wants?
+  manual review, and are additional reviews needed beyond the
+  [two required checkpoints](reviews.md)?
   Honor the user's model/cost policy; do not pin models in Crow assets.
 
 ## Prompt contract
@@ -49,10 +50,11 @@ Expand only sections relevant to the confirmed task. Include:
    report cross-scope issues rather than editing another owner's output.
    Each repository keeps the outputs defined by its owning skill; resolve
    fixed-path collisions before assigning two writers.
-5. Review checkpoints: evidence/design agreement, plan approval, approved
-   implementation slices, integrated security/code review where requested,
-   and verification. A task list, second model, or coordinator cannot grant
-   owner approval or waive a specialist gate.
+5. Two task-appropriate review checkpoints using the
+   [review policy](reviews.md), with the original coordinator reconciling
+   each review before dependent work or final delivery. Preserve additional
+   specialist checks, verification, and owner approvals; a second model or
+   coordinator cannot grant owner approval or waive a specialist gate.
 6. Resume behavior: reuse recorded decisions and affected outputs, refresh
    stale evidence, carry blockers forward, and reopen dependent work when
    assumptions change. Do not repeat the entire interview on every handoff.
@@ -87,7 +89,7 @@ For a design-only request, permitted writes are only the declared design
 outputs/prototype, not application implementation or environment activation.
 Review the integrated architecture/security and implementation task list
 before seeking implementation approval. Subsequent approved slices get
-targeted tests and independent reviews as requested. Unknown baseline
+targeted tests and the two review checkpoints. Unknown baseline
 coverage is a gap, not proof of equivalence.
 
 ### Security scanning and remediation
