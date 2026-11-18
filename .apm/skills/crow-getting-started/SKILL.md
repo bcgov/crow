@@ -18,9 +18,12 @@ supports skills but not custom agent selection.
 3. Read only the active client's section of
    [client-invocation.md](modules/client-invocation.md). Confirm actual
    discovery rather than assuming installation implies availability.
-4. For a single starting route, use the
+4. Read [reviews.md](modules/reviews.md) for every generated task prompt.
+   Include two stage-appropriate reviews and original-agent reconciliation,
+   including when the task needs only one specialist route.
+5. For a single starting route, use the
    [prompt template](resources/prompt-template.md).
-5. When the user requests orchestration, or several specialist outputs must
+6. When the user requests orchestration, or several specialist outputs must
    be coordinated, read [multi-agent.md](modules/multi-agent.md) and use the
    [orchestration prompt template](resources/orchestration-prompt-template.md).
    Do not load it merely because many files are involved.

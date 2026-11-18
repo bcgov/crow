@@ -33,7 +33,7 @@ Establish, in this order when not already known:
    Identify affected repositories and supplied inputs only as needed.
 
 For complex work, conditionally clarify shared contracts/datastores, approved
-targets, specialist output ownership, desired reviews, and whether the next
+targets, specialist output ownership, additional reviews, and whether the next
 session may coordinate workers. Prefer a concrete proposed decomposition for
 confirmation over asking the developer to design an orchestration graph.
 Use [multi-agent.md](multi-agent.md); do not ask these questions for a
@@ -79,6 +79,8 @@ Return:
 - one recommended starting route and a short reason;
 - the relevant agents/skills, necessary inputs, and expected outputs;
 - client-specific invocation steps and a copyable prompt;
+- two task-appropriate review checkpoints and original-agent reconciliation,
+  following the [review policy](reviews.md);
 - unresolved decisions and explicit approval/stop boundaries;
 - one next action for the developer.
 
