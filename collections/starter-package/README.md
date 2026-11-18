@@ -36,7 +36,7 @@ Updating an immutable install requires an explicit version/ref change. This
 release's retained address is:
 
 ```powershell
-apm install bcgov/crow/collections/starter-package#v0.19.0 --global --target copilot
+apm install bcgov/crow/collections/starter-package#v0.20.0 --global --target copilot
 ```
 
 The complete package retains the existing development and security workflows.

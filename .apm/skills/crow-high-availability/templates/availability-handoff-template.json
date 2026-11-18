@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "producer": "crow-high-availability",
+  "consumer": "{{CONSUMER_ID}}",
+  "generatedAt": "{{UTC_TIMESTAMP}}",
+  "sourceRevision": "{{REVIEWED_ARTIFACT_COMMIT}}",
+  "status": "draft",
+  "reportPath": "docs/high-availability.md",
+  "scope": "{{SERVICE_AND_REQUESTED_BOUNDARY}}",
+  "requestedWork": {
+    "kind": "{{PERMITTED_WORK_KIND}}",
+    "summary": "{{SPECIFIC_WORK_WITHIN_EXISTING_CONSUMER_AUTHORITY}}"
+  },
+  "excludedActions": [
+    "deployment",
+    "traffic-execution",
+    "host-os-patching",
+    "database-engine-patching"
+  ],
+  "artifactPaths": ["docs/high-availability.md"],
+  "evidencePaths": [],
+  "facts": [
+    {
+      "summary": "{{CONFIRMED_OR_EXPLICITLY_PROVISIONAL_FACT}}",
+      "confidence": "Unknown",
+      "evidencePaths": []
+    }
+  ],
+  "operationIds": ["OP-001"],
+  "scenarioIds": ["SC-001"],
+  "criterionIds": ["CR-001"],
+  "compatibilityConstraints": ["{{COMPATIBILITY_REQUIREMENT}}"],
+  "rollbackLimitations": ["{{LAST_SAFE_ROLLBACK_OR_FORWARD_RECOVERY_CONSTRAINT}}"],
+  "openItems": [],
+  "signOff": { "approvedBy": null, "approvedAt": null }
+}

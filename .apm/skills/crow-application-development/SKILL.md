@@ -7,6 +7,12 @@ description: Implement and evolve applications with technology-routed engineerin
 
 Use this skill while implementing or changing an application. Data architecture and data modelling are handled by the Crow Data Architecture Agent; safe persistence implementation is included.
 
+When supplied an availability handoff, apply the
+[consumer gate](../crow-high-availability/modules/verification-and-handoffs.md#handoff-envelope-and-owners)
+with consumer ID `crow-application-development` before its scoped production
+changes. This optional contract preserves approved continuity constraints;
+it is not deployment or traffic-execution authority.
+
 ## Context-efficient loading
 
 1. Inspect manifests and the affected entry point to identify the technology and workload.

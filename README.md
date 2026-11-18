@@ -49,7 +49,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.19.0 --global --target copilot
+apm install bcgov/crow#v0.20.0 --global --target copilot
 ```
 
 ### Updating an installation
@@ -61,7 +61,7 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.19.0` remains pinned to that release;
+release. An exact version tag such as `#v0.20.0` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
@@ -174,6 +174,10 @@ separately curated packages.
 
 ## Agents
 
+- [Crow High Availability Design Agent](.apm/agents/crow-high-availability.agent.md) —
+  Assesses and designs business-hours application release/update continuity
+  against measurable critical-operation criteria. No implementation,
+  deployment, DR, host/OS or database-engine patching; no uptime guarantee.
 - [Crow Getting Started Agent](.apm/agents/crow-getting-started.agent.md) —
   Interviews developers and teaches task-specific, client-aware prompts,
   including coordinated multi-agent work. Guidance only, not execution.
@@ -210,6 +214,11 @@ separately curated packages.
 
 ## Skills
 
+- [**crow-high-availability**](.apm/skills/crow-high-availability/SKILL.md) —
+  Evidence-first maintenance-continuity assessment, conditional
+  hosting guidance, compatibility design, runbooks, verification criteria and
+  scoped implementation handoffs. Design approval is separate from
+  operational demonstration.
 - [**crow-getting-started**](.apm/skills/crow-getting-started/SKILL.md) —
   Focused onboarding, capability selection, and single-agent or coordinated
   task prompts with client-specific invocation guidance.
@@ -300,7 +309,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.19.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.20.0.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.
