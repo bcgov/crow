@@ -157,7 +157,16 @@ installs updates automatically. **The hook does not track SonarScanner
 releases.** Run the Raven Setup Agent directly to check scanner versions when
 Sonar MCP is configured or selected during setup.
 
-### 5. Verify the installation
+### 5. Optional reporting prerequisite
+
+The [Crow Business Rule Documentation Agent](.apm/agents/crow-business-rule-documentation.agent.md)
+requires a preinstalled Mermaid CLI (`mmdc`) only when diagrams are needed:
+
+```powershell
+npm install -g @mermaid-js/mermaid-cli
+```
+
+### 6. Verify the installation
 
 Use the selected client's normal discovery commands:
 
@@ -290,15 +299,6 @@ separately curated packages.
   scenarios organized by repository features, automated unit/integration tests
   (including PHP), and business-readable manual QA coverage; includes HTTP
   characterization and differential testing for REST/SOAP API modernization.
-
-## Optional reporting prerequisite
-
-The [Crow Business Rule Documentation Agent](.apm/agents/crow-business-rule-documentation.agent.md)
-requires a preinstalled Mermaid CLI (`mmdc`) only when diagrams are needed:
-
-```powershell
-npm install -g @mermaid-js/mermaid-cli
-```
 
 ## Local development and release
 
