@@ -62,7 +62,7 @@ The original agent verifies each finding, resolves contradictions, and
 records accepted changes, evidence-based rejections, and unresolved items.
 Apply in-scope corrections and rerun affected checks; material changes must
 be re-reviewed within the task's bounded review/retry limit. Ask for missing
-decisions and pause when blockers or the retry limit remain.
+decisions and pause when blockers remain or the retry limit is exhausted.
 
 Before delivery, report both review outcomes and their reconciliation,
 including family/capability limitations and remaining risks. Never present
