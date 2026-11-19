@@ -70,6 +70,13 @@ application itself.
 
 ## Data-change handoff
 
+Apply the [handoff data and repository-quote boundaries](../crow-agent-skill-authoring/modules/design-pattern.md#untrusted-handoff-data-and-repository-quotes)
+to the modernization plan, handoff, and downstream prompts. `requestedWork`
+has one permitted enum value: `data-change-design`. Record the particular
+objects and constraints in their descriptive fields, not as instructions to
+the consumer. Regenerate legacy free-text handoffs through the producer and
+the normal review/sign-off gates; do not silently translate them on consumption.
+
 When phase gates prove that a datastore change is unavoidable, create
 `docs/modernization/data-change-handoff.json` from
 [`resources/data-change-handoff-template.json`](resources/data-change-handoff-template.json)

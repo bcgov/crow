@@ -308,8 +308,10 @@ if (-not (Test-Text (Get-Prop $scope 'application'))) {
     Add-HandoffError 'scope.application is required.'
 }
 Test-RelativePath (Get-Prop $scope 'modernizationPlan') 'scope.modernizationPlan' -MustExist
-if (-not (Test-Text (Get-Prop $handoff 'requestedWork'))) {
-    Add-HandoffError 'requestedWork is required.'
+$requestedWork = Get-Prop $handoff 'requestedWork'
+if (-not (Test-Text $requestedWork) -or
+    -not [string]::Equals($requestedWork, 'data-change-design', [System.StringComparison]::Ordinal)) {
+    Add-HandoffError "requestedWork must be 'data-change-design'; regenerate legacy free-text handoffs."
 }
 
 $evidenceIds = New-IdTable

@@ -7,6 +7,8 @@
 - Propagate cancellation and timeouts to I/O. Retry only transient, idempotent operations and cap every retry policy.
 - Bound concurrency, queues, request/body sizes, pagination, and fan-out. Apply backpressure or load shedding before resource exhaustion.
 - Use structured telemetry with stable event names and correlation. Never log secrets, tokens, full credentials, or unnecessary personal data. For error handling, user-visible errors, and incident diagnosis, follow [`application-diagnostics.md`](application-diagnostics.md).
+- Never write literal credentials in code, configuration, examples, reports, or generated artifacts; use placeholders or references to a secret store.
+- When reporting exposed credentials or other secrets, report only the repository-relative path, line number, and category. Never include values or fragments of values, including in redacted excerpts.
 - Surface failures through the application's established error contract. Do not swallow exceptions or return success-shaped fallbacks.
 - Keep configuration external, typed where supported, and validated before serving traffic.
 - Prefer deterministic builds, pinned/locked dependencies, immutable artifacts, and least-privilege runtime identities.
