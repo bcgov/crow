@@ -9,7 +9,7 @@
     "application": "APPLICATION_OR_SERVICE_NAME",
     "modernizationPlan": "docs/modernization/plan.md"
   },
-  "requestedWork": "Design the data change that the replacement requires.",
+  "requestedWork": "data-change-design",
   "necessity": {
     "summary": "Why the replacement cannot preserve the existing datastore.",
     "confidence": "Inferred",

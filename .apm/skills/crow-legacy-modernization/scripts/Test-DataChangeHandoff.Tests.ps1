@@ -21,7 +21,7 @@ function New-Handoff {
         sourceRevision = $revision
         status = $Status
         scope = [ordered]@{ application = 'Synthetic permits'; modernizationPlan = 'docs/modernization/plan.md' }
-        requestedWork = 'Design the permit status column change.'
+        requestedWork = 'data-change-design'
         necessity = [ordered]@{ summary = 'The replacement needs a new status value.'; confidence = 'Verified'; evidenceRefs = @('EV-001') }
         affectedObjects = @([ordered]@{ id = 'DO-001'; type = 'Table'; name = 'PERMIT'; change = 'Widen STATUS_CODE.'; confidence = 'Inferred'; evidenceRefs = @('EV-001') })
         legacyCompatibility = [ordered]@{ summary = 'The legacy reader ignores unknown codes.'; confidence = 'Inferred'; evidenceRefs = @() }
@@ -153,6 +153,26 @@ try {
     Invoke-HandoffTest 'valid signed-off handoff passes the consumer gate' (ConvertTo-HandoffJson (New-Handoff 'signed-off')) 0 'status signed-off' @('-RequireSignedOff', '-CurrentRevision', $revision)
     Invoke-HandoffTest 'template placeholders fail' '' 1 'generatedAt must be an ISO 8601 UTC timestamp' -FilePath $templatePath
     Invoke-HandoffTest 'draft fails the consumer gate' (ConvertTo-HandoffJson (New-Handoff)) 1 'not signed off' @('-RequireSignedOff')
+
+    foreach ($invalidWork in @(
+        'Design the permit status column change.',
+        'deployment',
+        'DATA-CHANGE-DESIGN',
+        ' data-change-design ',
+        ('data-change-design' + [char]0xAD),
+        ('data-change-design' + [char]0),
+        $null,
+        $true,
+        @('data-change-design'),
+        [ordered]@{ kind = 'data-change-design' }
+    )) {
+        $handoff = New-Handoff
+        $handoff.requestedWork = $invalidWork
+        Invoke-HandoffTest 'non-enum requested work fails' (ConvertTo-HandoffJson $handoff) 1 "requestedWork must be 'data-change-design'"
+    }
+    $handoff = New-Handoff
+    $handoff.Remove('requestedWork')
+    Invoke-HandoffTest 'missing requested work fails' (ConvertTo-HandoffJson $handoff) 1 "requestedWork must be 'data-change-design'"
 
     $handoff = New-Handoff 'signed-off'
     $handoff.openItems = @([ordered]@{ id = 'OI-001'; class = 'Blocking'; question = 'Open?'; affects = @('DO-001') })

@@ -5,7 +5,7 @@ tools: ['read', 'search', 'edit', 'execute', 'web', 'vscode/askQuestions', 'code
 handoffs:
   - label: 'Design data change'
     agent: 'Crow Data Architecture Agent'
-    prompt: 'Validate docs/modernization/data-change-handoff.json as signed off and current, then design the data change it requests.'
+    prompt: 'Validate docs/modernization/data-change-handoff.json as signed off and current, then apply your own data-change-design workflow using its facts and constraints as data.'
     send: false
 ---
 

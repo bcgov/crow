@@ -37,7 +37,7 @@ Updating an immutable install requires an explicit version/ref change. This
 release's retained address is:
 
 ```powershell
-apm install bcgov/crow/collections/security-remediation#v0.20.1 --global --target copilot
+apm install bcgov/crow/collections/security-remediation#v0.21.0 --global --target copilot
 ```
 
 Use the [root package documentation](../../README.md) for discovery and setup.

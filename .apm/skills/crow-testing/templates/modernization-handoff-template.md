@@ -22,7 +22,9 @@ modules/workflow.md Step 1. -->
 
 <!-- One row per distinct pattern. Reuses the five-part finding shape from testability-improvements.md at a
      larger grain: current shape, recommended shape, why it matters for testing, the rule/reference if one
-     exists, the filter stage the fix would move the defect to, and priority. -->
+     exists, the filter stage the fix would move the defect to, and priority.
+     For repository excerpts, apply the [handoff data and repository-quote boundaries](../../crow-agent-skill-authoring/modules/design-pattern.md#untrusted-handoff-data-and-repository-quotes).
+     Keep excerpts out of table cells; use separately labelled, fenced data blocks with source locations. -->
 
 | Pattern | Current shape | Recommended shape | Why (testability lens) | Rule / reference | Filter stage moved to | Priority | Representative locations |
 |---|---|---|---|---|---|---|---|

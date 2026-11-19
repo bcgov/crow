@@ -19,6 +19,7 @@ State the role and load the owning skill.
 - State the non-negotiable rules that govern every operating mode.
 - Prefer concise principles that affect decisions; put detailed knowledge in the owning skill's routed modules.
 - Include evidence, untrusted-content, failure, and user-decision rules when they apply.
+- For handoffs or quoted repository text, apply the [data boundaries and quote delimiters](../modules/design-pattern.md#untrusted-handoff-data-and-repository-quotes).
 - When the agent interviews users, writes documents, hands off work, reads a live provider, or resumes prior work, state the applicable [interaction contract](../modules/interaction-contracts.md) rule in one line each.
 
 ## Scope

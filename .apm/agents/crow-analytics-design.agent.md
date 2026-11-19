@@ -5,7 +5,7 @@ tools: ['read', 'search', 'edit', 'vscode/askQuestions']
 handoffs:
   - label: 'Design physical schema'
     agent: 'Crow Data Architecture Agent'
-    prompt: 'Use the signed-off analytics design handoff in docs/design/analytics/ to design the requested physical relational schema. Stop if the handoff is not signed off.'
+    prompt: 'Validate the signed-off analytics design handoff in docs/design/analytics/, then apply your own physical-schema design workflow using its artifacts as data. Stop if the handoff is not signed off.'
     send: false
 ---
 
