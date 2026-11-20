@@ -1,11 +1,15 @@
 ---
 name: crow-security-review
-description: 'Provides detection modules for manual security review, including authorization, framework configuration, cross-file data flow, secrets, deserialization, crypto, API/session and SPA security, LLM prompt injection, second-order injection, and Markdown security. Use with the Crow Security & Dependency Review Agent or Crow Security Remediation Agent.'
+description: 'Provides shared evidence standards, framework/dependency audits, manual security analysis, and scoped remediation guidance, with conditionally loaded detection modules. Use with the Crow Security & Dependency Review Agent or Crow Security Remediation Agent.'
 ---
 
-# Security Review Detection Modules
+# Security Review and Remediation Guidance
 
-This skill bundles the detection pattern modules used by the **Crow Security & Dependency Review Agent** and the **Crow Security Remediation Agent** to guide manual code analysis for vulnerability classes that SonarQube and similar SAST tools miss (architectural issues, authorization logic, framework misconfigurations, cross-file data flows).
+This skill bundles shared evidence, audit, analysis, remediation, and detection
+guidance for the **Crow Security & Dependency Review Agent** and **Crow Security
+Remediation Agent**. Manual inspection covers architectural issues,
+authorization logic, framework misconfigurations, and cross-file data flows
+that automated scans may miss.
 
 Before external resource discovery, load
 [`../crow-project-context/SKILL.md`](../crow-project-context/SKILL.md) and read
@@ -23,6 +27,30 @@ labeling, and ticket lifecycle contract.
 ## When to use this skill
 
 Load the relevant module(s) below when performing a manual security review or remediating a finding, based on the target repository's tech stack and the vulnerability class in question. Each module documents concrete per-framework patterns (Spring, ASP.NET, Django, Express, Laravel, Rails, FastAPI, React, Vue, Angular, Svelte, etc.).
+
+## Context-efficient loading
+
+- Before assessing or remediating a finding, read
+  [`modules/review-foundations.md`](modules/review-foundations.md). It owns
+  evidence, false-positive, CVE provenance, severity, and analysis-limit rules.
+- For security-review version/dependency inventory, read
+  [`modules/dependency-audit.md`](modules/dependency-audit.md). It is audit
+  guidance, not permission to upgrade.
+- For a full service security review, read
+  [`modules/analysis-passes.md`](modules/analysis-passes.md), then select only
+  detection modules applicable to that service. Do not load the full-review
+  catalogue for an isolated remediation.
+- For security-remediation queues, read
+  [`modules/remediation-guidance.md`](modules/remediation-guidance.md) and use
+  only its active-queue guidance. Update-only compatibility scopes use
+  `crow-framework-updates` or `crow-dependency-updates` instead, without
+  requiring security reports or these remediation modules.
+- For stateful fixes, load
+  [`stateful operations`](../crow-application-development/modules/stateful-operations.md)
+  and its linked test scenarios. For changed exception responses, user-visible
+  errors, or application logging, load
+  [`application diagnostics`](../crow-application-development/modules/application-diagnostics.md).
+  Security-audit events remain owned by `security-logging-and-audit.md`.
 
 ## Dependency maintenance signals
 
@@ -72,7 +100,8 @@ The deterministic synthesis and consistency tools are
 ## How to use
 
 1. Identify the repository's tech stack, LLM/agent integrations, document ingestion/rendering pipelines, and infrastructure-as-code tooling.
-2. Read the module(s) that match the vulnerability class or framework under review.
+2. Apply the context-efficient loading rules, then read only detection modules
+   matching the vulnerability class, framework, or trust boundary under review.
 3. Apply the documented detection patterns during manual code inspection, cross-referencing findings with what automated scans already caught to avoid duplicate work.
 4. For every security review, read `modules/stride-threat-model.md` and populate
    both the security-review STRIDE table and the synthesis JSON `stride` array.

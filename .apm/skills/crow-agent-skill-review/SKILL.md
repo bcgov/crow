@@ -10,12 +10,20 @@ Use this skill for a read-only review of proposed or existing Crow agents, skill
 ## Review sequence
 
 1. Determine the bounded diff or asset set and all connected discovery surfaces.
-2. Run `../crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1`.
-3. Read the canonical [`../crow-release/modules/versioning.md`](../crow-release/modules/versioning.md) policy.
-4. Apply [`modules/review-rubric.md`](modules/review-rubric.md).
-5. Verify every finding against the current source and report exact paths.
-6. Ask an available rubber-duck reviewer to challenge the preliminary review. Verify its suggestions before adopting them.
-7. Classify the change and apply user-decision gates from the canonical versioning policy.
+2. For changes in Crow, read the repository-root
+   [`GOVERNANCE.md`](../../../GOVERNANCE.md). If it is not present in the target
+   checkout, use the
+   [public governance file](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md).
+   Assess applicable principles and review PR-ready Need/Fit/Trust/Support
+   admission answers for each new or materially changed agent or skill. If a
+   pull request exists, verify the record is included there; otherwise, treat
+   it as a draft that must be carried into the pull request before merge.
+3. Run `../crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1`.
+4. Read the canonical [`../crow-release/modules/versioning.md`](../crow-release/modules/versioning.md) policy.
+5. Apply [`modules/review-rubric.md`](modules/review-rubric.md).
+6. Verify every finding against the current source and report exact paths.
+7. Ask an available rubber-duck reviewer to challenge the preliminary review. Verify its suggestions before adopting them.
+8. Classify the change and apply user-decision gates from the canonical versioning policy.
 
 ## Severity
 

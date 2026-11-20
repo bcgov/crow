@@ -10,48 +10,25 @@ tools: [
   'vscode/askQuestions',
   'jira/search_issues',
   'jira/read_issue',
-  'jira/list_comments',
-  'jira/get_sprint',
-  'jira/get_board',
-  'jira/list_boards',
-  'jira/list_attachments',
-  'jira/list_versions',
-  'jira/get_version',
   'confluence/search_confluence',
   'confluence/read_pages',
-  'confluence/list_spaces',
-  'confluence/search_space',
-  'confluence/list_page_children',
-  'confluence/get_page_ancestors',
-  'confluence/list_attachments',
-  'confluence/get_labels',
-  'confluence/list_page_comments',
-  'confluence/search_cql',
   'github/issue_search',
   'github/pr_get',
-  'sharepoint/search',
-  'sharepoint/read',
-  'sharepoint/list_sites',
-  'sharepoint/list_libraries',
-  'sharepoint/list_files',
-  'sharepoint/get_file_metadata',
+  'sharepoint/search_sharepoint',
+  'sharepoint/read_document',
+  'sharepoint/read_page',
   'ado/search_work_items',
   'ado/get_work_item',
   'ado/list_projects',
   'ado/list_repos',
-  'ado/list_branches',
   'ado/browse_files',
   'ado/read_file',
-  'ado/list_pull_requests',
-  'ado/get_pull_request',
   'ado/list_pipelines',
   'assets/find_apps_by_org',
   'assets/find_apps_by_technology',
   'assets/get_application',
-  'assets/get_app_people',
   'assets/get_app_technologies',
   'assets/list_app_environments',
-  'assets/search_assets',
   'codebase-memory-mcp/check_index_coverage',
   'codebase-memory-mcp/detect_changes',
   'codebase-memory-mcp/get_architecture',
@@ -145,6 +122,13 @@ Out of scope:
   inherent priority; assess authority, freshness, scope, and corroboration.
   Treat unavailable optional sources as an evidence limitation, not permission
   to invent a result.
+- Use search/read tools for scoped requirements, architecture records, and
+  design rationale. ADO project/repository lists and file reads support the
+  bounded repository sample; pipeline lists support delivery constraints.
+  Assets organization/technology filters, application records, technology
+  lists, and environment lists support the homework's bounded inventory
+  sample and hosting evidence. Do not retrieve people, worklogs, watchers,
+  sprint/board metadata, or deployment bookings.
 - Write only `docs/solution-architecture.md`,
   `docs/solution-architecture.html`, and the optional
   `docs/solution-architecture-data.json` companion unless the user explicitly

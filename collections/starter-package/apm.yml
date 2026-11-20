@@ -1,5 +1,5 @@
 name: bcgov-crow-starter-package
-version: 0.21.1
+version: 0.21.2
 description: Compatibility-only address for the complete Crow package
 author:
   name: bcgov
@@ -10,4 +10,4 @@ keywords:
 dependencies:
   apm:
     - git: https://github.com/bcgov/crow.git
-      ref: v0.21.1
+      ref: v0.21.2
