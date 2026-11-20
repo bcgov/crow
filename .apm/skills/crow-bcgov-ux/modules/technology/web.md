@@ -7,7 +7,7 @@ Use for plain HTML/CSS, server-rendered templates, CMS themes, and Razor views/p
 - Build controls from native HTML first. Use `<button>` for actions and `<a href>` for navigation.
 - Use server/framework helpers that preserve encoding, labels, validation relationships, antiforgery behaviour, and model-state errors.
 - In Razor, prefer Tag Helpers and partials/view components already established by the application; do not bypass encoding to achieve styling.
-- Keep CSS component-scoped or within the project's established cascade-layer/naming strategy. Avoid global element overrides, inline styles, `!important`, and raw design values outside the token adapter.
+- Keep CSS component-scoped or within the project's established cascade-layer/naming strategy. Avoid global element overrides, inline styles, `!important`, and raw design values outside the token adapter or, for page layout with no published token, the project's layout layer.
 - Use CSS logical properties where compatible with project support requirements.
 - Progressive enhancement is preferred: core content, navigation, forms, and validation remain understandable if optional client scripting fails.
 - For CMS themes, keep editor-authored heading order and alternative-text requirements enforceable through templates and authoring guidance.

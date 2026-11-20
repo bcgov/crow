@@ -49,7 +49,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.21.0 --global --target copilot
+apm install bcgov/crow#v0.21.1 --global --target copilot
 ```
 
 ### Updating an installation
@@ -61,7 +61,7 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.21.0` remains pinned to that release;
+release. An exact version tag such as `#v0.21.1` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
@@ -239,7 +239,7 @@ separately curated packages.
   Includes existing automated tests, applicable database-change artifacts,
   and application-version discovery when Sonar runs as part of CI.
 - [**crow-bcgov-ux**](.apm/skills/crow-bcgov-ux/SKILL.md) — B.C. Design
-  System and WCAG 2.2 AA UX guidance.
+  System and WCAG 2.2 AA UX guidance, including plain-language interface text.
 - [**crow-solution-architecture**](.apm/skills/crow-solution-architecture/SKILL.md) —
   B.C.-aligned solution architecture and stakeholder decisions. Interactive
   sessions can keep dated, context-specific choices in user-local
@@ -309,7 +309,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.21.0.zip`. See
+The resulting archive is `build/bcgov-crow-0.21.1.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

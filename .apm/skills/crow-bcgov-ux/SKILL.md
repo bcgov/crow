@@ -1,6 +1,6 @@
 ---
 name: crow-bcgov-ux
-description: Create, implement, review, or remediate accessible UX for B.C. government applications using the current B.C. Design System and WCAG 2.2 AA. Routes guidance for HTML/CSS, Razor, React/Next/Gatsby/Remix, Vue/Nuxt, Angular, Svelte, and Blazor. User-journey design is intentionally out of scope.
+description: Create, implement, review, or remediate accessible UX, including plain-language interface text, for B.C. government applications using the current B.C. Design System and WCAG 2.2 AA. Routes guidance for HTML/CSS, Razor, React/Next/Gatsby/Remix, Vue/Nuxt, Angular, Svelte, and Blazor. User-journey design is intentionally out of scope.
 ---
 
 # B.C. Government UX
@@ -13,13 +13,13 @@ This skill governs UX within supplied screens and flows. Personas, journey maps,
 
 Use sources in this order:
 
-1. [B.C. Design System](https://www2.gov.bc.ca/gov/content/digital/design-system) foundations and released component documentation.
-2. [B.C. Design System repository](https://github.com/bcgov/design-system) and published packages for exact tokens, component APIs, and release status.
+1. [B.C. Design System](https://www2.gov.bc.ca/gov/content/digital/design-system) foundations and released component documentation, including the [component Storybook](https://designsystem.gov.bc.ca/react-components/) for anatomy, states, and examples.
+2. [B.C. Design System repository](https://github.com/bcgov/design-system) and published packages for exact tokens, component APIs, and release status. For the package version the application resolves, its shipped `AGENTS.md`, type definitions, and token files are the exact-API evidence; see [package version evidence](modules/foundations.md#package-version-evidence).
 3. [B.C. accessibility guidance](https://digital.gov.bc.ca/design/wcag/intro/) and [WCAG 2.2](https://www.w3.org/TR/WCAG22/) for conformance.
 4. [WAI-ARIA Authoring Practices](https://www.w3.org/WAI/ARIA/apg/) for custom interaction behaviour not fully specified by B.C. documentation.
 5. Established project conventions, when they do not conflict with the sources above.
 
-The design system is evolving. Re-check live sources before relying on an exact token, package API, component state, or brand rule. Do not use the archived legacy B.C. design system. Do not infer an official component from a mock-up or an unreleased roadmap item.
+The design system is evolving. Re-check live sources for usage guidance, component states, release status, and brand rules. Verify exact tokens and package APIs against the version the application resolves, and report differences from live documentation. Do not use the archived legacy B.C. design system. Do not infer an official component from a mock-up or an unreleased roadmap item.
 
 ## Context-efficient loading
 
@@ -28,9 +28,11 @@ Always load:
 - [`modules/foundations.md`](modules/foundations.md);
 - [`modules/accessibility.md`](modules/accessibility.md).
 
-For an existing-app review or remediation, also load:
+For an existing-app review or remediation, or a review of a supplied AI-generated or prototype interface, also load:
 
 - [`modules/review-remediation.md`](modules/review-remediation.md).
+
+When creating, editing, or reviewing user-facing interface text, also load [`modules/content-design.md`](modules/content-design.md). Do not load it when approved text is only preserved.
 
 When a supplied surface shows automated eligibility/denial, external register
 results, or degraded/async/offline/assisted states, also load
@@ -92,7 +94,7 @@ Before designing or editing:
 
 ## Known design-system gaps
 
-- No official fixed breakpoint token scale is published; verify reflow and use project breakpoints rather than inventing B.C. values.
+- No official tokens are published for page grids, column widths, breakpoints, or major section spacing; verify reflow and use project values rather than inventing B.C. values.
 - Cross-cutting patterns are primarily documented in individual component pages rather than a single patterns library.
-- Content guidance is not a complete standalone foundation in the design-system site; use B.C. accessibility/plain-language guidance and product-approved content standards.
+- Content guidance is not a complete standalone foundation in the design-system site; apply [`modules/content-design.md`](modules/content-design.md) and product-approved content standards.
 - The component catalogue is released incrementally. A missing component is not permission to present a custom component as official.
