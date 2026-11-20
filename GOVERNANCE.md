@@ -2,10 +2,11 @@
 
 ## Vision
 
-Crow helps B.C. public-sector teams understand, improve, secure, and maintain
-software. It makes agent-assisted delivery more reliable in both existing and new applications: people can trace a recommendation to evidence, make informed
+Crow helps B.C. public-sector teams create, understand, improve, secure, and maintain
+software. It makes agent-assisted delivery more reliable in both existing and new applications:
+people can trace a recommendation to evidence, make informed
 decisions, and verify the outcome. Its guidance should be portable to other teams
-where the underlying practices apply, without pretending that B.C.-specific policy
+where the underlying practices apply, without pretending that B.C.-specific policies
 or services are universal.
 
 ## Principles
@@ -14,7 +15,8 @@ or services are universal.
    implementation, deployment, testing, review, remediation, or maintenance. State the
    user and verifiable outcome. Setup and release support must enable these
    workflows.
-2. **Ground advice in evidence.** Inspect relevant sources and distinguish facts from assumptions. Never invent organizational rules or approvals.
+2. **Ground advice in evidence.** Inspect relevant sources and distinguish facts from
+   assumptions. Never invent organizational rules or approvals.
 3. **Keep people in control.** Make external writes and consequential changes
    confirmation-gated. Expose failures and uncertainty; never report an
    unperformed check as passed.

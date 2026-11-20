@@ -2,6 +2,13 @@
 
 ## Capability and behavior
 
+- For changes in Crow, read the repository-root
+  [`GOVERNANCE.md`](../../../../GOVERNANCE.md), or its
+  [public copy](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md) when the
+  file is unavailable. Assess applicable principles and review PR-ready
+  Need/Fit/Trust/Support admission answers for each new or materially changed
+  agent or skill; verify they are included in an existing pull request before
+  merge.
 - Is the invocation trigger specific and distinct?
 - Are scope, non-goals, required inputs, tool authority, stop conditions, and completion criteria explicit?
 - Does the workflow preserve errors instead of hiding them?

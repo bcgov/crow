@@ -1,5 +1,5 @@
 name: bcgov-crow
-version: 0.21.1
+version: 0.21.2
 description: Global agents and skills for getting started and coordinated task prompting, application CI and maintenance continuity design, legacy modernization, Raven setup, accessible B.C. government UX, architecture, analytics design, data architecture, REST/SOAP API modernization, framework and dependency updates, secure development, review, remediation, documentation, reporting, Crow authoring, and releases.
 type: hybrid
 author:
@@ -22,6 +22,7 @@ keywords:
   - crow-rest-api
   - crow-soap-api
   - crow-security-review
+  - crow-sonar-scan
   - crow-security-remediation
   - crow-framework-updates
   - crow-dependency-updates
