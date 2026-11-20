@@ -9,6 +9,7 @@ Record:
 - shared shell, navigation, tokens, and component primitives reviewed;
 - browsers, viewport sizes, zoom levels, input methods, and assistive technologies used;
 - automated tools and versions;
+- whether the surface is AI-generated, AI-assisted, or a prototype, when known;
 - exclusions and reasons.
 
 For large applications, select representative screens across:
@@ -46,6 +47,17 @@ empty, localized, permission-limited, and interrupted states. Check for
 clipped content, understandable next actions, focus and reading order,
 and recovery; record which states could not be exercised.
 
+## AI-generated or prototype surfaces
+
+When the supplied surface is AI-generated, AI-assisted, or a prototype, adapt steps 3 (standards and patterns) and 5 (next steps) of the B.C. Design System guide [How to review AI outputs](https://github.com/bcgov/design-system/blob/main/docs/using-the-design-system/review/human-review.md). The accessibility and content-design modules cover step 4's keyboard, zoom, assistive-technology, and plain-language checks. Problem validation, journey review, and step 4's information-requirement and equity-impact review remain out of scope; recommend specialist review where they are needed.
+
+- Identify styling, behaviour, content, or requirements that cannot be traced to a released component, a documented pattern, or a confirmed requirement.
+- For each difference, record whether it is intentional and documented, whether an existing component or pattern was considered, and its origin when evidence shows it.
+- Separate verified evidence from findings based on assumptions, automated checks, or AI-only output.
+- Using a released component or passing automated checks does not prove that the experience meets every requirement.
+- Identify needed specialist reviews: privacy, security, information management, legal or policy, equity, anti-racism and cultural safety, content design, or testing with people who use assistive technology.
+- Recommend one next step: proceed, revise and test again, seek specialist review, gather more evidence, or stop and reconsider. Name the specific activity, such as proceeding to keyboard testing, with its evidence, conditions, and owner when known. The team makes the decision. This UX review does not establish service readiness.
+
 ## Finding format
 
 Each finding must include:
@@ -61,6 +73,14 @@ Remediation: specific standards-aligned change
 Applied: Yes | No | Partial
 Verification: test performed and result
 ```
+
+For AI-generated or prototype surfaces, a finding may add this optional line:
+
+```text
+Origin: Team-requested | AI-introduced | Unknown, with evidence
+```
+
+Origin records where a difference came from. It is not a defect and does not affect severity. Use `Unknown` when evidence does not show the origin.
 
 Severity:
 
@@ -92,4 +112,5 @@ Summarize:
 - manual checks and results;
 - unresolved findings and ownership;
 - known design-system gaps;
+- for AI-generated or prototype surfaces: differences by origin, specialist reviews needed, and the recommended next step;
 - assistive-technology or usability validation still recommended.
