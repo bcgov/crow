@@ -28,8 +28,8 @@ Every finding must be tagged with one of:
 
 These rules apply to every finding. Violating them invalidates the assessment.
 
-- **NO** SQL injection claims if parameterized queries, prepared statements, or ORM-bound parameters are used
-- **NO** XSS claims for static HTML content that does not render user input, or for frameworks with auto-escaping enabled (Razor `@`, Thymeleaf `th:text`, Jinja2 default, Blade `{{ }}`)
+- **NO** SQL injection claims for an attacker-controlled value only when the value is shown to reach the affected SQL sink through a bound parameter, prepared-statement parameter, or ORM-bound parameter. Continue assessing any attacker-controlled identifier, keyword, clause, or other query structure interpolated into the SQL, because parameterization of separate values does not protect those fragments.
+- **NO** XSS claims for static HTML content that does not render user input, or for an attacker-controlled value shown to be rendered through the framework's escaping context at the affected sink (Razor `@`, Thymeleaf `th:text`, Jinja2 default, Blade `{{ }}`). Do not apply this exclusion to raw or otherwise unsafe rendering such as Razor `@Html.Raw()`, even when auto-escaping is enabled elsewhere.
 - **NO** insecure deserialization claims if the deserializer is configured with type restrictions or allowlists
 - **NO** assumptions about framework behavior without verifying the actual code and configuration
 - **NO** speculation about runtime behavior not visible in source code or configuration
