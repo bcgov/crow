@@ -29,8 +29,8 @@ Every finding must be tagged with one of:
 These rules apply to every finding. Violating them invalidates the assessment.
 
 - **NO** SQL injection claims for an attacker-controlled value only when the value is shown to reach the affected SQL sink through a bound parameter, prepared-statement parameter, or ORM-bound parameter. Continue assessing any attacker-controlled identifier, keyword, clause, or other query structure interpolated into the SQL, because parameterization of separate values does not protect those fragments.
-- **NO** XSS claims for static HTML content that does not render user input, or for an attacker-controlled value shown to be rendered through the framework's escaping context at the affected sink (Razor `@`, Thymeleaf `th:text`, Jinja2 default, Blade `{{ }}`). Do not apply this exclusion to raw or otherwise unsafe rendering such as Razor `@Html.Raw()`, even when auto-escaping is enabled elsewhere.
-- **NO** insecure deserialization claims if the deserializer is configured with type restrictions or allowlists
+- **NO** XSS claims for static HTML content that does not render user input, or for an attacker-controlled value shown to use context-appropriate encoding at the affected sink (Razor `@`, Thymeleaf `th:text`, Jinja2 default, Blade `{{ }}`). For URL contexts, also verify URL-scheme validation before applying this exclusion. Do not apply this exclusion to raw or otherwise unsafe rendering such as Razor `@Html.Raw()`, even when auto-escaping is enabled elsewhere.
+- **NO** insecure deserialization claims only after verifying that the configured restrictions block the demonstrated path. A type restriction or allowlist alone is not dispositive; assess whether allowed types can still reach an exploitable gadget chain.
 - **NO** assumptions about framework behavior without verifying the actual code and configuration
 - **NO** speculation about runtime behavior not visible in source code or configuration
 - **NO** marking development placeholder values as production secrets without evidence of production deployment
@@ -60,7 +60,7 @@ Every dependency vulnerability claim MUST be tagged with its source:
 
 Do NOT cite specific CVE numbers unless confirmed by SonarQube or you have high confidence the installed version falls within the documented affected range. Misattributed CVEs undermine report credibility.
 
-When SonarQube SCA is unavailable, mark all dependency risk assessments as `[AI-estimated — verify with a dependency scanner]`.
+When SonarQube SCA is unavailable, retain `[NVD-verified]` when the installed version is independently confirmed within an applicable NVD advisory range. Use `[AI-estimated — verify with a dependency scanner]` only when no applicable advisory has been independently verified.
 
 ---
 

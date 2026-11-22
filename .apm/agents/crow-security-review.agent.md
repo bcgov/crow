@@ -40,6 +40,7 @@ tools: [
   'ado/read_file',
   'confluence/search_confluence',
   'confluence/read_pages',
+  'jira/get_board',
   'jira/search_issues',
   'jira/read_issue',
   'jira/create_issue',

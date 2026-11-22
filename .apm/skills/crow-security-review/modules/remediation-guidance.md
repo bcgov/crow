@@ -108,4 +108,9 @@ Present a comprehensive summary to the user:
 - **Security-Control Assurance:** Closed matrix gaps, test levels, negative
   cases, and starting versus final aggregate coverage.
 - **Build & Test Verification:** Test pass count and status.
-- **Re-Run Status:** Confirmation that the applicable security-review document(s) and frontmatter were refreshed and verified; in a monorepo, list each service document explicitly.
+- **Re-Run Status:** For update-only `framework-upgrades` and `dependencies`
+  scopes, report security re-review and security-review document/frontmatter
+  refresh as **Not Applicable** without requesting confirmation. For `all` and
+  security-remediation scopes, report confirmation that the applicable
+  security-review document(s) and frontmatter were refreshed and verified; in a
+  monorepo, list each service document explicitly.

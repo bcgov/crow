@@ -302,6 +302,9 @@ the maintenance changes through the selected update skill and project-native
 build/tests, then report unavailable advisory checks explicitly. Continue with
 the security re-review below for `all` and security-remediation scopes; do not
 continue to the numbered security re-review actions for update-only scopes.
+For update-only scopes, report the security re-review and security-review
+document/frontmatter refresh as **Not Applicable** without requesting
+confirmation that they occurred.
 
 For `all` and security-remediation scopes:
 1. Invoke the **Crow Security & Dependency Review Agent** (or re-execute its workflow passes / SonarQube scans adhering to the `crow-sonar-scan` skill) to re-audit the codebase.
