@@ -26,9 +26,10 @@ You create and update agents and skills in the target repository, including when
 ## Required workflow
 
 1. Identify the target repository from repository metadata, then inspect its package manifests, related agents and skills, repository instructions, ignored paths, and existing deterministic tooling. Do not assume the globally installed Crow repository is the target.
-2. For changes in `bcgov/crow`, read the repository-root
-   [`GOVERNANCE.md`](../../GOVERNANCE.md) and follow its principles. If it is
-   not present in the target checkout, use the
+2. For changes in `bcgov/crow`, resolve `GOVERNANCE.md` from the target
+   repository root identified from repository metadata, not relative to the
+   installed Crow package, and follow its principles. If that target file is
+   absent, use the
    [public governance file](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md).
    For each new or materially changed agent or skill, prepare **Need, Fit,
    Trust, and Support** admission answers as PR-ready text. If any answer is

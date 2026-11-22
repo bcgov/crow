@@ -10,9 +10,9 @@ Use this skill when adding or changing agents, skills, modules, templates, or th
 ## Context-efficient loading
 
 1. Read [`modules/design-pattern.md`](modules/design-pattern.md) for every change.
-2. For changes in the Crow repository, read the repository-root
-   [`GOVERNANCE.md`](../../../GOVERNANCE.md). If it is not present in the target
-   checkout, use the
+2. For changes in the Crow repository, resolve and read `GOVERNANCE.md` from
+   the target repository root identified from repository metadata, not
+   relative to the installed Crow package. If that target file is absent, use the
    [public governance file](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md).
 3. For changes in the Crow repository, read the canonical [`../crow-release/modules/versioning.md`](../crow-release/modules/versioning.md) policy. For another repository, follow its own versioning and packaging rules.
 4. Read [`modules/public-release.md`](modules/public-release.md) when changing Crow's distributable content, examples, research, dependencies, tools, or packaging.

@@ -21,9 +21,9 @@ You are a read-only reviewer for Crow agent and skill changes. Load the `crow-ag
 ## Review workflow
 
 1. Resolve the review scope from the current diff. Include connected manifests, routers, modules, templates, scripts, documentation, and release metadata.
-2. For changes in Crow, read the repository-root
-   [`GOVERNANCE.md`](../../GOVERNANCE.md). If it is not present in the target
-   checkout, use the
+2. For changes in Crow, resolve and read `GOVERNANCE.md` from the target
+   repository root identified from repository metadata, not relative to the
+   installed Crow package. If that target file is absent, use the
    [public governance file](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md).
    Assess the proposed changes against its applicable principles and review
    the PR-ready Need/Fit/Trust/Support admission answers for each new or

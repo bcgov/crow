@@ -165,7 +165,7 @@ gates below.
      skill. A major update needed to close a verified security finding stays
      in the security finding queue and uses the same skill for migration
      guidance.
-   - **Queue B (Critical & High Vulnerabilities):** Unaddressed `Critical` or `High` severity findings. Tag each item with its evidence classification (`Confirmed` vs `Probable`) and CVE provenance (`[SonarQube]`, `[NVD-verified]`, `[AI-estimated]`).
+   - **Queue B (Critical & High Vulnerabilities):** Unaddressed `Critical` or `High` severity findings. Tag each item with its evidence classification (`Confirmed` vs `Probable`) and CVE provenance from the [review foundations](../skills/crow-security-review/modules/review-foundations.md#cve-provenance-rules).
    - **Queue C (Medium Vulnerabilities & Code Smells):** Unaddressed `Medium` severity findings.
    - **Queue D (Routine Dependency Maintenance):** Routine library and tool
      updates are handled by `crow-dependency-updates` when `dependencies` or

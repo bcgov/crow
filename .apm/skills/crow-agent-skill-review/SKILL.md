@@ -10,9 +10,9 @@ Use this skill for a read-only review of proposed or existing Crow agents, skill
 ## Review sequence
 
 1. Determine the bounded diff or asset set and all connected discovery surfaces.
-2. For changes in Crow, read the repository-root
-   [`GOVERNANCE.md`](../../../GOVERNANCE.md). If it is not present in the target
-   checkout, use the
+2. For changes in Crow, resolve and read `GOVERNANCE.md` from the target
+   repository root identified from repository metadata, not relative to the
+   installed Crow package. If that target file is absent, use the
    [public governance file](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md).
    Assess applicable principles and review PR-ready Need/Fit/Trust/Support
    admission answers for each new or materially changed agent or skill. If a

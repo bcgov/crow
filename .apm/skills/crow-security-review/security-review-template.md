@@ -96,7 +96,7 @@ This section lists known vulnerabilities (CVEs) identified across direct and tra
 
 | CVE ID | Affected Component | Vulnerable Version | Severity | Fixed Version | Provenance | Remediation Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| | | | `Critical / High / Medium / Low / Informational` | | `[SonarQube] / [NVD-verified] / [AI-estimated]` | `Open / Patched / Mitigated / Ignored` |
+| | | | `Critical / High / Medium / Low / Informational` | | `[SonarQube] / [NVD-verified] / [Advisory-verified: <source>] / [AI-estimated]` | `Open / Patched / Mitigated / Ignored` |
 
 ---
 
@@ -544,7 +544,7 @@ finalization.
 - **OWASP Category:** `AXX:2025 — Category Name`
 - **CWE:** `CWE-XXX`
 - **CVSS Score:** `X.X`
-- **CVE (if applicable):** `CVE-YYYY-NNNNN` `[SonarQube / NVD-verified / AI-estimated]`
+- **CVE (if applicable):** `CVE-YYYY-NNNNN` `[SonarQube] / [NVD-verified] / [Advisory-verified: <source>] / [AI-estimated]`
 
 #### Description
 *Clear description of the vulnerability.*

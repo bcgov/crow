@@ -2,10 +2,11 @@
 
 ## Capability and behavior
 
-- For changes in Crow, read the repository-root
-  [`GOVERNANCE.md`](../../../../GOVERNANCE.md), or its
+- For changes in Crow, resolve and read `GOVERNANCE.md` from the target
+  repository root identified from repository metadata, not relative to the
+  installed Crow package. Use its
   [public copy](https://github.com/bcgov/crow/blob/main/GOVERNANCE.md) when the
-  file is unavailable. Assess applicable principles and review PR-ready
+  target file is absent. Assess applicable principles and review PR-ready
   Need/Fit/Trust/Support admission answers for each new or materially changed
   agent or skill; verify they are included in an existing pull request before
   merge.

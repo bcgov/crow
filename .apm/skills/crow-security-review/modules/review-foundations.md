@@ -56,24 +56,33 @@ Every dependency vulnerability claim MUST be tagged with its source:
 
 - `[SonarQube]` — Confirmed by SonarQube SCA scan results
 - `[NVD-verified]` — Version falls within a known affected range verified against NVD advisory data
+- `[Advisory-verified: <source>]` — Installed version is independently verified within an affected range from the named vendor or advisory database other than NVD; replace `<source>` with its name and cite the advisory URL and affected range
 - `[AI-estimated]` — Risk assessment based on version age, EOL status, or known library reputation; must be verified with a dependency scanner
 
 Do NOT cite specific CVE numbers unless confirmed by SonarQube or you have high confidence the installed version falls within the documented affected range. Misattributed CVEs undermine report credibility.
 
-When SonarQube SCA is unavailable, retain `[NVD-verified]` when the installed version is independently confirmed within an applicable NVD advisory range. Use `[AI-estimated — verify with a dependency scanner]` only when no applicable advisory has been independently verified.
+When SonarQube SCA is unavailable, retain `[NVD-verified]` for an independently
+verified applicable NVD affected range, or `[Advisory-verified: <source>]` for
+an independently verified applicable advisory from another named source. Use
+`[AI-estimated — verify with a dependency scanner]` only when no applicable
+advisory has been independently verified.
 
 ---
 
 ## Capabilities & Limitations
 
-This agent traces untrusted input across files, from entry points through service layers to sinks (SQL, shell, file I/O, HTTP clients), via the codebase knowledge graph. However:
+These workflows can trace untrusted input across files, from entry points through service layers to sinks (SQL, shell, file I/O, HTTP clients), via the codebase knowledge graph. However:
 
 - **No symbolic variable-level taint propagation** — It reads code at each hop but does not symbolically analyze variable transformations.
 - **No implicit data flow tracking** — Shared state, globals, and database-mediated flows are not traced automatically.
 - **No completeness guarantee** — Reflection, runtime DI, and dynamic invocation may not be indexed.
 - **Pattern-dependent without the graph** — Without codebase-memory-mcp, search patterns may miss non-standard code.
 
-For exhaustive data-flow coverage, add AST-based SAST (Semgrep, CodeQL, SpotBugs).
+Complement manual inspection and graph tracing with AST-based SAST (Semgrep,
+CodeQL, SpotBugs). These tools can improve coverage but do not guarantee
+exhaustive data-flow analysis, particularly across dynamic calls, reflection,
+and external or database-mediated flows. Record remaining gaps and use
+targeted manual inspection or runtime verification where needed.
 
 ---
 
