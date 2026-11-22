@@ -11,7 +11,7 @@ Crow is distributed through the [Agent Package Manager (APM)][APM] and as a
 Copilot CLI plugin. Install the full package and use the Getting Started
 Agent to choose the capabilities needed for your task.
 
-The [Crow vision and capability governance](GOVERNANCE.md) draft describes
+The [Crow vision and capability governance](GOVERNANCE.md) describes
 the principles used to decide which agents and skills belong in Crow.
 
 [APM]: https://github.com/microsoft/apm
@@ -49,7 +49,7 @@ than copying Crow into every project.
 For an exact, reproducible install of this release, use:
 
 ```powershell
-apm install bcgov/crow#v0.21.1 --global --target copilot
+apm install bcgov/crow#v0.21.2 --global --target copilot
 ```
 
 ### Updating an installation
@@ -61,7 +61,7 @@ apm update --global --target copilot
 ```
 
 For Crow installed from `#stable`, this picks up the latest published stable
-release. An exact version tag such as `#v0.21.1` remains pinned to that release;
+release. An exact version tag such as `#v0.21.2` remains pinned to that release;
 to follow future releases, install the full package from `#stable` above once.
 APM refreshes the resolved commit in the global lockfile; do not edit it
 manually.
@@ -278,8 +278,9 @@ separately curated packages.
 - [**crow-raven-setup**](.apm/skills/crow-raven-setup/SKILL.md) — Selective
   Raven and codebase-memory-mcp setup and maintenance.
 - [**crow-security-review**](.apm/skills/crow-security-review/SKILL.md) —
-  Manual security, invariant-driven logic review, dependency, data-flow, PHP
-  runtime, and issue-publication guidance.
+  Shared finding-evidence standards, manual security analysis passes,
+  invariant-driven logic review, dependency audits, data-flow and PHP runtime
+  guidance, scoped remediation, and issue-publication guidance.
 - [**crow-framework-updates**](.apm/skills/crow-framework-updates/SKILL.md) —
   Supported runtime, SDK, and primary framework upgrades.
 - [**crow-dependency-updates**](.apm/skills/crow-dependency-updates/SKILL.md) —
@@ -309,7 +310,7 @@ apm install
 apm pack --archive --output build
 ```
 
-The resulting archive is `build/bcgov-crow-0.21.1.zip`. See
+The resulting archive is `build/bcgov-crow-0.21.2.zip`. See
 [crow-release](.apm/skills/crow-release/SKILL.md) for release gates and
 [crow-agent-skill-authoring](.apm/skills/crow-agent-skill-authoring/SKILL.md)
 for the asset authoring workflow.

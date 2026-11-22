@@ -15,9 +15,8 @@
 
 | Algorithm | Assessment | Notes |
 |-----------|-----------|-------|
-| bcrypt, scrypt, argon2, PBKDF2 (high iterations) | SAFE | Appropriate for password storage |
-| SHA-256/SHA-512 with unique salt | MEDIUM risk | Acceptable but bcrypt/argon2 preferred |
-| SHA-256/SHA-512 without salt | HIGH risk | Rainbow table vulnerable |
+| Argon2id, scrypt, bcrypt, PBKDF2 (suitably configured) | SAFE | Appropriate password-specific functions for password storage |
+| SHA-256/SHA-512, with or without a salt | HIGH risk | Fast general-purpose hashes permit cheap offline guessing; not acceptable for password storage |
 | MD5, SHA-1 (for passwords) | CRITICAL | Trivially crackable |
 | Custom/home-grown hashing | HIGH risk | Almost always flawed |
 
@@ -87,7 +86,7 @@
 
 ## What This Catches That SonarQube Doesn't
 
-- Context-inappropriate algorithms (SHA-256 without salt for passwords — SonarQube only flags MD5/SHA1)
+- Context-inappropriate algorithms (fast SHA-256/SHA-512 password hashes, with or without a salt — SonarQube only flags MD5/SHA1)
 - AES-CBC without authentication (padding oracle risk)
 - Key management lifecycle issues (rotation, sharing, storage)
 - Hardcoded IVs that negate encryption security

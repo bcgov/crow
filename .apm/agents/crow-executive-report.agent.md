@@ -104,7 +104,7 @@ Extract and synthesize data from both source documents into plain language:
 - Identify active, adjudicated `Critical` and `High` findings. Do not count raw security hotspots, scanner issues, removed findings, or attack chains as additional vulnerabilities.
 - Prioritize **Confirmed** findings over **Probable** findings in the executive summary.
 - Translate technical terms (e.g. "Unsanitized user input in raw SQL query causing CWE-89") into plain business language (e.g. "Attacker could bypass authentication or access confidential database records").
-- Note CVE provenance: clearly distinguish between scanner-confirmed vulnerabilities (`[SonarQube]`, `[NVD-verified]`) and estimated risks (`[AI-estimated]`).
+- Note CVE provenance: distinguish scanner-confirmed vulnerabilities, independently advisory-verified vulnerabilities, and estimated risks. Preserve the source-specific tags defined in the [review foundations](../skills/crow-security-review/modules/review-foundations.md#cve-provenance-rules).
 - When synthesis is validated, use its `findings[].active`, `effectiveSeverity`, and `classification` for the high-risk selection, and its summary for counts. Confirm each selected finding's business impact and action against the corresponding bounded report entry; do not invent either from an ID or title.
 
 #### 1a. Conditional security synthesis and assurance
