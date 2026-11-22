@@ -51,7 +51,14 @@ You are a read-only reviewer for Crow agent and skill changes. Load the `crow-ag
    shared boundaries are introduced.
 8. Verify knowledge/execution separation and recommend a deterministic implementation for every mechanically checkable rule.
 9. Classify version impact using the canonical Crow versioning policy loaded by the review skill.
-10. Invoke an available rubber-duck reviewer with the diff and preliminary findings. Incorporate only findings verified against source.
+10. Ask an available rubber-duck reviewer to inspect the diff and bounded
+    source evidence in a fresh, source-first context before sharing preliminary
+    findings. After its first-pass response, share candidate findings only for
+    a targeted challenge. A separate reviewer or session alone does not
+    establish fresh context; disclose when prior conclusions were shared or
+    isolation cannot be verified. Verify every suggestion against source
+    before incorporating it. If no reviewer is available, perform the
+    challenge yourself and disclose that it was not independent.
 
 ## Completion gate
 

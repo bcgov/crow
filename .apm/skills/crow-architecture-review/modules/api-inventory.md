@@ -53,14 +53,19 @@ prove.
 
 Before declaring `Verified`, make one bounded challenge of the reconciled
 route, contract, service-definition, stub, and configuration sources against
-the inventory's operation IDs and evidence. Ask an independent read-only
-reviewer to seek an omitted operation when available; otherwise do the check
-yourself and disclose that it was not independent. Verify each candidate in
-source rather than accepting a reviewer's assertion. If an operation is
-missing, add it and reassess the boundary; if a source remains uninspected,
-use `Partial`, with `blocksCompleteness: true` for any unresolved question
-that could hide an operation. This challenge does not establish unknown
-external consumers or deployment configuration.
+the inventory's operation IDs and evidence. When an independent read-only
+reviewer is available, have them derive a candidate operation list from the
+bounded source set before showing them the inventory, then compare the lists
+and ask them to identify omissions. Use only repository evidence and approved,
+available runtime metadata; do not probe a deployed service or infer
+authorization. A separate session alone does not establish fresh context;
+disclose when prior conclusions were shared or isolation cannot be verified.
+Otherwise do the check yourself and disclose that it was not independent.
+Verify each candidate in source rather than accepting a reviewer's assertion.
+If an operation is missing, add it and reassess the boundary; if a source
+remains uninspected, use `Partial`, with `blocksCompleteness: true` for any
+unresolved question that could hide an operation. This challenge does not
+establish unknown external consumers or deployment configuration.
 
 ## Output and validation
 

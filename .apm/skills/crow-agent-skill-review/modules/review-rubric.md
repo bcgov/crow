@@ -73,4 +73,9 @@ Ask the reviewer to identify:
 - public-release or licensing risks;
 - version classification errors.
 
-Verify each concern against source. A rubber-duck suggestion is not evidence by itself.
+Request a source-first pass using the artifact and bounded evidence without
+the author's preliminary findings or reasoning. After that pass, share
+candidate findings only for a targeted challenge. A separate reviewer or
+session alone does not establish fresh context; disclose when earlier
+conclusions were shared or isolation cannot be verified. Verify each concern
+against source. A rubber-duck suggestion is not evidence by itself.

@@ -103,7 +103,13 @@ an approval. Treat each phase as blocked until its prerequisites are met.
   contract-to-scenario mapping and difference dispositions in the plan once.
   Seek missing consumers, untested jobs, messages, files, or externally
   consumed data, and differences called cosmetic without an owner's evidence.
-  An independent reviewer can surface gaps but cannot certify parity; verify
-  each objection against the inventory and pinned runs. Resolve material gaps
-  through the existing test and owner gates. If independent review was
-  unavailable, say so without weakening those gates.
+  When available, use a fresh reviewer context that receives the bounded
+  inventory, scenario-to-interface traceability, pinned run references, and
+  specific challenge question, but not the author's preliminary conclusions
+  or earlier review output. A separate session alone does not establish fresh
+  context; disclose when prior analysis was shared or isolation cannot be
+  verified. An independent reviewer can surface gaps but cannot certify
+  parity; verify each objection against the inventory and pinned runs. If no
+  reviewer is available, perform the same gap check yourself and disclose
+  that it was not independent. Resolve material gaps through the existing test
+  and owner gates without weakening them.
