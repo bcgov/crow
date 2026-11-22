@@ -59,16 +59,21 @@ Rules:
 
 Before validating consequential `documented-only` or `conflicting` rules,
 ask an available read-only independent reviewer to challenge the bounded
-source and documentation evidence once; otherwise check it yourself and
-disclose that no independent challenge ran. For
-`documented-only`, check the searched configuration, migrations, jobs, and
-in-scope services for an overlooked enforcing path; record unavailable
-surfaces rather than claiming absence. For `conflicting`, test whether scope,
-feature flags, versions, or environments account for the different outcomes.
-Verify any proposed correction in source and update the classification and
-note if warranted. A challenger does not decide which behavior is intended;
-keep unresolved conflicts and insufficient evidence as open questions for a
-human owner. Identifier continuity remains the ledger validator's job.
+source and documentation evidence once. Use a fresh context and ask the
+reviewer to locate enforcing paths from source before showing the author's
+classification or rationale; disclose when prior conclusions were shared or
+context isolation cannot be verified. Otherwise check it yourself and
+disclose that no independent challenge ran. For `documented-only`, check the
+searched configuration, migrations, jobs, and in-scope services for an
+overlooked enforcing path; record unavailable surfaces rather than claiming
+absence. Observable examples can corroborate behavior or a conflict, but
+cannot prove that no enforcing path exists or determine owner intent. For
+`conflicting`, test whether scope, feature flags, versions, or environments
+account for the different outcomes. Verify any proposed correction in source
+and update the classification and note if warranted. A challenger does not
+decide which behavior is intended; keep unresolved conflicts and insufficient
+evidence as open questions for a human owner. Identifier continuity remains
+the ledger validator's job.
 
 ## Open questions
 

@@ -55,6 +55,12 @@ Use when the [CI router](../SKILL.md) selects Azure. Apply the
    correct any unmapped approval or broader privilege with owner review, and
    retain the original for rollback. Reviewer agreement does not establish
    provider-side parity or authorize cutover.
+   When sanitized exports are available, mechanically compare fields such as
+   triggers, task names/versions/inputs, schedules, variable declarations,
+   artifact paths, and environment/check declarations. Treat the comparison
+   as a mapping aid, not proof of equivalence: service-connection permissions,
+   secret access, fork isolation, provider-side checks, and actual execution
+   still require separate source, owner, or provider verification.
 
 See [Azure Pipelines security](https://learn.microsoft.com/azure/devops/pipelines/security/overview),
 [YAML templates](https://learn.microsoft.com/azure/devops/pipelines/process/templates),

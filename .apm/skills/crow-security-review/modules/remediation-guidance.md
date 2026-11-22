@@ -78,12 +78,20 @@ For a `Critical` or `High` vulnerability fix, challenge the changed control
 before declaring it resolved: trace the original attacker path through the
 changed enforcement point and relevant callers, look for a plausible bypass
 or an unaffected entry point, and run a negative regression test with
-isolated fixtures in the local test suite where reproducible. Do not probe
-a deployed service without separate, specific authorization. When an
-independent read-only reviewer is available, give it the bounded finding,
-patch, affected callers, and test evidence to challenge; otherwise perform
-this adversarial pass yourself and state that no independent review ran.
-Verify objections against current source and tests; fix and retest confirmed
+isolated fixtures in the local test suite where reproducible. When the same
+test can safely run against both revisions, verify and record that it fails
+against the vulnerable revision and passes against the fixed revision;
+otherwise disclose the unavailable comparison without implying it passed.
+Do not probe a deployed service without separate, specific authorization.
+When an independent read-only reviewer is available, use a fresh context that
+excludes the original reviewer's analysis and prior review output. Give it the
+bounded bug statement, patch, affected callers, test evidence, and a specific
+verification question; withhold the original reviewer's rationale, severity
+judgment, and disposition until its source-first assessment is returned. A
+separate reviewer or session does not by itself establish fresh context;
+disclose when context isolation cannot be verified. Otherwise perform this
+adversarial pass yourself and state that no independent review ran. Verify
+objections against current source and tests; fix and retest confirmed
 bypasses. A scanner clearing the original finding is not proof that every
 entry point is protected. Do not send payloads to production or treat the
 challenger as a substitute for the remediation agent's security re-review.

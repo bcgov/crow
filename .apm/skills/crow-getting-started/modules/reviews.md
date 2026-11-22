@@ -34,6 +34,17 @@ does not provide this diversity. Prefer different families for the two
 reviewers too when available; the same eligible family can serve both.
 Never pin model IDs, prices, or a provider preference in Crow assets.
 
+For a source-first review, give the reviewer the exact revision under review,
+relevant evidence, constraints, and question, but not separate preliminary
+findings, reasoning, or earlier review output. When the artifact itself is a
+set of findings or recommendations, first give the reviewer its underlying
+evidence and question; share the candidate synthesis only after the reviewer
+returns an independent assessment. Use a fresh session or equivalent context
+that excludes prior analysis where available. A different role or separate
+session does not by itself establish fresh context; disclose when earlier
+conclusions were shared or context isolation cannot be verified, and do not
+describe a potentially primed review as blind.
+
 Honor the user's current model/cost, tool, delegation, data-handling, and
 provider-approval policies. Share only the minimum permitted evidence;
 never pass secrets or personal data to reviewers. If a provider cannot

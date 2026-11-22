@@ -18,6 +18,16 @@ every source finding used by a proposed chain. Record one disposition:
 - `Rejected`
 - `Unknown`
 
+An independent re-check starts from the cited source and bounded evidence
+without relying on the original reviewer's reasoning or disposition. Prefer a
+separate reviewer in a fresh context; provide the finding identifier, source
+locations, and verification question, but withhold prior analysis and
+adjudication until the source-first assessment is returned. If only a
+source-first self-check is possible, disclose that no independent review ran.
+In the existing `Evidence` field, identify who or what performed the
+re-check and cite the source lines, tests, or other evidence used. Do not
+change the report schema for this record.
+
 When validation changes severity, scope, preconditions, or causal language,
 resolve the difference as `Accepted`, `Adjusted`, or `Removed`. `Pending`
 resolution blocks finalization. Recalculate report counts after adjudication;

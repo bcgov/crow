@@ -19,10 +19,20 @@ Use this skill for a read-only review of proposed or existing Crow agents, skill
    pull request exists, verify the record is included there; otherwise, treat
    it as a draft that must be carried into the pull request before merge.
 3. Run `../crow-agent-skill-authoring/scripts/Test-CrowAssets.ps1`.
+   The validator checks asset structure, references, dependency closure, and
+   configured context limits; passing it does not establish that the workflow
+   is behaviorally complete or replace source review.
 4. Read the canonical [`../crow-release/modules/versioning.md`](../crow-release/modules/versioning.md) policy.
 5. Apply [`modules/review-rubric.md`](modules/review-rubric.md).
 6. Verify every finding against the current source and report exact paths.
-7. Ask an available rubber-duck reviewer to challenge the preliminary review. Verify its suggestions before adopting them.
+7. Ask an available rubber-duck reviewer to inspect the artifact and relevant
+   source evidence in a fresh, source-first context before sharing preliminary
+   findings. After that pass, give the reviewer the candidate findings for a
+   bounded challenge if needed. A separate reviewer or session alone does not
+   establish fresh context; disclose when prior conclusions were shared or
+   isolation cannot be verified. If no reviewer is available, perform the
+   challenge yourself and disclose that it was not independent. Verify
+   suggestions against source before adopting them.
 8. Classify the change and apply user-decision gates from the canonical versioning policy.
 
 ## Severity
